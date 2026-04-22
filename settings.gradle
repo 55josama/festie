@@ -1,5 +1,4 @@
 rootProject.name = 'festie'
-
 include("eureka-server")
 include("config-server")
 include("operation-service")
@@ -9,3 +8,5 @@ include("favorite-service")
 include("notification-service")
 include("ai-service")
 include("common")
+
+include("user-service")
