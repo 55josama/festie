@@ -8,5 +8,4 @@ include("favorite-service")
 include("notification-service")
 include("ai-service")
 include("common")
-
 include("user-service")
