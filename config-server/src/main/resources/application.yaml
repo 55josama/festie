@@ -1,12 +1,21 @@
 spring:
   application:
     name: config-server
+
+  config:
+    import: "optional:classpath:application-secret.yml"
+
+  security:
+    user:
+      name: ${CONFIG_USERNAME}
+      password: ${CONFIG_PASSWORD}
+
   cloud:
     config:
       server:
         git:
-          uri: https://github.com/55josama/festie-config.git
-          default-label: dev
+          uri: ${CONFIG_URL}
+          ignoreLocalSshSettings: true
 
 server:
   port: 8888
