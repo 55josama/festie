@@ -29,6 +29,10 @@ public class ApiResponse<T> {
 
     // 200 성공 (데이터 없음)
     public static <T> ApiResponse<T> success() {
+        return new ApiResponse<>(200, "성공하였습니다.", null);
+    }
+
+    public static <T> ApiResponse<T> deleted() {
         return new ApiResponse<>(200, "삭제되었습니다.", null);
     }
 
@@ -36,7 +40,7 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> created(T data) {
         return new ApiResponse<>(201, "생성되었습니다.", data);
     }
-    
+
     public static <T> ApiResponse<T> error(ErrorCode code) {
         return new ApiResponse<>(code.getStatus().value(), code.getMessage(), null);
     }
