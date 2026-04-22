@@ -21,4 +21,9 @@ public abstract class BaseUserEntity extends BaseEntity {
 
     @Column(name = "deleted_by")
     private UUID deletedBy;
+
+    public void deleted(final UUID deletedBy) {
+        super.deleted();
+        this.deletedBy = deletedBy;
+    }
 }
