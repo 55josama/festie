@@ -1,1 +1,4 @@
 rootProject.name = 'festie'
+
+include("eureka-server")
+include("operation-service")
