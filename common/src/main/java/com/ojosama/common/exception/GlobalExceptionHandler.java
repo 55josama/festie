@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
         String errorMessage = e.getBindingResult().getAllErrors().stream()
                 .findFirst()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .orElse(ErrorCode.VALIDATION_ERROR.getMessage());
+                .orElse(CommonErrorCode.VALIDATION_ERROR.getMessage());
         log.error("Validation Exception: {}", errorMessage);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED) // 405 Method Not Allowed
                 .body(ApiResponse.error(HttpStatus.METHOD_NOT_ALLOWED.value(),
-                        ErrorCode.METHOD_NOT_ALLOWED.getMessage()));
+                        CommonErrorCode.METHOD_NOT_ALLOWED.getMessage()));
     }
 
     // 그 외 모두
@@ -55,6 +55,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                        ErrorCode.UNEXPECTED_ERROR.getMessage()));
+                        CommonErrorCode.UNEXPECTED_ERROR.getMessage()));
     }
 }
