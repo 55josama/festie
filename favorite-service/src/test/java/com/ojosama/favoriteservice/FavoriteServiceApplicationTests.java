@@ -1,10 +1,10 @@
-package com.firstlogistics.userservice.userservice;
+package com.ojosama.favoriteservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class UserServiceApplicationTests {
+class FavoriteServiceApplicationTests {
 
     @Test
     void contextLoads() {

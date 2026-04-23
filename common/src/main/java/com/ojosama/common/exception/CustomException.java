@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 @Slf4j
 @Getter
 public class CustomException extends RuntimeException {
-
     private final HttpStatus status;
     private final String message;
 
