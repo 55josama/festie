@@ -1,5 +1,6 @@
 package com.ojosama.favoriteservice.domain.model;
 
+import com.ojosama.common.audit.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,7 +15,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Entity
 @Table(name = "p_favorite")
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
-public class Favorite {
+public class Favorite extends BaseEntity {
 
     @Id
     @Column(name = "id", nullable = false)
