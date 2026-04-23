@@ -2,14 +2,10 @@ spring:
   application:
     name: chat-service
 
-server:
-  port: 0
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
-# 작동 확인용
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
-  instance:
-    instance-id:
-      ${spring.cloud.client.hostname}:${spring.application.instance_id:${random.value}}
+  cloud:
+    config:
+      username: ${CONFIG_USERNAME}
+      password: ${CONFIG_PASSWORD}
