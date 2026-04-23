@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### 환경변수
+.env
+
+# 보안 설정 파일 무시
+application-secret.yml
