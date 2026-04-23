@@ -124,6 +124,33 @@ services:
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
+  # ============ ai-service ============
+  ai-service:
+    build:
+      context: .
+      dockerfile: ai-service/Dockerfile
+    container_name: festie-ai
+    restart: unless-stopped
+    networks:
+      - festie-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_REDIS_HOST: festie-redis
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+
 volumes:
   postgres_data:
 
