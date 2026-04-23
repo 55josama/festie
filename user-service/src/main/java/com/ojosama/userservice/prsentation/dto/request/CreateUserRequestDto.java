@@ -1,5 +1,6 @@
 package com.ojosama.userservice.prsentation.dto.request;
 
+import com.ojosama.userservice.application.dto.command.CreateUserCommand;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -20,4 +21,7 @@ public record CreateUserRequestDto(
         @NotBlank(message = "휴대전화 번호는 필수입니다.")
         String phoneNumber
 ) {
+    public CreateUserCommand toCommand() {
+        return new CreateUserCommand(email, password, nickname, name, phoneNumber);
+    }
 }
