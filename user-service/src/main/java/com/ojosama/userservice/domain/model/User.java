@@ -1,4 +1,4 @@
-package org.festie.user.domain.model;
+package com.ojosama.userservice.domain.model;
 
 import com.ojosama.common.audit.BaseUserEntity;
 import jakarta.persistence.Column;
