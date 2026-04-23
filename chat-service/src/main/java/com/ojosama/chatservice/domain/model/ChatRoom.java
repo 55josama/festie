@@ -55,6 +55,13 @@ public class ChatRoom extends BaseEntity {
     @Builder
     private ChatRoom(UUID eventId, EventCategory category,
                      LocalDateTime scheduledOpenAt, LocalDateTime scheduledCloseAt) {
+        if (eventId == null || category == null || scheduledOpenAt == null || scheduledCloseAt == null) {
+            throw new IllegalArgumentException("필수 값이 누락되었습니다.");
+        }
+        if (!scheduledCloseAt.isAfter(scheduledOpenAt)) {
+            throw new IllegalArgumentException("종료 예정 시간은 오픈 예정 시간 이후여야 합니다.");
+        }
+
         this.eventId = eventId;
         this.category = category;
         this.status = ChatRoomStatus.SCHEDULED;

@@ -7,5 +7,5 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MessageJpaRepository extends JpaRepository<Message, UUID> {
-    Slice<Message> findByChatRoomIdOrderByCreatedAtDesc(UUID chatRoomId, Pageable pageable);
+    Slice<Message> findByChatRoomIdOrderByCreatedAtDescIdDesc(UUID chatRoomId, Pageable pageable);
 }
