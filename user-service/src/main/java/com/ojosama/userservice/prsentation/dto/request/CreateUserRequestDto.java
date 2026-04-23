@@ -1,4 +1,4 @@
-package org.festie.user.prsentation.dto.request;
+package com.ojosama.userservice.prsentation.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
