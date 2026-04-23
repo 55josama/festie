@@ -1,7 +1,6 @@
 package com.ojosama.favoriteservice.domain.model;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -26,7 +25,10 @@ public class Favorite {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Embedded
-    private Event event;
+    @Column(name = "event_id")
+    private UUID eventId;
+
+    @Column(name = "category_id")
+    private UUID categoryId;
 
 }
