@@ -10,7 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AiReportEvent {
     private UUID targetId;
+    private UUID targetUserId;
     private String targetType;
     private String category;
     private String description;
+    private String content;
 }
