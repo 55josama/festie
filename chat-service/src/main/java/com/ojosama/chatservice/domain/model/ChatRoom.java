@@ -1,7 +1,11 @@
 package com.ojosama.chatservice.domain.model;
 
+import com.ojosama.chatservice.domain.exception.ChatErrorCode;
+import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.exception.CommonErrorCode;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -37,11 +41,8 @@ public class ChatRoom extends BaseEntity {
     @Column(nullable = false)
     private ChatRoomStatus status;
 
-    @Column(nullable = false)
-    private LocalDateTime scheduledOpenAt;
-
-    @Column(nullable = false)
-    private LocalDateTime scheduledCloseAt;
+    @Embedded
+    private ChatRoomSchedule schedule;
 
     @Column
     private LocalDateTime openedAt;
@@ -53,53 +54,60 @@ public class ChatRoom extends BaseEntity {
     private UUID forceClosedBy;
 
     @Builder
-    private ChatRoom(UUID eventId, EventCategory category,
-                     LocalDateTime scheduledOpenAt, LocalDateTime scheduledCloseAt) {
-        if (eventId == null || category == null || scheduledOpenAt == null || scheduledCloseAt == null) {
-            throw new IllegalArgumentException("필수 값이 누락되었습니다.");
+    private ChatRoom(UUID eventId, EventCategory category, ChatRoomSchedule schedule) {
+        if (eventId == null || category == null || schedule == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        if (!scheduledCloseAt.isAfter(scheduledOpenAt)) {
-            throw new IllegalArgumentException("종료 예정 시간은 오픈 예정 시간 이후여야 합니다.");
-        }
-
         this.eventId = eventId;
         this.category = category;
         this.status = ChatRoomStatus.SCHEDULED;
-        this.scheduledOpenAt = scheduledOpenAt;
-        this.scheduledCloseAt = scheduledCloseAt;
+        this.schedule = schedule;
     }
 
-    // 도메인 행위 메서드
     public void open() {
-        validateStatus(ChatRoomStatus.SCHEDULED, "채팅방 오픈");
+        validateStatus(ChatRoomStatus.SCHEDULED);
         this.status = ChatRoomStatus.OPEN;
         this.openedAt = LocalDateTime.now();
     }
 
     public void close() {
-        validateStatus(ChatRoomStatus.OPEN, "채팅방 종료");
+        validateStatus(ChatRoomStatus.OPEN);
         this.status = ChatRoomStatus.CLOSED;
         this.closedAt = LocalDateTime.now();
     }
 
     public void forceClose(UUID adminId) {
+        if (adminId == null) {
+            throw new ChatException(ChatErrorCode.INVALID_ADMIN_ID);
+        }
         if (this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED) {
-            throw new IllegalStateException("이미 종료된 채팅방입니다.");
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_ENDED);
         }
         this.status = ChatRoomStatus.FORCE_CLOSED;
         this.closedAt = LocalDateTime.now();
         this.forceClosedBy = adminId;
     }
 
+    // 채팅방 상태 확인 메서드
+    private void validateStatus(ChatRoomStatus required) {
+        if (this.status != required) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_STATUS_INVALID);
+        }
+    }
+
     public boolean isOpen() {
         return this.status == ChatRoomStatus.OPEN;
     }
 
-    // 채팅방 상태 확인 메서드
-    private void validateStatus(ChatRoomStatus required, String action) {
-        if (this.status != required) {
-            throw new IllegalStateException(
-                    action + " 불가: 현재 상태 = " + this.status);
-        }
+    public boolean isClosed() {
+        return this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED;
+    }
+
+    public boolean shouldOpen(LocalDateTime now) {
+        return this.schedule.shouldOpen(now);
+    }
+
+    public boolean shouldClose(LocalDateTime now) {
+        return this.schedule.shouldClose(now);
     }
 }
