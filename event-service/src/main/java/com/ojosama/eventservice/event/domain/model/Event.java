@@ -48,10 +48,10 @@ public class Event extends BaseEntity {
     @Column(name = "place", length = 500, nullable = false)
     private String place;
 
-    @Column(name = "latitude", precision = 10, scale = 2, nullable = false)
+    @Column(name = "latitude", precision = 10, scale = 7, nullable = false)
     private BigDecimal latitude;
 
-    @Column(name = "longitude", precision = 10, scale = 2, nullable = false)
+    @Column(name = "longitude", precision = 10, scale = 7, nullable = false)
     private BigDecimal longitude;
 
     @Column(name = "min_fee", nullable = false)
