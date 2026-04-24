@@ -14,16 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateReportCommand {
-    @NotNull(message = "신고 대상 ID를 입력해주세요.")
     private UUID targetId;
-
-    @NotNull(message = "신고 대상 타입을 입력해주세요.")
     private ReportTargetType targetType;
-
-    @NotNull(message = "신고 카테고리를 선택해주세요.")
     private ReportCategory category;
-
-    @NotBlank(message = "신고 상세 사유를 입력해주세요.")
-    @Size(min = 5, max = 1000, message = "신고 사유는 5자 이상, 1000자 이하로 작성해주세요.")
     private String description;
 }
