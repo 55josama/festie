@@ -1,7 +1,9 @@
 package com.ojosama.userservice.application.service;
 
 import com.ojosama.userservice.application.dto.command.CreateUserCommand;
+import com.ojosama.userservice.application.dto.query.GetUserQuery;
 import com.ojosama.userservice.application.dto.result.CreateUserResult;
+import com.ojosama.userservice.application.dto.result.GetUserResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,25 @@ public class UserService {
                 savedUser.getNickname(),
                 savedUser.getName(),
                 savedUser.getRole()
+        );
+    }
+
+    //유저 조회 todo: 관리자 전용, 로그인 사용자 기준 본인만 조회 기능 추가
+    @Transactional(readOnly = true)
+    public GetUserResult getUser(GetUserQuery query) {
+        User user = userRepository.findById(query.userId())
+                //todo 임시 오류 처리
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다"));
+
+        return new GetUserResult(
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getName(),
+                user.getPhoneNumber(),
+                user.getRole(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
         );
     }
 }
