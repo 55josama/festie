@@ -41,7 +41,7 @@ public class Notification extends BaseEntity {
     @Embedded
     private TargetInfo targetInfo;
 
-    @Column(name = "read_at", nullable = false)
+    @Column(name = "read_at")
     private LocalDateTime readAt;
 
     @OneToMany(mappedBy = "notification")
