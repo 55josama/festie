@@ -1,0 +1,20 @@
+spring:
+  config:
+    import: ""   # test 실행시 config server 무시
+  datasource:
+    url: jdbc:h2:mem:testdb;INIT=CREATE SCHEMA IF NOT EXISTS chat_schema
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        default_schema: chat_schema
+        hbm2ddl.create_namespaces: true
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
