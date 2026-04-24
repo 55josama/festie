@@ -71,37 +71,62 @@ public class ChatRoom extends BaseEntity {
         this.scheduledCloseAt = scheduledCloseAt;
     }
 
-    // 도메인 행위 메서드
     public void open() {
-        validateStatus(ChatRoomStatus.SCHEDULED, "채팅방 오픈");
+        validateStatus(ChatRoomStatus.SCHEDULED);
         this.status = ChatRoomStatus.OPEN;
         this.openedAt = LocalDateTime.now();
     }
 
     public void close() {
-        validateStatus(ChatRoomStatus.OPEN, "채팅방 종료");
+        validateStatus(ChatRoomStatus.OPEN);
         this.status = ChatRoomStatus.CLOSED;
         this.closedAt = LocalDateTime.now();
     }
 
     public void forceClose(UUID adminId) {
+        if (adminId == null) {
+            throw new ChatException(ChatErrorCode.INVALID_ADMIN_ID);
+        }
         if (this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_INVALID_TIME);
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_ENDED);
         }
         this.status = ChatRoomStatus.FORCE_CLOSED;
         this.closedAt = LocalDateTime.now();
         this.forceClosedBy = adminId;
     }
 
+    // 채팅방 상태 확인 메서드
+    private void validateStatus(ChatRoomStatus required) {
+        if (this.status != required) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_STATUS_INVALID);
+        }
+    }
+    
+    // 서비스 레이어 호출용
     public boolean isOpen() {
         return this.status == ChatRoomStatus.OPEN;
     }
 
-    // 채팅방 상태 확인 메서드
-    private void validateStatus(ChatRoomStatus required, String action) {
-        if (this.status != required) {
-            throw new IllegalStateException(
-                    action + " 불가: 현재 상태 = " + this.status);
+    public boolean isClosed() {
+        return this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED;
+    }
+
+    // 채팅방 상태 확인 메서드 : 생성 확인
+    public void validateSchedulable() {
+        validateStatus(ChatRoomStatus.SCHEDULED);
+    }
+
+    // 채팅방 상태 확인 메서드 : 오픈 확인
+    public void validateOpen() {
+        validateStatus(ChatRoomStatus.OPEN);
+    }
+
+    // 채팅방 상태 확인 메서드 : 종료 확인
+    public void validateClosed() {
+        if (this.status != ChatRoomStatus.CLOSED && this.status != ChatRoomStatus.FORCE_CLOSED) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_STATUS_INVALID);
         }
     }
+
+
 }

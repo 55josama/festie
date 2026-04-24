@@ -15,6 +15,7 @@ public enum ChatErrorCode implements ErrorCode {
     CHAT_ROOM_ALREADY_ENDED(HttpStatus.NOT_FOUND, "이미 채팅방이 종료되었습니다."),
     CHAT_ROOM_INVALID_TIME(HttpStatus.BAD_REQUEST, "종료 시간은 오픈 시간보다 이후여야 합니다."),
     CHAT_ROOM_EVENT_ID_REQUIRED(HttpStatus.BAD_REQUEST, "eventId는 필수입니다."),
+    CHAT_ROOM_STATUS_INVALID(HttpStatus.BAD_REQUEST, "요청한 작업을 수행할 수 없는 상태입니다."),
 
     // Message
     MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "메시지를 찾을 수 없습니다."),
