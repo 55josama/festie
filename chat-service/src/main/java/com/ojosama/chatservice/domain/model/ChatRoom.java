@@ -1,6 +1,9 @@
 package com.ojosama.chatservice.domain.model;
 
+import com.ojosama.chatservice.domain.exception.ChatErrorCode;
+import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.exception.CommonErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,12 +59,11 @@ public class ChatRoom extends BaseEntity {
     private ChatRoom(UUID eventId, EventCategory category,
                      LocalDateTime scheduledOpenAt, LocalDateTime scheduledCloseAt) {
         if (eventId == null || category == null || scheduledOpenAt == null || scheduledCloseAt == null) {
-            throw new IllegalArgumentException("필수 값이 누락되었습니다.");
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
         if (!scheduledCloseAt.isAfter(scheduledOpenAt)) {
-            throw new IllegalArgumentException("종료 예정 시간은 오픈 예정 시간 이후여야 합니다.");
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_INVALID_TIME);
         }
-
         this.eventId = eventId;
         this.category = category;
         this.status = ChatRoomStatus.SCHEDULED;

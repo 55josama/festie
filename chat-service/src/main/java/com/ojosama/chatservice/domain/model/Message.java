@@ -1,5 +1,7 @@
 package com.ojosama.chatservice.domain.model;
 
+import com.ojosama.chatservice.domain.exception.ChatErrorCode;
+import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.common.audit.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -57,12 +59,21 @@ public class Message extends BaseEntity {
 
     // 도메인 행위 메서드
     public void blind(UUID adminId) {
+        if (this.status != MessageStatus.ACTIVE) {
+            throw new ChatException(ChatErrorCode.MESSAGE_NOT_ACTIVE);
+        }
+        if (adminId == null) {
+            throw new ChatException(ChatErrorCode.INVALID_ADMIN_ID);
+        }
         this.status = MessageStatus.BLINDED;
         this.blindedAt = LocalDateTime.now();
         this.blindedBy = adminId;
     }
 
     public void delete() {
+        if (this.status == MessageStatus.DELETED) {
+            throw new ChatException(ChatErrorCode.MESSAGE_NOT_EXIST);
+        }
         this.status = MessageStatus.DELETED;
     }
 
