@@ -8,5 +8,8 @@ public interface FavoriteRepository {
 
     Favorite save(Favorite favorite);
 
+    Optional<Favorite> findByEventIdAndUserId(UUID eventId, UUID userId);
+
     Optional<Favorite> findByIdAndUserIdAndDeletedAtIsNull(UUID favoriteId, UUID userId);
+
 }

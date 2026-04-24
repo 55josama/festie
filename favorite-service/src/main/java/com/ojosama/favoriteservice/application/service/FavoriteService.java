@@ -6,9 +6,9 @@ import com.ojosama.favoriteservice.application.dto.result.CreateFavoriteResult;
 import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
 import com.ojosama.favoriteservice.domain.model.Favorite;
 import com.ojosama.favoriteservice.domain.repository.FavoriteRepository;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,15 +21,21 @@ public class FavoriteService {
 
     public CreateFavoriteResult createFavorite(CreateFavoriteCommand command) {
 
+        Optional<Favorite> favoriteOpt = favoriteRepository.findByEventIdAndUserId(command.eventId(), command.userId());
         Favorite favorite;
-        try {
+        if (favoriteOpt.isPresent()) {
+            favorite = favoriteOpt.get();
+            if (favorite.getDeletedAt() == null) {
+                throw new CustomException(FavoriteErrorCode.EXIST_FAVORITE);
+            } else {
+                favorite.reset(favoriteOpt.get().getId());
+            }
+        } else {
             favorite = favoriteRepository.save(
                     Favorite.of(command.userId(), command.eventId(), command.categoryId()));
-        } catch (DataIntegrityViolationException e) {
-            throw new CustomException(FavoriteErrorCode.EXIST_FAVORITE);
         }
 
-        // 나중에 feign 수정 예정
+        // TODO : 나중에 feign 수정 예정
         String eventName = "콘서트";
         String userName = "사용자이름";
 

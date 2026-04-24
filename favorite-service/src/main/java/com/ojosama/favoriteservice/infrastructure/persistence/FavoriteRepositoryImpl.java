@@ -19,6 +19,11 @@ public class FavoriteRepositoryImpl implements FavoriteRepository {
     }
 
     @Override
+    public Optional<Favorite> findByEventIdAndUserId(UUID eventId, UUID userId) {
+        return jpaFavoriteRepository.findByEventIdAndUserId(eventId, userId);
+    }
+
+    @Override
     public Optional<Favorite> findByIdAndUserIdAndDeletedAtIsNull(UUID favoriteId, UUID userId) {
         return jpaFavoriteRepository.findByIdAndUserIdAndDeletedAtIsNull(favoriteId, userId);
     }
