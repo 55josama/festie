@@ -14,7 +14,8 @@ public record ChatRoomResult(
         LocalDateTime scheduledOpenAt,
         LocalDateTime scheduledCloseAt,
         LocalDateTime openedAt,
-        LocalDateTime closedAt
+        LocalDateTime closedAt,
+        UUID changedBy
 ) {
     // service -> application/dto
     public static ChatRoomResult from(ChatRoom chatRoom) {
@@ -26,7 +27,8 @@ public record ChatRoomResult(
                 chatRoom.getSchedule().getScheduledOpenAt(),
                 chatRoom.getSchedule().getScheduledCloseAt(),
                 chatRoom.getOpenedAt(),
-                chatRoom.getClosedAt()
+                chatRoom.getClosedAt(),
+                chatRoom.getChangedBy()
         );
     }
 }
