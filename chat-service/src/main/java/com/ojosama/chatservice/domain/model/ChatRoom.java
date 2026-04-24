@@ -5,6 +5,7 @@ import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.common.audit.BaseEntity;
 import com.ojosama.common.exception.CommonErrorCode;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -40,11 +41,8 @@ public class ChatRoom extends BaseEntity {
     @Column(nullable = false)
     private ChatRoomStatus status;
 
-    @Column(nullable = false)
-    private LocalDateTime scheduledOpenAt;
-
-    @Column(nullable = false)
-    private LocalDateTime scheduledCloseAt;
+    @Embedded
+    private ChatRoomSchedule schedule;
 
     @Column
     private LocalDateTime openedAt;
@@ -56,19 +54,14 @@ public class ChatRoom extends BaseEntity {
     private UUID forceClosedBy;
 
     @Builder
-    private ChatRoom(UUID eventId, EventCategory category,
-                     LocalDateTime scheduledOpenAt, LocalDateTime scheduledCloseAt) {
-        if (eventId == null || category == null || scheduledOpenAt == null || scheduledCloseAt == null) {
+    private ChatRoom(UUID eventId, EventCategory category, ChatRoomSchedule schedule) {
+        if (eventId == null || category == null || schedule == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
-        }
-        if (!scheduledCloseAt.isAfter(scheduledOpenAt)) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_INVALID_TIME);
         }
         this.eventId = eventId;
         this.category = category;
         this.status = ChatRoomStatus.SCHEDULED;
-        this.scheduledOpenAt = scheduledOpenAt;
-        this.scheduledCloseAt = scheduledCloseAt;
+        this.schedule = schedule;
     }
 
     public void open() {
@@ -102,7 +95,6 @@ public class ChatRoom extends BaseEntity {
         }
     }
 
-    // 서비스 레이어 호출용
     public boolean isOpen() {
         return this.status == ChatRoomStatus.OPEN;
     }
@@ -111,19 +103,11 @@ public class ChatRoom extends BaseEntity {
         return this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED;
     }
 
-    public void validateSchedulable() {
-        validateStatus(ChatRoomStatus.SCHEDULED);
+    public boolean shouldOpen(LocalDateTime now) {
+        return this.schedule.shouldOpen(now);
     }
 
-    public void validateOpen() {
-        validateStatus(ChatRoomStatus.OPEN);
+    public boolean shouldClose(LocalDateTime now) {
+        return this.schedule.shouldClose(now);
     }
-
-    public void validateClosed() {
-        if (!isClosed()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_STATUS_INVALID);
-        }
-    }
-
-
 }
