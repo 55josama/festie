@@ -1,4 +1,4 @@
 package com.ojosama.eventservice.event.domain.repository;
 
-public interface EventRequestRespository {
+public interface EventRequestRepository {
 }
