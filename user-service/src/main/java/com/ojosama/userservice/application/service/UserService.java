@@ -1,9 +1,11 @@
 package com.ojosama.userservice.application.service;
 
 import com.ojosama.userservice.application.dto.command.CreateUserCommand;
+import com.ojosama.userservice.application.dto.command.UpdateUserCommand;
 import com.ojosama.userservice.application.dto.query.GetUserQuery;
 import com.ojosama.userservice.application.dto.result.CreateUserResult;
 import com.ojosama.userservice.application.dto.result.GetUserResult;
+import com.ojosama.userservice.application.dto.result.UpdateUserResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,24 @@ public class UserService {
                 user.getRole(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
+        );
+    }
+
+    //유저 수정
+    @Transactional
+    public UpdateUserResult updateUser(UpdateUserCommand command) {
+        User savedUser = userRepository.findById(command.userId())
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+
+        savedUser.updateUser(command);
+
+        User updatedUser = userRepository.save(savedUser);
+
+        return new UpdateUserResult(
+                updatedUser.getId(),
+                updatedUser.getEmail(),
+                updatedUser.getNickname(),
+                updatedUser.getUpdatedAt()
         );
     }
 }
