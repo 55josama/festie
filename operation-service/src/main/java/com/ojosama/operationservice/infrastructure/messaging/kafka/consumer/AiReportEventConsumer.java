@@ -1,6 +1,7 @@
 package com.ojosama.operationservice.infrastructure.messaging.kafka.consumer;
 
 import com.ojosama.operationservice.application.dto.command.CreateReportCommand;
+import com.ojosama.operationservice.application.service.ReportService;
 import com.ojosama.operationservice.domain.event.payload.AiReportEvent;
 import com.ojosama.operationservice.domain.model.enums.ReportCategory;
 import com.ojosama.operationservice.domain.model.enums.ReportTargetType;
@@ -31,8 +32,8 @@ public class AiReportEventConsumer {
                 event.getContent()
         );
 
-        // 2. ReportService의 신고 로직 재사용
-        // (유저 API 요청과 똑같이 저장 -> 3회 누적 체크 -> 블라인드 이벤트 발생 로직을 탑니다)
+        // ReportService의 신고 로직 재사용
+        // 유저 API 요청과 똑같이 저장 -> 3회 누적 체크 -> 블라인드 이벤트 발생
         reportService.createReport(command, ReporterType.SYSTEM_AI);
     }
 }
