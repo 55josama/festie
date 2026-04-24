@@ -1,4 +1,4 @@
-package com.ojosama.eventservice.event.domain.model;
+package com.ojosama.eventservice.eventrequest.domain.model;
 
 public enum EventRequestStatus {
     PENDING,    // 대기

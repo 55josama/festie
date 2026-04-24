@@ -1,7 +1,8 @@
-package com.ojosama.eventservice.event.domain.model;
+package com.ojosama.eventservice.eventrequest.domain.model;
 
 
 import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.eventservice.event.domain.model.EventCategory;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

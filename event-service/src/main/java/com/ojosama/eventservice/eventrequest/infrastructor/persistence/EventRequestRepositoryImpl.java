@@ -1,6 +1,6 @@
-package com.ojosama.eventservice.event.infrastructor.persistence;
+package com.ojosama.eventservice.eventrequest.infrastructor.persistence;
 
-import com.ojosama.eventservice.event.domain.repository.EventRequestRepository;
+import com.ojosama.eventservice.eventrequest.domain.repository.EventRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

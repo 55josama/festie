@@ -1,6 +1,6 @@
-package com.ojosama.eventservice.event.infrastructor.persistence;
+package com.ojosama.eventservice.eventrequest.infrastructor.persistence;
 
-import com.ojosama.eventservice.event.domain.model.EventRequest;
+import com.ojosama.eventservice.eventrequest.domain.model.EventRequest;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
