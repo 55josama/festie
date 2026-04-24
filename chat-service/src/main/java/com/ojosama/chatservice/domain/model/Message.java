@@ -72,7 +72,7 @@ public class Message extends BaseEntity {
 
     public void delete() {
         if (this.status == MessageStatus.DELETED) {
-            throw new ChatException(ChatErrorCode.MESSAGE_NOT_EXIST);
+            throw new ChatException(ChatErrorCode.MESSAGE_NOT_FOUND);
         }
         this.status = MessageStatus.DELETED;
     }

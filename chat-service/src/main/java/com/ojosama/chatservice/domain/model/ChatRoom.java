@@ -86,7 +86,7 @@ public class ChatRoom extends BaseEntity {
 
     public void forceClose(UUID adminId) {
         if (this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED) {
-            throw new IllegalStateException("이미 종료된 채팅방입니다.");
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_INVALID_TIME);
         }
         this.status = ChatRoomStatus.FORCE_CLOSED;
         this.closedAt = LocalDateTime.now();
