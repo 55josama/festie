@@ -35,7 +35,7 @@ public class UserController {
     //유저 생성
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CreateUserResponseDto createUser(@RequestBody CreateUserRequestDto request) {
+    public CreateUserResponseDto createUser(@Valid @RequestBody CreateUserRequestDto request) {
         CreateUserResult result = userService.createUser(request.toCommand());
 
         return CreateUserResponseDto.from(result);
