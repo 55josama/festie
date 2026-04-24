@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -75,6 +76,7 @@ public class Event extends BaseEntity {
     @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<EventSchedule> schedules = new ArrayList<>();
 
+    @Builder
     public Event(String name, EventCategory category, EventTime eventTime,
                  EventLocation eventLocation, EventFee eventFee, EventTicketing eventTicketing,
                  EventStatus status, String description, String performer, String img,
