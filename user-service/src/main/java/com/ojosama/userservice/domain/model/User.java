@@ -1,7 +1,6 @@
 package com.ojosama.userservice.domain.model;
 
 import com.ojosama.common.audit.BaseUserEntity;
-import com.ojosama.userservice.application.dto.command.UpdateUserCommand;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -78,9 +77,9 @@ public class User extends BaseUserEntity {
                 .build();
     }
 
-    public void updateUser(UpdateUserCommand command) {
-        this.email = command.email();
-        this.nickname = command.nickname();
+    public void update(String email, String nickname) {
+        this.email = email;
+        this.nickname = nickname;
     }
 }
 

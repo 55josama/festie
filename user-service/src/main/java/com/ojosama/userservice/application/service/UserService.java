@@ -1,6 +1,7 @@
 package com.ojosama.userservice.application.service;
 
 import com.ojosama.userservice.application.dto.command.CreateUserCommand;
+import com.ojosama.userservice.application.dto.command.DeleteUserCommand;
 import com.ojosama.userservice.application.dto.command.UpdateUserCommand;
 import com.ojosama.userservice.application.dto.query.GetUserQuery;
 import com.ojosama.userservice.application.dto.result.CreateUserResult;
@@ -65,7 +66,7 @@ public class UserService {
         User savedUser = userRepository.findById(command.userId())
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
-        savedUser.updateUser(command);
+        savedUser.update(command.email(), command.nickname());
 
         User updatedUser = userRepository.save(savedUser);
 
@@ -75,5 +76,14 @@ public class UserService {
                 updatedUser.getNickname(),
                 updatedUser.getUpdatedAt()
         );
+    }
+
+    //유저 삭제
+    @Transactional
+    public void deleteUser(DeleteUserCommand command) {
+        User user = userRepository.findById(command.userId())
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        user.deleted(user.getId());
     }
 }
