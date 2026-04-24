@@ -12,10 +12,10 @@ jobs:
           - calendar-service
           - chat-service
           - community-service
-          - config-service
-          - eureka-service
+          - config-server
+          - eureka-server
           - event-service
-          - favorites-service
+          - favorite-service
           - notification-service
           - operation-service
           - user-service
@@ -31,6 +31,7 @@ jobs:
           filters: |
             changed:
               - '${{ matrix.services }}/**'
+              - 'common/**'
 
       - name: Set up JDK 21
         if: steps.filter.outputs.changed == 'true'
