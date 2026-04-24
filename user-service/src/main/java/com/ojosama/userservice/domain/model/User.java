@@ -55,7 +55,7 @@ public class User extends BaseUserEntity {
         this.role = role;
     }
 
-    public static User Create(
+    public static User create(
             String email,
             String password,
             String name,
