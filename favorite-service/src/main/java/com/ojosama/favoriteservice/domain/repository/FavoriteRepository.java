@@ -1,4 +1,14 @@
 package com.ojosama.favoriteservice.domain.repository;
 
+import com.ojosama.favoriteservice.domain.model.Favorite;
+import java.util.Optional;
+import java.util.UUID;
+
 public interface FavoriteRepository {
+
+    Favorite save(Favorite favorite);
+
+    Optional<Favorite> findByIdAndDeletedAtIsNull(UUID favoriteId);
+
+    Boolean existsByUserIdAndEventId(UUID userId, UUID eventId);
 }
