@@ -10,5 +10,4 @@ public interface FavoriteRepository {
 
     Optional<Favorite> findByIdAndDeletedAtIsNull(UUID favoriteId);
 
-    Boolean existsByUserIdAndEventId(UUID userId, UUID eventId);
 }

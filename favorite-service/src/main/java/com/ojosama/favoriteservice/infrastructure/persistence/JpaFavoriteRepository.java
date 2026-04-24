@@ -9,5 +9,4 @@ public interface JpaFavoriteRepository extends JpaRepository<Favorite, UUID> {
 
     Optional<Favorite> findByIdAndDeletedAtIsNull(UUID favoriteId);
 
-    Boolean existsByUserIdAndEventId(UUID userId, UUID eventId);
 }

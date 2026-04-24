@@ -23,9 +23,4 @@ public class FavoriteRepositoryImpl implements FavoriteRepository {
         return jpaFavoriteRepository.findByIdAndDeletedAtIsNull(favoriteId);
     }
 
-    @Override
-    public Boolean existsByUserIdAndEventId(UUID userId, UUID eventId) {
-        return jpaFavoriteRepository.existsByUserIdAndEventId(userId, eventId);
-    }
-
 }
