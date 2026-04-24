@@ -101,7 +101,7 @@ public class ChatRoom extends BaseEntity {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_STATUS_INVALID);
         }
     }
-    
+
     // 서비스 레이어 호출용
     public boolean isOpen() {
         return this.status == ChatRoomStatus.OPEN;
@@ -111,19 +111,16 @@ public class ChatRoom extends BaseEntity {
         return this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED;
     }
 
-    // 채팅방 상태 확인 메서드 : 생성 확인
     public void validateSchedulable() {
         validateStatus(ChatRoomStatus.SCHEDULED);
     }
 
-    // 채팅방 상태 확인 메서드 : 오픈 확인
     public void validateOpen() {
         validateStatus(ChatRoomStatus.OPEN);
     }
 
-    // 채팅방 상태 확인 메서드 : 종료 확인
     public void validateClosed() {
-        if (this.status != ChatRoomStatus.CLOSED && this.status != ChatRoomStatus.FORCE_CLOSED) {
+        if (!isClosed()) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_STATUS_INVALID);
         }
     }
