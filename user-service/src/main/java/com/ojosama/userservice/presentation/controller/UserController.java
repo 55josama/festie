@@ -61,8 +61,8 @@ public class UserController {
     }
 
     //유저 삭제
-    @DeleteMapping
-    private void deleteUser(
+    @DeleteMapping("/{userId}")
+    public void deleteUser(
             @PathVariable UUID userId
     ) {
         DeleteUserCommand command = new DeleteUserCommand(userId);
