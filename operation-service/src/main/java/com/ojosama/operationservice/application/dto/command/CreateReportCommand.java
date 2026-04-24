@@ -26,6 +26,7 @@ public class CreateReportCommand {
                 this.reporterId,
                 reporterType,
                 this.targetId,
+                this.targetUserId,
                 this.targetType,
                 this.category,
                 this.description,

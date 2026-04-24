@@ -38,6 +38,9 @@ public class Report extends BaseEntity {
     @Column(name = "target_id", nullable = false)
     private UUID targetId;
 
+    @Column(name = "target_user_id", nullable = false)
+    private UUID targetUserId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "target_type", nullable = false)
     private ReportTargetType targetType;
@@ -60,11 +63,12 @@ public class Report extends BaseEntity {
     private String operatorMemo;
 
     @Builder
-    public Report(UUID reporterId, ReporterType reporterType, UUID targetId, ReportTargetType targetType,
-                  ReportCategory category, String description, String content) {
+    public Report(UUID reporterId, ReporterType reporterType, UUID targetId, UUID targetUserId,
+                  ReportTargetType targetType, ReportCategory category, String description, String content) {
         this.reporterId = reporterId;
         this.reporterType = reporterType; // 생성 시 주입
         this.targetId = targetId;
+        this.targetUserId = targetUserId;
         this.targetType = targetType;
         this.category = category;
         this.description = description;
@@ -72,12 +76,13 @@ public class Report extends BaseEntity {
         this.status = ReportStatus.PENDING;
     }
 
-    public static Report of(UUID reporterId, ReporterType reporterType, UUID targetId, ReportTargetType targetType,
-                            ReportCategory category, String description, String content) {
+    public static Report of(UUID reporterId, ReporterType reporterType, UUID targetId, UUID targetUserId,
+                            ReportTargetType targetType, ReportCategory category, String description, String content) {
         return Report.builder()
                 .reporterId(reporterId)
                 .reporterType(reporterType)
                 .targetId(targetId)
+                .targetUserId(targetUserId)
                 .targetType(targetType)
                 .category(category)
                 .description(description)
