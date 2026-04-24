@@ -1,9 +1,9 @@
 package com.ojosama.chatservice.application.service;
 
-import com.ojosama.chatservice.application.dto.command.CloseChatRoomCommand;
+import com.ojosama.chatservice.application.dto.command.ChangeChatRoomStatusCommand;
 import com.ojosama.chatservice.application.dto.command.CreateChatRoomCommand;
-import com.ojosama.chatservice.application.dto.command.ForceCloseChatRoomCommand;
-import com.ojosama.chatservice.application.dto.command.OpenChatRoomCommand;
+import com.ojosama.chatservice.application.dto.query.FindChatRoomByEventIdQuery;
+import com.ojosama.chatservice.application.dto.query.FindChatRoomQuery;
 import com.ojosama.chatservice.application.dto.result.ChatRoomResult;
 import com.ojosama.chatservice.domain.exception.ChatErrorCode;
 import com.ojosama.chatservice.domain.exception.ChatException;
@@ -47,55 +47,37 @@ public class ChatRoomService {
     }
 
     @Transactional(readOnly = true)
-    public ChatRoomResult getChatRoom(UUID chatRoomId) {
-        if (chatRoomId == null) {
+    public ChatRoomResult getChatRoom(FindChatRoomQuery query) {
+        if (query == null || query.chatRoomId() == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        return ChatRoomResult.from(chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND)));
+        return ChatRoomResult.from(findChatRoomEntity(query.chatRoomId()));
     }
 
     @Transactional(readOnly = true)
-    public ChatRoomResult getChatRoomByEventId(UUID eventId) {
-        if (eventId == null) {
+    public ChatRoomResult getChatRoomByEventId(FindChatRoomByEventIdQuery query) {
+        if (query == null || query.eventId() == null) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_EVENT_ID_REQUIRED);
         }
-        return ChatRoomResult.from(chatRoomRepository.findByEventId(eventId)
+        return ChatRoomResult.from(chatRoomRepository.findByEventId(query.eventId())
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND)));
     }
 
-    public ChatRoomResult openChatRoom(OpenChatRoomCommand command) {
-        if (command == null || command.chatRoomId() == null) {
+    // 상태 분기 : 상태 변경 요청 API 가 들어왔을 때
+    public ChatRoomResult changeChatRoomStatus(ChangeChatRoomStatusCommand command) {
+        if (command == null || command.chatRoomId() == null || command.action() == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        ChatRoom chatRoom = getChatRoomEntity(command.chatRoomId());
-        validateCanOpen(chatRoom);
-        chatRoom.open();
-        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+
+        ChatRoom chatRoom = findChatRoomEntity(command.chatRoomId());
+
+        return switch (command.action()) {
+            case FORCE_OPEN -> forceOpenChatRoom(chatRoom, command.adminId());
+            case FORCE_CLOSE -> forceCloseChatRoom(chatRoom, command.adminId());
+        };
     }
 
-    public ChatRoomResult closeChatRoom(CloseChatRoomCommand command) {
-        if (command == null || command.chatRoomId() == null) {
-            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
-        }
-        ChatRoom chatRoom = getChatRoomEntity(command.chatRoomId());
-        validateCanClose(chatRoom);
-        chatRoom.close();
-        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
-    }
-
-    public ChatRoomResult forceCloseChatRoom(ForceCloseChatRoomCommand command) {
-        if (command == null || command.chatRoomId() == null || command.adminId() == null) {
-            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
-        }
-        ChatRoom chatRoom = getChatRoomEntity(command.chatRoomId());
-        if (chatRoom.isClosed()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_ENDED);
-        }
-        chatRoom.forceClose(command.adminId());
-        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
-    }
-
+    // 자동 오픈
     public int openScheduledChatRooms(LocalDateTime now) {
         List<ChatRoom> chatRooms = chatRoomRepository.findScheduledToOpen(now);
         for (ChatRoom chatRoom : chatRooms) {
@@ -104,6 +86,7 @@ public class ChatRoomService {
         return chatRooms.size();
     }
 
+    // 자동 종료
     public int closeScheduledChatRooms(LocalDateTime now) {
         List<ChatRoom> chatRooms = chatRoomRepository.findScheduledToClose(now);
         for (ChatRoom chatRoom : chatRooms) {
@@ -112,30 +95,33 @@ public class ChatRoomService {
         return chatRooms.size();
     }
 
-    // 내부 메서드
-    private ChatRoom getChatRoomEntity(UUID chatRoomId) {
+    private ChatRoomResult forceOpenChatRoom(ChatRoom chatRoom, UUID adminId) {
+        if (adminId == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        if (chatRoom.isOpen()) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_OPENED);
+        }
+        chatRoom.forceOpen(adminId);
+        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+    }
+
+    private ChatRoomResult forceCloseChatRoom(ChatRoom chatRoom, UUID adminId) {
+        if (adminId == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        if (chatRoom.isClosed()) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_ENDED);
+        }
+        chatRoom.forceClose(adminId);
+        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+    }
+
+    private ChatRoom findChatRoomEntity(UUID chatRoomId) {
         if (chatRoomId == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
-    }
-
-    private void validateCanOpen(ChatRoom chatRoom) {
-        if (chatRoom.isOpen()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_OPENED);
-        }
-        if (chatRoom.isClosed()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_ENDED);
-        }
-    }
-
-    private void validateCanClose(ChatRoom chatRoom) {
-        if (chatRoom.isClosed()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_ENDED);
-        }
-        if (!chatRoom.isOpen()) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_STATUS_INVALID);
-        }
     }
 }
