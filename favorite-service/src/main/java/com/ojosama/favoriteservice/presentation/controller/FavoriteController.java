@@ -40,7 +40,9 @@ public class FavoriteController {
 
     @DeleteMapping("/{favoriteId}")
     public ResponseEntity<ApiResponse<Void>> deleteFavorite(@PathVariable("favoriteId") UUID favoriteId) {
-        favoriteService.deleteFavorite(favoriteId);
+
+        UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804"); // 추후 수정
+        favoriteService.deleteFavorite(favoriteId, userId);
         return ResponseEntity.ok(ApiResponse.deleted());
     }
 }

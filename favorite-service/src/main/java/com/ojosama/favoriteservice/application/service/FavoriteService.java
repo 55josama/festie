@@ -36,8 +36,8 @@ public class FavoriteService {
         return CreateFavoriteResult.of(favorite, eventName, userName);
     }
 
-    public void deleteFavorite(UUID favoriteId) {
-        Favorite favorite = favoriteRepository.findByIdAndDeletedAtIsNull(favoriteId).orElseThrow(() ->
+    public void deleteFavorite(UUID favoriteId, UUID userId) {
+        Favorite favorite = favoriteRepository.findByIdAndUserIdAndDeletedAtIsNull(favoriteId, userId).orElseThrow(() ->
                 new CustomException(FavoriteErrorCode.FAVORITE_NOT_FOUND));
 
         favorite.delete(favoriteId);

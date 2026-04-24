@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface JpaFavoriteRepository extends JpaRepository<Favorite, UUID> {
 
-    Optional<Favorite> findByIdAndDeletedAtIsNull(UUID favoriteId);
+    Optional<Favorite> findByIdAndUserIdAndDeletedAtIsNull(UUID favoriteId, UUID userId);
 
 }
