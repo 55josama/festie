@@ -16,10 +16,10 @@ public interface ChatRoomJpaRepository extends JpaRepository<ChatRoom, UUID> {
 
     List<ChatRoom> findAllByStatus(ChatRoomStatus status);
 
-    @Query("SELECT c FROM ChatRoom c WHERE c.status = 'SCHEDULED' AND c.scheduledOpenAt <= :now")
+    @Query("SELECT c FROM ChatRoom c WHERE c.status = 'SCHEDULED' AND c.schedule.scheduledOpenAt <= :now")
     List<ChatRoom> findScheduledToOpen(@Param("now") LocalDateTime now);
 
-    @Query("SELECT c FROM ChatRoom c WHERE c.status = 'OPEN' AND c.scheduledCloseAt <= :now")
+    @Query("SELECT c FROM ChatRoom c WHERE c.status = 'OPEN' AND c.schedule.scheduledCloseAt <= :now")
     List<ChatRoom> findScheduledToClose(@Param("now") LocalDateTime now);
 
 }
