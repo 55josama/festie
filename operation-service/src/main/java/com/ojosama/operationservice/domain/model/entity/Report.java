@@ -46,8 +46,11 @@ public class Report extends BaseEntity {
     @Column(name = "category", nullable = false)
     private ReportCategory category;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
+    private String content;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -57,19 +60,20 @@ public class Report extends BaseEntity {
     private String operatorMemo;
 
     @Builder
-    public Report(UUID reporterId, ReporterType reporterType, UUID targetId,
-                  ReportTargetType targetType, ReportCategory category, String description) {
+    public Report(UUID reporterId, ReporterType reporterType, UUID targetId, ReportTargetType targetType,
+                  ReportCategory category, String description, String content) {
         this.reporterId = reporterId;
         this.reporterType = reporterType; // 생성 시 주입
         this.targetId = targetId;
         this.targetType = targetType;
         this.category = category;
         this.description = description;
+        this.content = content;
         this.status = ReportStatus.PENDING;
     }
 
-    public static Report of(UUID reporterId, ReporterType reporterType, UUID targetId,
-                            ReportTargetType targetType, ReportCategory category, String description) {
+    public static Report of(UUID reporterId, ReporterType reporterType, UUID targetId, ReportTargetType targetType,
+                            ReportCategory category, String description, String content) {
         return Report.builder()
                 .reporterId(reporterId)
                 .reporterType(reporterType)
@@ -77,6 +81,7 @@ public class Report extends BaseEntity {
                 .targetType(targetType)
                 .category(category)
                 .description(description)
+                .content(content)
                 .build();
     }
 
