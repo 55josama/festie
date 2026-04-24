@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -39,4 +40,35 @@ public class User extends BaseUserEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
+
+    @Builder
+    private User(
+            String email,
+            String password,
+            String name,
+            String nickname,
+            UserRole role) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.nickname = nickname;
+        this.role = role;
+    }
+
+    public static User Create(
+            String email,
+            String password,
+            String name,
+            String nickname
+    ) {
+        return User.builder()
+                .email(email)
+                .password(password)
+                .name(name)
+                .nickname(nickname)
+                .role(UserRole.USER)
+                .build();
+    }
 }
+
+
