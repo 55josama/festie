@@ -13,7 +13,9 @@ import lombok.NoArgsConstructor;
 public class CreateReportCommand {
     private UUID reporterId;
     private UUID targetId;
+    private UUID targetUserId;
     private ReportTargetType targetType;
     private ReportCategory category;
     private String description;
+    private String content;
 }

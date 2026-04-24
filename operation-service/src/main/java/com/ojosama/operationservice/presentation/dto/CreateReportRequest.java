@@ -18,6 +18,9 @@ public class CreateReportRequest {
     @NotNull(message = "신고 대상 ID를 입력해주세요.")
     private UUID targetId;
 
+    @NotNull(message = "신고 대상을 작성한 사용자 ID를 입력해주세요.")
+    private UUID targetUserId;
+
     @NotNull(message = "신고 대상 타입을 입력해주세요.")
     private ReportTargetType targetType;
 
@@ -28,7 +31,10 @@ public class CreateReportRequest {
     @Size(min = 5, max = 1000, message = "신고 사유는 5자 이상, 1000자 이하로 작성해주세요.")
     private String description;
 
+    @NotBlank(message = "신고 내용을 입력해주세요.")
+    private String content;
+
     public CreateReportCommand toCommand(UUID reporterId) {
-        return new CreateReportCommand(reporterId, targetId, targetType, category, description);
+        return new CreateReportCommand(reporterId, targetId, targetUserId, targetType, category, description, content);
     }
 }
