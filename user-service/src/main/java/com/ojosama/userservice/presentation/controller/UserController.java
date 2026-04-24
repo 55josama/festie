@@ -1,5 +1,6 @@
 package com.ojosama.userservice.presentation.controller;
 
+import com.ojosama.userservice.application.dto.command.DeleteUserCommand;
 import com.ojosama.userservice.application.dto.query.GetUserQuery;
 import com.ojosama.userservice.application.dto.result.CreateUserResult;
 import com.ojosama.userservice.application.dto.result.GetUserResult;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -56,5 +58,15 @@ public class UserController {
             @Valid @RequestBody UpdateUserRequestDto request) {
         UpdateUserResult result = userService.updateUser(request.toCommand(userId));
         return UpdateUserResponseDto.from(result);
+    }
+
+    //유저 삭제
+    @DeleteMapping
+    private void deleteUser(
+            @PathVariable UUID userId
+    ) {
+        DeleteUserCommand command = new DeleteUserCommand(userId);
+
+        userService.deleteUser(command);
     }
 }
