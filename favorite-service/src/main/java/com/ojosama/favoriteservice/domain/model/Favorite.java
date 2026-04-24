@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,7 +15,11 @@ import org.hibernate.annotations.UuidGenerator;
 
 @Getter
 @Entity
-@Table(name = "p_favorite")
+@Table(name = "p_favorite", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_favorite_user_event",
+                columnNames = {"user_id", "event_id"})
+})
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Favorite extends BaseEntity {
 
