@@ -1,4 +1,4 @@
-package com.ojosama.userservice.prsentation.dto.request;
+package com.ojosama.userservice.presentation.dto.request;
 
 import com.ojosama.userservice.application.dto.command.CreateUserCommand;
 import jakarta.validation.constraints.Email;
