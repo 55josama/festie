@@ -18,7 +18,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name = "p_favorite", uniqueConstraints = {
         @UniqueConstraint(
                 name = "uk_favorite_user_event",
-                columnNames = {"user_id", "event_id"})
+                columnNames = {"user_id", "event_id", "deleted_at"})
 })
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Favorite extends BaseEntity {
