@@ -21,7 +21,8 @@ public class UserService {
                 command.email(),
                 command.password(),
                 command.nickname(),
-                command.name()
+                command.name(),
+                command.phoneNumber()
         );
 
         User savedUser = userRepository.save(user);
