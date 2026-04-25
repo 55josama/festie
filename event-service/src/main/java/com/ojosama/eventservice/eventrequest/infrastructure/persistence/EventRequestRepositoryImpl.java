@@ -8,5 +8,6 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class EventRequestRepositoryImpl implements EventRequestRepository {
 
-    private final JpaEventRequestRespository jpaEventRequestRepository;
+    private final JpaEventRequestRepository jpaEventRequestRepository;
+
 }
