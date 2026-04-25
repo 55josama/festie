@@ -2,16 +2,22 @@ package com.ojosama.operationservice.application.service;
 
 import com.ojosama.operationservice.application.dto.command.CreateBlacklistCommand;
 import com.ojosama.operationservice.application.dto.command.UpdateBlacklistCommand;
+import com.ojosama.operationservice.application.dto.query.ListBlacklistQuery;
+import com.ojosama.operationservice.application.dto.query.ListReportQuery;
 import com.ojosama.operationservice.application.dto.result.BlacklistResult;
+import com.ojosama.operationservice.application.dto.result.ReportResult;
 import com.ojosama.operationservice.domain.event.BlacklistEventProducer;
 import com.ojosama.operationservice.domain.event.payload.UserBlacklistStatusEvent;
 import com.ojosama.operationservice.domain.exception.BlacklistErrorCode;
 import com.ojosama.operationservice.domain.exception.BlacklistException;
 import com.ojosama.operationservice.domain.model.entity.Blacklist;
+import com.ojosama.operationservice.domain.model.entity.Report;
 import com.ojosama.operationservice.domain.model.enums.BlacklistStatus;
 import com.ojosama.operationservice.domain.repository.BlacklistRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +50,12 @@ public class BlacklistService {
         }
     }
 
+    // 블랙리스트 목록 조회
+    public Page<BlacklistResult> getBlacklists(ListBlacklistQuery listBlacklistQuery, Pageable pageable) {
+        Page<Blacklist> blacklists = fetchBlacklistsByQuery(listBlacklistQuery, pageable);
+        return blacklists.map(BlacklistResult::from);
+    }
+
     // 블랙리스트 해제
     @Transactional
     public BlacklistResult changeStatus(UUID blacklistId, UpdateBlacklistCommand command) {
@@ -71,5 +83,12 @@ public class BlacklistService {
         blacklistEventProducer.publishStatusChangeEvent(
                 new UserBlacklistStatusEvent(userId, status.name())
         );
+    }
+
+    private Page<Blacklist> fetchBlacklistsByQuery(ListBlacklistQuery query, Pageable pageable) {
+        if (query.getBlacklistStatus() != null) {
+            return blacklistRepository.findAllByStatus(query.getBlacklistStatus(), pageable);
+        }
+        return blacklistRepository.findAll(pageable);
     }
 }

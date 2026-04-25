@@ -41,9 +41,9 @@ public class ReportService {
         return ReportInfoResult.from(savedReport);
     }
 
-    // 신고 조회
-    public Page<ReportResult> getReports(ListReportQuery query, Pageable pageable) {
-        Page<Report> reports = fetchReportsByQuery(query, pageable);
+    // 신고 목록 조회
+    public Page<ReportResult> getReports(ListReportQuery listReportQuery, Pageable pageable) {
+        Page<Report> reports = fetchReportsByQuery(listReportQuery, pageable);
         return reports.map(ReportResult::from);
     }
 
