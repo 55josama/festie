@@ -1,4 +1,4 @@
-package com.ojosama.eventservice.event.infrastructor.persistence;
+package com.ojosama.eventservice.event.infrastructure.persistence;
 
 import com.ojosama.eventservice.event.domain.model.EventSchedule;
 import java.util.UUID;
