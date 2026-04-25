@@ -23,14 +23,14 @@ public class CreateReportCommand {
 
     public Report toEntity(ReporterType reporterType) {
         return Report.of(
-                this.reporterId,
+                reporterId,
                 reporterType,
-                this.targetId,
-                this.targetUserId,
-                this.targetType,
-                this.category,
-                this.description,
-                this.content
+                targetId,
+                targetUserId,
+                targetType,
+                category,
+                description,
+                content
         );
     }
 }
