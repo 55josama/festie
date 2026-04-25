@@ -52,7 +52,8 @@ public class Blacklist extends BaseEntity {
                 .build();
     }
 
-    public void release() {
+    public void release(String reason) {
         this.status = BlacklistStatus.INACTIVE;
+        this.reason = reason;
     }
 }
