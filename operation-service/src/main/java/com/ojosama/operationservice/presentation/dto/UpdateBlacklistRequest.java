@@ -12,13 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateBlacklistRequest {
-    @NotNull(message = "블랙리스트 상태를 입력해주세요.")
-    private BlacklistStatus status;
-
-    @NotBlank(message = "블랙리스트 등록/해제 사유를 입력해주세요.")
+    @NotBlank(message = "블랙리스트 해제 사유를 입력해주세요.")
     private String reason;
 
     public UpdateBlacklistCommand toCommand() {
-        return new UpdateBlacklistCommand(status, reason);
+        return new UpdateBlacklistCommand(reason);
     }
 }

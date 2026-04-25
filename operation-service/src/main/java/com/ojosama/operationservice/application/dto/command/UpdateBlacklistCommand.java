@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateBlacklistCommand {
-    private BlacklistStatus status;
     private String reason;
 }
