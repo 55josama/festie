@@ -1,6 +1,6 @@
 package com.ojosama.eventservice.event.domain.model;
 
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.vo.EventFee;
@@ -33,7 +33,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "p_event")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Event extends BaseEntity {
+public class Event extends BaseUserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

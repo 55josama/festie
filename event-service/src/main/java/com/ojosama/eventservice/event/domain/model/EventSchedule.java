@@ -1,6 +1,6 @@
 package com.ojosama.eventservice.event.domain.model;
 
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.vo.ScheduleTime;
@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "p_event_schedule")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EventSchedule extends BaseEntity {
+public class EventSchedule extends BaseUserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
