@@ -14,8 +14,7 @@ public record ChatRoomResponse(
         LocalDateTime scheduledOpenAt,
         LocalDateTime scheduledCloseAt,
         LocalDateTime openedAt,
-        LocalDateTime closedAt,
-        UUID changedBy
+        LocalDateTime closedAt
 ) {
     public static ChatRoomResponse from(ChatRoomResult result) {
         return new ChatRoomResponse(
@@ -26,8 +25,7 @@ public record ChatRoomResponse(
                 result.scheduledOpenAt(),
                 result.scheduledCloseAt(),
                 result.openedAt(),
-                result.closedAt(),
-                result.changedBy()
+                result.closedAt()
         );
     }
 }

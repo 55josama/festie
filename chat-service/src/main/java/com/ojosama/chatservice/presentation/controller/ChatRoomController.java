@@ -42,6 +42,7 @@ public class ChatRoomController {
             //  - @PreAuthorize("hasAnyRole('ADMIN', 'FESTIVAL_MANAGER','CONCERT_MANAGER','FANMETTING_MANAGER','POPUPSTORE_MANAGER',)")
             //  - @AuthenticationPrincipal String adminId,
             //  - @RequestHeader(value = "X-User-Role", required = true) String role,
+            @RequestHeader("X-User-Id") UUID adminId,
             @Valid @RequestBody CreateChatRoomRequest request
     ) {
         ChatRoomResult result = chatRoomService.createChatRoom(
