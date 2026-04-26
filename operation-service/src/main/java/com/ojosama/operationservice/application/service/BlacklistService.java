@@ -55,8 +55,10 @@ public class BlacklistService {
 
     // 블랙리스트 해제
     @Transactional
-    public BlacklistResult changeStatus(UUID blacklistId, UpdateBlacklistCommand command) {
+    public BlacklistResult releaseBlacklist(UUID blacklistId, UpdateBlacklistCommand command) {
         Blacklist blacklist = findBlacklistById(blacklistId);
+
+        validateStatusIsActive(blacklist);
 
         blacklist.release(command.getReason());
 
@@ -87,5 +89,11 @@ public class BlacklistService {
             return blacklistRepository.findAllByStatus(query.getBlacklistStatus(), pageable);
         }
         return blacklistRepository.findAll(pageable);
+    }
+
+    private void validateStatusIsActive(Blacklist blacklist){
+        if (blacklist.getStatus() != BlacklistStatus.ACTIVE) {
+            throw new BlacklistException(BlacklistErrorCode.BLACKLIST_NOT_ACTIVE);
+        }
     }
 }
