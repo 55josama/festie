@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "chat-service")
 public interface ChatClient {
     @GetMapping("/internal/v1/chat/messages/{messageId}")
-    ChatMessageClientResponse getChatMessageDetail(@PathVariable("messageId") UUID userId);
+    ChatMessageClientResponse getChatMessageWriter(@PathVariable("messageId") UUID userId);
 }

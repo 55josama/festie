@@ -28,7 +28,7 @@ public record CreateReportRequest (
         @NotBlank(message = "신고 내용을 입력해주세요.")
         String content
 ){
-    public CreateReportCommand toCommand(UUID reporterId) {
+    public CreateReportCommand toCommand(UUID reporterId, UUID targetUserId) {
         return new CreateReportCommand(reporterId, targetId, targetUserId, targetType, category, description, content);
     }
 }
