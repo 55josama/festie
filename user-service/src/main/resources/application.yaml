@@ -1,3 +1,14 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: user-service
+
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+
+  cloud:
+    config:
+      username: ${CONFIG_USERNAME}
+      password: ${CONFIG_PASSWORD}
