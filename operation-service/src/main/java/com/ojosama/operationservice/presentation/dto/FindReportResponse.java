@@ -1,39 +1,32 @@
 package com.ojosama.operationservice.presentation.dto;
 
 import com.ojosama.operationservice.application.dto.result.ReportInfoResult;
-import com.ojosama.operationservice.application.dto.result.ReportResult;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
 
-@Builder
-@Getter
-@AllArgsConstructor
-public class FindReportResponse {
-    private UUID id;
-    private UUID reporterId;
-    private String reporterType;
-    private UUID targetId;
-    private String targetType;
-    private String category;
-    private String description;
-    private String content;
-    private String status;
-    private String operatorMemo;
-
+public record FindReportResponse (
+        UUID id,
+        UUID reporterId,
+        String reporterType,
+        UUID targetId,
+        String targetType,
+        String category,
+        String description,
+        String content,
+        String status,
+        String operatorMemo
+){
     public static FindReportResponse from(ReportInfoResult result) {
-        return FindReportResponse.builder()
-                .id(result.getId())
-                .reporterId(result.getReporterId())
-                .reporterType(result.getReporterType())
-                .targetId(result.getTargetId())
-                .targetType(result.getTargetType())
-                .category(result.getCategory())
-                .description(result.getDescription())
-                .content(result.getContent())
-                .status(result.getStatus())
-                .operatorMemo(result.getOperatorMemo())
-                .build();
+        return new FindReportResponse(
+                result.id(),
+                result.reporterId(),
+                result.reporterType(),
+                result.targetId(),
+                result.targetType(),
+                result.category(),
+                result.description(),
+                result.content(),
+                result.status(),
+                result.operatorMemo()
+        );
     }
 }

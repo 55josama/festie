@@ -7,33 +7,27 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-public class CreateReportRequest {
-    @NotNull(message = "신고 대상 ID를 입력해주세요.")
-    private UUID targetId;
+public record CreateReportRequest (
+        @NotNull(message = "신고 대상 ID를 입력해주세요.")
+        UUID targetId,
 
-    @NotNull(message = "신고 대상을 작성한 사용자 ID를 입력해주세요.")
-    private UUID targetUserId;
+        @NotNull(message = "신고 대상을 작성한 사용자 ID를 입력해주세요.")
+        UUID targetUserId,
 
-    @NotNull(message = "신고 대상 타입을 입력해주세요.")
-    private ReportTargetType targetType;
+        @NotNull(message = "신고 대상 타입을 입력해주세요.")
+        ReportTargetType targetType,
 
-    @NotNull(message = "신고 카테고리를 선택해주세요.")
-    private ReportCategory category;
+        @NotNull(message = "신고 카테고리를 선택해주세요.")
+        ReportCategory category,
 
-    @NotBlank(message = "신고 상세 사유를 입력해주세요.")
-    @Size(min = 5, max = 1000, message = "신고 사유는 5자 이상, 1000자 이하로 작성해주세요.")
-    private String description;
+        @NotBlank(message = "신고 상세 사유를 입력해주세요.")
+        @Size(min = 5, max = 1000, message = "신고 사유는 5자 이상, 1000자 이하로 작성해주세요.")
+        String description,
 
-    @NotBlank(message = "신고 내용을 입력해주세요.")
-    private String content;
-
+        @NotBlank(message = "신고 내용을 입력해주세요.")
+        String content
+){
     public CreateReportCommand toCommand(UUID reporterId) {
         return new CreateReportCommand(reporterId, targetId, targetUserId, targetType, category, description, content);
     }
