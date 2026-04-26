@@ -2,6 +2,7 @@ package com.ojosama.eventservice.event.presentation.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -16,6 +17,7 @@ import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventCategoryRequest;
 import com.ojosama.eventservice.event.presentation.dto.request.UpdateEventCategoryRequest;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +47,8 @@ class EventCategoryControllerTest {
     @MockitoBean
     private EventCategoryCommandService eventCategoryCommandService;
 
+    @MockitoBean
+    private EventCategoryQueryService eventCategoryQueryService;
 
     private ObjectMapper objectMapper;
 
@@ -120,6 +124,44 @@ class EventCategoryControllerTest {
                     .andExpect(jsonPath("$.data.name").value("FESTIVAL"));
         }
     }
+
+    // ──────────────────────────────────────────────
+    // GET /v1/event-categories
+    // ──────────────────────────────────────────────
+    @Nested
+    @DisplayName("카테고리 목록 조회 실패")
+    class GetCategoriesFailure {
+
+        @Test
+        @DisplayName("X-User-Id 헤더 없음 → 401")
+        void getCategories_missingUserId_returns401() throws Exception {
+            mockMvc.perform(get("/v1/event-categories")
+                            .header("X-User-Role", ADMIN_ROLE))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("카테고리 목록 조회 성공")
+    class GetCategoriesSuccess {
+
+        @Test
+        @DisplayName("ADMIN → 200, 목록 반환")
+        void getCategories_admin_returns200() throws Exception {
+            given(eventCategoryQueryService.getCategories())
+                    .willReturn(List.of(
+                            new EventCategoryResult(UUID.randomUUID(), "FESTIVAL"),
+                            new EventCategoryResult(UUID.randomUUID(), "CONCERT")));
+
+            mockMvc.perform(get("/v1/event-categories")
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", ADMIN_ROLE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(2))
+                    .andExpect(jsonPath("$.data[0].name").value("FESTIVAL"));
+        }
+    }
+
     // ──────────────────────────────────────────────
     // PATCH /v1/event-categories/{categoryId}
     // ──────────────────────────────────────────────
@@ -183,5 +225,4 @@ class EventCategoryControllerTest {
                     .andExpect(jsonPath("$.data.name").value("CONCERT"));
         }
     }
-
 }
