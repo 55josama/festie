@@ -2,6 +2,7 @@ package com.ojosama.eventservice.event.domain.model.vo;
 
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,7 +12,11 @@ import lombok.NoArgsConstructor;
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EventFee {
+
+    @Column(name = "min_fee", nullable = false)
     private Integer minFee;
+
+    @Column(name = "max_fee", nullable = false)
     private Integer maxFee;
 
     public EventFee(Integer minFee, Integer maxFee) {
@@ -33,6 +38,9 @@ public class EventFee {
     }
 
     public boolean isInFeeRange(Integer fee) {
+        if (fee == null) {
+            return false;
+        }
         return fee >= minFee && fee <= maxFee;
     }
 }

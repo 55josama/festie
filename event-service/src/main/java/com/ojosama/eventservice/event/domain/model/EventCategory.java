@@ -31,7 +31,7 @@ public class EventCategory extends BaseUserEntity {
     @Builder(access = AccessLevel.PRIVATE)
     private EventCategory(String name) {
         validateCategoryName(name);
-        this.name = name;
+        this.name = name.trim();
     }
 
     public static EventCategory create(String name) {
@@ -40,14 +40,14 @@ public class EventCategory extends BaseUserEntity {
 
     public void update(String name) {
         validateCategoryName(name);
-        this.name = name;
+        this.name = name.trim();
     }
 
     private void validateCategoryName(String name) {
         if (name == null || name.isBlank()) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_INVALID);
         }
-        if (name.length() > 50) {
+        if (name.trim().length() > 50) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_INVALID);
         }
     }

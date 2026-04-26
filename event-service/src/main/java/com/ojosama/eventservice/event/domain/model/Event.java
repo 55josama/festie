@@ -101,7 +101,6 @@ public class Event extends BaseUserEntity {
         this.performer = performer;
         this.img = img;
         this.officialLink = officialLink;
-        this.schedules = new ArrayList<>();
     }
 
     private void validateEventName(String name) {
@@ -131,10 +130,6 @@ public class Event extends BaseUserEntity {
 
     private void validateEventLocation(EventLocation eventLocation) {
         if (eventLocation == null) {
-            throw new EventException(EventErrorCode.EVENT_INVALID_LOCATION);
-        }
-        
-        if (eventLocation.getPlace() == null || eventLocation.getPlace().isBlank()) {
             throw new EventException(EventErrorCode.EVENT_INVALID_LOCATION);
         }
     }
@@ -180,7 +175,6 @@ public class Event extends BaseUserEntity {
     public void removeSchedule(EventSchedule schedule) {
         if (schedule != null) {
             this.schedules.remove(schedule);
-            // 필요 시 schedule.updateEvent(null); 로 관계 끊기
         }
     }
 }

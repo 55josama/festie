@@ -49,10 +49,6 @@ public class EventSchedule extends BaseUserEntity {
         this.event = event;
         this.name = name;
         this.scheduleTime = scheduleTime;
-
-        if (event != null && !event.getSchedules().contains(this)) {
-            event.getSchedules().add(this);
-        }
     }
 
     public void updateEvent(Event event) {
@@ -70,11 +66,9 @@ public class EventSchedule extends BaseUserEntity {
 
     private void validateScheduleName(String name) {
         if (name == null || name.isBlank()) {
-            // 이름이 누락된 경우
             throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_NAME);
         }
         if (name.length() > 100) {
-            // 길이가 초과된 경우
             throw new EventException(EventErrorCode.VALIDATION_ERROR);
         }
     }
