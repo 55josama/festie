@@ -1,8 +1,15 @@
 package com.ojosama.eventservice.event.domain.model;
 
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
+import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
+import com.ojosama.eventservice.event.domain.exception.EventException;
+import com.ojosama.eventservice.event.domain.model.vo.EventFee;
+import com.ojosama.eventservice.event.domain.model.vo.EventLocation;
+import com.ojosama.eventservice.event.domain.model.vo.EventTicketing;
+import com.ojosama.eventservice.event.domain.model.vo.EventTime;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -14,12 +21,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -27,7 +33,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "p_event")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Event extends BaseEntity {
+public class Event extends BaseUserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -39,38 +45,17 @@ public class Event extends BaseEntity {
     @JoinColumn(name = "category_id", nullable = false)
     private EventCategory category;
 
-    @Column(name = "start_at", nullable = false)
-    private LocalDateTime startAt;
+    @Embedded
+    private EventTime eventTime;
 
-    @Column(name = "end_at", nullable = false)
-    private LocalDateTime endAt;
+    @Embedded
+    private EventLocation eventLocation;
 
-    @Column(name = "place", length = 500, nullable = false)
-    private String place;
+    @Embedded
+    private EventFee eventFee;
 
-    @Column(name = "latitude", precision = 10, scale = 7, nullable = false)
-    private BigDecimal latitude;
-
-    @Column(name = "longitude", precision = 10, scale = 7, nullable = false)
-    private BigDecimal longitude;
-
-    @Column(name = "min_fee", nullable = false)
-    private Integer minFee;
-
-    @Column(name = "max_fee", nullable = false)
-    private Integer maxFee;
-
-    @Column(name = "has_ticketing", nullable = false)
-    private Boolean hasTicketing;
-
-    @Column(name = "ticketing_open_at")
-    private LocalDateTime ticketingOpenAt;
-
-    @Column(name = "ticketing_close_at")
-    private LocalDateTime ticketingCloseAt;
-
-    @Column(name = "ticketing_link", length = 500)
-    private String ticketingLink;
+    @Embedded
+    private EventTicketing eventTicketing;
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -90,4 +75,83 @@ public class Event extends BaseEntity {
 
     @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<EventSchedule> schedules = new ArrayList<>();
+
+    @Builder
+    public Event(String name, EventCategory category, EventTime eventTime,
+                 EventLocation eventLocation, EventFee eventFee, EventTicketing eventTicketing,
+                 EventStatus status, String description, String performer, String img,
+                 String officialLink) {
+        validateEventName(name);
+        validateCategory(category);
+        validateDescription(description);
+        validatePerformer(performer);
+        validateImg(img);
+        validateOfficialLink(officialLink);
+
+        this.name = name;
+        this.category = category;
+        this.eventTime = eventTime;
+        this.eventLocation = eventLocation;
+        this.eventFee = eventFee;
+        this.eventTicketing = eventTicketing;
+        this.status = status != null ? status : EventStatus.SCHEDULED;
+        this.description = description;
+        this.performer = performer;
+        this.img = img;
+        this.officialLink = officialLink;
+        this.schedules = new ArrayList<>();
+    }
+
+    private void validateEventName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_NAME);
+        }
+        if (name.length() > 100) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_NAME);
+        }
+    }
+
+    private void validateCategory(EventCategory category) {
+        if (category == null) {
+            throw new EventException(EventErrorCode.EVENT_CATEGORY_INVALID);
+        }
+    }
+
+    private void validateDescription(String description) {
+        if (description == null || description.isBlank()) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_DESCRIPTION);
+        }
+    }
+
+    private void validatePerformer(String performer) {
+        if (performer != null && performer.length() > 500) {
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
+        }
+    }
+
+    private void validateImg(String img) {
+        if (img == null || img.isBlank()) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_IMAGE);
+        }
+        if (img.length() > 500) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_IMAGE);
+        }
+    }
+
+    private void validateOfficialLink(String officialLink) {
+        if (officialLink != null && officialLink.length() > 500) {
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
+        }
+    }
+
+    public void addSchedule(EventSchedule schedule) {
+        if (schedule == null) {
+            throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_TIME);
+        }
+        this.schedules.add(schedule);
+    }
+
+    public void removeSchedule(EventSchedule schedule) {
+        this.schedules.remove(schedule);
+    }
 }
