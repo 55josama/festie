@@ -1,7 +1,11 @@
 package com.ojosama.eventservice.event.presentation.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -223,6 +227,50 @@ class EventCategoryControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.id").value(CATEGORY_ID.toString()))
                     .andExpect(jsonPath("$.data.name").value("CONCERT"));
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // DELETE /v1/event-categories/{categoryId}
+    // ──────────────────────────────────────────────
+    @Nested
+    @DisplayName("카테고리 삭제 실패")
+    class DeleteCategoryFailure {
+
+        @Test
+        @DisplayName("X-User-Id 헤더 없음 → 401")
+        void deleteCategory_missingUserId_returns401() throws Exception {
+            mockMvc.perform(delete("/v1/event-categories/{id}", CATEGORY_ID)
+                            .header("X-User-Role", ADMIN_ROLE))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 categoryId → 404")
+        void deleteCategory_notFound_returns404() throws Exception {
+            willThrow(new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND))
+                    .given(eventCategoryCommandService).deleteCategory(any(), eq(CATEGORY_ID));
+
+            mockMvc.perform(delete("/v1/event-categories/{id}", CATEGORY_ID)
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", ADMIN_ROLE))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("카테고리 삭제 성공")
+    class DeleteCategorySuccess {
+
+        @Test
+        @DisplayName("ADMIN + 유효 categoryId → 204")
+        void deleteCategory_success() throws Exception {
+            willDoNothing().given(eventCategoryCommandService).deleteCategory(any(), any());
+
+            mockMvc.perform(delete("/v1/event-categories/{id}", CATEGORY_ID)
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", ADMIN_ROLE))
+                    .andExpect(status().isNoContent());
         }
     }
 }

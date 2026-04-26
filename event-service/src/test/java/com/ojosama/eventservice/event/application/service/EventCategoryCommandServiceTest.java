@@ -45,18 +45,13 @@ class EventCategoryCommandServiceTest {
         @Test
         @DisplayName("성공: 중복되지 않은 이름이면 카테고리를 저장한다")
         void createCategory_success() {
-            // given
             CreateEventCategoryCommand command = new CreateEventCategoryCommand(USER_ID, CATEGORY_NAME);
             given(eventCategoryRepository.existsByName(CATEGORY_NAME)).willReturn(false);
-
-            // save 호출 시 전달받은 객체를 그대로 반환하도록 stubbing
             given(eventCategoryRepository.save(any(EventCategory.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
 
-            // when
             EventCategoryResult result = eventCategoryService.createCategory(command);
 
-            // then
             assertThat(result.name()).isEqualTo(CATEGORY_NAME);
             verify(eventCategoryRepository).existsByName(CATEGORY_NAME);
             verify(eventCategoryRepository).save(any(EventCategory.class));
@@ -65,11 +60,9 @@ class EventCategoryCommandServiceTest {
         @Test
         @DisplayName("실패: 이미 존재하는 이름이면 예외가 발생한다")
         void createCategory_duplicateName_throwsException() {
-            // given
             CreateEventCategoryCommand command = new CreateEventCategoryCommand(USER_ID, CATEGORY_NAME);
             given(eventCategoryRepository.existsByName(CATEGORY_NAME)).willReturn(true);
 
-            // when & then
             assertThatThrownBy(() -> eventCategoryService.createCategory(command))
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining(EventErrorCode.EVENT_CATEGORY_ALREADY_EXISTS.getMessage());
@@ -120,4 +113,30 @@ class EventCategoryCommandServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("카테고리 삭제")
+    class DeleteCategory {
+
+        @Test
+        @DisplayName("성공: 존재하는 카테고리를 소프트 삭제한다")
+        void deleteCategory_success() {
+            EventCategory category = EventCategory.create(CATEGORY_NAME);
+            given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+
+            eventCategoryService.deleteCategory(USER_ID, CATEGORY_ID);
+
+            assertThat(category.getDeletedAt()).isNotNull();
+            assertThat(category.getDeletedBy()).isEqualTo(USER_ID);
+        }
+
+        @Test
+        @DisplayName("실패: 존재하지 않는 categoryId → NOT_FOUND")
+        void deleteCategory_notFound_throwsException() {
+            given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> eventCategoryService.deleteCategory(USER_ID, CATEGORY_ID))
+                    .isInstanceOf(EventException.class)
+                    .hasMessageContaining(EventErrorCode.EVENT_CATEGORY_NOT_FOUND.getMessage());
+        }
+    }
 }

@@ -7,6 +7,7 @@ import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,5 +37,12 @@ public class EventCategoryCommandServiceImpl implements EventCategoryCommandServ
         }
         category.update(command.name());
         return EventCategoryResult.from(category);
+    }
+
+    @Override
+    public void deleteCategory(UUID userId, UUID categoryId) {
+        EventCategory category = eventCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND));
+        category.deleted(userId);
     }
 }

@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,5 +84,20 @@ public class EventCategoryController {
         UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(userId, categoryId, request.name());
         EventCategoryResult result = eventCategoryCommandService.updateCategory(command);
         return ResponseEntity.ok(ApiResponse.success(EventCategoryResponse.from(result)));
+    }
+
+    @DeleteMapping("/{categoryId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCategory(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @PathVariable UUID categoryId) {
+
+        if (userId == null || userRole == null) {
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
+        }
+
+        eventCategoryCommandService.deleteCategory(userId, categoryId);
+        return ResponseEntity.noContent().build();
     }
 }
