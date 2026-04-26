@@ -39,7 +39,7 @@ public class EventCategoryController {
         }
 
         CreateEventCategoryCommand command = new CreateEventCategoryCommand(userId, request.name());
-        EventCategoryResult result = eventCategoryService.createCategory(command);
+        EventCategoryResult result = eventCategoryCommandService.createCategory(command);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(EventCategoryResponse.from(result)));
     }
