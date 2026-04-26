@@ -5,4 +5,5 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface JpaEventCategoryRepository extends JpaRepository<EventCategory, UUID> {
+    boolean existsByName(String name);
 }

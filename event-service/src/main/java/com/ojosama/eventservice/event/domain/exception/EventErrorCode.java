@@ -20,6 +20,7 @@ public enum EventErrorCode implements ErrorCode {
     // EventCategory 관련 에러
     EVENT_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 카테고리를 찾을 수 없습니다."),
     EVENT_CATEGORY_INVALID(HttpStatus.BAD_REQUEST, "이벤트 카테고리가 유효하지 않습니다."),
+    EVENT_CATEGORY_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 카테고리 이름입니다."),
 
     // EventSchedule 관련 에러
     EVENT_SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 스케줄을 찾을 수 없습니다."),
