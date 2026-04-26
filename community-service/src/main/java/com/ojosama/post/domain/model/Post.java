@@ -17,7 +17,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -52,6 +51,12 @@ public class Post extends BaseEntity {
     private PostStatus status = PostStatus.UNVERIFIED;
 
     public void update(String title, Content content, Category category) {
+        if (title == null || title.isBlank()) {
+            throw new PostException(PostErrorCode.INVALID_POST_TITLE);
+        }
+        if (category == null) {
+            throw new PostException(PostErrorCode.INVALID_CATEGORY);
+        }
         this.title = title;
         this.content = content;
         this.category = category;
