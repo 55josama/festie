@@ -12,9 +12,6 @@ public record CreateReportRequest (
         @NotNull(message = "신고 대상 ID를 입력해주세요.")
         UUID targetId,
 
-        @NotNull(message = "신고 대상을 작성한 사용자 ID를 입력해주세요.")
-        UUID targetUserId,
-
         @NotNull(message = "신고 대상 타입을 입력해주세요.")
         ReportTargetType targetType,
 
