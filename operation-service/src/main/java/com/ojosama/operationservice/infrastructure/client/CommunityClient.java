@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(name = "community-service")
 public interface CommunityClient {
-    @GetMapping("/api/v1/posts/{postId}")
+    @GetMapping("/v1/posts/{postId}")
     PostClientResponse getPostDetail(@PathVariable("postId") UUID userId);
 
-    @GetMapping("/api/v1/comments/{commentId}")
+    @GetMapping("/v1/comments/{commentId}")
     PostClientResponse getCommentDetail(@PathVariable("commentId") UUID userId);
 }
