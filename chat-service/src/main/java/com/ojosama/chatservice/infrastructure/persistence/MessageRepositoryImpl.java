@@ -13,20 +13,20 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class MessageRepositoryImpl implements MessageRepository {
 
-    private final MessageJpaRepository MessageJpaRepository;
+    private final MessageJpaRepository messageJpaRepository;
 
     @Override
     public Message save(Message message) {
-        return MessageJpaRepository.save(message);
+        return messageJpaRepository.save(message);
     }
 
     @Override
     public Optional<Message> findById(UUID id) {
-        return MessageJpaRepository.findById(id);
+        return messageJpaRepository.findById(id);
     }
 
     @Override
     public Slice<Message> findByChatRoomId(UUID chatRoomId, Pageable pageable) {
-        return MessageJpaRepository.findByChatRoomIdOrderByCreatedAtDesc(chatRoomId, pageable);
+        return messageJpaRepository.findByChatRoomIdOrderByCreatedAtDescIdDesc(chatRoomId, pageable);
     }
 }

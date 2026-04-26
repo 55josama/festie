@@ -1,14 +1,12 @@
-server:
-  port: 5110
-
 spring:
   application:
     name: community-service
 
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
+      uri: ${CONFIG_SERVER_URL:http://localhost:8888}
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
