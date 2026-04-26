@@ -10,7 +10,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import java.nio.file.FileStore;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
