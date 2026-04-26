@@ -53,6 +53,10 @@ public class Blacklist extends BaseEntity {
     }
 
     public void release(String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("블랙리스트 해제 사유는 필수입니다.");
+        }
+
         this.status = BlacklistStatus.INACTIVE;
         this.reason = reason;
     }
