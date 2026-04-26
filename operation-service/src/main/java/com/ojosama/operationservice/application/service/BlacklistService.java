@@ -27,7 +27,7 @@ public class BlacklistService {
     // 블랙리스트 생성(관리자 수동 등록)
     @Transactional
     public BlacklistResult createBlacklist(CreateBlacklistCommand command) {
-        validateNotAlreadyActive(command.getUserId());
+        validateNotAlreadyActive(command.userId());
 
         Blacklist savedBlacklist = blacklistRepository.save(command.toEntity());
 
@@ -40,7 +40,7 @@ public class BlacklistService {
     // 블랙리스트 생성(Kafka 자동 등록)
     @Transactional
     public void createBlacklistSafe(CreateBlacklistCommand command) {
-        if (!blacklistRepository.existsByUserIdAndStatus(command.getUserId(), BlacklistStatus.ACTIVE)) {
+        if (!blacklistRepository.existsByUserIdAndStatus(command.userId(), BlacklistStatus.ACTIVE)) {
             Blacklist savedBlacklist = blacklistRepository.save(command.toEntity());
 
             publishStatusEvent(savedBlacklist.getUserId(), BlacklistStatus.ACTIVE);
@@ -60,7 +60,7 @@ public class BlacklistService {
 
         validateStatusIsActive(blacklist);
 
-        blacklist.release(command.getReason());
+        blacklist.release(command.reason());
 
         publishStatusEvent(blacklist.getUserId(), BlacklistStatus.INACTIVE);
 
@@ -85,8 +85,8 @@ public class BlacklistService {
     }
 
     private Page<Blacklist> fetchBlacklistsByQuery(ListBlacklistQuery query, Pageable pageable) {
-        if (query.getBlacklistStatus() != null) {
-            return blacklistRepository.findAllByStatus(query.getBlacklistStatus(), pageable);
+        if (query.blacklistStatus() != null) {
+            return blacklistRepository.findAllByStatus(query.blacklistStatus(), pageable);
         }
         return blacklistRepository.findAll(pageable);
     }

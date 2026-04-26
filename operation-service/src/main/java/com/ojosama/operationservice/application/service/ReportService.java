@@ -1,6 +1,5 @@
 package com.ojosama.operationservice.application.service;
 
-import com.ojosama.common.exception.CustomException;
 import com.ojosama.operationservice.application.dto.command.CreateReportCommand;
 import com.ojosama.operationservice.application.dto.command.UpdateReportCommand;
 import com.ojosama.operationservice.application.dto.query.ListReportQuery;
@@ -32,7 +31,7 @@ public class ReportService {
     // 신고 생성
     @Transactional
     public ReportInfoResult createReport(CreateReportCommand command, ReporterType reporterType){
-        validateDuplicateReport(command.getReporterId(), command.getTargetId());
+        validateDuplicateReport(command.reporterId(), command.targetId());
 
         Report savedReport = saveReportSafely(command.toEntity(reporterType));
 
@@ -59,10 +58,10 @@ public class ReportService {
         Report report = findReportById(reportId);
         validateReportIsPending(report);
 
-        if (command.getIsResolved()) {
-            report.resolve(command.getOperatorMemo());
+        if (command.isResolved()) {
+            report.resolve(command.operatorMemo());
         } else {
-            report.reject(command.getOperatorMemo());
+            report.reject(command.operatorMemo());
         }
 
         return ReportInfoResult.from(report);
@@ -95,29 +94,29 @@ public class ReportService {
     }
 
     private Page<Report> fetchReportsByQuery(ListReportQuery query, Pageable pageable) {
-        if (query.getStatus() != null) {
-            return reportRepository.findAllByStatus(query.getStatus(), pageable);
+        if (query.status() != null) {
+            return reportRepository.findAllByStatus(query.status(), pageable);
         }
         return reportRepository.findAll(pageable);
     }
 
     private void checkAndProcessAutomaticBlind(CreateReportCommand command) {
-        long reportCount = reportRepository.countByTargetId(command.getTargetId());
+        long reportCount = reportRepository.countByTargetId(command.targetId());
 
         // 신고가 3회 이상이면 신고 대상 블라인드 처리 및 유저 블랙리스트 조건 검사
         if (reportCount == 3) {
             publishBlindEvent(command);
-            checkBlacklistCondition(command.getTargetUserId());
+            checkBlacklistCondition(command.targetUserId());
         }
     }
 
     private void publishBlindEvent(CreateReportCommand command) {
-        String role = command.getTargetType().name().equals("CHAT")
+        String role = command.targetType().name().equals("CHAT")
                 ? "CATEGORY_MANAGER" : "COMMUNITY_MANAGER";
 
         reportEventProducer.publishTargetBlindEvent(new TargetBlindEvent(
-                command.getTargetId(),
-                command.getTargetType().name(),
+                command.targetId(),
+                command.targetType().name(),
                 role,
                 "누적 신고 3회로 인해 자동 블라인드 처리되었습니다."
         ));
