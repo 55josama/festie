@@ -39,7 +39,7 @@ public class BlacklistController {
         var result = blacklistService.createBlacklist(request.toCommand());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(FindBlacklistResponse.from(result)));
+                .body(ApiResponse.created(FindBlacklistResponse.from(result)));
     }
 
     // 블랙리스트 목록 조회

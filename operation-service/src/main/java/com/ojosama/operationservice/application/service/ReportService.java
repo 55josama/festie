@@ -41,13 +41,13 @@ public class ReportService {
     }
 
     // 신고 목록 조회
-    public Page<ReportResult> getReports(ListReportQuery listReportQuery, Pageable pageable) {
+    public Page<ReportResult> getReportList(ListReportQuery listReportQuery, Pageable pageable) {
         Page<Report> reports = fetchReportsByQuery(listReportQuery, pageable);
         return reports.map(ReportResult::from);
     }
 
     // 신고 상세 조회
-    public ReportInfoResult getReportDetail(UUID reportId) {
+    public ReportInfoResult getReportInfo(UUID reportId) {
         Report report = findReportById(reportId);
         return ReportInfoResult.from(report);
     }

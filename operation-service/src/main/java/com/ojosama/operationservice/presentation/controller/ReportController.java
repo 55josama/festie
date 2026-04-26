@@ -53,27 +53,27 @@ public class ReportController {
         var result = reportService.createReport(command, ReporterType.USER);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(FindReportResponse.from(result)));
+                .body(ApiResponse.created(FindReportResponse.from(result)));
     }
 
     // 신고 목록 조회
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ListReportResponse>>> getReports(
+    public ResponseEntity<ApiResponse<Page<ListReportResponse>>> getReportList(
             @ModelAttribute ListReportQuery query,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<ListReportResponse> response = reportService.getReports(query, pageable)
-                .map(ListReportResponse::from); // List 응답 전용 DTO로 매핑
+        Page<ListReportResponse> response = reportService.getReportList(query, pageable)
+                .map(ListReportResponse::from);
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 신고 상세 조회
     @GetMapping("/{reportId}")
-    public ResponseEntity<ApiResponse<FindReportResponse>> getReportDetail(
+    public ResponseEntity<ApiResponse<FindReportResponse>> getReportInfo(
             @PathVariable UUID reportId) {
 
-        var result = reportService.getReportDetail(reportId);
+        var result = reportService.getReportInfo(reportId);
         return ResponseEntity.ok(ApiResponse.success(FindReportResponse.from(result)));
     }
 
