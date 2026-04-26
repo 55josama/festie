@@ -8,16 +8,18 @@ import com.ojosama.operationservice.domain.model.enums.ReportTargetType;
 import com.ojosama.operationservice.domain.model.enums.ReporterType;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AiReportEventConsumer {
     private final ReportService reportService;
 
     // AI 시스템이 보낸 신고임을 식별하기 위한 고정 UUID
-    private static final UUID AI_SYSTEM_ID = UUID.fromString("0");
+    private static final UUID AI_SYSTEM_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     @KafkaListener(topics = "${spring.kafka.topic.ai-report}", groupId = "operation-service-group")
     public void consumeAiReport(AiReportEvent event) {
