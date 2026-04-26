@@ -55,7 +55,7 @@ public class BlacklistController {
     }
 
     // 블랙리스트 해제
-    @PatchMapping("/{blacklistId}/release")
+    @PatchMapping("/{blacklistId}/status")
     public ResponseEntity<ApiResponse<FindBlacklistResponse>> releaseBlacklist(
             @PathVariable UUID blacklistId,
             @Valid @RequestBody UpdateBlacklistRequest request) {
