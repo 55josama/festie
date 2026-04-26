@@ -17,6 +17,7 @@ import com.ojosama.operationservice.domain.model.enums.ReporterType;
 import com.ojosama.operationservice.domain.repository.ReportRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,8 +34,7 @@ public class ReportService {
     public ReportInfoResult createReport(CreateReportCommand command, ReporterType reporterType){
         validateDuplicateReport(command.getReporterId(), command.getTargetId());
 
-        Report report = command.toEntity(reporterType);
-        Report savedReport = reportRepository.save(report);
+        Report savedReport = saveReportSafely(command.toEntity(reporterType));
 
         checkAndProcessAutomaticBlind(command);
 
@@ -72,6 +72,14 @@ public class ReportService {
     private void validateDuplicateReport(UUID reporterId, UUID targetId) {
         if (reportRepository.existsByReporterIdAndTargetId(reporterId, targetId)) {
             throw new ReportException(ReportErrorCode.REPORT_EXISTS);
+        }
+    }
+
+    private Report saveReportSafely(Report report) {
+        try {
+            return reportRepository.save(report);
+        } catch (DataIntegrityViolationException e) {
+            throw new ReportException(ReportErrorCode.DUPLICATE_REPORT);
         }
     }
 
