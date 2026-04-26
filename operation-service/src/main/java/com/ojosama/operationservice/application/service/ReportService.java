@@ -105,7 +105,7 @@ public class ReportService {
         long reportCount = reportRepository.countByTargetId(command.getTargetId());
 
         // 신고가 3회 이상이면 신고 대상 블라인드 처리 및 유저 블랙리스트 조건 검사
-        if (reportCount >= 3) {
+        if (reportCount == 3) {
             publishBlindEvent(command);
             checkBlacklistCondition(command.getTargetUserId());
         }
@@ -126,7 +126,7 @@ public class ReportService {
     private void checkBlacklistCondition(UUID targetUserId) {
         long userBlindCount = reportRepository.countBlindedTargetByUserId(targetUserId);
 
-        if (userBlindCount >= 5) {
+        if (userBlindCount == 5) {
             reportEventProducer.publishBlacklistRegisterEvent(new BlacklistRegisterEvent(
                     targetUserId,
                     (int) userBlindCount,
