@@ -19,7 +19,7 @@ public class EventCategoryQueryServiceImpl implements EventCategoryQueryService 
 
     @Override
     public List<EventCategoryResult> getCategories() {
-        return eventCategoryRepository.findAll().stream()
+        return eventCategoryRepository.findByDeletedAtIsNull().stream()
                 .map(EventCategoryResult::from)
                 .toList();
     }

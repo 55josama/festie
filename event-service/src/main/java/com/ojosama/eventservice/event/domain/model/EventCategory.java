@@ -28,7 +28,7 @@ public class EventCategory extends BaseUserEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "name", length = NAME_MAX_LENGTH, nullable = false, unique = true)
+    @Column(name = "name", length = NAME_MAX_LENGTH, nullable = false)
     private String name;
 
     @Builder(access = AccessLevel.PRIVATE)

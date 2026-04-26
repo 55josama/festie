@@ -22,10 +22,10 @@ public class EventLocation {
     @Column(length = 500, nullable = false)
     private String place;
 
-    @Column(precision = 10, scale = 2, nullable = false)
+    @Column(precision = 10, scale = 6, nullable = false)
     private BigDecimal latitude;
 
-    @Column(precision = 10, scale = 2, nullable = false)
+    @Column(precision = 10, scale = 6, nullable = false)
     private BigDecimal longitude;
 
     public EventLocation(String place, BigDecimal latitude, BigDecimal longitude) {

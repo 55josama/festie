@@ -122,8 +122,10 @@ public class Event extends BaseUserEntity {
         if (eventTime == null) {
             throw new EventException(EventErrorCode.EVENT_INVALID_TIME);
         }
-
-        if (eventTime.getStartAt().isAfter(eventTime.getEndAt())) {
+        if (eventTime.getStartAt() == null || eventTime.getEndAt() == null) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_TIME);
+        }
+        if (!eventTime.getStartAt().isBefore(eventTime.getEndAt())) {
             throw new EventException(EventErrorCode.EVENT_INVALID_TIME);
         }
     }

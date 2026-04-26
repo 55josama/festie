@@ -16,6 +16,11 @@ public class EventCategoryRepositoryImpl implements EventCategoryRepository {
 
     @Override
     public List<EventCategory> findAll() {
+        return jpaEventCategoryRepository.findAll();
+    }
+
+    @Override
+    public List<EventCategory> findByDeletedAtIsNull() {
         return jpaEventCategoryRepository.findAllByDeletedAtIsNull();
     }
 

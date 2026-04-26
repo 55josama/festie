@@ -52,12 +52,14 @@ public class EventSchedule extends BaseUserEntity {
     }
 
     public void updateEvent(Event event) {
+        if (event == null) {
+            throw new EventException(EventErrorCode.EVENT_NOT_FOUND);
+        }
         Event previousEvent = this.event;
         this.event = event;
         if (previousEvent != null && previousEvent != event) {
             previousEvent.getSchedules().remove(this);
         }
-
         if (!event.getSchedules().contains(this)) {
             event.getSchedules().add(this);
         }

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public interface EventCategoryRepository {
     List<EventCategory> findAll();
+    List<EventCategory> findByDeletedAtIsNull();
     Optional<EventCategory> findById(UUID id);
     EventCategory save(EventCategory category);
     boolean existsByName(String name);

@@ -64,15 +64,14 @@ public class EventTicketing {
         if (!hasTicketing) {
             return false;
         }
-        LocalDateTime now = LocalDateTime.now();
-        return now.isAfter(ticketingOpenAt) && now.isBefore(ticketingCloseAt);
+        return isTicketingOpenAt(LocalDateTime.now());
     }
 
     public boolean isTicketingClosed() {
         if (!hasTicketing) {
             return true;
         }
-        return LocalDateTime.now().isAfter(ticketingCloseAt);
+        return !LocalDateTime.now().isBefore(ticketingCloseAt);
     }
 
     public void validateTicketingAvailable() {
@@ -80,11 +79,15 @@ public class EventTicketing {
             throw new EventException(EventErrorCode.TICKETING_NOT_AVAILABLE);
         }
         LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(ticketingOpenAt)) {
-            throw new EventException(EventErrorCode.TICKETING_NOT_OPENED);
-        }
-        if (!now.isBefore(ticketingCloseAt)) {
+        if (!isTicketingOpenAt(now)) {
+            if (now.isBefore(ticketingOpenAt)) {
+                throw new EventException(EventErrorCode.TICKETING_NOT_OPENED);
+            }
             throw new EventException(EventErrorCode.TICKETING_CLOSED);
         }
+    }
+
+    private boolean isTicketingOpenAt(LocalDateTime now) {
+        return !now.isBefore(ticketingOpenAt) && now.isBefore(ticketingCloseAt);
     }
 }
