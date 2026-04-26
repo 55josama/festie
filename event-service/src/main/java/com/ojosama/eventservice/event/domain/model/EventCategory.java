@@ -38,6 +38,11 @@ public class EventCategory extends BaseUserEntity {
         return EventCategory.builder().name(name).build();
     }
 
+    public void update(String name) {
+        validateCategoryName(name);
+        this.name = name;
+    }
+
     private void validateCategoryName(String name) {
         if (name == null || name.isBlank()) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_INVALID);
