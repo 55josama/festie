@@ -58,7 +58,6 @@ public class GlobalExceptionHandler {
                         CommonErrorCode.INVALID_REQUEST.getMessage()));
     }
 
-    // 잘못 된 요청 오류 처리
     // 잘못된 요청 오류 처리
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodNotSupportedException(
