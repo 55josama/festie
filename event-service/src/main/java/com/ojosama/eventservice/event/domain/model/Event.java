@@ -165,10 +165,11 @@ public class Event extends BaseUserEntity {
         if (schedule == null) {
             throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_TIME);
         }
-        this.schedules.add(schedule);
-
         if (schedule.getEvent() != this) {
             schedule.updateEvent(this);
+        }
+        if (!this.schedules.contains(schedule)) {
+            this.schedules.add(schedule);
         }
     }
 

@@ -16,12 +16,12 @@ public class EventCategoryRepositoryImpl implements EventCategoryRepository {
 
     @Override
     public List<EventCategory> findAll() {
-        return jpaEventCategoryRepository.findAll();
+        return jpaEventCategoryRepository.findAllByDeletedAtIsNull();
     }
 
     @Override
     public Optional<EventCategory> findById(UUID id) {
-        return jpaEventCategoryRepository.findById(id);
+        return jpaEventCategoryRepository.findByIdAndDeletedAtIsNull(id);
     }
 
     @Override
@@ -31,6 +31,11 @@ public class EventCategoryRepositoryImpl implements EventCategoryRepository {
 
     @Override
     public boolean existsByName(String name) {
-        return jpaEventCategoryRepository.existsByName(name);
+        return jpaEventCategoryRepository.existsByNameAndDeletedAtIsNull(name);
+    }
+
+    @Override
+    public boolean existsByNameExcludingId(String name, UUID id) {
+        return jpaEventCategoryRepository.existsByNameAndIdNotAndDeletedAtIsNull(name, id);
     }
 }

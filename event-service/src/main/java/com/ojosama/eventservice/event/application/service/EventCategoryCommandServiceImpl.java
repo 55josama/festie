@@ -9,6 +9,7 @@ import com.ojosama.eventservice.event.domain.model.EventCategory;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,21 +22,28 @@ public class EventCategoryCommandServiceImpl implements EventCategoryCommandServ
 
     @Override
     public EventCategoryResult createCategory(CreateEventCategoryCommand command) {
-        if (eventCategoryRepository.existsByName(command.name())) {
+        String normalizedName = EventCategory.normalizeName(command.name());
+        if (eventCategoryRepository.existsByName(normalizedName)) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_ALREADY_EXISTS);
         }
-        EventCategory category = EventCategory.create(command.name());
-        return EventCategoryResult.from(eventCategoryRepository.save(category));
+        EventCategory category = EventCategory.create(normalizedName);
+        try {
+            return EventCategoryResult.from(eventCategoryRepository.save(category));
+        } catch (DataIntegrityViolationException e) {
+            throw new EventException(EventErrorCode.EVENT_CATEGORY_ALREADY_EXISTS);
+        }
     }
 
     @Override
     public EventCategoryResult updateCategory(UpdateEventCategoryCommand command) {
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND));
-        if (eventCategoryRepository.existsByName(command.name())) {
+        String normalizedName = EventCategory.normalizeName(command.name());
+        if (!category.getName().equals(normalizedName)
+                && eventCategoryRepository.existsByNameExcludingId(normalizedName, command.categoryId())) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_ALREADY_EXISTS);
         }
-        category.update(command.name());
+        category.update(normalizedName);
         return EventCategoryResult.from(category);
     }
 

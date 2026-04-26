@@ -79,10 +79,11 @@ public class EventTicketing {
         if (!hasTicketing) {
             throw new EventException(EventErrorCode.TICKETING_NOT_AVAILABLE);
         }
-        if (!isTicketingOpen()) {
-            if (LocalDateTime.now().isBefore(ticketingOpenAt)) {
-                throw new EventException(EventErrorCode.TICKETING_NOT_OPENED);
-            }
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(ticketingOpenAt)) {
+            throw new EventException(EventErrorCode.TICKETING_NOT_OPENED);
+        }
+        if (!now.isBefore(ticketingCloseAt)) {
             throw new EventException(EventErrorCode.TICKETING_CLOSED);
         }
     }

@@ -42,9 +42,7 @@ public class EventCategoryController {
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+        validateGatewayHeaders(userId, userRole);
 
         List<EventCategoryResponse> response = eventCategoryQueryService.getCategories().stream()
                 .map(EventCategoryResponse::from)
@@ -59,9 +57,7 @@ public class EventCategoryController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @Valid @RequestBody CreateEventCategoryRequest request) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+        validateGatewayHeaders(userId, userRole);
 
         CreateEventCategoryCommand command = new CreateEventCategoryCommand(userId, request.name());
         EventCategoryResult result = eventCategoryCommandService.createCategory(command);
@@ -77,9 +73,7 @@ public class EventCategoryController {
             @PathVariable UUID categoryId,
             @Valid @RequestBody UpdateEventCategoryRequest request) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+        validateGatewayHeaders(userId, userRole);
 
         UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(userId, categoryId, request.name());
         EventCategoryResult result = eventCategoryCommandService.updateCategory(command);
@@ -93,11 +87,15 @@ public class EventCategoryController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @PathVariable UUID categoryId) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+        validateGatewayHeaders(userId, userRole);
 
         eventCategoryCommandService.deleteCategory(userId, categoryId);
         return ResponseEntity.noContent().build();
+    }
+
+    private void validateGatewayHeaders(UUID userId, String userRole) {
+        if (userId == null || userRole == null || userRole.isBlank()) {
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
+        }
     }
 }

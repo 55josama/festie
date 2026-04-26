@@ -22,17 +22,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EventCategory extends BaseUserEntity {
 
+    private static final int NAME_MAX_LENGTH = 50;
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "name", length = 50, nullable = false, unique = true)
+    @Column(name = "name", length = NAME_MAX_LENGTH, nullable = false, unique = true)
     private String name;
 
     @Builder(access = AccessLevel.PRIVATE)
     private EventCategory(String name) {
-        validateCategoryName(name);
-        this.name = name.trim();
+        this.name = normalizeName(name);
     }
 
     public static EventCategory create(String name) {
@@ -40,15 +41,19 @@ public class EventCategory extends BaseUserEntity {
     }
 
     public void update(String name) {
-        validateCategoryName(name);
-        this.name = name.trim();
+        this.name = normalizeName(name);
     }
 
-    private void validateCategoryName(String name) {
+    public static String normalizeName(String name) {
+        validateCategoryName(name);
+        return name.trim();
+    }
+
+    private static void validateCategoryName(String name) {
         if (name == null || name.isBlank()) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_INVALID);
         }
-        if (name.trim().length() > 50) {
+        if (name.trim().length() > NAME_MAX_LENGTH) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_INVALID);
         }
     }
