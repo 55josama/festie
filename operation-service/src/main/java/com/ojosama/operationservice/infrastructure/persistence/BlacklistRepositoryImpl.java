@@ -1,8 +1,13 @@
 package com.ojosama.operationservice.infrastructure.persistence;
 
 import com.ojosama.operationservice.domain.model.entity.Blacklist;
+import com.ojosama.operationservice.domain.model.enums.BlacklistStatus;
 import com.ojosama.operationservice.domain.repository.BlacklistRepository;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -13,5 +18,25 @@ public class BlacklistRepositoryImpl implements BlacklistRepository {
     @Override
     public Blacklist save(Blacklist blacklist){
         return blacklistJpaRepository.save(blacklist);
+    }
+
+    @Override
+    public Optional<Blacklist> findById(UUID id){
+        return blacklistJpaRepository.findById(id);
+    }
+
+    @Override
+    public Page<Blacklist> findAll(Pageable pageable){
+        return blacklistJpaRepository.findAll(pageable);
+    }
+
+    @Override
+    public Page<Blacklist> findAllByStatus(BlacklistStatus status, Pageable pageable){
+        return blacklistJpaRepository.findAllByStatus(status, pageable);
+    }
+
+    @Override
+    public boolean existsByUserIdAndStatus(UUID userId, BlacklistStatus status){
+        return blacklistJpaRepository.existsByUserIdAndStatus(userId, status);
     }
 }

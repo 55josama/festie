@@ -1,8 +1,13 @@
 package com.ojosama.favoriteservice.infrastructure.persistence;
 
 import com.ojosama.favoriteservice.domain.model.Favorite;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface JpaFavoriteRepository extends JpaRepository<Favorite, UUID> {
+
+    Optional<Favorite> findByIdAndUserIdAndDeletedAtIsNull(UUID favoriteId, UUID userId);
+
+    Optional<Favorite> findByEventIdAndUserId(UUID eventId, UUID userId);
 }

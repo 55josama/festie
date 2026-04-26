@@ -39,12 +39,13 @@ public class Content {
     //            → 400 Bad Request 응답
     private void validate(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("본문은 비어있을 수 없습니다.");
+            throw new CommunityException(CommunityErrorCode.INVALID_CONTENT);
         }
-        if (value.length() < 2) {
-            throw new IllegalArgumentException("본문은 최소 2자 이상이어야 합니다.");
+        if (value.trim().length() < 2) {
+            throw new CommunityException(CommunityErrorCode.CONTENT_TOO_SHORT);
         }
-        String normalized = value.replace("[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]", "");
+        }
+        String normalized = value.replaceAll("[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]", "");
 
         for (String bannedWord : BannedWordConstants.BANNED_WORDS){
             if(value.contains(bannedWord) || normalized.contains(bannedWord)){
