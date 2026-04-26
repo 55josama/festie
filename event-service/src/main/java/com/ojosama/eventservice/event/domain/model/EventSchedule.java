@@ -57,7 +57,6 @@ public class EventSchedule extends BaseUserEntity {
 
     public void updateEvent(Event event) {
         this.event = event;
-        // 무한 루프 방지를 위해 체크 후 추가
         if (!event.getSchedules().contains(this)) {
             event.getSchedules().add(this);
         }
@@ -70,8 +69,13 @@ public class EventSchedule extends BaseUserEntity {
     }
 
     private void validateScheduleName(String name) {
-        if (name == null || name.isBlank() || name.length() > 100) {
-            throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_TIME);
+        if (name == null || name.isBlank()) {
+            // 이름이 누락된 경우
+            throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_NAME);
+        }
+        if (name.length() > 100) {
+            // 길이가 초과된 경우
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
         }
     }
 
