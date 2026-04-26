@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), errorMessage));
     }
 
-    // 잘못 된 요청 오류 처리
+    // 잘못된 요청 오류 처리
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodNotSupportedException(
             HttpRequestMethodNotSupportedException e) {
@@ -47,6 +47,17 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(HttpStatus.METHOD_NOT_ALLOWED.value(),
                         CommonErrorCode.METHOD_NOT_ALLOWED.getMessage()));
     }
+
+    // 잘못된 인자 값 오류 처리
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.warn("IllegalArgument Exception: {}", e.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
+    }
+
 
     // 그 외 모두
     @ExceptionHandler(Exception.class)
