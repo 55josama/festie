@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class EventCategoryServiceImpl implements EventCategoryService {
+public class EventCategoryCommandServiceImpl implements EventCategoryCommandService {
 
     private final EventCategoryRepository eventCategoryRepository;
 
@@ -22,12 +22,7 @@ public class EventCategoryServiceImpl implements EventCategoryService {
         if (eventCategoryRepository.existsByName(command.name())) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_ALREADY_EXISTS);
         }
-
-        EventCategory category = EventCategory.builder()
-            .name(command.name())
-            .build();
-
-        EventCategory saved = eventCategoryRepository.save(category);
-        return EventCategoryResult.from(saved);
+        EventCategory category = EventCategory.create(command.name());
+        return EventCategoryResult.from(eventCategoryRepository.save(category));
     }
 }
