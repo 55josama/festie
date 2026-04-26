@@ -13,6 +13,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -21,7 +22,12 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "p_report", schema = "operation_service")
+@Table(name = "p_report", schema = "operation_service", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_reporter_target",
+                columnNames = {"reporter_id", "target_id"}
+        )
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Report extends BaseEntity {
     @Id
@@ -38,6 +44,9 @@ public class Report extends BaseEntity {
     @Column(name = "target_id", nullable = false)
     private UUID targetId;
 
+    @Column(name = "target_user_id", nullable = false)
+    private UUID targetUserId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "target_type", nullable = false)
     private ReportTargetType targetType;
@@ -46,8 +55,11 @@ public class Report extends BaseEntity {
     @Column(name = "category", nullable = false)
     private ReportCategory category;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
+    private String content;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -57,26 +69,30 @@ public class Report extends BaseEntity {
     private String operatorMemo;
 
     @Builder
-    public Report(UUID reporterId, ReporterType reporterType, UUID targetId,
-                  ReportTargetType targetType, ReportCategory category, String description) {
+    public Report(UUID reporterId, ReporterType reporterType, UUID targetId, UUID targetUserId,
+                  ReportTargetType targetType, ReportCategory category, String description, String content) {
         this.reporterId = reporterId;
         this.reporterType = reporterType; // 생성 시 주입
         this.targetId = targetId;
+        this.targetUserId = targetUserId;
         this.targetType = targetType;
         this.category = category;
         this.description = description;
+        this.content = content;
         this.status = ReportStatus.PENDING;
     }
 
-    public static Report of(UUID reporterId, ReporterType reporterType, UUID targetId,
-                            ReportTargetType targetType, ReportCategory category, String description) {
+    public static Report of(UUID reporterId, ReporterType reporterType, UUID targetId, UUID targetUserId,
+                            ReportTargetType targetType, ReportCategory category, String description, String content) {
         return Report.builder()
                 .reporterId(reporterId)
                 .reporterType(reporterType)
                 .targetId(targetId)
+                .targetUserId(targetUserId)
                 .targetType(targetType)
                 .category(category)
                 .description(description)
+                .content(content)
                 .build();
     }
 
