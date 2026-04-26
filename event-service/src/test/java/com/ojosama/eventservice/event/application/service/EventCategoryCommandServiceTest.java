@@ -8,11 +8,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCategoryCommand;
+import com.ojosama.eventservice.event.application.dto.command.UpdateEventCategoryCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventCategoryResult;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,6 +35,7 @@ class EventCategoryCommandServiceTest {
     private EventCategoryCommandServiceImpl eventCategoryService;
 
     private static final UUID USER_ID = UUID.randomUUID();
+    private static final UUID CATEGORY_ID = UUID.randomUUID();
     private static final String CATEGORY_NAME = "FESTIVAL";
 
     @Nested
@@ -74,4 +77,47 @@ class EventCategoryCommandServiceTest {
             verify(eventCategoryRepository, never()).save(any(EventCategory.class));
         }
     }
+
+    @Nested
+    @DisplayName("카테고리 수정")
+    class UpdateCategory {
+
+        @Test
+        @DisplayName("성공: 존재하는 카테고리의 이름을 수정한다")
+        void updateCategory_success() {
+            EventCategory category = EventCategory.create(CATEGORY_NAME);
+            UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(USER_ID, CATEGORY_ID, "CONCERT");
+            given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+            given(eventCategoryRepository.existsByName("CONCERT")).willReturn(false);
+
+            EventCategoryResult result = eventCategoryService.updateCategory(command);
+
+            assertThat(result.name()).isEqualTo("CONCERT");
+        }
+
+        @Test
+        @DisplayName("실패: 존재하지 않는 categoryId → NOT_FOUND")
+        void updateCategory_notFound_throwsException() {
+            UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(USER_ID, CATEGORY_ID, "CONCERT");
+            given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> eventCategoryService.updateCategory(command))
+                    .isInstanceOf(EventException.class)
+                    .hasMessageContaining(EventErrorCode.EVENT_CATEGORY_NOT_FOUND.getMessage());
+        }
+
+        @Test
+        @DisplayName("실패: 중복된 이름으로 수정 시 예외가 발생한다")
+        void updateCategory_duplicateName_throwsException() {
+            EventCategory category = EventCategory.create(CATEGORY_NAME);
+            UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(USER_ID, CATEGORY_ID, "CONCERT");
+            given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+            given(eventCategoryRepository.existsByName("CONCERT")).willReturn(true);
+
+            assertThatThrownBy(() -> eventCategoryService.updateCategory(command))
+                    .isInstanceOf(EventException.class)
+                    .hasMessageContaining(EventErrorCode.EVENT_CATEGORY_ALREADY_EXISTS.getMessage());
+        }
+    }
+
 }
