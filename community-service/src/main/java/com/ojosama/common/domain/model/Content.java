@@ -41,8 +41,9 @@ public class Content {
         if (value == null || value.trim().isEmpty()) {
             throw new CommunityException(CommunityErrorCode.INVALID_CONTENT);
         }
-        if (value.length() < 2) {
+        if (value.trim().length() < 2) {
             throw new CommunityException(CommunityErrorCode.CONTENT_TOO_SHORT);
+        }
         }
         String normalized = value.replaceAll("[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]", "");
 
