@@ -23,19 +23,26 @@ public class AiReportEventConsumer {
 
     @KafkaListener(topics = "${spring.kafka.topic.ai-report}", groupId = "operation-service-group")
     public void consumeAiReport(AiReportEvent event) {
+        try {
+            // 대소문자 무시 및 공백 제거 후 파싱, 실패 시 예외 발생
+            ReportTargetType targetType = ReportTargetType.valueOf(event.getTargetType().toUpperCase().trim());
+            ReportCategory category = ReportCategory.valueOf(event.getCategory().toUpperCase().trim());
 
-        CreateReportCommand command = new CreateReportCommand(
-                AI_SYSTEM_ID,
-                event.getTargetId(),
-                event.getTargetUserId(),
-                ReportTargetType.valueOf(event.getTargetType()),
-                ReportCategory.valueOf(event.getCategory()),
-                event.getDescription(),
-                event.getContent()
-        );
+            CreateReportCommand command = new CreateReportCommand(
+                    AI_SYSTEM_ID,
+                    event.getTargetId(),
+                    event.getTargetUserId(),
+                    targetType,
+                    category,
+                    event.getDescription(),
+                    event.getContent()
+            );
 
-        // ReportService의 신고 로직 재사용
-        // 유저 API 요청과 똑같이 저장 -> 3회 누적 체크 -> 블라인드 이벤트 발생
-        reportService.createReport(command, ReporterType.SYSTEM_AI);
+            reportService.createReport(command, ReporterType.SYSTEM_AI);
+
+        } catch (IllegalArgumentException e) {
+            // Enum 파싱 실패 시 무한 루프 방지를 위해 에러 로그만 남기고 이벤트 스킵
+            log.error("AI 신고 이벤트 데이터 형식이 올바르지 않습니다. 처리를 스킵합니다. event: {}", event, e);
+        }
     }
 }
