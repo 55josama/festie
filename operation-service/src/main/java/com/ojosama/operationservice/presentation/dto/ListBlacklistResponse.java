@@ -12,12 +12,12 @@ public record ListBlacklistResponse (
         BlacklistStatus status,
         RegistrationType registrationType
 ){
-    public static ListBlacklistResponse from(Blacklist blacklist) {
+    public static ListBlacklistResponse from(BlacklistResult blacklistResult) {
         return new ListBlacklistResponse(
-                blacklist.getId(),
-                blacklist.getUserId(),
-                blacklist.getStatus(),
-                blacklist.getRegistrationType()
+                blacklistResult.id(),
+                blacklistResult.userId(),
+                blacklistResult.status(),
+                blacklistResult.registrationType()
         );
     }
 }
