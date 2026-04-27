@@ -2,7 +2,8 @@ package com.ojosama.eventservice.event.presentation.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.mockito.BDDMockito.willThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,7 +15,6 @@ import com.ojosama.common.exception.GlobalExceptionHandler;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.dto.result.ScheduleResult;
 import com.ojosama.eventservice.event.application.service.EventCommandService;
-import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventRequest;
@@ -32,18 +32,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(EventController.class)
+@WebMvcTest(EventCommandController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
-@DisplayName("EventController 테스트")
-class EventControllerTest {
+@DisplayName("EventCommandController 테스트")
+class EventCommandControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -53,9 +51,6 @@ class EventControllerTest {
 
     @MockitoBean
     private EventCommandService eventCommandService;
-
-    @MockitoBean
-    private EventQueryService eventQueryService;
 
     private ObjectMapper objectMapper;
 
@@ -72,7 +67,7 @@ class EventControllerTest {
         objectMapper.registerModule(new JavaTimeModule());
     }
 
-    private CreateEventRequest buildValidRequest(boolean hasTicketing) {
+    private CreateEventRequest buildValidCreateRequest(boolean hasTicketing) {
         List<CreateScheduleRequest> schedules = List.of(
                 new CreateScheduleRequest("메인 공연", FUTURE_START, FUTURE_START.plusHours(2))
         );
@@ -168,7 +163,7 @@ class EventControllerTest {
             mockMvc.perform(post("/v1/events")
                             .header("X-User-Role", MANAGER_ROLE)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(buildValidRequest(false))))
+                            .content(objectMapper.writeValueAsString(buildValidCreateRequest(false))))
                     .andExpect(status().isUnauthorized());
         }
 
@@ -178,7 +173,7 @@ class EventControllerTest {
             mockMvc.perform(post("/v1/events")
                             .header("X-User-Id", USER_ID.toString())
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(buildValidRequest(false))))
+                            .content(objectMapper.writeValueAsString(buildValidCreateRequest(false))))
                     .andExpect(status().isUnauthorized());
         }
 
@@ -234,7 +229,7 @@ class EventControllerTest {
                             .header("X-User-Id", USER_ID.toString())
                             .header("X-User-Role", MANAGER_ROLE)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(buildValidRequest(false))))
+                            .content(objectMapper.writeValueAsString(buildValidCreateRequest(false))))
                     .andExpect(status().isBadRequest());
         }
 
@@ -248,7 +243,7 @@ class EventControllerTest {
                             .header("X-User-Id", USER_ID.toString())
                             .header("X-User-Role", MANAGER_ROLE)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(buildValidRequest(false))))
+                            .content(objectMapper.writeValueAsString(buildValidCreateRequest(false))))
                     .andExpect(status().isBadRequest());
         }
 
@@ -262,119 +257,48 @@ class EventControllerTest {
                             .header("X-User-Id", USER_ID.toString())
                             .header("X-User-Role", MANAGER_ROLE)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(buildValidRequest(false))))
+                            .content(objectMapper.writeValueAsString(buildValidCreateRequest(false))))
                     .andExpect(status().isNotFound());
         }
     }
 
     @Nested
-    @DisplayName("행사 목록 조회 실패")
-    class GetEventsFailure {
+    @DisplayName("행사 등록 성공")
+    class CreateEventSuccess {
 
         @Test
-        @DisplayName("X-User-Id 미전달 → 401")
-        void getEvents_missingUserId_returns401() throws Exception {
-            mockMvc.perform(get("/v1/events")
-                            .header("X-User-Role", MANAGER_ROLE))
-                    .andExpect(status().isUnauthorized());
-        }
+        @DisplayName("티켓팅 없는 행사 등록 → 201, SCHEDULED")
+        void createEvent_withoutTicketing_returns201() throws Exception {
+            given(eventCommandService.createEvent(any())).willReturn(buildEventResult(false));
 
-        @Test
-        @DisplayName("X-User-Role 미전달 → 401")
-        void getEvents_missingUserRole_returns401() throws Exception {
-            mockMvc.perform(get("/v1/events")
-                            .header("X-User-Id", USER_ID.toString()))
-                    .andExpect(status().isUnauthorized());
-        }
-    }
-
-    @Nested
-    @DisplayName("행사 목록 조회 성공")
-    class GetEventsSuccess {
-
-        @Test
-        @DisplayName("전체 조회 → 200, 페이지 정보 포함")
-        void getEvents_noFilter_returns200WithPage() throws Exception {
-            given(eventQueryService.getEvents(any(), any()))
-                    .willReturn(new PageImpl<>(List.of(buildEventResult(false)), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(get("/v1/events")
+            mockMvc.perform(post("/v1/events")
                             .header("X-User-Id", USER_ID.toString())
-                            .header("X-User-Role", MANAGER_ROLE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(200))
-                    .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content.length()").value(1))
-                    .andExpect(jsonPath("$.data.totalElements").value(1))
-                    .andExpect(jsonPath("$.data.totalPages").value(1));
-        }
-
-        @Test
-        @DisplayName("조회 결과 없을 때 빈 목록 반환 → 200")
-        void getEvents_noResult_returnsEmptyContent() throws Exception {
-            given(eventQueryService.getEvents(any(), any()))
-                    .willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
-
-            mockMvc.perform(get("/v1/events")
-                            .header("X-User-Id", USER_ID.toString())
-                            .header("X-User-Role", MANAGER_ROLE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.content").isArray())
-                    .andExpect(jsonPath("$.data.content.length()").value(0));
-        }
-    }
-
-    @Nested
-    @DisplayName("행사 상세 조회 실패")
-    class GetEventFailure {
-
-        @Test
-        @DisplayName("X-User-Id 미전달 → 401")
-        void getEvent_missingUserId_returns401() throws Exception {
-            mockMvc.perform(get("/v1/events/{eventId}", UUID.randomUUID())
-                            .header("X-User-Role", MANAGER_ROLE))
-                    .andExpect(status().isUnauthorized());
-        }
-
-        @Test
-        @DisplayName("X-User-Role 미전달 → 401")
-        void getEvent_missingUserRole_returns401() throws Exception {
-            mockMvc.perform(get("/v1/events/{eventId}", UUID.randomUUID())
-                            .header("X-User-Id", USER_ID.toString()))
-                    .andExpect(status().isUnauthorized());
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 행사 ID → 404")
-        void getEvent_unknownEventId_returns404() throws Exception {
-            given(eventQueryService.getEventById(any()))
-                    .willThrow(new EventException(EventErrorCode.EVENT_NOT_FOUND));
-
-            mockMvc.perform(get("/v1/events/{eventId}", UUID.randomUUID())
-                            .header("X-User-Id", USER_ID.toString())
-                            .header("X-User-Role", MANAGER_ROLE))
-                    .andExpect(status().isNotFound());
-        }
-    }
-
-    @Nested
-    @DisplayName("행사 상세 조회 성공")
-    class GetEventSuccess {
-
-        @Test
-        @DisplayName("정상 조회 → 200, schedules 포함")
-        void getEvent_validEventId_returns200() throws Exception {
-            UUID eventId = UUID.randomUUID();
-            given(eventQueryService.getEventById(eventId)).willReturn(buildEventResult(false));
-
-            mockMvc.perform(get("/v1/events/{eventId}", eventId)
-                            .header("X-User-Id", USER_ID.toString())
-                            .header("X-User-Role", MANAGER_ROLE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value(200))
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidCreateRequest(false))))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.status").value(201))
                     .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
+                    .andExpect(jsonPath("$.data.hasTicketing").value(false))
                     .andExpect(jsonPath("$.data.schedules").isArray())
                     .andExpect(jsonPath("$.data.schedules.length()").value(1));
+        }
+
+        @Test
+        @DisplayName("티켓팅 있는 행사 등록 → 201")
+        void createEvent_withTicketing_returns201() throws Exception {
+            given(eventCommandService.createEvent(any())).willReturn(buildEventResult(true));
+
+            mockMvc.perform(post("/v1/events")
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidCreateRequest(true))))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.status").value(201))
+                    .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
+                    .andExpect(jsonPath("$.data.hasTicketing").value(true))
+                    .andExpect(jsonPath("$.data.ticketingLink").value("http://ticket.example.com"));
         }
     }
 
@@ -505,42 +429,49 @@ class EventControllerTest {
     }
 
     @Nested
-    @DisplayName("행사 등록 성공")
-    class CreateEventSuccess {
+    @DisplayName("행사 삭제 실패")
+    class DeleteEventFailure {
 
         @Test
-        @DisplayName("티켓팅 없는 행사 등록 → 201, SCHEDULED")
-        void createEvent_managerWithoutTicketing_returns201() throws Exception {
-            given(eventCommandService.createEvent(any())).willReturn(buildEventResult(false));
-
-            mockMvc.perform(post("/v1/events")
-                            .header("X-User-Id", USER_ID.toString())
-                            .header("X-User-Role", MANAGER_ROLE)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(buildValidRequest(false))))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.status").value(201))
-                    .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
-                    .andExpect(jsonPath("$.data.hasTicketing").value(false))
-                    .andExpect(jsonPath("$.data.schedules").isArray())
-                    .andExpect(jsonPath("$.data.schedules.length()").value(1));
+        @DisplayName("X-User-Id 미전달 → 401")
+        void deleteEvent_missingUserId_returns401() throws Exception {
+            mockMvc.perform(delete("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Role", MANAGER_ROLE))
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("티켓팅 있는 행사 등록 → 201")
-        void createEvent_managerWithTicketing_returns201() throws Exception {
-            given(eventCommandService.createEvent(any())).willReturn(buildEventResult(true));
+        @DisplayName("X-User-Role 미전달 → 401")
+        void deleteEvent_missingUserRole_returns401() throws Exception {
+            mockMvc.perform(delete("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString()))
+                    .andExpect(status().isUnauthorized());
+        }
 
-            mockMvc.perform(post("/v1/events")
+        @Test
+        @DisplayName("존재하지 않는 행사 ID → 404")
+        void deleteEvent_unknownEventId_returns404() throws Exception {
+            willThrow(new EventException(EventErrorCode.EVENT_NOT_FOUND))
+                    .given(eventCommandService).deleteEvent(any(), any());
+
+            mockMvc.perform(delete("/v1/events/{eventId}", UUID.randomUUID())
                             .header("X-User-Id", USER_ID.toString())
-                            .header("X-User-Role", MANAGER_ROLE)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(buildValidRequest(true))))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.status").value(201))
-                    .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
-                    .andExpect(jsonPath("$.data.hasTicketing").value(true))
-                    .andExpect(jsonPath("$.data.ticketingLink").value("http://ticket.example.com"));
+                            .header("X-User-Role", MANAGER_ROLE))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("행사 삭제 성공")
+    class DeleteEventSuccess {
+
+        @Test
+        @DisplayName("정상 삭제 → 204")
+        void deleteEvent_validEventId_returns204() throws Exception {
+            mockMvc.perform(delete("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE))
+                    .andExpect(status().isNoContent());
         }
     }
 }
