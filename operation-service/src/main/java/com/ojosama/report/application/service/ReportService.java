@@ -114,18 +114,17 @@ public class ReportService {
     }
 
     private void publishBlindEvent(CreateReportCommand command) {
-        UUID categoryId = null;
+        String category = null;
 
         if (command.targetType().name().equals("CHAT")) {
-            // (ChatClient에 정의된 메서드명에 맞게 호출해주세요. 예: getChatInfo)
-            categoryId = chatClient.getChatMessageWriter(command.targetId()).categoryId();
+            category = chatClient.getChatMessageWriter(command.targetId()).category();
         }
 
         reportEventProducer.publishTargetBlindEvent(new TargetBlindEvent(
                 command.targetId(),
                 command.targetType(),
                 command.targetUserId(),
-                categoryId,
+                category,
                 "누적 신고 3회로 인해 자동 블라인드 처리되었습니다."
         ));
     }
