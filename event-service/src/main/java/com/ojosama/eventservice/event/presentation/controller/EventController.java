@@ -6,7 +6,7 @@ import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand;
 import com.ojosama.eventservice.event.application.dto.command.CreateScheduleCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
-import com.ojosama.eventservice.event.application.service.EventService;
+import com.ojosama.eventservice.event.application.service.EventCommandService;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventRequest;
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
 import jakarta.validation.Valid;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/events")
 public class EventController {
 
-    private final EventService eventService;
+    private final EventCommandService eventCommandService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
@@ -41,33 +41,33 @@ public class EventController {
         }
 
         List<CreateScheduleCommand> scheduleCommands = request.schedules().stream()
-            .map(s -> new CreateScheduleCommand(s.name(), s.startTime(), s.endTime()))
-            .toList();
+                .map(s -> new CreateScheduleCommand(s.name(), s.startTime(), s.endTime()))
+                .toList();
 
         CreateEventCommand command = new CreateEventCommand(
-            userId,
-            request.name(),
-            request.categoryId(),
-            request.startAt(),
-            request.endAt(),
-            request.place(),
-            request.latitude(),
-            request.longitude(),
-            request.minFee(),
-            request.maxFee(),
-            request.hasTicketing(),
-            request.ticketingOpenAt(),
-            request.ticketingCloseAt(),
-            request.ticketingLink(),
-            request.officialLink(),
-            request.description(),
-            request.performer(),
-            request.img(),
-            scheduleCommands
+                userId,
+                request.name(),
+                request.categoryId(),
+                request.startAt(),
+                request.endAt(),
+                request.place(),
+                request.latitude(),
+                request.longitude(),
+                request.minFee(),
+                request.maxFee(),
+                request.hasTicketing(),
+                request.ticketingOpenAt(),
+                request.ticketingCloseAt(),
+                request.ticketingLink(),
+                request.officialLink(),
+                request.description(),
+                request.performer(),
+                request.img(),
+                scheduleCommands
         );
 
-        EventResult result = eventService.createEvent(command);
+        EventResult result = eventCommandService.createEvent(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.created(EventResponse.from(result)));
+                .body(ApiResponse.created(EventResponse.from(result)));
     }
 }
