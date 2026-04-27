@@ -36,14 +36,14 @@ public class BlacklistEventProducerImpl implements BlacklistEventProducer {
         }
     }
 
-    // 관리자가 직접 백오피스 화면에서 특정 유저를 수동으로 블랙리스트에 등록하는 순간 알림
+    // 관리자가 직접 특정 유저를 수동으로 블랙리스트에 등록하는 순간 알림
     @Override
     public void publishBlacklistRegisterEvent(BlacklistRegisterEvent event){
         try {
             kafkaTemplate.send(blacklistRegisteredTopic, event.userId().toString(), event).get(3, TimeUnit.SECONDS);
-            log.info("수동 블랙리스트 알림 이벤트 발행 성공: userId={}", event.userId());
+            log.info("블랙리스트 알림 이벤트 발행 성공: userId={}", event.userId());
         } catch (Exception e) {
-            log.error("수동 블랙리스트 알림 이벤트 발행 실패: userId={}", event.userId(), e);
+            log.error("블랙리스트 알림 이벤트 발행 실패: userId={}", event.userId(), e);
             throw new BlacklistException(CommonErrorCode.EVENT_PUBLISH_FAILED);
         }
     }
