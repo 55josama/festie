@@ -44,10 +44,25 @@ public class EventSchedule extends BaseUserEntity {
     public EventSchedule(Event event, String name, ScheduleTime scheduleTime) {
         validateEvent(event);
         validateScheduleName(name);
+        validateScheduleTime(scheduleTime);
 
         this.event = event;
         this.name = name;
         this.scheduleTime = scheduleTime;
+    }
+
+    public void updateEvent(Event event) {
+        if (event == null) {
+            throw new EventException(EventErrorCode.EVENT_NOT_FOUND);
+        }
+        Event previousEvent = this.event;
+        this.event = event;
+        if (previousEvent != null && previousEvent != event) {
+            previousEvent.getSchedules().remove(this);
+        }
+        if (!event.getSchedules().contains(this)) {
+            event.getSchedules().add(this);
+        }
     }
 
     private void validateEvent(Event event) {
@@ -58,9 +73,15 @@ public class EventSchedule extends BaseUserEntity {
 
     private void validateScheduleName(String name) {
         if (name == null || name.isBlank()) {
-            throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_TIME);
+            throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_NAME);
         }
         if (name.length() > 100) {
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
+        }
+    }
+
+    private void validateScheduleTime(ScheduleTime scheduleTime) {
+        if (scheduleTime == null) {
             throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_TIME);
         }
     }
