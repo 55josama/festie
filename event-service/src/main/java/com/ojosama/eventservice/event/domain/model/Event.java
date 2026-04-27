@@ -73,7 +73,7 @@ public class Event extends BaseUserEntity {
     @Column(name = "img", length = 500, nullable = false)
     private String img;
 
-    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventSchedule> schedules = new ArrayList<>();
 
     @Builder
@@ -83,6 +83,8 @@ public class Event extends BaseUserEntity {
                  String officialLink) {
         validateEventName(name);
         validateCategory(category);
+        validateEventTime(eventTime);
+        validateEventLocation(eventLocation);
         validateDescription(description);
         validatePerformer(performer);
         validateImg(img);
@@ -99,7 +101,6 @@ public class Event extends BaseUserEntity {
         this.performer = performer;
         this.img = img;
         this.officialLink = officialLink;
-        this.schedules = new ArrayList<>();
     }
 
     private void validateEventName(String name) {
@@ -114,6 +115,24 @@ public class Event extends BaseUserEntity {
     private void validateCategory(EventCategory category) {
         if (category == null) {
             throw new EventException(EventErrorCode.EVENT_CATEGORY_INVALID);
+        }
+    }
+
+    private void validateEventTime(EventTime eventTime) {
+        if (eventTime == null) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_TIME);
+        }
+        if (eventTime.getStartAt() == null || eventTime.getEndAt() == null) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_TIME);
+        }
+        if (!eventTime.getStartAt().isBefore(eventTime.getEndAt())) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_TIME);
+        }
+    }
+
+    private void validateEventLocation(EventLocation eventLocation) {
+        if (eventLocation == null) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_LOCATION);
         }
     }
 
@@ -148,10 +167,17 @@ public class Event extends BaseUserEntity {
         if (schedule == null) {
             throw new EventException(EventErrorCode.EVENT_SCHEDULE_INVALID_TIME);
         }
-        this.schedules.add(schedule);
+        if (schedule.getEvent() != this) {
+            schedule.updateEvent(this);
+        }
+        if (!this.schedules.contains(schedule)) {
+            this.schedules.add(schedule);
+        }
     }
 
     public void removeSchedule(EventSchedule schedule) {
-        this.schedules.remove(schedule);
+        if (schedule != null) {
+            this.schedules.remove(schedule);
+        }
     }
 }

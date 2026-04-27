@@ -2,8 +2,10 @@ package com.ojosama.eventservice.event.domain.model.vo;
 
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,7 +14,11 @@ import lombok.NoArgsConstructor;
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScheduleTime {
+
+    @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
+
+    @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
     public ScheduleTime(LocalDateTime startTime, LocalDateTime endTime) {
@@ -47,6 +53,6 @@ public class ScheduleTime {
     }
 
     public long getDurationMinutes() {
-        return java.time.temporal.ChronoUnit.MINUTES.between(startTime, endTime);
+        return ChronoUnit.MINUTES.between(startTime, endTime);
     }
 }

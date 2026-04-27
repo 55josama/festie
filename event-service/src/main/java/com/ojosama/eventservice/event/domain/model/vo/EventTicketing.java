@@ -2,6 +2,7 @@ package com.ojosama.eventservice.event.domain.model.vo;
 
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -12,9 +13,17 @@ import lombok.NoArgsConstructor;
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EventTicketing {
+
+    @Column(name = "has_ticketing", nullable = false)
     private Boolean hasTicketing;
+
+    @Column(name = "ticketing_open_at")
     private LocalDateTime ticketingOpenAt;
+
+    @Column(name = "ticketing_close_at")
     private LocalDateTime ticketingCloseAt;
+
+    @Column(name = "ticketing_link", length = 500)
     private String ticketingLink;
 
     public EventTicketing(Boolean hasTicketing, LocalDateTime ticketingOpenAt,
@@ -29,7 +38,7 @@ public class EventTicketing {
     private void validateTicketing(Boolean hasTicketing, LocalDateTime ticketingOpenAt,
                                    LocalDateTime ticketingCloseAt, String ticketingLink) {
         if (hasTicketing == null) {
-            throw new EventException(EventErrorCode.TICKETING_INVALID_TIME);
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
         }
 
         if (hasTicketing) {
@@ -55,23 +64,30 @@ public class EventTicketing {
         if (!hasTicketing) {
             return false;
         }
-        LocalDateTime now = LocalDateTime.now();
-        return now.isAfter(ticketingOpenAt) && now.isBefore(ticketingCloseAt);
+        return isTicketingOpenAt(LocalDateTime.now());
     }
 
     public boolean isTicketingClosed() {
         if (!hasTicketing) {
             return true;
         }
-        return LocalDateTime.now().isAfter(ticketingCloseAt);
+        return !LocalDateTime.now().isBefore(ticketingCloseAt);
     }
 
     public void validateTicketingAvailable() {
-        if (!isTicketingOpen()) {
-            if (LocalDateTime.now().isBefore(ticketingOpenAt)) {
+        if (!hasTicketing) {
+            throw new EventException(EventErrorCode.TICKETING_NOT_AVAILABLE);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (!isTicketingOpenAt(now)) {
+            if (now.isBefore(ticketingOpenAt)) {
                 throw new EventException(EventErrorCode.TICKETING_NOT_OPENED);
             }
             throw new EventException(EventErrorCode.TICKETING_CLOSED);
         }
+    }
+
+    private boolean isTicketingOpenAt(LocalDateTime now) {
+        return !now.isBefore(ticketingOpenAt) && now.isBefore(ticketingCloseAt);
     }
 }

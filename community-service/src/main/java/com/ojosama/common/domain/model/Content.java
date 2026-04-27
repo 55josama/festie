@@ -44,11 +44,11 @@ public class Content {
         if (value.trim().length() < 2) {
             throw new CommunityException(CommunityErrorCode.CONTENT_TOO_SHORT);
         }
-        }
+
         String normalized = value.replaceAll("[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]", "");
 
-        for (String bannedWord : BannedWordConstants.BANNED_WORDS){
-            if(value.contains(bannedWord) || normalized.contains(bannedWord)){
+        for (String bannedWord : BannedWordConstants.BANNED_WORDS) {
+            if (value.contains(bannedWord) || normalized.contains(bannedWord)) {
                 throw new CommunityException(CommunityErrorCode.BANNED_WORD_DETECTED);
             }
         }
