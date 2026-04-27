@@ -1,6 +1,6 @@
 package com.ojosama.moderation.infrastructure.messaging.kafka.producer;
 
-import com.ojosama.moderation.domain.event.AiModerateEventProducer;
+import com.ojosama.moderation.domain.event.AiModerationEventProducer;
 import com.ojosama.moderation.domain.event.payload.AiEvaluateEvent;
 import com.ojosama.moderation.domain.model.entity.AiModeration;
 import java.util.concurrent.TimeUnit;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AiModerateEventProducerImpl implements AiModerateEventProducer {
+public class AiModerationEventProducerImpl implements AiModerationEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${spring.kafka.topic.ai-evaluated}")

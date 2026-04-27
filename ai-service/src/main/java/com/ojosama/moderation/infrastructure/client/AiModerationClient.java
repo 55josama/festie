@@ -1,6 +1,7 @@
 package com.ojosama.moderation.infrastructure.client;
 
 import com.ojosama.moderation.domain.event.payload.AiEvaluateEvent;
+import com.ojosama.moderation.domain.event.payload.AiModerationRequestEvent;
 import com.ojosama.moderation.infrastructure.client.dto.AiModerationClientResponse;
 import com.ojosama.moderation.infrastructure.prompt.AiModerationPromptTemplate;
 import java.util.List;
@@ -17,7 +18,7 @@ public class AiModerationClient {
         this.chatClient = builder.build();
     }
 
-    public List<AiModerationClientResponse> analyzeBatch(List<AiEvaluateEvent> events) {
+    public List<AiModerationClientResponse> analyzeBatch(List<AiModerationRequestEvent> events) {
         // 이벤트 리스트를 AI가 읽기 좋게 문자열로 결합
         String userContent = events.stream()
                 .map(e -> String.format("targetId: %s, content: %s", e.targetId(), e.content()))
