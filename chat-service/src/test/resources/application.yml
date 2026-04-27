@@ -2,6 +2,7 @@ spring:
   config:
     import: ""   # test 실행시 config server 무시
   kafka:
+    bootstrap-servers: localhost:9092
     consumer:
       group-id: chat-service-group
     topic:
