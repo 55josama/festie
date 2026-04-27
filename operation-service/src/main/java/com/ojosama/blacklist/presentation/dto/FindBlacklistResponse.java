@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record FindBlacklistResponse (
         UUID id,
-        UUID userid,
+        UUID userId,
         BlacklistStatus status,
         String reason,
         RegistrationType registrationType
