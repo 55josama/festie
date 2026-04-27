@@ -14,10 +14,10 @@ import org.springframework.stereotype.Component;
 public class ReportEventProducerImpl implements ReportEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @Value("${spring.kafka.topic.target-blind}")
+    @Value("${spring.kafka.topic.target-blinded}")
     private String targetBlindTopic;
 
-    @Value("${spring.kafka.topic.blacklist-register}")
+    @Value("${spring.kafka.topic.blacklist-registered}")
     private String blacklistRegisterTopic;
 
     @Override
