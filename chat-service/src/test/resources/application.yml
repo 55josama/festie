@@ -1,6 +1,11 @@
 spring:
   config:
     import: ""   # test 실행시 config server 무시
+  kafka:
+    consumer:
+      group-id: chat-service-group
+    topic:
+      event-created: event.info.created
   datasource:
     url: jdbc:h2:mem:testdb;INIT=CREATE SCHEMA IF NOT EXISTS chat_schema
     driver-class-name: org.h2.Driver
