@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,8 +43,11 @@ public class ChatRoomService {
                 .category(command.category())
                 .schedule(new ChatRoomSchedule(command.scheduledOpenAt(), command.scheduledCloseAt()))
                 .build();
-
-        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+        try {
+            return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+        } catch (DataIntegrityViolationException e) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_EXISTS);
+        }
     }
 
     @Transactional(readOnly = true)
