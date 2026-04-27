@@ -4,6 +4,7 @@ import com.ojosama.common.domain.model.Content;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import com.ojosama.post.application.dto.command.CreatePostCommand;
+import com.ojosama.post.application.dto.command.DeletePostCommand;
 import com.ojosama.post.application.dto.command.UpdatePostCommand;
 import com.ojosama.post.application.dto.result.PostResult;
 import com.ojosama.post.domain.event.payload.PostCreatedEvent;
@@ -75,6 +76,15 @@ public class PostService {
                 )
         );
         return PostResult.from(post);
+    }
+
+    @Transactional
+    public void delete(DeletePostCommand cmd) {
+        Post post = loadAlive(cmd.postId());
+        if( !cmd.isAdmin() && !post.isOwnedBy(cmd.requesterId())){
+            throw new PostException(PostErrorCode.POST_ACCESS_DENIED);
+        }
+        post.deleted();
     }
 
     private Post loadAlive(UUID postId) {

@@ -1,6 +1,6 @@
 package com.ojosama.post.domain.model;
 
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.common.domain.model.Content;
 import com.ojosama.post.domain.exception.PostErrorCode;
 import com.ojosama.post.domain.exception.PostException;
@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Post extends BaseEntity {
+public class Post extends BaseUserEntity {
 
     private static final int MAX_TITLE_LENGTH = 200;
 
