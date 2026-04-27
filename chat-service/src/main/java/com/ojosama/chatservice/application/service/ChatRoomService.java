@@ -5,6 +5,7 @@ import com.ojosama.chatservice.application.dto.command.CreateChatRoomCommand;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomByEventIdQuery;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomQuery;
 import com.ojosama.chatservice.application.dto.result.ChatRoomResult;
+import com.ojosama.chatservice.application.dto.result.ChatRoomSummaryResult;
 import com.ojosama.chatservice.domain.exception.ChatErrorCode;
 import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.chatservice.domain.model.ChatRoom;
@@ -67,6 +68,16 @@ public class ChatRoomService {
         }
         return ChatRoomResult.from(chatRoomRepository.findByEventId(query.eventId())
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND)));
+    }
+
+    @Transactional(readOnly = true)
+    public ChatRoomSummaryResult getChatRoomSummaryByEventId(FindChatRoomByEventIdQuery query) {
+        if (query == null || query.eventId() == null) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_EVENT_ID_REQUIRED);
+        }
+        return chatRoomRepository.findByEventId(query.eventId())
+                .map(ChatRoomSummaryResult::from)
+                .orElseGet(ChatRoomSummaryResult::empty);
     }
 
     // 상태 분기 : 상태 변경 요청 API 가 들어왔을 때
