@@ -40,10 +40,11 @@ public class OutboxMessageProcessor {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             message.markFailed("Interrupted: " + e.getMessage());
-            throw new IllegalStateException(e);
+            log.warn("Outbox send interrupted. id={}, retryCount={}", message.getId(), message.getRetryCount());
         } catch (ExecutionException e) {
             message.markFailed(e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
-            throw new IllegalStateException(e);
+            log.warn("Outbox send failed. id={}, retryCount={}, error={}",
+                    message.getId(), message.getRetryCount(), message.getLastError());
         }
     }
 }

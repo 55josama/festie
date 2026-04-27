@@ -32,8 +32,9 @@ public class IdempotentEventHandler {
         }
 
         try {
-            businessLogic.run();
             inboxRepository.save(InboxMessage.of(messageKey, consumerGroup, topic, eventType));
+
+            businessLogic.run();
         } catch (DataIntegrityViolationException e) {
             // 동시 처리 중 다른 컨슈머가 먼저 inbox에 기록한 경우 (드물지만 가능)
             log.debug("inbox 동시 INSERT 충돌. 다른 컨슈머가 처리 완료한 것으로 간주. key={}", messageKey);
