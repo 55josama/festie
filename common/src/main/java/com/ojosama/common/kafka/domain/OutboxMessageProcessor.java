@@ -1,7 +1,7 @@
 package com.ojosama.common.kafka.domain;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import java.util.concurrent.ExecutionException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -13,11 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 //REQUIRES_NEW로 분리한 이유: 폴러 루프 내에서 한 메시지의 실패가
 //다음 메시지 처리에 영향을 주지 않도록 하기 위함.
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class OutboxMessageProcessor {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
+
+    public OutboxMessageProcessor(
+            @Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void send(OutboxMessage message) {
