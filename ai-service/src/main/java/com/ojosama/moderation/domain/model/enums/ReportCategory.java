@@ -13,7 +13,8 @@ public enum ReportCategory {
     SCAM("사기 및 허위 정보 의심"),
     PRIVACY_LEAK("개인정보 노출"),
     UNAUTHORIZED_TRADE("불법 거래 유도"),
-    OTHER("기타 부적절한 내용");
+    OTHER("기타 부적절한 내용"),
+    SAFE("유해하지 않은 내용");
 
     private final String description;
 }

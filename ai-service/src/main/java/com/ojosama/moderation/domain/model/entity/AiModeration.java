@@ -41,26 +41,26 @@ public class AiModeration {
     private ReportCategory category;
 
     @Column(columnDefinition = "TEXT", nullable = false)
-    private String contentSnapshot;
+    private String content;
 
     @Builder
     public AiModeration(TargetType targetType, UUID targetId, UUID targetUserId,
-                        String contentSnapshot, ReportCategory category) {
+                        String content, ReportCategory category) {
         this.targetId = targetId;
         this.targetUserId = targetUserId;
         this.targetType = targetType;
         this.category = category;
-        this.contentSnapshot = contentSnapshot;
+        this.content = content;
     }
 
     public static AiModeration of(UUID targetId, UUID targetUserId, TargetType targetType,
-                                  ReportCategory category, String contentSnapshot){
+                                  ReportCategory category, String content){
         return AiModeration.builder()
                 .targetId(targetId)
                 .targetUserId(targetUserId)
                 .targetType(targetType)
                 .category(category)
-                .contentSnapshot(contentSnapshot)
+                .content(content)
                 .build();
     }
 }
