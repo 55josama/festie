@@ -87,6 +87,20 @@ public class PostService {
         post.deleted();
     }
 
+    @Transactional
+    public PostResult getDetail(UUID postId) {
+        Post post = loadAlive(postId);
+        // BLOCKED 게시글도 200으로 응답한다 (PostResponse에서 마스킹 처리).
+        // 단, 조회수는 증가시키지 않음 — 차단된 게시글에 어뷰징성 조회수 발생 방지.
+        if (post.isBlocked()) {
+            return PostResult.from(post);
+        }
+        // 본문 수정 트랜잭션과 분리하기 위해 별도 native UPDATE
+        postRepository.incrementViewCount(postId);
+        // viewCount는 native UPDATE로 +1 됐으나 영속 객체엔 반영 안 됐으니 +1 보정해서 반환
+        return adjustViewCountForResponse(post, 1);
+    }
+
     private Post loadAlive(UUID postId) {
         Post post = postRepository.findById(postId).orElseThrow(
                 ()-> new PostException(PostErrorCode.POST_NOT_FOUND));
@@ -94,6 +108,22 @@ public class PostService {
             throw new PostException(PostErrorCode.POST_NOT_FOUND);
         }
         return post;
+    }
+
+    private PostResult adjustViewCountForResponse(Post post, int delta) {
+        return new PostResult(
+                post.getId(),
+                post.getUserId(),
+                post.getCategoryId(),
+                post.getTitle(),
+                post.getContent() != null ? post.getContent().getValue() : null,
+                post.getViewCount() + delta,
+                post.getLikeCount(),
+                post.getCommentCount(),
+                post.getStatus(),
+                post.getCreatedAt(),
+                post.getUpdatedAt()
+        );
     }
 
 

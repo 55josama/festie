@@ -1,6 +1,5 @@
 package com.ojosama.post.application.dto.result;
 
-import com.ojosama.common.domain.model.Content;
 import com.ojosama.post.domain.model.Post;
 import com.ojosama.post.domain.model.PostStatus;
 import java.time.LocalDateTime;
@@ -12,7 +11,7 @@ public record PostResult(
         UUID userId,
         UUID categoryId,
         String title,
-        Content content,
+        String content,
         int viewCount,
         int likeCount,
         int commentCount,
@@ -26,7 +25,7 @@ public record PostResult(
                 post.getUserId(),
                 post.getCategoryId(),
                 post.getTitle(),
-                post.getContent(),
+                post.getContent().getValue(),
                 post.getViewCount(),
                 post.getLikeCount(),
                 post.getCommentCount(),

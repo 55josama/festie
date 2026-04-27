@@ -14,6 +14,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +50,12 @@ public class PostController {
             @PathVariable UUID postId) {
         postService.delete(new DeletePostCommand(postId, UUID.randomUUID(), true)); //인가 완료 후 수정'
         return ApiResponse.deleted();
+    }
+
+    @GetMapping("/{postId}")
+    public ApiResponse<PostResponse> getDetail(@PathVariable UUID postId) {
+        PostResult result = postService.getDetail(postId);
+        return ApiResponse.success(PostResponse.from(result));
     }
 
 
