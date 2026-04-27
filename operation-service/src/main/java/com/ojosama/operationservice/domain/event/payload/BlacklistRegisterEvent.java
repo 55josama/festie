@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 public record BlacklistRegisterEvent (
-        UUID targetUserId, // 문제를 일으킨 유저 ID
+        UUID userId, // 문제를 일으킨 유저 ID
         String reason,
         RegistrationType registrationType
 ){ }
