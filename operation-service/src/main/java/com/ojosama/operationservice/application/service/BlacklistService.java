@@ -5,11 +5,13 @@ import com.ojosama.operationservice.application.dto.command.UpdateBlacklistComma
 import com.ojosama.operationservice.application.dto.query.ListBlacklistQuery;
 import com.ojosama.operationservice.application.dto.result.BlacklistResult;
 import com.ojosama.operationservice.domain.event.BlacklistEventProducer;
+import com.ojosama.operationservice.domain.event.payload.BlacklistRegisterEvent;
 import com.ojosama.operationservice.domain.event.payload.UserBlacklistStatusEvent;
 import com.ojosama.operationservice.domain.exception.BlacklistErrorCode;
 import com.ojosama.operationservice.domain.exception.BlacklistException;
 import com.ojosama.operationservice.domain.model.entity.Blacklist;
 import com.ojosama.operationservice.domain.model.enums.BlacklistStatus;
+import com.ojosama.operationservice.domain.model.enums.RegistrationType;
 import com.ojosama.operationservice.domain.repository.BlacklistRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +31,7 @@ public class BlacklistService {
     public BlacklistResult createBlacklistManual(CreateBlacklistCommand command) {
         validateNotAlreadyActive(command.userId());
 
-        Blacklist savedBlacklist = blacklistRepository.save(command.toEntity());
-
-        // 유저/인증 서버에 차단 알림 이벤트 발행
-        publishStatusEvent(savedBlacklist.getUserId(), BlacklistStatus.ACTIVE);
+        Blacklist savedBlacklist = saveAndPublish(command.userId(), command.reason(), RegistrationType.MANUAL);
 
         return BlacklistResult.from(savedBlacklist);
     }
@@ -41,9 +40,7 @@ public class BlacklistService {
     @Transactional
     public void createBlacklistSafe(CreateBlacklistCommand command) {
         if (!blacklistRepository.existsByUserIdAndStatus(command.userId(), BlacklistStatus.ACTIVE)) {
-            Blacklist savedBlacklist = blacklistRepository.save(command.toEntity());
-
-            publishStatusEvent(savedBlacklist.getUserId(), BlacklistStatus.ACTIVE);
+            saveAndPublish(command.userId(), command.reason(), RegistrationType.AUTOMATIC);
         }
     }
 
@@ -62,7 +59,7 @@ public class BlacklistService {
 
         blacklist.release(command.reason());
 
-        publishStatusEvent(blacklist.getUserId(), BlacklistStatus.INACTIVE);
+        publishStatusChangeEvent(blacklist.getUserId(), BlacklistStatus.INACTIVE);
 
         return BlacklistResult.from(blacklist);
     }
@@ -78,9 +75,40 @@ public class BlacklistService {
                 .orElseThrow(() -> new BlacklistException(BlacklistErrorCode.BLACKLIST_NOT_FOUND));
     }
 
-    private void publishStatusEvent(UUID userId, BlacklistStatus status) {
+    // 블랙리스트 저장 및 이벤트 발행
+    private Blacklist saveAndPublish(UUID userId, String reason, RegistrationType type) {
+        Blacklist blacklist = Blacklist.builder()
+                .userId(userId)
+                .reason(reason)
+                .registrationType(type)
+                .build();
+
+        Blacklist saved = blacklistRepository.save(blacklist);
+
+        // 유저 상태 변경 알림 (user-service에게 전달)
+        publishStatusChangeEvent(saved.getUserId(), BlacklistStatus.ACTIVE);
+
+        // 블랙리스트 등록 알림 (notification-service에게 전달)
+        publishRegisterEvent(saved);
+
+        return saved;
+    }
+
+    //유저 블랙리스트 상태 변경 이벤트 발행
+    private void publishStatusChangeEvent(UUID userId, BlacklistStatus status) {
         blacklistEventProducer.publishStatusChangeEvent(
                 new UserBlacklistStatusEvent(userId, status.name())
+        );
+    }
+
+    // 블랙리스트 신규 등록 알림 이벤트 발행
+    private void publishRegisterEvent(Blacklist blacklist) {
+        blacklistEventProducer.publishBlacklistRegisterEvent(
+                new BlacklistRegisterEvent(
+                        blacklist.getUserId(),
+                        blacklist.getReason(),
+                        blacklist.getRegistrationType()
+                )
         );
     }
 

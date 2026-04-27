@@ -1,40 +1,51 @@
 package com.ojosama.operationservice.infrastructure.messaging.kafka.producer;
 
+import com.ojosama.common.exception.CommonErrorCode;
+import com.ojosama.common.exception.CustomException;
 import com.ojosama.operationservice.domain.event.ReportEventProducer;
 import com.ojosama.operationservice.domain.event.payload.BlacklistRegisterEvent;
 import com.ojosama.operationservice.domain.event.payload.TargetBlindEvent;
+import com.ojosama.operationservice.domain.exception.ReportErrorCode;
+import com.ojosama.operationservice.domain.exception.ReportException;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ReportEventProducerImpl implements ReportEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${spring.kafka.topic.target-blinded}")
-    private String targetBlindTopic;
+    private String targetBlindedTopic;
 
     @Value("${spring.kafka.topic.blacklist-registered}")
-    private String blacklistRegisterTopic;
+    private String blacklistRegisteredTopic;
 
     @Override
     public void publishTargetBlindEvent(TargetBlindEvent event) {
         try {
-            kafkaTemplate.send(targetBlindTopic, event.targetId().toString(), event).get(3, TimeUnit.SECONDS);
+            kafkaTemplate.send(targetBlindedTopic, event.targetId().toString(), event).get(3, TimeUnit.SECONDS);
+            log.info("블라인드 처리 이벤트 발행 성공: targetId={}", event.targetId());
         } catch (Exception e) {
-            throw new IllegalStateException("블라인드 이벤트 발행 실패", e);
+            log.error("블라인드 처리 이벤트 발행 실패: targetId={}", event.targetId(), e);
+            throw new ReportException(CommonErrorCode.EVENT_PUBLISH_FAILED);
         }
     }
 
+    // 특정 유저의 게시글이 5번 블라인드 처리되는 순간, 시스템이 자동으로 블랙리스트 등록 검토 알림
     @Override
     public void publishBlacklistRegisterEvent(BlacklistRegisterEvent event) {
         try {
-            kafkaTemplate.send(blacklistRegisterTopic, event.targetUserId().toString(), event).get(3, TimeUnit.SECONDS);
+            kafkaTemplate.send(blacklistRegisteredTopic, event.userId().toString(), event).get(3, TimeUnit.SECONDS);
+            log.info("수동 블랙리스트 알림 이벤트 발행 성공: userId={}", event.userId());
         } catch (Exception e) {
-            throw new IllegalStateException("블랙리스트 등록 이벤트 발행 실패", e);
+            log.error("수동 블랙리스트 알림 이벤트 발행 실패: userId={}", event.userId(), e);
+            throw new ReportException(CommonErrorCode.EVENT_PUBLISH_FAILED);
         }
     }
 }

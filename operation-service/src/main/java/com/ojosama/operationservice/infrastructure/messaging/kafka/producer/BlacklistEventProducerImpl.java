@@ -1,7 +1,11 @@
 package com.ojosama.operationservice.infrastructure.messaging.kafka.producer;
 
+import com.ojosama.common.exception.CommonErrorCode;
+import com.ojosama.common.exception.CustomException;
 import com.ojosama.operationservice.domain.event.BlacklistEventProducer;
+import com.ojosama.operationservice.domain.event.payload.BlacklistRegisterEvent;
 import com.ojosama.operationservice.domain.event.payload.UserBlacklistStatusEvent;
+import com.ojosama.operationservice.domain.exception.BlacklistException;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,17 +22,30 @@ public class BlacklistEventProducerImpl implements BlacklistEventProducer {
     @Value("${spring.kafka.topic.blacklist-updated}")
     private String updateTopic;
 
+    @Value("${spring.kafka.topic.blacklist-registered}")
+    private String blacklistRegisteredTopic;
+
     @Override
     public void publishStatusChangeEvent(UserBlacklistStatusEvent event) {
         try {
-            // 카프카가 메시지를 정상적으로 받을 때까지 대기
-            // 타임아웃(3초) 설정
             kafkaTemplate.send(updateTopic, event.userId().toString(), event).get(3, TimeUnit.SECONDS);
-            log.info("Kafka 이벤트 발행 성공 - topic: {}, userId: {}", updateTopic, event.userId());
+            log.info("유저 블랙리스트 상태 변경 이벤트 발행 성공 - topic: {}, userId: {}", updateTopic, event.userId());
 
         } catch (Exception e) {
-            log.error("Kafka 이벤트 발행 실패. DB 트랜잭션을 롤백합니다.", e);
-            throw new IllegalStateException("이벤트 발행에 실패했습니다.", e);
+            log.error("유저 블랙리스트 상태 변경 이벤트 발행 실패. DB 트랜잭션을 롤백합니다.", e);
+            throw new BlacklistException(CommonErrorCode.EVENT_PUBLISH_FAILED);
+        }
+    }
+
+    // 관리자가 직접 백오피스 화면에서 특정 유저를 수동으로 블랙리스트에 등록하는 순간 알림
+    @Override
+    public void publishBlacklistRegisterEvent(BlacklistRegisterEvent event){
+        try {
+            kafkaTemplate.send(blacklistRegisteredTopic, event.userId().toString(), event).get(3, TimeUnit.SECONDS);
+            log.info("수동 블랙리스트 알림 이벤트 발행 성공: userId={}", event.userId());
+        } catch (Exception e) {
+            log.error("수동 블랙리스트 알림 이벤트 발행 실패: userId={}", event.userId(), e);
+            throw new BlacklistException(CommonErrorCode.EVENT_PUBLISH_FAILED);
         }
     }
 }

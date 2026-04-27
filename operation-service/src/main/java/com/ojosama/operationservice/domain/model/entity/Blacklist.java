@@ -51,10 +51,11 @@ public class Blacklist extends BaseEntity {
         this.registrationType = registrationType;
     }
 
-    public static Blacklist of(UUID userId, String reason) {
+    public static Blacklist of(UUID userId, String reason, RegistrationType registrationType) {
         return Blacklist.builder()
                 .userId(userId)
                 .reason(reason)
+                .registrationType(registrationType)
                 .build();
     }
 
