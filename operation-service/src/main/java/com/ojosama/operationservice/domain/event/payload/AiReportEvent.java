@@ -13,6 +13,5 @@ public class AiReportEvent {
     private UUID targetUserId;
     private String targetType;
     private String category;
-    private String description;
     private String content;
 }

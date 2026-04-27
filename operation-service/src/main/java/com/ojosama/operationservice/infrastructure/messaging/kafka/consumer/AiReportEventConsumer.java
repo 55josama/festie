@@ -34,7 +34,7 @@ public class AiReportEventConsumer {
                     event.getTargetUserId(),
                     targetType,
                     category,
-                    event.getDescription(),
+                    "AI 자동 모더레이션 시스템에 의한 유해 콘텐츠 신고입니다.",
                     event.getContent()
             );
 
