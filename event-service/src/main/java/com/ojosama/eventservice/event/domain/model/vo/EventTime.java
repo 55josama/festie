@@ -2,6 +2,7 @@ package com.ojosama.eventservice.event.domain.model.vo;
 
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -12,7 +13,11 @@ import lombok.NoArgsConstructor;
 @Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EventTime {
+
+    @Column(name = "start_at", nullable = false)
     private LocalDateTime startAt;
+
+    @Column(name = "end_at", nullable = false)
     private LocalDateTime endAt;
 
     public EventTime(LocalDateTime startAt, LocalDateTime endAt) {
