@@ -3,6 +3,7 @@ package com.ojosama.eventservice.event.presentation.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,6 +19,7 @@ import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventRequest;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateScheduleRequest;
+import com.ojosama.eventservice.event.presentation.dto.request.UpdateEventRequest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -98,6 +100,38 @@ class EventControllerTest {
                 false, null, null, null,
                 "http://official.example.com",
                 "최고의 재즈 페스티벌", "재즈밴드A", "http://img.example.com/banner.jpg",
+                schedules
+        );
+    }
+
+    private UpdateEventRequest buildValidUpdateRequest(boolean hasTicketing, boolean withSchedules) {
+        List<CreateScheduleRequest> schedules = withSchedules
+                ? List.of(new CreateScheduleRequest("수정된 공연", FUTURE_START, FUTURE_START.plusHours(3)))
+                : null;
+
+        if (hasTicketing) {
+            return new UpdateEventRequest(
+                    "수정된 재즈 페스티벌", CATEGORY_ID,
+                    FUTURE_START, FUTURE_END,
+                    "올림픽공원", new BigDecimal("37.52"), new BigDecimal("127.12"),
+                    10000, 50000,
+                    true,
+                    FUTURE_START.minusDays(10), FUTURE_START.minusDays(1),
+                    "http://ticket.example.com",
+                    "http://official.example.com",
+                    "수정된 설명", "재즈밴드B", "http://img.example.com/updated.jpg",
+                    schedules
+            );
+        }
+
+        return new UpdateEventRequest(
+                "수정된 재즈 페스티벌", CATEGORY_ID,
+                FUTURE_START, FUTURE_END,
+                "올림픽공원", new BigDecimal("37.52"), new BigDecimal("127.12"),
+                0, 50000,
+                false, null, null, null,
+                "http://official.example.com",
+                "수정된 설명", "재즈밴드B", "http://img.example.com/updated.jpg",
                 schedules
         );
     }
@@ -341,6 +375,132 @@ class EventControllerTest {
                     .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
                     .andExpect(jsonPath("$.data.schedules").isArray())
                     .andExpect(jsonPath("$.data.schedules.length()").value(1));
+        }
+    }
+
+    @Nested
+    @DisplayName("행사 수정 실패")
+    class UpdateEventFailure {
+
+        @Test
+        @DisplayName("X-User-Id 미전달 → 401")
+        void updateEvent_missingUserId_returns401() throws Exception {
+            mockMvc.perform(patch("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidUpdateRequest(false, true))))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("X-User-Role 미전달 → 401")
+        void updateEvent_missingUserRole_returns401() throws Exception {
+            mockMvc.perform(patch("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidUpdateRequest(false, true))))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("name 미입력 → 400")
+        void updateEvent_missingName_returns400() throws Exception {
+            UpdateEventRequest request = new UpdateEventRequest(
+                    null, CATEGORY_ID,
+                    FUTURE_START, FUTURE_END,
+                    "올림픽공원", new BigDecimal("37.52"), new BigDecimal("127.12"),
+                    0, 50000,
+                    false, null, null, null, null,
+                    "설명", null, "http://img.example.com/banner.jpg",
+                    List.of(new CreateScheduleRequest("공연", FUTURE_START, FUTURE_START.plusHours(2)))
+            );
+
+            mockMvc.perform(patch("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("ticketing=true인데 링크 누락 → 400")
+        void updateEvent_ticketingTrueWithoutLink_returns400() throws Exception {
+            given(eventCommandService.updateEvent(any()))
+                    .willThrow(new EventException(EventErrorCode.TICKETING_NOT_AVAILABLE));
+
+            mockMvc.perform(patch("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidUpdateRequest(false, true))))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 행사 ID → 404")
+        void updateEvent_unknownEventId_returns404() throws Exception {
+            given(eventCommandService.updateEvent(any()))
+                    .willThrow(new EventException(EventErrorCode.EVENT_NOT_FOUND));
+
+            mockMvc.perform(patch("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidUpdateRequest(false, true))))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("행사 수정 성공")
+    class UpdateEventSuccess {
+
+        @Test
+        @DisplayName("schedules 포함 → 200, 일정 교체됨")
+        void updateEvent_withSchedules_returns200() throws Exception {
+            given(eventCommandService.updateEvent(any())).willReturn(buildEventResult(false));
+
+            mockMvc.perform(patch("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidUpdateRequest(false, true))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value(200))
+                    .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
+                    .andExpect(jsonPath("$.data.schedules").isArray())
+                    .andExpect(jsonPath("$.data.schedules.length()").value(1));
+        }
+
+        @Test
+        @DisplayName("schedules 생략 → 200, 기존 일정 유지")
+        void updateEvent_withoutSchedules_returns200() throws Exception {
+            given(eventCommandService.updateEvent(any())).willReturn(buildEventResult(false));
+
+            mockMvc.perform(patch("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidUpdateRequest(false, false))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value(200))
+                    .andExpect(jsonPath("$.data.schedules").isArray());
+        }
+
+        @Test
+        @DisplayName("티켓팅 있는 행사 수정 → 200")
+        void updateEvent_withTicketing_returns200() throws Exception {
+            given(eventCommandService.updateEvent(any())).willReturn(buildEventResult(true));
+
+            mockMvc.perform(patch("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(buildValidUpdateRequest(true, true))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.hasTicketing").value(true))
+                    .andExpect(jsonPath("$.data.ticketingLink").value("http://ticket.example.com"));
         }
     }
 
