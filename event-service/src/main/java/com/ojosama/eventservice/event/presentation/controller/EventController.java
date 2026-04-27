@@ -4,7 +4,6 @@ import com.ojosama.common.exception.CommonErrorCode;
 import com.ojosama.common.exception.CustomException;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand;
-import com.ojosama.eventservice.event.application.dto.command.CreateScheduleCommand;
 import com.ojosama.eventservice.event.application.dto.command.EventListCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.service.EventCommandService;
@@ -14,7 +13,6 @@ import com.ojosama.eventservice.event.presentation.dto.request.CreateEventReques
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -53,33 +51,7 @@ public class EventController {
             throw new CustomException(CommonErrorCode.INVALID_TOKEN);
         }
 
-        List<CreateScheduleCommand> scheduleCommands = request.schedules().stream()
-                .map(s -> new CreateScheduleCommand(s.name(), s.startTime(), s.endTime()))
-                .toList();
-
-        CreateEventCommand command = new CreateEventCommand(
-                userId,
-                request.name(),
-                request.categoryId(),
-                request.startAt(),
-                request.endAt(),
-                request.place(),
-                request.latitude(),
-                request.longitude(),
-                request.minFee(),
-                request.maxFee(),
-                request.hasTicketing(),
-                request.ticketingOpenAt(),
-                request.ticketingCloseAt(),
-                request.ticketingLink(),
-                request.officialLink(),
-                request.description(),
-                request.performer(),
-                request.img(),
-                scheduleCommands
-        );
-
-        EventResult result = eventCommandService.createEvent(command);
+        EventResult result = eventCommandService.createEvent(CreateEventCommand.from(userId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(EventResponse.from(result)));
     }
