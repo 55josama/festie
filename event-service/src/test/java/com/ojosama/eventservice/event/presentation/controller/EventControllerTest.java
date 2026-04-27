@@ -2,6 +2,7 @@ package com.ojosama.eventservice.event.presentation.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -12,6 +13,7 @@ import com.ojosama.common.exception.GlobalExceptionHandler;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.dto.result.ScheduleResult;
 import com.ojosama.eventservice.event.application.service.EventCommandService;
+import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventRequest;
@@ -47,6 +49,9 @@ class EventControllerTest {
 
     @MockitoBean
     private EventCommandService eventCommandService;
+
+    @MockitoBean
+    private EventQueryService eventQueryService;
 
     private ObjectMapper objectMapper;
 
@@ -223,6 +228,60 @@ class EventControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(buildValidRequest(false))))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("행사 상세 조회 실패 (Red)")
+    class GetEventFailure {
+
+        @Test
+        @DisplayName("X-User-Id 헤더 없음 → 401")
+        void getEvent_missingUserId_returns401() throws Exception {
+            mockMvc.perform(get("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Role", MANAGER_ROLE))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("X-User-Role 헤더 없음 → 401")
+        void getEvent_missingUserRole_returns401() throws Exception {
+            mockMvc.perform(get("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString()))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 eventId → 404")
+        void getEvent_unknownEventId_returns404() throws Exception {
+            given(eventQueryService.getEventById(any()))
+                    .willThrow(new EventException(EventErrorCode.EVENT_NOT_FOUND));
+
+            mockMvc.perform(get("/v1/events/{eventId}", UUID.randomUUID())
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("행사 상세 조회 성공 (Green)")
+    class GetEventSuccess {
+
+        @Test
+        @DisplayName("유효한 eventId → 200, schedules 배열 포함")
+        void getEvent_validEventId_returns200() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            given(eventQueryService.getEventById(eventId)).willReturn(buildEventResult(false));
+
+            mockMvc.perform(get("/v1/events/{eventId}", eventId)
+                            .header("X-User-Id", USER_ID.toString())
+                            .header("X-User-Role", MANAGER_ROLE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value(200))
+                    .andExpect(jsonPath("$.data.status").value("SCHEDULED"))
+                    .andExpect(jsonPath("$.data.schedules").isArray())
+                    .andExpect(jsonPath("$.data.schedules.length()").value(1));
         }
     }
 

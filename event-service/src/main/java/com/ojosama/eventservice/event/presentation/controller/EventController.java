@@ -7,6 +7,7 @@ import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand
 import com.ojosama.eventservice.event.application.dto.command.CreateScheduleCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.service.EventCommandService;
+import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventRequest;
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
 import jakarta.validation.Valid;
@@ -16,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
 
     private final EventCommandService eventCommandService;
+    private final EventQueryService eventQueryService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
@@ -69,5 +73,19 @@ public class EventController {
         EventResult result = eventCommandService.createEvent(command);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(EventResponse.from(result)));
+    }
+
+    @GetMapping("/{eventId}")
+    public ResponseEntity<ApiResponse<EventResponse>> getEvent(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @PathVariable UUID eventId) {
+
+        if (userId == null || userRole == null) {
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
+        }
+
+        EventResult result = eventQueryService.getEventById(eventId);
+        return ResponseEntity.ok(ApiResponse.success(EventResponse.from(result)));
     }
 }
