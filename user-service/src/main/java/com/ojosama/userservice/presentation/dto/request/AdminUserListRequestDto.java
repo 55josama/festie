@@ -8,8 +8,8 @@ public record AdminUserListRequestDto(
 ) {
     public AdminUserListQuery toQuery() {
         return new AdminUserListQuery(
-                page == null ? 0 : page,
-                size == null ? 0 : size
+                page == null || page < 0 ? 0 : page,
+                size == null || size <= 0 ? 20 : size
         );
     }
 }
