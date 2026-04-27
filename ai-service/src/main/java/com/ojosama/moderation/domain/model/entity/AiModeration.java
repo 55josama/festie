@@ -52,4 +52,15 @@ public class AiModeration {
         this.category = category;
         this.contentSnapshot = contentSnapshot;
     }
+
+    public static AiModeration of(UUID targetId, UUID targetUserId, TargetType targetType,
+                                  ReportCategory category, String contentSnapshot){
+        return AiModeration.builder()
+                .targetId(targetId)
+                .targetUserId(targetUserId)
+                .targetType(targetType)
+                .category(category)
+                .contentSnapshot(contentSnapshot)
+                .build();
+    }
 }
