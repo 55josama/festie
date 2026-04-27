@@ -33,6 +33,9 @@ public class ChatRoom extends BaseEntity {
     @Column(nullable = false, unique = true, columnDefinition = "uuid")
     private UUID eventId;
 
+    @Column(nullable = false)
+    private String eventName;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EventCategory category;
@@ -54,11 +57,12 @@ public class ChatRoom extends BaseEntity {
     private UUID changedBy;
 
     @Builder
-    private ChatRoom(UUID eventId, EventCategory category, ChatRoomSchedule schedule) {
-        if (eventId == null || category == null || schedule == null) {
+    private ChatRoom(UUID eventId, String eventName, EventCategory category, ChatRoomSchedule schedule) {
+        if (eventId == null || eventName == null || eventName.isBlank() || category == null || schedule == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
         this.eventId = eventId;
+        this.eventName = eventName;
         this.category = category;
         this.status = ChatRoomStatus.SCHEDULED;
         this.schedule = schedule;

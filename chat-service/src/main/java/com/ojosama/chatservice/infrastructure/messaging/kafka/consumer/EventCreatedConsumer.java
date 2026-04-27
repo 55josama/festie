@@ -34,13 +34,14 @@ public class EventCreatedConsumer {
             chatRoomService.createChatRoom(
                     new CreateChatRoomCommand(
                             event.eventId(),
+                            event.eventName(),
                             category,
                             schedule.getScheduledOpenAt(),
                             schedule.getScheduledCloseAt()
                     )
             );
-            log.info("행사 이벤트로 채팅방을 자동 생성했습니다. eventId={}, categoryCode={}",
-                    event.eventId(), event.categoryCode());
+            log.info("행사 이벤트로 채팅방을 자동 생성했습니다. eventId={}, eventName={}, categoryCode={}",
+                    event.eventId(), event.eventName(), event.categoryCode());
         } catch (ChatException e) {
             if (HttpStatus.CONFLICT.equals(e.getStatus())) {
                 log.info("채팅방이 이미 존재해서 이벤트를 건너뜁니다. eventId={}", event.eventId());

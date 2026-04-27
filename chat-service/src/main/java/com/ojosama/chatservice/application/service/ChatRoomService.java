@@ -29,6 +29,7 @@ public class ChatRoomService {
     public ChatRoomResult createChatRoom(CreateChatRoomCommand command) {
         if (command == null
                 || command.eventId() == null
+                || command.eventName() == null || command.eventName().isBlank()
                 || command.category() == null
                 || command.scheduledOpenAt() == null
                 || command.scheduledCloseAt() == null) {
@@ -40,6 +41,7 @@ public class ChatRoomService {
 
         ChatRoom chatRoom = ChatRoom.builder()
                 .eventId(command.eventId())
+                .eventName(command.eventName())
                 .category(command.category())
                 .schedule(new ChatRoomSchedule(command.scheduledOpenAt(), command.scheduledCloseAt()))
                 .build();
