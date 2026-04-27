@@ -81,6 +81,10 @@ public class User extends BaseUserEntity {
         this.email = email;
         this.nickname = nickname;
     }
+
+    public void changeRole(UserRole role) {
+        this.role = role;
+    }
 }
 
 

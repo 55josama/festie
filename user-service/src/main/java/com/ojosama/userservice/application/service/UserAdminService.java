@@ -1,7 +1,9 @@
 package com.ojosama.userservice.application.service;
 
+import com.ojosama.userservice.application.dto.command.AdminChangeUserRoleCommand;
 import com.ojosama.userservice.application.dto.query.AdminDetailUserQuery;
 import com.ojosama.userservice.application.dto.query.AdminUserListQuery;
+import com.ojosama.userservice.application.dto.result.AdminChangeUserRoleResult;
 import com.ojosama.userservice.application.dto.result.AdminUserDetailResult;
 import com.ojosama.userservice.application.dto.result.AdminUserListResult;
 import com.ojosama.userservice.domain.model.User;
@@ -39,6 +41,20 @@ public class UserAdminService {
                 user.getPhoneNumber(),
                 user.getRole(),
                 user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
+    }
+
+    @Transactional
+    public AdminChangeUserRoleResult ChangeUserRole(AdminChangeUserRoleCommand command) {
+        User user = userRepository.findById(command.userId())
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        user.changeRole(command.role());
+
+        return new AdminChangeUserRoleResult(
+                user.getId(),
+                user.getRole(),
                 user.getUpdatedAt()
         );
     }

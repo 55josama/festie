@@ -3,7 +3,9 @@ package com.ojosama.userservice.presentation.controller;
 import com.ojosama.userservice.application.dto.query.AdminDetailUserQuery;
 import com.ojosama.userservice.application.dto.result.AdminUserDetailResult;
 import com.ojosama.userservice.application.service.UserAdminService;
+import com.ojosama.userservice.presentation.dto.request.AdminChangeUserRoleRequestDto;
 import com.ojosama.userservice.presentation.dto.request.AdminUserListRequestDto;
+import com.ojosama.userservice.presentation.dto.response.AdminChangeUserRoleResponseDto;
 import com.ojosama.userservice.presentation.dto.response.AdminDetailUserResponseDto;
 import com.ojosama.userservice.presentation.dto.response.AdminUserListResponseDto;
 import java.util.UUID;
@@ -11,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,5 +44,16 @@ public class AdminUserController {
         AdminUserDetailResult result = adminUserService.getDetailUser(query);
 
         return AdminDetailUserResponseDto.from(result);
+    }
+
+    //유저 권한 수정
+    @PatchMapping("/{userId}")
+    public AdminChangeUserRoleResponseDto changeUserRole(
+            @PathVariable UUID userId,
+            @RequestBody AdminChangeUserRoleRequestDto request
+    ) {
+        return AdminChangeUserRoleResponseDto.from(
+                adminUserService.ChangeUserRole(request.toCommand(userId))
+        );
     }
 }
