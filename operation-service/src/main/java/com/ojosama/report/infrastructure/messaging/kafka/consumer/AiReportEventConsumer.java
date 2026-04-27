@@ -21,7 +21,7 @@ public class AiReportEventConsumer {
     // AI 시스템이 보낸 신고임을 식별하기 위한 고정 UUID
     private static final UUID AI_SYSTEM_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
-    @KafkaListener(topics = "${spring.kafka.topic.ai-report}", groupId = "operation-service-group")
+    @KafkaListener(topics = "${spring.kafka.topic.moderation-reported}", groupId = "operation-service-group")
     public void consumeAiReport(AiReportEvent event) {
         try {
             // 대소문자 무시 및 공백 제거 후 파싱, 실패 시 예외 발생
