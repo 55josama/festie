@@ -50,8 +50,8 @@ public class KafkaConfig {
         // 멱등성이 true면 자동으로 Integer.MAX_VALUE가 됩니다.
 
         // 대신 전체 전송 제한 시간을 설정합니다 (기본값 2분).
-        // 이 시간 동안은 무한 재시도하며 전송 성공을 보장합니다.
-        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120000);
+//        delivery.timeout.ms는 재시도 횟수가 아닌 제한 시간이며, 이 시간 초과 후에는 전송이 실패할 수 있습니다.
+                props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120000);
         return new DefaultKafkaProducerFactory<>(props);
     }
 
