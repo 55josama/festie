@@ -1,7 +1,10 @@
 package com.ojosama.userservice.application.service;
 
+import com.ojosama.userservice.application.dto.query.AdminDetailUserQuery;
 import com.ojosama.userservice.application.dto.query.AdminUserListQuery;
+import com.ojosama.userservice.application.dto.result.AdminUserDetailResult;
 import com.ojosama.userservice.application.dto.result.AdminUserListResult;
+import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,5 +24,22 @@ public class UserAdminService {
                         PageRequest.of(query.page(), query.size())
                 )
                 .map(AdminUserListResult::from);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminUserDetailResult getDetailUser(AdminDetailUserQuery query) {
+        User user = userRepository.findById(query.userId())
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        return new AdminUserDetailResult(
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getName(),
+                user.getPhoneNumber(),
+                user.getRole(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
     }
 }
