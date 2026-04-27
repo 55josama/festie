@@ -2,6 +2,7 @@ package com.ojosama.report.infrastructure.messaging.kafka.consumer;
 
 import com.ojosama.report.application.dto.command.CreateReportCommand;
 import com.ojosama.report.application.service.ReportService;
+import com.ojosama.report.domain.event.payload.AiReportEvent;
 import com.ojosama.report.domain.model.enums.ReportCategory;
 import com.ojosama.report.domain.model.enums.ReportTargetType;
 import com.ojosama.report.domain.model.enums.ReporterType;
@@ -24,17 +25,17 @@ public class AiReportEventConsumer {
     public void consumeAiReport(AiReportEvent event) {
         try {
             // 대소문자 무시 및 공백 제거 후 파싱, 실패 시 예외 발생
-            ReportTargetType targetType = ReportTargetType.valueOf(event.getTargetType().toUpperCase().trim());
-            ReportCategory category = ReportCategory.valueOf(event.getCategory().toUpperCase().trim());
+            ReportTargetType targetType = ReportTargetType.valueOf(event.targetType().toUpperCase().trim());
+            ReportCategory category = ReportCategory.valueOf(event.category().toUpperCase().trim());
 
             CreateReportCommand command = new CreateReportCommand(
                     AI_SYSTEM_ID,
-                    event.getTargetId(),
-                    event.getTargetUserId(),
+                    event.targetId(),
+                    event.targetUserId(),
                     targetType,
                     category,
-                    event.getDescription(),
-                    event.getContent()
+                    event.description(),
+                    event.content()
             );
 
             reportService.createReport(command, ReporterType.SYSTEM_AI);

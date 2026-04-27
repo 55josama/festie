@@ -1,4 +1,4 @@
-package com.ojosama.moderation.application.dto.command;
+package com.ojosama.report.application.dto.command;
 
 import com.ojosama.report.domain.model.entity.Report;
 import com.ojosama.report.domain.model.enums.ReportCategory;
@@ -13,8 +13,8 @@ public record CreateAiReportCommand(
         ReportTargetType targetType,
         ReportCategory category,
         String description,
-        String content) {
-
+        String content)
+{
     public Report toEntity(ReporterType reporterType){
         return Report.of(
                 reporterId,
