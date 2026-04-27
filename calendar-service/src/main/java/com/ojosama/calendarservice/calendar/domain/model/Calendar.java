@@ -8,6 +8,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,7 +18,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "p_calendar")
+@Table(
+        name = "p_calendar",
+        indexes = {
+                @Index(name = "idx_calendar_user_deleted", columnList = "user_id,deleted_at"),
+                @Index(name = "idx_calendar_user_eventdate_deleted", columnList = "user_id,event_date,deleted_at")
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Calendar extends BaseUserEntity {
@@ -66,25 +73,25 @@ public class Calendar extends BaseUserEntity {
 
     private void validateUserId(UUID userId) {
         if (userId == null) {
-            throw new CalendarException(CalendarErrorCode.CALENDAR_ACCESS_DENIED);
+            throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
         }
     }
 
     private void validateEventScheduleId(UUID eventScheduleId) {
         if (eventScheduleId == null) {
-            throw new CalendarException(CalendarErrorCode.EVENT_SCHEDULE_NOT_FOUND);
+            throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
         }
     }
 
     private void validateEventDate(LocalDateTime eventDate) {
         if (eventDate == null) {
-            throw new CalendarException(CalendarErrorCode.EVENT_SCHEDULE_NOT_FOUND);
+            throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
         }
     }
 
     private void validateMemo(String memo) {
         if (memo != null && memo.length() > 1000) {
-            throw new IllegalArgumentException("메모는 1000자를 초과할 수 없습니다.");
+            throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
         }
     }
 }
