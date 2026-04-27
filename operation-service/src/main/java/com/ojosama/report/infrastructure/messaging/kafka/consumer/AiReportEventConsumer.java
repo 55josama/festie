@@ -24,6 +24,11 @@ public class AiReportEventConsumer {
     @KafkaListener(topics = "${spring.kafka.topic.moderation-reported}", groupId = "operation-service-group")
     public void consumeAiReport(AiReportEvent event) {
         try {
+            if (event == null || event.targetType() == null || event.category() == null) {
+                log.error("AI 신고 이벤트 필수 필드 누락. 처리를 스킵합니다. event: {}", event);
+                return;
+                }
+
             // 대소문자 무시 및 공백 제거 후 파싱, 실패 시 예외 발생
             ReportTargetType targetType = ReportTargetType.valueOf(event.targetType().toUpperCase().trim());
             ReportCategory category = ReportCategory.valueOf(event.category().toUpperCase().trim());
