@@ -36,7 +36,7 @@ public class BlacklistController {
     public ResponseEntity<ApiResponse<FindBlacklistResponse>> createBlacklist(
             @Valid @RequestBody CreateBlacklistRequest request) {
 
-        var result = blacklistService.createBlacklist(request.toCommand());
+        var result = blacklistService.createBlacklistManual(request.toCommand());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(FindBlacklistResponse.from(result)));

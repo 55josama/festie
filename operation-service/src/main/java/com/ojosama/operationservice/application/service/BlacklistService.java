@@ -26,7 +26,7 @@ public class BlacklistService {
 
     // 블랙리스트 생성(관리자 수동 등록)
     @Transactional
-    public BlacklistResult createBlacklist(CreateBlacklistCommand command) {
+    public BlacklistResult createBlacklistManual(CreateBlacklistCommand command) {
         validateNotAlreadyActive(command.userId());
 
         Blacklist savedBlacklist = blacklistRepository.save(command.toEntity());

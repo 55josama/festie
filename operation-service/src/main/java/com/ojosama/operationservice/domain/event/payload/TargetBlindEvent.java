@@ -10,5 +10,6 @@ public record TargetBlindEvent (
         UUID targetId,
         ReportTargetType reportTargetType,
         UUID targetUserId,
-        UUID categoryId
+        UUID categoryId,
+        String reason
 ){ }

@@ -11,9 +11,11 @@ import com.ojosama.operationservice.domain.event.payload.TargetBlindEvent;
 import com.ojosama.operationservice.domain.exception.ReportErrorCode;
 import com.ojosama.operationservice.domain.exception.ReportException;
 import com.ojosama.operationservice.domain.model.entity.Report;
+import com.ojosama.operationservice.domain.model.enums.RegistrationType;
 import com.ojosama.operationservice.domain.model.enums.ReportStatus;
 import com.ojosama.operationservice.domain.model.enums.ReporterType;
 import com.ojosama.operationservice.domain.repository.ReportRepository;
+import com.ojosama.operationservice.infrastructure.client.ChatClient;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReportService {
     private final ReportRepository reportRepository;
     private final ReportEventProducer reportEventProducer;
+    private final ChatClient chatClient;
 
     // 신고 생성
     @Transactional
@@ -111,13 +114,18 @@ public class ReportService {
     }
 
     private void publishBlindEvent(CreateReportCommand command) {
-        String role = command.targetType().name().equals("CHAT")
-                ? "CATEGORY_MANAGER" : "COMMUNITY_MANAGER";
+        UUID categoryId = null;
+
+        if (command.targetType().name().equals("CHAT")) {
+            // (ChatClient에 정의된 메서드명에 맞게 호출해주세요. 예: getChatInfo)
+            categoryId = chatClient.getChatMessageWriter(command.targetId()).categoryId();
+        }
 
         reportEventProducer.publishTargetBlindEvent(new TargetBlindEvent(
                 command.targetId(),
-                command.targetType().name(),
-                role,
+                command.targetType(),
+                command.targetUserId(),
+                categoryId,
                 "누적 신고 3회로 인해 자동 블라인드 처리되었습니다."
         ));
     }
@@ -128,8 +136,8 @@ public class ReportService {
         if (userBlindCount == 5) {
             reportEventProducer.publishBlacklistRegisterEvent(new BlacklistRegisterEvent(
                     targetUserId,
-                    (int) userBlindCount,
-                    "블라인드 처리가 5회 누적되어 블랙리스트 등록 검토가 필요합니다."
+                    "블라인드 처리가 5회 누적되어 블랙리스트 등록 검토가 필요합니다.",
+                    RegistrationType.AUTOMATIC
             ));
         }
     }

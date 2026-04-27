@@ -23,7 +23,7 @@ public class ReportEventProducerImpl implements ReportEventProducer {
     @Override
     public void publishTargetBlindEvent(TargetBlindEvent event) {
         try {
-            kafkaTemplate.send(targetBlindTopic, event.getTargetId().toString(), event).get(3, TimeUnit.SECONDS);
+            kafkaTemplate.send(targetBlindTopic, event.targetId().toString(), event).get(3, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new IllegalStateException("블라인드 이벤트 발행 실패", e);
         }
@@ -32,7 +32,7 @@ public class ReportEventProducerImpl implements ReportEventProducer {
     @Override
     public void publishBlacklistRegisterEvent(BlacklistRegisterEvent event) {
         try {
-            kafkaTemplate.send(blacklistRegisterTopic, event.getTargetUserId().toString(), event).get(3, TimeUnit.SECONDS);
+            kafkaTemplate.send(blacklistRegisterTopic, event.targetUserId().toString(), event).get(3, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new IllegalStateException("블랙리스트 등록 이벤트 발행 실패", e);
         }
