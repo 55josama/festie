@@ -1,8 +1,11 @@
 package com.ojosama.post.domain.repository;
 
 import com.ojosama.post.domain.model.Post;
+import com.ojosama.post.domain.model.PostStatus;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -22,4 +25,18 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :id")
     int incrementViewCount(@Param("id") UUID id);
 
+    /** 특정 유저가 쓴 게시글 (소프트 삭제/BLOCKED 제외). */
+    Page<Post> findByUserIdAndDeletedAtIsNullAndStatusNot(
+            UUID userId, PostStatus excludedStatus, Pageable pageable);
+//    @Query("SELECT p FROM Post p WHERE p.userId = :userId " +
+//            "AND p.deletedAt IS NULL AND p.status != 'BLOCKED'")
+//    Page<Post> findActivePostsByUserId(UUID userId, Pageable pageable);
+
+    /** 카테고리별 게시글 (소프트 삭제/BLOCKED 제외). */
+    Page<Post> findByCategoryIdAndDeletedAtIsNullAndStatusNot(
+            UUID categoryId, PostStatus excludedStatus, Pageable pageable);
+
+    /** 전체 목록 (소프트 삭제/BLOCKED 제외). */
+    Page<Post> findByDeletedAtIsNullAndStatusNot(
+            PostStatus excludedStatus, Pageable pageable);
 }

@@ -7,15 +7,18 @@ import com.ojosama.post.application.dto.command.CreatePostCommand;
 import com.ojosama.post.application.dto.command.DeletePostCommand;
 import com.ojosama.post.application.dto.command.UpdatePostCommand;
 import com.ojosama.post.application.dto.result.PostResult;
+import com.ojosama.post.application.query.PostListQuery;
 import com.ojosama.post.domain.event.payload.PostCreatedEvent;
 import com.ojosama.post.domain.event.payload.PostUpdateEvent;
 import com.ojosama.post.domain.exception.PostErrorCode;
 import com.ojosama.post.domain.exception.PostException;
 import com.ojosama.post.domain.model.Post;
+import com.ojosama.post.domain.model.PostStatus;
 import com.ojosama.post.domain.repository.PostRepository;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,6 +102,21 @@ public class PostService {
         postRepository.incrementViewCount(postId);
         // viewCount는 native UPDATE로 +1 됐으나 영속 객체엔 반영 안 됐으니 +1 보정해서 반환
         return adjustViewCountForResponse(post, 1);
+    }
+
+    public Page<PostResult> list(PostListQuery query) {
+        Page<Post> posts;
+        if (query.categoryId() != null) {
+            posts = postRepository.findByCategoryIdAndDeletedAtIsNullAndStatusNot(
+                    query.categoryId(), PostStatus.BLOCKED, query.pageable());
+        } else if (query.userId() != null) {
+            posts = postRepository.findByUserIdAndDeletedAtIsNullAndStatusNot(
+                    query.userId(), PostStatus.BLOCKED, query.pageable());
+        } else {
+            posts = postRepository.findByDeletedAtIsNullAndStatusNot(
+                    PostStatus.BLOCKED, query.pageable());
+        }
+        return posts.map(PostResult::from);
     }
 
     private Post loadAlive(UUID postId) {
