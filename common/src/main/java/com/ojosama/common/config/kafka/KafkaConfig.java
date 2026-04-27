@@ -31,17 +31,27 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
+    @Value("${spring.kafka.consumer.group-id:default-group}")
+    private String groupId;
+
     // ── Producer ────────────────────────────────────────────────
     //Kafka로 데이터를 보낼 Producer 객체를 생성하는 공장
     @Bean
     public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
         props.put(ProducerConfig.ACKS_CONFIG, "all"); //메시지가 Kafka 브로커의 모든 복제본(Replica)에 안전하게 저장되었는지 확인
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);//중복 방지 설정
-        props.put(ProducerConfig.RETRIES_CONFIG, 3); //전송 실패 시 자동으로 3번까지 다시 시도
+        //RETRIES_CONFIG 제거
+        // 멱등성이 true면 자동으로 Integer.MAX_VALUE가 됩니다.
+
+        // 대신 전체 전송 제한 시간을 설정합니다 (기본값 2분).
+        // 이 시간 동안은 무한 재시도하며 전송 성공을 보장합니다.
+        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120000);
         return new DefaultKafkaProducerFactory<>(props);
     }
 
