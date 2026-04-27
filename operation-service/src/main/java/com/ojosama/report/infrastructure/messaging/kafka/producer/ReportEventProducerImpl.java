@@ -40,9 +40,9 @@ public class ReportEventProducerImpl implements ReportEventProducer {
     public void publishBlacklistRegisterEvent(BlacklistRegisterEvent event) {
         try {
             kafkaTemplate.send(blacklistRegisteredTopic, event.userId().toString(), event).get(3, TimeUnit.SECONDS);
-            log.info("수동 블랙리스트 알림 이벤트 발행 성공: userId={}", event.userId());
+            log.info("블랙리스트 알림 이벤트 발행 성공: userId={}", event.userId());
         } catch (Exception e) {
-            log.error("수동 블랙리스트 알림 이벤트 발행 실패: userId={}", event.userId(), e);
+            log.error("블랙리스트 알림 이벤트 발행 실패: userId={}", event.userId(), e);
             throw new ReportException(CommonErrorCode.EVENT_PUBLISH_FAILED);
         }
     }
