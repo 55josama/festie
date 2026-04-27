@@ -13,6 +13,7 @@ import com.ojosama.eventservice.event.domain.model.vo.EventTicketing;
 import com.ojosama.eventservice.event.domain.model.vo.EventTime;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,5 +68,14 @@ public class EventCommandServiceImpl implements EventCommandService {
         }
 
         return EventResult.from(event);
+    }
+
+    @Override
+    public void deleteEvent(UUID userId, UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
+
+        event.deleted(userId);
+        eventRepository.delete(event);
     }
 }
