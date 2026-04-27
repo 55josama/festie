@@ -1,5 +1,6 @@
 package com.ojosama.eventservice.event.infrastructure.persistence;
 
+import com.ojosama.eventservice.event.domain.model.Event;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -9,4 +10,9 @@ import org.springframework.stereotype.Repository;
 public class EventRepositoryImpl implements EventRepository {
 
     private final JpaEventRepository jpaEventRepository;
+
+    @Override
+    public Event save(Event event) {
+        return jpaEventRepository.save(event);
+    }
 }
