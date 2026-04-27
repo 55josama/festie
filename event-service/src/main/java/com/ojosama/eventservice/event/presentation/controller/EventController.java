@@ -5,11 +5,13 @@ import com.ojosama.common.exception.CustomException;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand;
 import com.ojosama.eventservice.event.application.dto.command.EventListCommand;
+import com.ojosama.eventservice.event.application.dto.command.UpdateEventCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.service.EventCommandService;
 import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.domain.model.EventStatus;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventRequest;
+import com.ojosama.eventservice.event.presentation.dto.request.UpdateEventRequest;
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -24,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -75,6 +78,22 @@ public class EventController {
         EventListCommand command = new EventListCommand(category, status, startAt, endAt, year, month);
         Page<EventResult> result = eventQueryService.getEvents(command, pageable);
         return ResponseEntity.ok(ApiResponse.success(result.map(EventResponse::from)));
+    }
+
+    @PatchMapping("/{eventId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+    public ResponseEntity<ApiResponse<EventResponse>> updateEvent(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @PathVariable UUID eventId,
+            @Valid @RequestBody UpdateEventRequest request) {
+
+        if (userId == null || userRole == null) {
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
+        }
+
+        EventResult result = eventCommandService.updateEvent(UpdateEventCommand.from(eventId, userId, request));
+        return ResponseEntity.ok(ApiResponse.success(EventResponse.from(result)));
     }
 
     @GetMapping("/{eventId}")
