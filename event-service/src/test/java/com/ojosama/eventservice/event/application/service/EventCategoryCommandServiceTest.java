@@ -81,7 +81,7 @@ class EventCategoryCommandServiceTest {
             EventCategory category = EventCategory.create(CATEGORY_NAME);
             UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(USER_ID, CATEGORY_ID, "CONCERT");
             given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
-            given(eventCategoryRepository.existsByName("CONCERT")).willReturn(false);
+            given(eventCategoryRepository.existsByNameExcludingId("CONCERT", CATEGORY_ID)).willReturn(false);
 
             EventCategoryResult result = eventCategoryService.updateCategory(command);
 
@@ -105,7 +105,7 @@ class EventCategoryCommandServiceTest {
             EventCategory category = EventCategory.create(CATEGORY_NAME);
             UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(USER_ID, CATEGORY_ID, "CONCERT");
             given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
-            given(eventCategoryRepository.existsByName("CONCERT")).willReturn(true);
+            given(eventCategoryRepository.existsByNameExcludingId("CONCERT", CATEGORY_ID)).willReturn(true);
 
             assertThatThrownBy(() -> eventCategoryService.updateCategory(command))
                     .isInstanceOf(EventException.class)

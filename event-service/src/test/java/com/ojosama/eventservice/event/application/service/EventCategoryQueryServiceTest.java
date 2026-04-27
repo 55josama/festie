@@ -39,7 +39,7 @@ class EventCategoryQueryServiceTest {
         @Test
         @DisplayName("성공: 전체 카테고리 목록을 반환한다")
         void getCategories_success() {
-            given(eventCategoryRepository.findAll()).willReturn(List.of(
+            given(eventCategoryRepository.findByDeletedAtIsNull()).willReturn(List.of(
                     EventCategory.create("FESTIVAL"),
                     EventCategory.create("CONCERT")));
 
@@ -53,7 +53,7 @@ class EventCategoryQueryServiceTest {
         @Test
         @DisplayName("성공: 카테고리가 없으면 빈 목록을 반환한다")
         void getCategories_empty() {
-            given(eventCategoryRepository.findAll()).willReturn(List.of());
+            given(eventCategoryRepository.findByDeletedAtIsNull()).willReturn(List.of());
 
             List<EventCategoryResult> result = eventCategoryQueryService.getCategories();
 
