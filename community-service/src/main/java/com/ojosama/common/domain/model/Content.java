@@ -25,9 +25,6 @@ public class Content {
     @Column(columnDefinition = "TEXT", name = "content")
     private String value;
 
-    //별도의 상수 클래스나 DB, Config 파일에서 관리하는 게 좋다.
-    private static final List<String> BANNED_WORDS = List.of("금지어1", "금지어2", "나쁜말");
-
     public Content(String value) {
         validate(value); // 생성 시점에 검증
         this.value = value;
@@ -44,6 +41,9 @@ public class Content {
         if (value.trim().length() < 2) {
             throw new CommunityException(CommunityErrorCode.CONTENT_TOO_SHORT);
         }
+        if (value.length() > 4000) {
+            throw new CommunityException(CommunityErrorCode.CONTENT_TOO_LONG);
+        }
 
         String normalized = value.replaceAll("[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]", "");
 
@@ -52,5 +52,10 @@ public class Content {
                 throw new CommunityException(CommunityErrorCode.BANNED_WORD_DETECTED);
             }
         }
+    }
+    //게시글이 BLOCKED 처리됐을 때 응답에서 마스킹용으로 사용.
+    //실제 DB 값은 유지하고 조회 시점에만 마스킹된 값을 노출한다.
+    public static String maskedText() {
+        return "차단된 게시물입니다.";
     }
 }
