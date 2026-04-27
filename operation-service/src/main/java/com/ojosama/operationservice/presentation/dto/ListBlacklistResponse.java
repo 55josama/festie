@@ -1,18 +1,23 @@
 package com.ojosama.operationservice.presentation.dto;
 
 import com.ojosama.operationservice.application.dto.result.BlacklistResult;
+import com.ojosama.operationservice.domain.model.entity.Blacklist;
+import com.ojosama.operationservice.domain.model.enums.BlacklistStatus;
+import com.ojosama.operationservice.domain.model.enums.RegistrationType;
 import java.util.UUID;
 
 public record ListBlacklistResponse (
         UUID id,
         UUID userId,
-        String status
+        BlacklistStatus status,
+        RegistrationType registrationType
 ){
-    public static ListBlacklistResponse from(BlacklistResult result) {
+    public static ListBlacklistResponse from(Blacklist blacklist) {
         return new ListBlacklistResponse(
-                result.id(),
-                result.userId(),
-                result.status()
+                blacklist.getId(),
+                blacklist.getUserId(),
+                blacklist.getStatus(),
+                blacklist.getRegistrationType()
         );
     }
 }
