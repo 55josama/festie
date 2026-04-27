@@ -15,6 +15,10 @@ public record CreateBlacklistCommand(UUID userId, String reason) {
     }
 
     public Blacklist toEntity(RegistrationType registrationType){
+        if (registrationType == null) {
+            throw new IllegalArgumentException("블랙리스트 등록 유형은 필수입니다.");
+        }
+
         return Blacklist.of(userId, reason, registrationType);
     }
 }
