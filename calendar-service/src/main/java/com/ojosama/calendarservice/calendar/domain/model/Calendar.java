@@ -1,0 +1,90 @@
+package com.ojosama.calendarservice.calendar.domain.model;
+
+import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
+import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
+import com.ojosama.common.audit.BaseUserEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "p_calendar")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Calendar extends BaseUserEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
+
+    @Column(name = "event_schedule_id", nullable = false)
+    private UUID eventScheduleId;
+
+    @Column(name = "event_date", nullable = false)
+    private LocalDateTime eventDate;
+
+    @Column(name = "memo", length = 1000)
+    private String memo;
+
+    @Builder(access = AccessLevel.PRIVATE)
+    private Calendar(UUID userId, UUID eventScheduleId, LocalDateTime eventDate, String memo) {
+        validateUserId(userId);
+        validateEventScheduleId(eventScheduleId);
+        validateEventDate(eventDate);
+        validateMemo(memo);
+        this.userId = userId;
+        this.eventScheduleId = eventScheduleId;
+        this.eventDate = eventDate;
+        this.memo = memo;
+    }
+
+    public static Calendar create(UUID userId, UUID eventScheduleId, LocalDateTime eventDate, String memo) {
+        return Calendar.builder()
+                .userId(userId)
+                .eventScheduleId(eventScheduleId)
+                .eventDate(eventDate)
+                .memo(memo)
+                .build();
+    }
+
+    public void updateMemo(String memo) {
+        validateMemo(memo);
+        this.memo = memo;
+    }
+
+    private void validateUserId(UUID userId) {
+        if (userId == null) {
+            throw new CalendarException(CalendarErrorCode.CALENDAR_ACCESS_DENIED);
+        }
+    }
+
+    private void validateEventScheduleId(UUID eventScheduleId) {
+        if (eventScheduleId == null) {
+            throw new CalendarException(CalendarErrorCode.EVENT_SCHEDULE_NOT_FOUND);
+        }
+    }
+
+    private void validateEventDate(LocalDateTime eventDate) {
+        if (eventDate == null) {
+            throw new CalendarException(CalendarErrorCode.EVENT_SCHEDULE_NOT_FOUND);
+        }
+    }
+
+    private void validateMemo(String memo) {
+        if (memo != null && memo.length() > 1000) {
+            throw new IllegalArgumentException("메모는 1000자를 초과할 수 없습니다.");
+        }
+    }
+}
