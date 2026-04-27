@@ -1,6 +1,7 @@
 package com.ojosama.operationservice.application.dto.command;
 
 import com.ojosama.operationservice.domain.model.entity.Blacklist;
+import com.ojosama.operationservice.domain.model.enums.RegistrationType;
 import java.util.UUID;
 
 public record CreateBlacklistCommand(UUID userId, String reason) {
@@ -13,7 +14,7 @@ public record CreateBlacklistCommand(UUID userId, String reason) {
         }
     }
 
-    public Blacklist toEntity(){
-        return Blacklist.of(userId, reason);
+    public Blacklist toEntity(RegistrationType registrationType){
+        return Blacklist.of(userId, reason, registrationType);
     }
 }
