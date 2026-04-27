@@ -2,14 +2,18 @@ package com.ojosama.post.presesntation.controller;
 
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.post.application.dto.command.CreatePostCommand;
+import com.ojosama.post.application.dto.command.UpdatePostCommand;
 import com.ojosama.post.application.dto.result.PostResult;
 import com.ojosama.post.application.service.PostService;
 import com.ojosama.post.presesntation.dto.request.CreatePostRequest;
+import com.ojosama.post.presesntation.dto.request.UpdatePostRequest;
 import com.ojosama.post.presesntation.dto.response.PostResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,4 +32,15 @@ public class PostController {
         PostResult result = postService.create(new CreatePostCommand(UUID.randomUUID(), req.categoryId(), req.title(), req.content()));
         return ApiResponse.created(PostResponse.from(result));
     }
+
+    @PatchMapping("/{postId}")
+    public ApiResponse<PostResponse> update(
+            @PathVariable UUID postId,
+            @Valid @RequestBody UpdatePostRequest req) {
+        PostResult result = postService.update(new UpdatePostCommand(
+                postId, UUID.randomUUID(), req.categoryId(), req.title(), req.content()));
+        return ApiResponse.success(PostResponse.from(result));
+    }
+
+
 }
