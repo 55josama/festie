@@ -12,3 +12,8 @@ spring:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
+
+  jwt:
+    secret: ${JWT_SECRET:ojosamaojosamaoojosamaojosamaojosamaojosama}
+    access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600000}
+    refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:1296000000}
