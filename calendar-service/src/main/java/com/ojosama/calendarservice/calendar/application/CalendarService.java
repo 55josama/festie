@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +49,11 @@ public class CalendarService {
         Calendar calendar = Calendar.create(command.userId(), command.eventScheduleId(), eventStart, command.memo(),
                 ticketingDate);
 
-        calendarRepository.save(calendar);
+        try {
+            calendarRepository.saveAndFlush(calendar);
+        } catch (DataIntegrityViolationException e) {
+            throw new CalendarException(CalendarErrorCode.EXISTS_CALENDAR);
+        }
 
         return CalendarResponseDto.from(CalendarResult.from(calendar));
     }

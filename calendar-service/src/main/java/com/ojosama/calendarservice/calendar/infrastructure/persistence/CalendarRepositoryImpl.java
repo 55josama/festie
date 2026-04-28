@@ -19,13 +19,13 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public void save(Calendar calendar) {
-        jpaCalendarRepository.save(calendar);
+    public void saveAndFlush(Calendar calendar) {
+        jpaCalendarRepository.saveAndFlush(calendar);
     }
 
     @Override
     public Optional<Calendar> findByIdAndUserIdAndDeletedAtIsNull(UUID id, UUID userId) {
-        return jpaCalendarRepository.findByIdAndDeletedAtIsNull(id);
+        return jpaCalendarRepository.findByIdAndUserIdAndDeletedAtIsNull(id, userId);
     }
 
     @Override

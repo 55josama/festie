@@ -7,6 +7,8 @@ import com.ojosama.calendarservice.calendar.presentaion.dto.CreateCalendarReques
 import com.ojosama.calendarservice.calendar.presentaion.dto.UpdateMemoCalendarRequestDto;
 import com.ojosama.common.response.ApiResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -52,8 +54,9 @@ public class CalendarController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CalendarResponseDto>>> getCalendars(@RequestParam("year") int year,
-                                                                               @RequestParam("month") int month) {
+    public ResponseEntity<ApiResponse<List<CalendarResponseDto>>> getCalendars(
+            @RequestParam("year") @Min(2000) @Max(9999) int year,
+            @RequestParam("month") @Min(1) @Max(12) int month) {
         // TODO : userId 수정
         UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
 
@@ -62,6 +65,7 @@ public class CalendarController {
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
+    // TODO : 일정을 바꾸는 ...
     @PatchMapping("/{calendarId}")
     public ResponseEntity<ApiResponse<CalendarResponseDto>> updateMemoCalendars(@PathVariable UUID calendarId,
                                                                                 @RequestBody UpdateMemoCalendarRequestDto dto) {

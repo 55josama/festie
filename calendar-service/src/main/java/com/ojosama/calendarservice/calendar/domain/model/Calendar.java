@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -23,6 +24,11 @@ import lombok.NoArgsConstructor;
         indexes = {
                 @Index(name = "idx_calendar_user_deleted", columnList = "user_id,deleted_at"),
                 @Index(name = "idx_calendar_user_eventdate_deleted", columnList = "user_id,event_date,deleted_at")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_calendar_user_eventschedule_id",
+                        columnNames = {"user_id", "event_schedule_id"})
         }
 )
 @Getter
