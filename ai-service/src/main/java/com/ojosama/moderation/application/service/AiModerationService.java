@@ -33,7 +33,15 @@ public class AiModerationService {
 
         // AI 환각(Hallucination) 방어를 위한 원본 이벤트 Map 생성
         Map<UUID, AiModerationRequestEvent> eventMap = events.stream()
-                .collect(Collectors.toMap(AiModerationRequestEvent::targetId, e -> e));
+                .collect(Collectors.toMap(
+                        AiModerationRequestEvent::targetId,
+                        e -> e,
+                        (first, second) -> {
+                            log.warn("중복 moderation 요청 targetId 감지: {}", first.targetId());
+                            return second;
+                            }
+                        )
+                );
 
         // AI 모델 일괄 호출
         List<AiModerationClientResponse> aiResponses = aiModerationClient.analyzeBatch(events);
