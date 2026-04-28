@@ -35,7 +35,7 @@ public class AiModerationEventConsumer {
         }
     }
 
-    // 게시글용 리스너 (communityBatchFactory 사용)
+    // 커뮤니티용 리스너 (communityBatchFactory 사용)
     @KafkaListener(
             topics = "${spring.kafka.topic.community-moderation-requested}",
             groupId = "ai-service-group",
