@@ -12,10 +12,12 @@ import com.ojosama.chatservice.domain.model.ChatRoom;
 import com.ojosama.chatservice.domain.model.ChatRoomSchedule;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.common.exception.CommonErrorCode;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -146,8 +148,23 @@ public class ChatRoomService {
     }
 
     private boolean isDuplicateEventIdViolation(DataIntegrityViolationException e) {
+        // eventId 유니크 제약 위반만 "채팅방 이미 존재"로 해석
+        // 다른 무결성 오류까지 중복 생성으로 오인하지 않도록, 제약명과 SQLState를 함께 확인
         Throwable cause = e;
         while (cause != null) {
+            // ChatRoom 의 유니크 제약 확인
+            if (cause instanceof ConstraintViolationException constraintViolationException) {
+                if ("uk_chat_room_event_id".equals(constraintViolationException.getConstraintName())) {
+                    return true;
+                }
+            }
+            // PostgreSQL에서 unique key 충돌 제약 23505
+            if (cause instanceof SQLException sqlException) {
+                if ("23505".equals(sqlException.getSQLState())
+                        && isEventIdConstraintMessage(sqlException.getMessage())) {
+                    return true;
+                }
+            }
             String message = cause.getMessage();
             if (message != null && isEventIdConstraintMessage(message)) {
                 return true;
@@ -158,11 +175,13 @@ public class ChatRoomService {
     }
 
     private boolean isEventIdConstraintMessage(String message) {
+        // DB 드라이버/버전에 따라 예외 메시지 포맷이 조금씩 달라질 수 있어서
+        // constraint name / SQLState를 우선 보고, 이 문자열 체크는 보조 수단으로 사용
         String normalized = message.toLowerCase();
         return normalized.contains("uk_chat_room_event_id")
                 || normalized.contains("p_chat_room_event_id_key")
-                || normalized.contains("event_id")
-                && normalized.contains("duplicate key");
+                || (normalized.contains("event_id")
+                && normalized.contains("duplicate key"));
     }
 
 }
