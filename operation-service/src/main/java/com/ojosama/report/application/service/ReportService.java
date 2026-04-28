@@ -30,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ReportService {
     private final ReportRepository reportRepository;
-    private final ReportEventProducer reportEventProducer;
     private final OutboxEventPublisher outbox;
     private final ChatClient chatClient;
 
