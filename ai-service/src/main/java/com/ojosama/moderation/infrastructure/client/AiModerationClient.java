@@ -1,5 +1,7 @@
 package com.ojosama.moderation.infrastructure.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.moderation.domain.event.payload.AiEvaluateEvent;
 import com.ojosama.moderation.domain.event.payload.AiModerationRequestEvent;
 import com.ojosama.moderation.infrastructure.client.dto.AiModerationClientResponse;
@@ -13,16 +15,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class AiModerationClient {
     private final ChatClient chatClient;
+    private final ObjectMapper objectMapper;
 
-    public AiModerationClient(ChatClient.Builder builder) {
+    public AiModerationClient(ChatClient.Builder builder, ObjectMapper objectMapper) {
         this.chatClient = builder.build();
+        this.objectMapper = objectMapper;
     }
 
     public List<AiModerationClientResponse> analyzeBatch(List<AiModerationRequestEvent> events) {
-        // 이벤트 리스트를 AI가 읽기 좋게 문자열로 결합
-        String userContent = events.stream()
-                .map(e -> String.format("targetId: %s, content: %s", e.targetId(), e.content()))
-                .collect(Collectors.joining("\n"));
+        // 이벤트 리스트를 AI가 읽기 좋게 JSON Array 형태로 결합
+        String userContent;
+        try {
+            userContent = objectMapper.writeValueAsString(events);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("배치 요청 데이터를 JSON으로 변환하는 데 실패했습니다.", e);
+        }
 
         // 분리해둔 템플릿과 결합된 텍스트를 GPT에게 전송
         return chatClient.prompt()
