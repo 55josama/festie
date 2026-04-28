@@ -3,6 +3,7 @@ package com.ojosama.userservice.application.service;
 import com.ojosama.userservice.application.dto.command.LoginCommand;
 import com.ojosama.userservice.application.dto.command.ReissueTokenCommand;
 import com.ojosama.userservice.application.dto.result.LoginResult;
+import com.ojosama.userservice.application.dto.result.LogoutResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import com.ojosama.userservice.global.security.JwtTokenProvider;
@@ -39,6 +40,8 @@ public class AuthService {
         );
     }
 
+
+    //로그인
     public LoginResult reissue(ReissueTokenCommand command) {
         String refreshToken = command.refreshToken();
 
@@ -65,5 +68,16 @@ public class AuthService {
                 newAccessToken,
                 newRefreshToken
         );
+    }
+
+    //로그아웃
+    public LogoutResult logout(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        user.clearRefreshToken();
+        userRepository.save(user);
+
+        return new LogoutResult(user.getId());
     }
 }
