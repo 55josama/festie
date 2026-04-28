@@ -2,6 +2,8 @@ package com.ojosama.moderation.application.service;
 
 import com.ojosama.moderation.domain.event.AiModerationEventProducer;
 import com.ojosama.moderation.domain.event.payload.AiModerationRequestEvent;
+import com.ojosama.moderation.domain.exception.AiModerationErrorCode;
+import com.ojosama.moderation.domain.exception.AiModerationException;
 import com.ojosama.moderation.domain.model.entity.AiModeration;
 import com.ojosama.moderation.domain.model.enums.ReportCategory;
 import com.ojosama.moderation.domain.repository.AiModerationRepository;
@@ -10,6 +12,7 @@ import com.ojosama.moderation.infrastructure.client.dto.AiModerationClientRespon
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,16 @@ public class AiModerationService {
 
         // AI 모델 일괄 호출
         List<AiModerationClientResponse> aiResponses = aiModerationClient.analyzeBatch(events);
+
+        Set<UUID> expectedIds = eventMap.keySet();
+        Set<UUID> responseIds = aiResponses.stream()
+                .map(AiModerationClientResponse::targetId)
+                .collect(Collectors.toSet());
+
+        if (expectedIds.size() != responseIds.size() || !expectedIds.containsAll(responseIds)) {
+            log.error("AI 응답 데이터 불일치. 예상 ID 수: {}, 실제 응답 고유 ID 수: {}", expectedIds.size(), responseIds.size());
+            throw new AiModerationException(AiModerationErrorCode.BATCH_INTEGRITY_VIOLATION);
+        }
 
         // AI 응답과 원본 데이터를 결합하여 엔티티 조립
         List<AiModeration> moderation = aiResponses.stream()
