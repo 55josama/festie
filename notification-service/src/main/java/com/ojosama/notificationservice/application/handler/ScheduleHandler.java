@@ -2,7 +2,6 @@ package com.ojosama.notificationservice.application.handler;
 
 import com.ojosama.notificationservice.domain.exception.NotificationException;
 import com.ojosama.notificationservice.domain.model.emailLog.EmailLog;
-import com.ojosama.notificationservice.domain.model.emailLog.Status;
 import com.ojosama.notificationservice.domain.model.notification.Notification;
 import com.ojosama.notificationservice.domain.model.notification.TargetInfo;
 import com.ojosama.notificationservice.domain.repository.EmailLogRepository;
@@ -62,7 +61,7 @@ public class ScheduleHandler {
             // TODO : feign으로 user email 조회
             MailSendDto mailSendDto = MailSendDto.of("", notification.getTitle(), notification.getContent());
 
-            emailLog = emailLogRepository.save(EmailLog.of(notification, "", Status.PENDING));
+            emailLog = emailLogRepository.save(EmailLog.of(notification, ""));
             mailService.sendEmail(mailSendDto);
             emailLog.successStatus();
             emailLogRepository.save(emailLog);
