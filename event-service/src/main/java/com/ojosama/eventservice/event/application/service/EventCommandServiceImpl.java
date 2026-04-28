@@ -41,6 +41,10 @@ public class EventCommandServiceImpl implements EventCommandService {
 
         Event event = command.toEntity(category);
 
+        if (command.schedules() == null || command.schedules().isEmpty()) {
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
+        }
+        
         command.schedules().forEach(scheduleCommand ->
                 event.addSchedule(scheduleCommand.toEntity(event)));
 

@@ -27,7 +27,13 @@ public record FieldChange(
             return "null";
         }
         if (value instanceof String) {
-            return "\"" + value + "\"";
+            String escaped = ((String) value)
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t");
+            return "\"" + escaped + "\"";
         }
         return value.toString();
     }

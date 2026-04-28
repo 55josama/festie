@@ -28,53 +28,46 @@ public class EventChanges {
         addChangeIfDifferent(changes, "status", before.getStatus(), after.getStatus());
 
         // EventTime 필드들
-        if (hasEventTimeChanged()) {
-            addChangeIfDifferent(changes, "startAt",
-                    before.getEventTime().getStartAt(),
-                    after.getEventTime().getStartAt());
-            addChangeIfDifferent(changes, "endAt",
-                    before.getEventTime().getEndAt(),
-                    after.getEventTime().getEndAt());
-        }
+
+        addChangeIfDifferent(changes, "startAt",
+                before.getEventTime() == null ? null : before.getEventTime().getStartAt(),
+                after.getEventTime() == null ? null : after.getEventTime().getStartAt());
+        addChangeIfDifferent(changes, "endAt",
+                before.getEventTime() == null ? null : before.getEventTime().getEndAt(),
+                after.getEventTime() == null ? null : after.getEventTime().getEndAt());
 
         // EventLocation 필드들
-        if (hasEventLocationChanged()) {
-            addChangeIfDifferent(changes, "place",
-                    before.getEventLocation().getPlace(),
-                    after.getEventLocation().getPlace());
-            addChangeIfDifferent(changes, "latitude",
-                    before.getEventLocation().getLatitude(),
-                    after.getEventLocation().getLatitude());
-            addChangeIfDifferent(changes, "longitude",
-                    before.getEventLocation().getLongitude(),
-                    after.getEventLocation().getLongitude());
-        }
+        addChangeIfDifferent(changes, "place",
+                before.getEventLocation() == null ? null : before.getEventLocation().getPlace(),
+                after.getEventLocation() == null ? null : after.getEventLocation().getPlace());
+        addChangeIfDifferent(changes, "latitude",
+                before.getEventLocation() == null ? null : before.getEventLocation().getLatitude(),
+                after.getEventLocation() == null ? null : after.getEventLocation().getLatitude());
+        addChangeIfDifferent(changes, "longitude",
+                before.getEventLocation() == null ? null : before.getEventLocation().getLongitude(),
+                after.getEventLocation() == null ? null : after.getEventLocation().getLongitude());
 
         // EventFee 필드들
-        if (hasEventFeeChanged()) {
-            addChangeIfDifferent(changes, "minFee",
-                    before.getEventFee().getMinFee(),
-                    after.getEventFee().getMinFee());
-            addChangeIfDifferent(changes, "maxFee",
-                    before.getEventFee().getMaxFee(),
-                    after.getEventFee().getMaxFee());
-        }
+        addChangeIfDifferent(changes, "minFee",
+                before.getEventFee() == null ? null : before.getEventFee().getMinFee(),
+                after.getEventFee() == null ? null : after.getEventFee().getMinFee());
+        addChangeIfDifferent(changes, "maxFee",
+                before.getEventFee() == null ? null : before.getEventFee().getMaxFee(),
+                after.getEventFee() == null ? null : after.getEventFee().getMaxFee());
 
         // EventTicketing 필드들
-        if (hasEventTicketingChanged()) {
-            addChangeIfDifferent(changes, "hasTicketing",
-                    before.getEventTicketing().getHasTicketing(),
-                    after.getEventTicketing().getHasTicketing());
-            addChangeIfDifferent(changes, "ticketingOpenAt",
-                    before.getEventTicketing().getTicketingOpenAt(),
-                    after.getEventTicketing().getTicketingOpenAt());
-            addChangeIfDifferent(changes, "ticketingCloseAt",
-                    before.getEventTicketing().getTicketingCloseAt(),
-                    after.getEventTicketing().getTicketingCloseAt());
-            addChangeIfDifferent(changes, "ticketingLink",
-                    before.getEventTicketing().getTicketingLink(),
-                    after.getEventTicketing().getTicketingLink());
-        }
+        addChangeIfDifferent(changes, "hasTicketing",
+                before.getEventTicketing() == null ? null : before.getEventTicketing().getHasTicketing(),
+                after.getEventTicketing() == null ? null : after.getEventTicketing().getHasTicketing());
+        addChangeIfDifferent(changes, "ticketingOpenAt",
+                before.getEventTicketing() == null ? null : before.getEventTicketing().getTicketingOpenAt(),
+                after.getEventTicketing() == null ? null : after.getEventTicketing().getTicketingOpenAt());
+        addChangeIfDifferent(changes, "ticketingCloseAt",
+                before.getEventTicketing() == null ? null : before.getEventTicketing().getTicketingCloseAt(),
+                after.getEventTicketing() == null ? null : after.getEventTicketing().getTicketingCloseAt());
+        addChangeIfDifferent(changes, "ticketingLink",
+                before.getEventTicketing() == null ? null : before.getEventTicketing().getTicketingLink(),
+                after.getEventTicketing() == null ? null : after.getEventTicketing().getTicketingLink());
 
         return changes;
     }
@@ -86,7 +79,6 @@ public class EventChanges {
             changes.add(new FieldChange(fieldName, before, after));
         }
     }
-
 
     // Null 안전 비교
     private boolean equals(Object before, Object after) {

@@ -43,13 +43,14 @@ public class KafkaHealthChecker {
             checkRequiredTopics(existingTopics);
 
         } catch (TimeoutException e) {
-            log.error("[Kafka] 브로커 연결 타임아웃 ({}s). Kafka가 실행 중인지 확인하세요. bootstrapServers={}",
-                    CONNECT_TIMEOUT_SECONDS, bootstrapServers);
+            throw new IllegalStateException(
+                    "[Kafka] 브로커 연결 타임아웃 (" + CONNECT_TIMEOUT_SECONDS + "s), bootstrapServers=" + bootstrapServers, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("[Kafka] 브로커 연결 확인 중 인터럽트 발생");
+            throw new IllegalStateException("[Kafka] 브로커 연결 확인 중 인터럽트 발생", e);
         } catch (Exception e) {
-            log.error("[Kafka] 브로커 연결 실패: {} | bootstrapServers={}", e.getMessage(), bootstrapServers);
+            throw new IllegalStateException(
+                    "[Kafka] 브로커 연결 실패, bootstrapServers=" + bootstrapServers, e);
         }
     }
 
@@ -68,7 +69,7 @@ public class KafkaHealthChecker {
         if (missing.isEmpty()) {
             log.info("[Kafka] 필수 토픽 확인 완료: {}", required);
         } else {
-            log.warn("[Kafka] 미생성 토픽 발견: {} — auto.create.topics.enable=true 이거나 수동 생성이 필요합니다", missing);
+            throw new IllegalStateException("[Kafka] 필수 토픽 누락: " + missing);
         }
     }
 }
