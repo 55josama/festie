@@ -11,6 +11,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +44,7 @@ public class AuthService {
 
 
     //재발급
+    @Transactional
     public LoginResult reissue(ReissueTokenCommand command) {
         String refreshToken = command.refreshToken();
 
@@ -55,15 +57,18 @@ public class AuthService {
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        if (user.getRefreshToken() == null || !user.getRefreshToken().equals(refreshToken)) {
-            throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다.");
-        }
-
         String newAccessToken = jwtTokenProvider.createAccessToken(user);
         String newRefreshToken = jwtTokenProvider.createRefreshToken(user);
 
-        user.updateRefreshToken(newRefreshToken);
-        userRepository.save(user);
+        int updatedCount = userRepository.rotateRefreshToken(
+                userId,
+                refreshToken,
+                newRefreshToken
+        );
+
+        if (updatedCount != 1) {
+            throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다.");
+        }
 
         return new LoginResult(
                 newAccessToken,
