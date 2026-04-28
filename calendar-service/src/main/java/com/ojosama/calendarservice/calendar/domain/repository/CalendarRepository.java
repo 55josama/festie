@@ -1,20 +1,17 @@
 package com.ojosama.calendarservice.calendar.domain.repository;
 
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
-import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 public interface CalendarRepository {
 
-    Calendar save(Calendar calendar);
+    Optional<Calendar> findByIdAndUserIdAndDeletedAtIsNull(UUID id, UUID userId);
 
-    Optional<Calendar> findByIdAndDeletedAtIsNull(UUID id);
+    List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month);
 
-    Page<Calendar> findByUserIdAndDeletedAtIsNull(UUID userId, Pageable pageable);
+    Optional<Calendar> findByEventInfo_EventScheduleIdAndUserId(UUID scheduleId, UUID userId);
 
-    Page<Calendar> findByUserIdAndEventDateBetweenAndDeletedAtIsNull(
-            UUID userId, LocalDateTime start, LocalDateTime end, Pageable pageable);
+    void saveAndFlush(Calendar calendar);
 }
