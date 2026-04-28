@@ -7,7 +7,6 @@ import jakarta.persistence.Embeddable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -31,29 +30,17 @@ public class EventInfo {
     @Column(name = "event_ticketing_date")
     private LocalDateTime eventTicketingDate;
 
-    @Builder
-    private EventInfo(UUID eventId, String eventName, UUID eventScheduleId, LocalDateTime eventDate,
-                      LocalDateTime eventTicketingDate) {
-        validateEventDate(eventDate);
-        validateEventScheduleId(eventScheduleId);
-        validateEventName(eventName);
+    public EventInfo(UUID eventId, String eventName, UUID eventScheduleId, LocalDateTime eventDate,
+                     LocalDateTime eventTicketingDate) {
         validateEventId(eventId);
+        validateEventName(eventName);
+        validateEventScheduleId(eventScheduleId);
+        validateEventDate(eventDate);
         this.eventId = eventId;
         this.eventName = eventName;
         this.eventScheduleId = eventScheduleId;
         this.eventDate = eventDate;
         this.eventTicketingDate = eventTicketingDate;
-    }
-
-    public static EventInfo of(UUID eventId, String eventName, UUID eventScheduleId, LocalDateTime eventDate,
-                               LocalDateTime eventTicketingDate) {
-        return EventInfo.builder()
-                .eventId(eventId)
-                .eventName(eventName)
-                .eventScheduleId(eventScheduleId)
-                .eventDate(eventDate)
-                .eventTicketingDate(eventTicketingDate)
-                .build();
     }
 
     private void validateEventId(UUID eventId) {
