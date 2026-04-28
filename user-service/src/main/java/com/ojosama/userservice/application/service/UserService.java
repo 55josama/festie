@@ -34,8 +34,8 @@ public class UserService {
         User user = User.create(
                 command.email(),
                 encodedPassword,
-                command.nickname(),
                 command.name(),
+                command.nickname(),
                 command.phoneNumber()
         );
 
