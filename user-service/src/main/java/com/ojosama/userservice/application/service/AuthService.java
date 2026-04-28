@@ -20,8 +20,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
+    //로그인
     public LoginResult login(LoginCommand command) {
-        User user = userRepository.findByEmail(command.email())
+        User user = userRepository.findByEmailAndDeletedAtIsNull(command.email())
                 .orElseThrow(() -> new IllegalArgumentException("이메일이 올바르지 않습니다."));
 
         if (!passwordEncoder.matches(command.password(), user.getPassword())) {
@@ -41,7 +42,7 @@ public class AuthService {
     }
 
 
-    //로그인
+    //재발급
     public LoginResult reissue(ReissueTokenCommand command) {
         String refreshToken = command.refreshToken();
 
@@ -51,7 +52,7 @@ public class AuthService {
 
         UUID userId = jwtTokenProvider.getUserId(refreshToken);
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         if (user.getRefreshToken() == null || !user.getRefreshToken().equals(refreshToken)) {
@@ -72,7 +73,7 @@ public class AuthService {
 
     //로그아웃
     public LogoutResult logout(UUID userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         user.clearRefreshToken();
