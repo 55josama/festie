@@ -28,7 +28,6 @@ public class OutboxMessageProcessor {
     }
 
     // 배치 처리
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendBatch(List<OutboxMessage> messages) {
         List<Map.Entry<OutboxMessage, CompletableFuture<SendResult<String, String>>>> futures =
                 messages.stream()
@@ -70,6 +69,11 @@ public class OutboxMessageProcessor {
                         message.getId(), message.getRetryCount());
             }
         }
+        persistStatuses(messages);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    void persistStatuses(List<OutboxMessage> messages) {
         outboxRepository.saveAll(messages);
     }
 }
