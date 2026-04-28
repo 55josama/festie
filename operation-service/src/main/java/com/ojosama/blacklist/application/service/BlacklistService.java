@@ -13,6 +13,8 @@ import com.ojosama.blacklist.domain.model.entity.Blacklist;
 import com.ojosama.blacklist.domain.model.enums.BlacklistStatus;
 import com.ojosama.blacklist.domain.model.enums.RegistrationType;
 import com.ojosama.blacklist.domain.repository.BlacklistRepository;
+import com.ojosama.common.kafka.domain.EventType;
+import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BlacklistService {
     private final BlacklistRepository blacklistRepository;
-    private final BlacklistEventProducer blacklistEventProducer;
+    private final OutboxEventPublisher outbox;
 
     // 블랙리스트 생성(관리자 수동 등록)
     @Transactional
@@ -96,19 +98,31 @@ public class BlacklistService {
 
     //유저 블랙리스트 상태 변경 이벤트 발행
     private void publishStatusChangeEvent(UUID userId, BlacklistStatus status) {
-        blacklistEventProducer.publishStatusChangeEvent(
-                new UserBlacklistStatusEvent(userId, status.name())
+        UserBlacklistStatusEvent event = new UserBlacklistStatusEvent(userId, status.name());
+
+        outbox.publish(
+                "BLACKLIST",
+                userId,
+                EventType.BLACKLIST_UPDATED, // EventType 상수 확인 필요
+                "operation.blacklist.updated",
+                event
         );
     }
 
     // 블랙리스트 신규 등록 알림 이벤트 발행
     private void publishRegisterEvent(Blacklist blacklist) {
-        blacklistEventProducer.publishBlacklistRegisterEvent(
-                new BlacklistRegisterEvent(
-                        blacklist.getUserId(),
-                        blacklist.getReason(),
-                        blacklist.getRegistrationType()
-                )
+        BlacklistRegisterEvent event = new BlacklistRegisterEvent(
+                blacklist.getUserId(),
+                blacklist.getReason(),
+                blacklist.getRegistrationType()
+        );
+
+        outbox.publish(
+                "BLACKLIST",
+                blacklist.getUserId(),
+                EventType.BLACKLIST_REGISTERED,
+                "operation.blacklist.registered",
+                event
         );
     }
 
