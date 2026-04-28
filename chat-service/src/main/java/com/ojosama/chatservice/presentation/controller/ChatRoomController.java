@@ -48,6 +48,7 @@ public class ChatRoomController {
         ChatRoomResult result = chatRoomService.createChatRoom(
                 new CreateChatRoomCommand(
                         request.eventId(),
+                        request.eventName(),
                         request.category(),
                         request.scheduledOpenAt(),
                         request.scheduledCloseAt()

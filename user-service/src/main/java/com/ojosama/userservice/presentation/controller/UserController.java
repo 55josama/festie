@@ -27,12 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("v1/users")
 public class UserController {
 
     private final UserService userService;
 
-    //유저 생성
+    //회원가입
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreateUserResponseDto createUser(@Valid @RequestBody CreateUserRequestDto request) {
@@ -41,7 +41,7 @@ public class UserController {
         return CreateUserResponseDto.from(result);
     }
 
-    //유저 단건 조회
+    //내 정보 조회
     @GetMapping("/{userId}")
     public GetUserResponseDto getUser(@PathVariable UUID userId) {
         GetUserQuery query = new GetUserQuery(userId);
@@ -51,7 +51,7 @@ public class UserController {
         return GetUserResponseDto.from(result);
     }
 
-    //유저 수정
+    //내 정보 수정
     @PatchMapping("/{userId}")
     public UpdateUserResponseDto updateUser(
             @PathVariable UUID userId,
@@ -60,7 +60,7 @@ public class UserController {
         return UpdateUserResponseDto.from(result);
     }
 
-    //유저 삭제
+    //회원 탈퇴
     @DeleteMapping("/{userId}")
     public void deleteUser(
             @PathVariable UUID userId
@@ -69,4 +69,6 @@ public class UserController {
 
         userService.deleteUser(command);
     }
+
+    //(관리자) 전체 회원 목록 조회
 }
