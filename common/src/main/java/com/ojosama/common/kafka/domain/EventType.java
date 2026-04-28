@@ -16,7 +16,8 @@ public enum EventType {
     COMMENT_CREATED("CommentCreated"),
     COMMENT_UPDATED("CommentUpdated"),
     POST_REPORTED("PostReported"),
-    COMMENT_REPORTED("CommentReported");
+    COMMENT_REPORTED("CommentReported"),
+    EVENT_CREATED("EventCreated");
 
     private final String value;
 
