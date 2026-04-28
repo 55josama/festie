@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -42,6 +43,18 @@ public class UserController {
     }
 
     //내 정보 조회
+    @GetMapping("/me")
+    public GetUserResponseDto getMyInfo(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+
+        GetUserQuery query = new GetUserQuery(userId);
+
+        GetUserResult result = userService.getUser(query);
+
+        return GetUserResponseDto.from(result);
+    }
+
+    //회원 상세 조회
     @GetMapping("/{userId}")
     public GetUserResponseDto getUser(@PathVariable UUID userId) {
         GetUserQuery query = new GetUserQuery(userId);

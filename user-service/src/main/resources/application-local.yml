@@ -16,3 +16,7 @@ spring:
       hibernate:
         format_sql: true
         show_sql: true
+
+eureka:
+  client:
+    enabled: false
