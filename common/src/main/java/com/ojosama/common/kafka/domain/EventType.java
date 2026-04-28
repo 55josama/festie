@@ -17,7 +17,15 @@ public enum EventType {
     COMMENT_UPDATED("CommentUpdated"),
     POST_REPORTED("PostReported"),
     COMMENT_REPORTED("CommentReported"),
-    EVENT_CREATED("EventCreated");
+    EVENT_CREATED("EventCreated"),
+
+    // operation
+    REPORT_BLINDED("ReportBlinded"),
+    BLACKLIST_REGISTERED("BlacklistRegistered"),
+    BLACKLIST_UPDATED("BlacklistUpdated"),
+
+    // ai
+    AI_MODERATION_EVALUATED("AiModerationEvaluated");
 
     private final String value;
 
