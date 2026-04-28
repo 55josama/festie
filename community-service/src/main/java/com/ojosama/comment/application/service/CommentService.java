@@ -2,7 +2,9 @@ package com.ojosama.comment.application.service;
 
 import com.ojosama.comment.application.dto.CommentResult;
 import com.ojosama.comment.application.dto.CreateCommentCommand;
+import com.ojosama.comment.application.dto.UpdateCommentCommand;
 import com.ojosama.comment.domain.event.payload.CommentCreatedEvent;
+import com.ojosama.comment.domain.event.payload.CommentUpdatedEvent;
 import com.ojosama.comment.domain.exception.CommentErrorCode;
 import com.ojosama.comment.domain.exception.CommentException;
 import com.ojosama.comment.domain.model.Comment;
@@ -69,4 +71,37 @@ public class CommentService {
         return CommentResult.flat(comment);
     }
 
+    @Transactional
+    public CommentResult update(UpdateCommentCommand cmd) {
+        //부모댓글 삭제해도 대댓글은 남아있으니 부모댓글 존재확인 안함
+        Comment comment = loadAlive(cmd.commentId());
+        if (!comment.isOwnedBy(cmd.requesterId())) {
+            throw new CommentException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+        }
+
+        comment.updateContent(new Content(cmd.content()));
+
+        outbox.publish(
+                AGGREGATE_TYPE, comment.getId(),
+                EventType.COMMENT_UPDATED, "community.comment.updated.v1",
+                new CommentUpdatedEvent(
+                        comment.getId(),
+                        comment.getPostId(),
+                        comment.getUserId(),
+                        comment.getContent().getValue(),
+                        LocalDateTime.now()
+                )
+        );
+
+        return CommentResult.flat(comment);
+    }
+
+    private Comment loadAlive(UUID commentId) {
+        Comment c = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentErrorCode.COMMENT_NOT_FOUND));
+        if (c.getDeletedAt() != null) {
+            throw new CommentException(CommentErrorCode.COMMENT_NOT_FOUND);
+        }
+        return c;
+    }
 }

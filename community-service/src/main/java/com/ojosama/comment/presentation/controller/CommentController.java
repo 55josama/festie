@@ -2,14 +2,17 @@ package com.ojosama.comment.presentation.controller;
 
 import com.ojosama.comment.application.dto.CommentResult;
 import com.ojosama.comment.application.dto.CreateCommentCommand;
+import com.ojosama.comment.application.dto.UpdateCommentCommand;
 import com.ojosama.comment.application.service.CommentService;
 import com.ojosama.comment.presentation.dto.request.CreateCommentRequest;
+import com.ojosama.comment.presentation.dto.request.UpdateCommentRequest;
 import com.ojosama.comment.presentation.dto.response.CommentResponse;
 import com.ojosama.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,4 +35,12 @@ public class CommentController {
         return ApiResponse.created(CommentResponse.from(result));
     }
 
+    @PatchMapping("/v1/comments/{commentId}")
+    public ApiResponse<CommentResponse> update(
+            @PathVariable UUID commentId,
+            @Valid @RequestBody UpdateCommentRequest req) {
+        CommentResult result = commentService.update(new UpdateCommentCommand(
+                commentId, UUID.randomUUID(), req.content()));
+        return ApiResponse.success(CommentResponse.from(result));
+    }
 }

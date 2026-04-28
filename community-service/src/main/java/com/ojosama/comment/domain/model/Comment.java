@@ -83,6 +83,15 @@ public class Comment extends BaseEntity {
         return c;
     }
 
+    public void updateContent(Content content) {
+        this.content = Objects.requireNonNull(content, "content must not be null");
+    }
+
+    public boolean isOwnedBy(UUID userId) {
+        return this.userId.equals(userId);
+    }
+
+
     public void increaseLikeCount() {
         this.likeCount++;
     }
