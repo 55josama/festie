@@ -31,7 +31,7 @@ public class AiReportEventConsumer {
     // AI 시스템이 보낸 신고임을 식별하기 위한 고정 UUID
     private static final UUID AI_SYSTEM_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
-    @KafkaListener(topics = "${spring.kafka.topic.moderation-reported}", groupId = "operation-service-group")
+    @KafkaListener(topics = "${spring.kafka.topic.ai-moderation-reported}", groupId = "operation-service-group")
     public void consumeAiReport(ConsumerRecord<String, String> record) {
         UUID messageKey;
         AiReportEvent event;
@@ -68,7 +68,7 @@ public class AiReportEventConsumer {
                     event.targetUserId(),
                     targetType,
                     category,
-                    event.description(),
+                    "AI 자동 모더레이션 시스템에 의한 유해 콘텐츠 신고입니다.",
                     event.content()
             );
 
