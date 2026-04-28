@@ -1,10 +1,12 @@
 package com.ojosama.userservice.global.security;
 
 import com.ojosama.userservice.domain.model.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.springframework.stereotype.Component;
 
@@ -41,5 +43,34 @@ public class JwtTokenProvider {
                 .expiration(expiredAt)
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            parseClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public UUID getUserId(String token) {
+        return UUID.fromString(parseClaims(token).getSubject());
+    }
+
+    public String getEmail(String token) {
+        return parseClaims(token).get("email", String.class);
+    }
+
+    public String getRole(String token) {
+        return parseClaims(token).get("role", String.class);
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
