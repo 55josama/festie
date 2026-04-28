@@ -19,7 +19,7 @@ public class OutboxEventPublisher {
     public void publish(
             String aggregateType,
             UUID aggregateId,
-            String eventType,
+            EventType eventType,
             String topic,
             Object payload) {
         String json;

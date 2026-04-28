@@ -43,7 +43,9 @@ public class OutboxMessage {
     @Column(name = "topic", nullable = false, length = 200)
     private String topic;
 
-    /** 멱등 키 — 컨슈머가 inbox에 기록할 때 사용. 발행자 측에서 미리 부여. */
+    /**
+     * 멱등 키 — 컨슈머가 inbox에 기록할 때 사용. 발행자 측에서 미리 부여.
+     */
     @Column(name = "message_key", nullable = false)
     private UUID messageKey;
 
