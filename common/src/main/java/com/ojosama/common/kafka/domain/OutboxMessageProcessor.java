@@ -20,13 +20,12 @@ public class OutboxMessageProcessor {
     private final OutboxStatusPersister outboxStatusPersister;
 
     public OutboxMessageProcessor(
-            @Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate, OutboxRepository outboxRepository,
+            @Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate,
             OutboxStatusPersister outboxStatusPersister) {
         this.kafkaTemplate = kafkaTemplate;
         this.outboxStatusPersister = outboxStatusPersister;
     }
 
-    // 배치 처리
     public void sendBatch(List<OutboxMessage> messages) {
         List<Map.Entry<OutboxMessage, CompletableFuture<SendResult<String, String>>>> futures =
                 messages.stream()
@@ -40,6 +39,8 @@ public class OutboxMessageProcessor {
                         ))
                         .toList();
 
+        boolean interrupted = false; //인터럽트 발생 여부 기록
+
         for (Map.Entry<OutboxMessage, CompletableFuture<SendResult<String, String>>> entry
                 : futures) {
             OutboxMessage message = entry.getKey();
@@ -51,23 +52,32 @@ public class OutboxMessageProcessor {
                         result.getRecordMetadata().partition(),
                         result.getRecordMetadata().offset());
                 message.markSent();
+
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                interrupted = true; //break 대신 플래그만 설정
                 message.markFailed("Interrupted: " + e.getMessage());
                 log.warn("Outbox send interrupted. id={}, retryCount={}",
                         message.getId(), message.getRetryCount());
-                break;
+
             } catch (ExecutionException e) {
                 message.markFailed(
                         e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
                 log.warn("Outbox send failed. id={}, retryCount={}, error={}",
                         message.getId(), message.getRetryCount(), message.getLastError());
+
             } catch (TimeoutException e) {
                 message.markFailed("Timeout: 120초 내 응답 없음");
                 log.warn("Outbox send timeout. id={}, retryCount={}",
                         message.getId(), message.getRetryCount());
             }
         }
+
+        // 모든 future 결과 확인 후 한 번에 저장
         outboxStatusPersister.persist(messages);
+
+        // 인터럽트 상태 복원 — 루프 끝난 후에 설정
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
