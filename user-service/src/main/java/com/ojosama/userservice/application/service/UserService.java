@@ -10,6 +10,7 @@ import com.ojosama.userservice.application.dto.result.UpdateUserResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,15 +39,19 @@ public class UserService {
                 command.phoneNumber()
         );
 
-        User savedUser = userRepository.save(user);
+        try {
+            User savedUser = userRepository.save(user);
 
-        return new CreateUserResult(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getNickname(),
-                savedUser.getName(),
-                savedUser.getRole()
-        );
+            return new CreateUserResult(
+                    savedUser.getId(),
+                    savedUser.getEmail(),
+                    savedUser.getNickname(),
+                    savedUser.getName(),
+                    savedUser.getRole()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("중복 이메일입니다.");
+        }
     }
 
     //유저 조회 todo: 관리자 전용, 로그인 사용자 기준 본인만 조회 기능 추가
