@@ -49,11 +49,11 @@ public class EmailLog extends BaseEntity {
         this.status = status;
     }
 
-    public static EmailLog of(Notification notification, String email, Status status) {
+    public static EmailLog of(Notification notification, String email) {
         return EmailLog.builder()
                 .notification(notification)
                 .email(email)
-                .status(status)
+                .status(Status.PENDING)
                 .build();
     }
 

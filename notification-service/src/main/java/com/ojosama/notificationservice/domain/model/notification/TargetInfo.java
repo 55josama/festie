@@ -6,6 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import java.util.EnumSet;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -77,5 +78,27 @@ public class TargetInfo {
         if (target == null || targetType == null) {
             throw new NotificationException(NotificationErrorCode.INVALID_TARGET_TYPE);
         }
+        if (!isCompatible(target, targetType)) {
+            throw new NotificationException(NotificationErrorCode.INVALID_TARGET_TYPE);
+        }
+    }
+
+    private boolean isCompatible(Target target, TargetType targetType) {
+        return switch (target) {
+            case EVENT -> EnumSet.of(
+                            TargetType.EVENT_REMINDER,
+                            TargetType.REPORT_CREATED,
+                            TargetType.EVENT_CHANGED,
+                            TargetType.TICKETING_REMINDER,
+                            TargetType.EVENT_REQUEST,
+                            TargetType.EVENT_REQUEST_RESULT)
+                    .contains(targetType);
+            case OPERATION -> EnumSet.of(
+                            TargetType.REPORT_CREATED,
+                            TargetType.BLACKLIST_REGISTERED,
+                            TargetType.BLIND_REGISTERED)
+                    .contains(targetType);
+            case COMMUNITY -> false;
+        };
     }
 }

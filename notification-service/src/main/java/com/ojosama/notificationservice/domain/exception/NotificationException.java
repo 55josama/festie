@@ -7,4 +7,8 @@ public class NotificationException extends CustomException {
     public NotificationException(NotificationErrorCode code) {
         super(code);
     }
+
+    public NotificationException(EmailErrorCode code) {
+        super(code);
+    }
 }
