@@ -26,4 +26,9 @@ public abstract class BaseUserEntity extends BaseEntity {
         super.deleted();
         this.deletedBy = deletedBy;
     }
+
+    public void restore() {
+        super.undeleted();
+        this.deletedBy = null;
+    }
 }
