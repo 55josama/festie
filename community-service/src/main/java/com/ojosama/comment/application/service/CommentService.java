@@ -4,11 +4,13 @@ import com.ojosama.comment.application.dto.CommentResult;
 import com.ojosama.comment.application.dto.CreateCommentCommand;
 import com.ojosama.comment.application.dto.DeleteCommentCommand;
 import com.ojosama.comment.application.dto.UpdateCommentCommand;
+import com.ojosama.comment.application.dto.query.CommentListQuery;
 import com.ojosama.comment.domain.event.payload.CommentCreatedEvent;
 import com.ojosama.comment.domain.event.payload.CommentUpdatedEvent;
 import com.ojosama.comment.domain.exception.CommentErrorCode;
 import com.ojosama.comment.domain.exception.CommentException;
 import com.ojosama.comment.domain.model.Comment;
+import com.ojosama.comment.domain.model.CommentStatus;
 import com.ojosama.comment.domain.repository.CommentRepository;
 import com.ojosama.common.domain.model.Content;
 import com.ojosama.common.kafka.domain.EventType;
@@ -18,8 +20,13 @@ import com.ojosama.post.domain.exception.PostException;
 import com.ojosama.post.domain.model.Post;
 import com.ojosama.post.domain.repository.PostRepository;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,6 +114,33 @@ public class CommentService {
         postRepository.decrementCommentCount(comment.getPostId());
     }
 
+    public Page<CommentResult> listByPost(CommentListQuery query) {
+        Page<Comment> roots = commentRepository
+                .findByPostIdAndParentIdIsNullAndDeletedAtIsNullAndStatusNot(
+                        query.postId(), CommentStatus.BLOCKED, query.pageable());
+
+        if (roots.isEmpty()) {
+            return roots.map(CommentResult::flat);
+        }
+
+        List<UUID> rootIds = roots.getContent().stream()
+                .map(Comment::getId).toList();
+
+        List<Comment> replies = commentRepository
+                .findByParentIdInAndDeletedAtIsNullAndStatusNotOrderByCreatedAtAsc(
+                        rootIds, CommentStatus.BLOCKED);
+        //WHERE parent_id IN (댓글A_id, 댓글B_id) 쿼리 하나로 모든 대댓글을 가져온다.
+
+        Map<UUID, List<CommentResult>> repliesByParent = replies.stream()
+                .collect(Collectors.groupingBy(
+                        Comment::getParentId,
+                        HashMap::new,
+                        Collectors.mapping(CommentResult::flat, Collectors.toList())
+                ));
+
+        return roots.map(root -> CommentResult.of(
+                root, repliesByParent.getOrDefault(root.getId(), List.of())));
+    }
 
     private Comment loadAlive(UUID commentId) {
         Comment c = commentRepository.findById(commentId)
