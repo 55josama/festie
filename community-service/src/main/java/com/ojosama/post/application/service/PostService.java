@@ -98,9 +98,10 @@ public class PostService {
         if (post.isBlocked()) {
             return PostResult.from(post);
         }
-        // 본문 수정 트랜잭션과 분리하기 위해 별도 native UPDATE
-        postRepository.incrementViewCount(postId);
-        // viewCount는 native UPDATE로 +1 됐으나 영속 객체엔 반영 안 됐으니 +1 보정해서 반환
+        int affected = postRepository.incrementViewCount(postId);
+        if (affected == 0) {
+            throw new PostException(PostErrorCode.POST_NOT_FOUND);
+        }
         return adjustViewCountForResponse(post, 1);
     }
 
