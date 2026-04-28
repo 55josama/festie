@@ -1,10 +1,7 @@
 package com.ojosama.calendarservice.calendar.infrastructure.persistence;
 
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
-import com.ojosama.calendarservice.calendar.domain.model.QCalendar;
 import com.ojosama.calendarservice.calendar.domain.repository.CalendarRepository;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,7 +13,6 @@ import org.springframework.stereotype.Repository;
 public class CalendarRepositoryImpl implements CalendarRepository {
 
     private final JpaCalendarRepository jpaCalendarRepository;
-    private final JPAQueryFactory queryFactory;
 
     @Override
     public void saveAndFlush(Calendar calendar) {
@@ -29,26 +25,12 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month) {
-        QCalendar qCalendar = QCalendar.calendar;
-
-        // 해당 월 1일
-        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0);
-        // 다음달 1일
-        LocalDateTime end = start.plusMonths(1);
-
-        return queryFactory
-                .selectFrom(qCalendar)
-                .where(
-                        qCalendar.userId.eq(userId),
-                        qCalendar.eventInfo.eventDate.goe(start), // event_date >= start
-                        qCalendar.eventInfo.eventDate.lt(end), // event_date < end
-                        qCalendar.deletedAt.isNull()
-                ).fetch();
+    public Optional<Calendar> findByEventInfoEventScheduleIdAndUserId(UUID scheduleId, UUID userId) {
+        return jpaCalendarRepository.findByEventInfo_EventScheduleIdAndUserId(scheduleId, userId);
     }
 
     @Override
-    public Optional<Calendar> findByEventScheduleIdAndUserId(UUID scheduleId, UUID userId) {
-        return jpaCalendarRepository.findByEventScheduleIdAndUserId(scheduleId, userId);
+    public List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month) {
+        return jpaCalendarRepository.findByUserIdAndYearMonth(userId, year, month);
     }
 }

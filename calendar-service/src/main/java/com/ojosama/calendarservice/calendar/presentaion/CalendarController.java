@@ -1,7 +1,6 @@
 package com.ojosama.calendarservice.calendar.presentaion;
 
 import com.ojosama.calendarservice.calendar.application.CalendarService;
-import com.ojosama.calendarservice.calendar.application.dto.command.CreateCalendarCommand;
 import com.ojosama.calendarservice.calendar.presentaion.dto.CalendarResponseDto;
 import com.ojosama.calendarservice.calendar.presentaion.dto.CreateCalendarRequestDto;
 import com.ojosama.calendarservice.calendar.presentaion.dto.UpdateMemoCalendarRequestDto;
@@ -37,7 +36,7 @@ public class CalendarController {
         // TODO : userId 수정
         UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
 
-        CalendarResponseDto dto = calendarService.createCalendar(CreateCalendarCommand.of(requestDto, userId));
+        CalendarResponseDto dto = calendarService.createCalendar(requestDto.toCommand(userId));
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.created(dto));

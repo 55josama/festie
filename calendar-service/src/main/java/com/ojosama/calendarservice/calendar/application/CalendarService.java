@@ -28,7 +28,8 @@ public class CalendarService {
 
     public CalendarResponseDto createCalendar(CreateCalendarCommand command) {
 
-        Optional<Calendar> exists = calendarRepository.findByEventScheduleIdAndUserId(command.eventScheduleId(),
+        Optional<Calendar> exists = calendarRepository.findByEventInfoEventScheduleIdAndUserId(
+                command.eventScheduleId(),
                 command.userId());
 
         if (exists.isPresent()) {
@@ -49,7 +50,7 @@ public class CalendarService {
         String eventName = "행사";
 
         Calendar calendar = Calendar.create(command.userId(), command.memo(),
-                EventInfo.of(command.eventId(), eventName, command.eventScheduleId(), eventStart, ticketingDate));
+                new EventInfo(command.eventId(), eventName, command.eventScheduleId(), eventStart, ticketingDate));
 
         try {
             calendarRepository.saveAndFlush(calendar);
