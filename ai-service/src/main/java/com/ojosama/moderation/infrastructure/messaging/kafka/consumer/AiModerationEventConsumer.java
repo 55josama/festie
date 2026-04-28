@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AiModerationConsumer {
+public class AiModerationEventConsumer {
     private final AiModerationService aiModerationService;
 
     @KafkaListener(topics = "${spring.kafka.topic.ai-moderation-requested}", groupId = "ai-service-group")
