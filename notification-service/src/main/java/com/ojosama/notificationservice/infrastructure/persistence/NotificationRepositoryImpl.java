@@ -19,13 +19,13 @@ public class NotificationRepositoryImpl implements NotificationRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
     @Override
-    public List<Notification> findByReceiverIdAndReadAtIsNull(UUID receiverId) {
-        return jpaNotificationRepository.findByReceiverIdAndReadAtIsNull(receiverId);
+    public List<Notification> findByReceiverIdAndReadAtIsNullAndDeletedAtIsNull(UUID receiverId) {
+        return jpaNotificationRepository.findByReceiverIdAndReadAtIsNullAndDeletedAtIsNull(receiverId);
     }
 
     @Override
     public List<Notification> findByReceiverIdAndDeletedAtIsNull(UUID receiverId) {
-        return jpaNotificationRepository.findByReceiverIdAndReadAtIsNullAndDeletedAtIsNull(receiverId);
+        return jpaNotificationRepository.findByReceiverIdAndDeletedAtIsNull(receiverId);
     }
 
     @Override
@@ -53,8 +53,8 @@ public class NotificationRepositoryImpl implements NotificationRepository {
     }
 
     @Override
-    public Optional<Notification> findByIdAndReceiverId(UUID notificationId, UUID receiverId) {
-        return jpaNotificationRepository.findByIdAndReceiverId(notificationId, receiverId);
+    public Optional<Notification> findByIdAndReceiverIdAndDeletedAtIsNull(UUID notificationId, UUID receiverId) {
+        return jpaNotificationRepository.findByIdAndReceiverIdAndDeletedAtIsNull(notificationId, receiverId);
     }
 
 }

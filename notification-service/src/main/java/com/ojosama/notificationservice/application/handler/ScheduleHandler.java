@@ -65,9 +65,11 @@ public class ScheduleHandler {
             emailLog = emailLogRepository.save(EmailLog.of(notification, "", Status.PENDING));
             mailService.sendEmail(mailSendDto);
             emailLog.successStatus();
+            emailLogRepository.save(emailLog);
         } catch (NotificationException e) {
             if (emailLog != null) {
                 emailLog.failStatus();
+                emailLogRepository.save(emailLog);
             }
             log.error("이메일 전송 실패 : {}", notification.getReceiverId());
 

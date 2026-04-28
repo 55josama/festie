@@ -70,7 +70,7 @@ public class NotificationService {
 
     public List<NotificationResponse> markAllAsRead(UUID receiverId) {
 
-        List<Notification> list = notificationRepository.findByReceiverIdAndReadAtIsNull(receiverId);
+        List<Notification> list = notificationRepository.findByReceiverIdAndReadAtIsNullAndDeletedAtIsNull(receiverId);
 
         for (Notification notification : list) {
             notification.readAt();
@@ -83,7 +83,8 @@ public class NotificationService {
 
     public void deleteNotification(UUID receiverId, UUID notificationId) {
 
-        Notification notification = notificationRepository.findByIdAndReceiverId(notificationId, receiverId)
+        Notification notification = notificationRepository.findByIdAndReceiverIdAndDeletedAtIsNull(notificationId,
+                        receiverId)
                 .orElseThrow(() -> new NotificationException(NotificationErrorCode.NOT_FOUND_NOTIFICATION));
 
         notification.deleted();
