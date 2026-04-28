@@ -42,11 +42,15 @@ public class Calendar extends BaseUserEntity {
     @Column(name = "event_date", nullable = false)
     private LocalDateTime eventDate;
 
+    @Column(name = "event_ticketing_date")
+    private LocalDateTime eventTicketingDate;
+
     @Column(name = "memo", length = 1000)
     private String memo;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private Calendar(UUID userId, UUID eventScheduleId, LocalDateTime eventDate, String memo) {
+    private Calendar(UUID userId, UUID eventScheduleId, LocalDateTime eventDate, String memo,
+                     LocalDateTime eventTicketingDate) {
         validateUserId(userId);
         validateEventScheduleId(eventScheduleId);
         validateEventDate(eventDate);
@@ -55,14 +59,17 @@ public class Calendar extends BaseUserEntity {
         this.eventScheduleId = eventScheduleId;
         this.eventDate = eventDate;
         this.memo = memo;
+        this.eventTicketingDate = eventTicketingDate;
     }
 
-    public static Calendar create(UUID userId, UUID eventScheduleId, LocalDateTime eventDate, String memo) {
+    public static Calendar create(UUID userId, UUID eventScheduleId, LocalDateTime eventDate, String memo,
+                                  LocalDateTime eventTicketingDate) {
         return Calendar.builder()
                 .userId(userId)
                 .eventScheduleId(eventScheduleId)
                 .eventDate(eventDate)
                 .memo(memo)
+                .eventTicketingDate(eventTicketingDate)
                 .build();
     }
 
