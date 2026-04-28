@@ -41,8 +41,8 @@ public class CalendarRepositoryImpl implements CalendarRepository {
                 .selectFrom(qCalendar)
                 .where(
                         qCalendar.userId.eq(userId),
-                        qCalendar.eventDate.goe(start), // event_date >= start
-                        qCalendar.eventDate.lt(end), // event_date < end
+                        qCalendar.eventInfo.eventDate.goe(start), // event_date >= start
+                        qCalendar.eventInfo.eventDate.lt(end), // event_date < end
                         qCalendar.deletedAt.isNull()
                 ).fetch();
     }
