@@ -19,10 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class OutboxMessageProcessor {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final OutboxRepository outboxRepository;
 
     public OutboxMessageProcessor(
-            @Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate) {
+            @Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate, OutboxRepository outboxRepository) {
         this.kafkaTemplate = kafkaTemplate;
+        this.outboxRepository = outboxRepository;
     }
 
     // 배치 처리
@@ -44,7 +46,7 @@ public class OutboxMessageProcessor {
                 : futures) {
             OutboxMessage message = entry.getKey();
             try {
-                SendResult<String, String> result = entry.getValue().get(5, TimeUnit.SECONDS);
+                SendResult<String, String> result = entry.getValue().get(120, TimeUnit.SECONDS);
                 log.debug("Outbox sent. id={}, topic={}, partition={}, offset={}",
                         message.getId(),
                         message.getTopic(),
@@ -56,16 +58,18 @@ public class OutboxMessageProcessor {
                 message.markFailed("Interrupted: " + e.getMessage());
                 log.warn("Outbox send interrupted. id={}, retryCount={}",
                         message.getId(), message.getRetryCount());
+                break;
             } catch (ExecutionException e) {
                 message.markFailed(
                         e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
                 log.warn("Outbox send failed. id={}, retryCount={}, error={}",
                         message.getId(), message.getRetryCount(), message.getLastError());
-            } catch (TimeoutException e) {                          // ← 이거 추가
-                message.markFailed("Timeout: 5초 내 응답 없음");
+            } catch (TimeoutException e) {
+                message.markFailed("Timeout: 120초 내 응답 없음");
                 log.warn("Outbox send timeout. id={}, retryCount={}",
                         message.getId(), message.getRetryCount());
             }
         }
+        outboxRepository.saveAll(messages);
     }
 }
