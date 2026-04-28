@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
@@ -40,4 +41,27 @@ public class EmailLog extends BaseEntity {
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private Status status;
+
+    @Builder
+    private EmailLog(Notification notification, String email, Status status) {
+        this.notification = notification;
+        this.email = email;
+        this.status = status;
+    }
+
+    public static EmailLog of(Notification notification, String email) {
+        return EmailLog.builder()
+                .notification(notification)
+                .email(email)
+                .status(Status.PENDING)
+                .build();
+    }
+
+    public void successStatus() {
+        this.status = Status.SENT;
+    }
+
+    public void failStatus() {
+        this.status = Status.FAIL;
+    }
 }

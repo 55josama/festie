@@ -79,6 +79,28 @@ services:
     networks:
       - festie-network
 
+  # ============ config-server ============
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: festie-config
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    networks:
+      - festie-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    environment:
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_URL: ${CONFIG_URL}
+      GIT_USERNAME: ${GIT_USERNAME}
+      GIT_TOKEN: ${GIT_TOKEN}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+
   # ============ eureka-server ============
   eureka-server:
     build:
@@ -113,6 +135,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      config-server:
+        condition: service_started
       eureka-server:
         condition: service_healthy
     environment:
