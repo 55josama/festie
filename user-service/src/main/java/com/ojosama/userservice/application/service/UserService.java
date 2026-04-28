@@ -10,6 +10,7 @@ import com.ojosama.userservice.application.dto.result.UpdateUserResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,13 +19,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     //유저 생성
     @Transactional
     public CreateUserResult createUser(CreateUserCommand command) {
+
+        String encodedPassword = passwordEncoder.encode(command.password());
+
         User user = User.create(
                 command.email(),
-                command.password(),
+                encodedPassword,
                 command.nickname(),
                 command.name(),
                 command.phoneNumber()
