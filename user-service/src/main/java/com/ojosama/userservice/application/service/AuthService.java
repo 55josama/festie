@@ -8,6 +8,8 @@ import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import com.ojosama.userservice.global.security.JwtTokenProvider;
 import java.util.UUID;
+
+import com.ojosama.userservice.global.security.RefreshTokenHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenHasher refreshTokenHasher;
 
     //로그인
     public LoginResult login(LoginCommand command) {
@@ -33,7 +36,9 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(user);
         String refreshToken = jwtTokenProvider.createRefreshToken(user);
 
-        user.updateRefreshToken(refreshToken);
+        String refreshTokenHash = refreshTokenHasher.hash(refreshToken);
+
+        user.updateRefreshTokenHash(refreshTokenHash);
         userRepository.save(user);
 
         return new LoginResult(
@@ -60,10 +65,13 @@ public class AuthService {
         String newAccessToken = jwtTokenProvider.createAccessToken(user);
         String newRefreshToken = jwtTokenProvider.createRefreshToken(user);
 
-        int updatedCount = userRepository.rotateRefreshToken(
+        String oldRefreshTokenHash = refreshTokenHasher.hash(refreshToken);
+        String newRefreshTokenHash = refreshTokenHasher.hash(newRefreshToken);
+
+        int updatedCount = userRepository.rotateRefreshTokenHash(
                 userId,
-                refreshToken,
-                newRefreshToken
+                oldRefreshTokenHash,
+                newRefreshTokenHash
         );
 
         if (updatedCount != 1) {

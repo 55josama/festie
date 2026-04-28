@@ -24,15 +24,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Modifying
     @Query("""
-            update User u
-            set u.refreshToken = :newRefreshToken
-            where u.id = :userId
-              and u.refreshToken = :oldRefreshToken
-              and u.deletedAt is null
-            """)
-    int rotateRefreshToken(
+        update User u
+        set u.refreshTokenHash = :newRefreshTokenHash
+        where u.id = :userId
+          and u.refreshTokenHash = :oldRefreshTokenHash
+          and u.deletedAt is null
+        """)
+    int rotateRefreshTokenHash(
             @Param("userId") UUID userId,
-            @Param("oldRefreshToken") String oldRefreshToken,
-            @Param("newRefreshToken") String newRefreshToken
+            @Param("oldRefreshTokenHash") String oldRefreshTokenHash,
+            @Param("newRefreshTokenHash") String newRefreshTokenHash
     );
 }
