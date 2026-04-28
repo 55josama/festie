@@ -5,6 +5,9 @@ import com.ojosama.eventservice.event.application.dto.command.UpdateEventCommand
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.domain.event.EventMessagePublisher;
 import com.ojosama.eventservice.event.domain.event.payload.EventCreatedMessage;
+import com.ojosama.eventservice.event.domain.event.payload.EventDeletedMessage;
+import com.ojosama.eventservice.event.domain.event.payload.EventScheduleChangedMessage;
+import com.ojosama.eventservice.event.domain.event.payload.EventUpdatedMessage;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.Event;
@@ -15,6 +18,8 @@ import com.ojosama.eventservice.event.domain.model.vo.EventTicketing;
 import com.ojosama.eventservice.event.domain.model.vo.EventTime;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
+import com.ojosama.eventservice.event.domain.support.EventChanges;
+import com.ojosama.eventservice.event.domain.support.EventSnapshot;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -58,6 +63,10 @@ public class EventCommandServiceImpl implements EventCommandService {
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND));
 
+        // 변경 전 상태 스냅샷 생성
+        EventSnapshot beforeSnapshot = EventSnapshot.from(event);
+
+        // Event 업데이트 수행
         event.update(
                 command.name(),
                 category,
@@ -72,9 +81,30 @@ public class EventCommandServiceImpl implements EventCommandService {
                 command.img()
         );
 
-        if (command.schedules() != null) {
+        // 행사 일정 업데이트
+        boolean schedulesChanged = command.schedules() != null;
+        if (schedulesChanged) {
             event.clearSchedules();
             command.schedules().forEach(s -> event.addSchedule(s.toEntity(event)));
+        }
+
+        // 변경 후 상태 스냅샷 생성
+        EventSnapshot afterSnapshot = EventSnapshot.from(event);
+
+        // 변경사항 추적
+        EventChanges changes = EventSnapshot.compareSnapshots(beforeSnapshot, afterSnapshot);
+
+        // EventUpdate 메시지 발행
+        eventMessagePublisher.publishEventUpdated(new EventUpdatedMessage(event.getId(), event.getName()));
+
+        // 필드 변경사항이 있으면 메시지 발행
+        if (changes.hasChanges()) {
+            EventScheduleChangedMessage message = EventScheduleChangedMessage.from(
+                    event.getId(),
+                    event.getName(),
+                    changes.getChangedFields()
+            );
+            eventMessagePublisher.publishScheduleChanged(message);
         }
 
         return EventResult.from(event);
@@ -87,5 +117,7 @@ public class EventCommandServiceImpl implements EventCommandService {
 
         event.deleted(userId);
         eventRepository.delete(event);
+
+        eventMessagePublisher.publishEventDeleted(new EventDeletedMessage(event.getId(), event.getName()));
     }
 }
