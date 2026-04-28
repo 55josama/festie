@@ -13,12 +13,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, UUID> {
 
-    // 특정 유저의 게시글 목록
-    List<Post> findByUserIdAndDeletedAtIsNull(UUID userId);
-
-    // 카테고리별 게시글 목록
-    List<Post> findByCategoryIdAndDeletedAtIsNull(UUID categoryId);
-
     //조회수 증가. MVP는 매 조회마다 호출
     //추후 Redis INCR + 주기 flush로 마이그레이션 예정
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -39,4 +33,21 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     /** 전체 목록 (소프트 삭제/BLOCKED 제외). */
     Page<Post> findByDeletedAtIsNullAndStatusNot(
             PostStatus excludedStatus, Pageable pageable);
+
+    /**
+     * 좋아요 수 증가. PostLike INSERT 성공 시 함께 호출.
+     * 동시 요청에도 DB가 원자적으로 처리하므로 충돌하지 않는다.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Post p SET p.likeCount = p.likeCount + 1 WHERE p.id = :id")
+    int incrementLikeCount(@Param("id") UUID id);
+
+    /**
+     * 좋아요 수 감소. WHERE 조건에 {@code likeCount > 0}을 포함하여 음수 방지.
+     *
+     * @return 영향받은 행 수. 0이면 likeCount가 이미 0이거나 게시글이 없는 상태.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Post p SET p.likeCount = p.likeCount - 1 WHERE p.id = :id AND p.likeCount > 0")
+    int decrementLikeCount(@Param("id") UUID id);
 }

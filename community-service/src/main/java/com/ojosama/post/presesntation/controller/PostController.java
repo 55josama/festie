@@ -7,6 +7,7 @@ import com.ojosama.post.application.dto.command.UpdatePostCommand;
 import com.ojosama.post.application.dto.result.PostResult;
 import com.ojosama.post.application.query.PostListQuery;
 import com.ojosama.post.application.service.PostService;
+import com.ojosama.post.application.service.PostLikeService;
 import com.ojosama.post.presesntation.dto.request.CreatePostRequest;
 import com.ojosama.post.presesntation.dto.request.UpdatePostRequest;
 import com.ojosama.post.presesntation.dto.response.PostResponse;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PostController {
     private final PostService postService;
+    private final PostLikeService postLikeService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -80,4 +82,17 @@ public class PostController {
         return ApiResponse.success(page.map(PostResponse::from));
     }
 
+    @PostMapping("/{postId}/likes")
+    public ApiResponse<Void> like(
+            @PathVariable UUID postId) {
+        postLikeService.like(postId, UUID.randomUUID());
+        return ApiResponse.success();
+    }
+
+    @DeleteMapping("/{postId}/likes")
+    public ApiResponse<Void> unlike(
+            @PathVariable UUID postId) {
+        postLikeService.unlike(postId, UUID.randomUUID());
+        return ApiResponse.success();
+    }
 }

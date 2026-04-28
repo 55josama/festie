@@ -26,7 +26,7 @@ public record PostResponse(
                 r.userId(),
                 r.categoryId(),
                 blocked ? Content.maskedText() : r.title(),
-                blocked ? Content.maskedText() : r.content().getValue(),
+                blocked ? Content.maskedText() : r.content(),
                 r.viewCount(),
                 r.likeCount(),
                 r.commentCount(),
