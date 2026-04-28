@@ -26,11 +26,11 @@ public class EventCreatedConsumer {
 
     @KafkaListener(topics = "${spring.kafka.topic.event-created}", groupId = "chat-service-group")
     public void consume(String payload) {
-        EventCreatedEvent event = parse(payload);
-        ChatRoomSchedule schedule = chatRoomSchedulePolicy.calculate(event.eventStartAt(), event.eventEndAt());
-        EventCategory category = parseCategory(event.categoryCode());
-
         try {
+            EventCreatedEvent event = parse(payload);
+            ChatRoomSchedule schedule = chatRoomSchedulePolicy.calculate(event.eventStartAt(), event.eventEndAt());
+            EventCategory category = parseCategory(event.categoryCode());
+
             chatRoomService.createChatRoom(
                     new CreateChatRoomCommand(
                             event.eventId(),
@@ -44,13 +44,12 @@ public class EventCreatedConsumer {
                     event.eventId(), event.eventName(), event.categoryCode());
         } catch (ChatException e) {
             if (HttpStatus.CONFLICT.equals(e.getStatus())) {
-                log.info("채팅방이 이미 존재해서 이벤트를 건너뜁니다. eventId={}", event.eventId());
+                log.info("채팅방이 이미 존재해서 이벤트를 건너뜁니다.");
                 return;
             }
             throw e;
         } catch (RuntimeException e) {
-            log.error("행사 이벤트로 채팅방 자동 생성에 실패했습니다. eventId={}, payload={}",
-                    event.eventId(), payload, e);
+            log.error("행사 이벤트로 채팅방 자동 생성에 실패했습니다. payload={}", payload, e);
             throw e;
         }
     }
