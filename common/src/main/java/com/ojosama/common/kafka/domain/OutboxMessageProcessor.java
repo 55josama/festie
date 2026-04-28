@@ -40,12 +40,19 @@ public class OutboxMessageProcessor {
                         .toList();
 
         boolean interrupted = false; //인터럽트 발생 여부 기록
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(120);
 
         for (Map.Entry<OutboxMessage, CompletableFuture<SendResult<String, String>>> entry
                 : futures) {
             OutboxMessage message = entry.getKey();
             try {
-                SendResult<String, String> result = entry.getValue().get(120, TimeUnit.SECONDS);
+                long remainingNanos = deadlineNanos - System.nanoTime();
+                if (remainingNanos <= 0) {
+                    message.markFailed("Timeout: 배치 처리 제한 시간 초과");
+                    continue;
+                }
+                SendResult<String, String> result =
+                        entry.getValue().get(remainingNanos, TimeUnit.NANOSECONDS);
                 log.debug("Outbox sent. id={}, topic={}, partition={}, offset={}",
                         message.getId(),
                         message.getTopic(),
