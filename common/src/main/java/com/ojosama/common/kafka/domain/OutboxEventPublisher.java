@@ -3,6 +3,7 @@ package com.ojosama.common.kafka.domain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ public class OutboxEventPublisher {
             EventType eventType,
             String topic,
             Object payload) {
+        Objects.requireNonNull(eventType, "eventType must not be null");
         String json;
         try {
             json = objectMapper.writeValueAsString(payload);
