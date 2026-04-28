@@ -142,6 +142,15 @@ public class CommentService {
                 root, repliesByParent.getOrDefault(root.getId(), List.of())));
     }
 
+    public CommentResult getComment(UUID commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentException(CommentErrorCode.COMMENT_NOT_FOUND));
+        if (comment.getDeletedAt() != null) {
+            throw new CommentException(CommentErrorCode.COMMENT_NOT_FOUND);
+        }
+        return CommentResult.flat(comment);
+    }
+
     private Comment loadAlive(UUID commentId) {
         Comment c = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CommentException(CommentErrorCode.COMMENT_NOT_FOUND));

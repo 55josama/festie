@@ -66,4 +66,10 @@ public class CommentController {
                 new CommentListQuery(postId, pageable));
         return ApiResponse.success(page.map(CommentResponse::from));
     }
+
+    @GetMapping("internal/v1/comments/{commentId}")
+    public ApiResponse<CommentResponse> getComment(@PathVariable UUID commentId) {
+        CommentResult result = commentService.getComment(commentId);
+        return ApiResponse.success(CommentResponse.from(result));
+    }
 }
