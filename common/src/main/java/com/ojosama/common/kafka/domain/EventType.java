@@ -1,8 +1,8 @@
 package com.ojosama.common.kafka.domain;
 
+import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import java.util.Arrays;
 
 //표준을 맞추는 용도로 여기에 이벤트 타입 (private String eventType) 적어주시면 됩니다
 //해당 서비스만 쓰는 내부 이벤트 이름은 작성 x
@@ -16,7 +16,12 @@ public enum EventType {
     COMMENT_CREATED("CommentCreated"),
     COMMENT_UPDATED("CommentUpdated"),
     POST_REPORTED("PostReported"),
-    COMMENT_REPORTED("CommentReported");
+    COMMENT_REPORTED("CommentReported"),
+
+    EVENT_CREATED("EventCreated"),
+    EVENT_DELETED("EventDeleted"),
+    EVENT_UPDATED("EventUpdated"),
+    EVENT_SCHEDULE_CHANGED("EventScheduleChanged");
 
     private final String value;
 
