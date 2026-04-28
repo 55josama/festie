@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtTokenProvider {
 
+    private static final String TOKEN_TYPE_CLAIM = "tokenType";
+
     private final JwtProperties jwtProperties;
     private final SecretKey secretKey;
 
@@ -24,14 +26,14 @@ public class JwtTokenProvider {
     }
 
     public String createAccessToken(User user) {
-        return createToken(user, jwtProperties.accessTokenExpiration());
+        return createToken(user, jwtProperties.accessTokenExpiration(), TokenType.ACCESS);
     }
 
     public String createRefreshToken(User user) {
-        return createToken(user, jwtProperties.refreshTokenExpiration());
+        return createToken(user, jwtProperties.refreshTokenExpiration(), TokenType.REFRESH);
     }
 
-    private String createToken(User user, long expiration) {
+    private String createToken(User user, long expiration, TokenType tokenType) {
         Date now = new Date();
         Date expiredAt = new Date(now.getTime() + expiration);
 
@@ -39,6 +41,7 @@ public class JwtTokenProvider {
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole().name())
+                .claim(TOKEN_TYPE_CLAIM, tokenType.name())
                 .issuedAt(now)
                 .expiration(expiredAt)
                 .signWith(secretKey)
@@ -64,6 +67,27 @@ public class JwtTokenProvider {
 
     public String getRole(String token) {
         return parseClaims(token).get("role", String.class);
+    }
+
+    public TokenType getTokenType(String token) {
+        String tokenType = parseClaims(token).get(TOKEN_TYPE_CLAIM, String.class);
+        return TokenType.valueOf(tokenType);
+    }
+
+    public boolean isAccessToken(String token) {
+        try {
+            return getTokenType(token) == TokenType.ACCESS;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isRefreshToken(String token) {
+        try {
+            return getTokenType(token) == TokenType.REFRESH;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private Claims parseClaims(String token) {

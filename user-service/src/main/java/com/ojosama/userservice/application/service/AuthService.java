@@ -27,10 +27,10 @@ public class AuthService {
     //로그인
     public LoginResult login(LoginCommand command) {
         User user = userRepository.findByEmailAndDeletedAtIsNull(command.email())
-                .orElseThrow(() -> new IllegalArgumentException("이메일이 올바르지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("이메일 혹은 비밀번호가 올바르지 않습니다."));
 
         if (!passwordEncoder.matches(command.password(), user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 올바르지 않습니다.");
+            throw new IllegalArgumentException("이메일 혹은 비밀번호가 올바르지 않습니다.");
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(user);
@@ -47,13 +47,13 @@ public class AuthService {
         );
     }
 
-
     //재발급
     @Transactional
     public LoginResult reissue(ReissueTokenCommand command) {
         String refreshToken = command.refreshToken();
 
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
+        if (!jwtTokenProvider.validateToken(refreshToken)
+                || !jwtTokenProvider.isRefreshToken(refreshToken)) {
             throw new IllegalArgumentException("유효하지 않은 Refresh Token입니다.");
         }
 
