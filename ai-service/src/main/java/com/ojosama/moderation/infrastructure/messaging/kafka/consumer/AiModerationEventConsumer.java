@@ -25,14 +25,8 @@ public class AiModerationEventConsumer {
             return;
         }
 
-        try {
-            log.info("[AI 검증] {}개의 검사 요청 배치를 수신했습니다.", events.size());
-
-            aiModerationService.processModerationBatch(events);
-
-        } catch (Exception e) {
-            log.error("AI 검증 배치 처리 중 에러가 발생했습니다. 해당 배치를 스킵합니다. 이벤트 개수: {}", events.size(), e);
-        }
+        log.info("[AI 검증] {}개의 검사 요청 배치를 수신했습니다.", events.size());
+        aiModerationService.processModerationBatch(events);
     }
 
     // 커뮤니티용 리스너 (communityBatchFactory 사용)
@@ -46,13 +40,7 @@ public class AiModerationEventConsumer {
             return;
         }
 
-        try {
-            log.info("[AI 검증] {}개의 검사 요청 배치를 수신했습니다.", events.size());
-
-            aiModerationService.processModerationBatch(events);
-
-        } catch (Exception e) {
-            log.error("AI 검증 배치 처리 중 에러가 발생했습니다. 해당 배치를 스킵합니다. 이벤트 개수: {}", events.size(), e);
-        }
+        log.info("[AI 검증] {}개의 검사 요청 배치를 수신했습니다.", events.size());
+        aiModerationService.processModerationBatch(events);
     }
 }
