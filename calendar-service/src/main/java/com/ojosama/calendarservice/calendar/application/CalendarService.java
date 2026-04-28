@@ -28,7 +28,7 @@ public class CalendarService {
 
     public CalendarResponseDto createCalendar(CreateCalendarCommand command) {
 
-        Optional<Calendar> exists = calendarRepository.findByEventInfoEventScheduleIdAndUserId(
+        Optional<Calendar> exists = calendarRepository.findByEventInfo_EventScheduleIdAndUserId(
                 command.eventScheduleId(),
                 command.userId());
 

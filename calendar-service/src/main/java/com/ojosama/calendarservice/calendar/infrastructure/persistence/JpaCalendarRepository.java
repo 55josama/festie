@@ -5,9 +5,9 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface JpaCalendarRepository extends JpaRepository<Calendar, UUID> {
+public interface JpaCalendarRepository extends JpaRepository<Calendar, UUID>, CalendarRepositoryCustom {
 
-    Optional<Calendar> findByEventScheduleIdAndUserId(UUID eventScheduleId, UUID userId);
+    Optional<Calendar> findByEventInfo_EventScheduleIdAndUserId(UUID eventScheduleId, UUID userId);
 
     Optional<Calendar> findByIdAndUserIdAndDeletedAtIsNull(UUID id, UUID userId);
 }

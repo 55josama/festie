@@ -25,7 +25,7 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public Optional<Calendar> findByEventInfoEventScheduleIdAndUserId(UUID scheduleId, UUID userId) {
+    public Optional<Calendar> findByEventInfo_EventScheduleIdAndUserId(UUID scheduleId, UUID userId) {
         return jpaCalendarRepository.findByEventInfo_EventScheduleIdAndUserId(scheduleId, userId);
     }
 
