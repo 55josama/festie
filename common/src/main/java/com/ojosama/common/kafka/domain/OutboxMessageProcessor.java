@@ -73,9 +73,35 @@ public class OutboxMessageProcessor {
                         message.getId(), message.getRetryCount(), message.getLastError());
 
             } catch (TimeoutException e) {
-                message.markFailed("Timeout: 120초 내 응답 없음");
-                log.warn("Outbox send timeout. id={}, retryCount={}",
-                        message.getId(), message.getRetryCount());
+                interrupted = true;
+
+                //future가 이미 완료됐을 수 있으니 한 번 더 확인
+                CompletableFuture<SendResult<String, String>> future = entry.getValue();
+
+                if (future.isDone() && !future.isCompletedExceptionally()) {
+                    // send가 실제로 성공했으면 markSent
+                    try {
+                        SendResult<String, String> result = future.getNow(null);
+                        if (result != null) {
+                            message.markSent();
+                            log.debug("Outbox sent (after interrupt). id={}, topic={}",
+                                    message.getId(), message.getTopic());
+                        } else {
+                            message.markFailed("Interrupted: future 결과 null");
+                        }
+                    } catch (Exception ex) {
+                        message.markFailed("Interrupted + 결과 확인 실패: " + ex.getMessage());
+                    }
+                } else if (future.isCompletedExceptionally()) {
+                    // send가 실패했으면 markFailed
+                    message.markFailed("Interrupted + send 실패");
+                    log.warn("Outbox send failed (after interrupt). id={}, retryCount={}",
+                            message.getId(), message.getRetryCount());
+                } else {
+                    // future가 아직 진행 중 — 결과를 모르니 PENDING 유지 (markFailed 안 함)
+                    // 다음 poll에서 다시 처리됨 → inbox 멱등으로 중복 안전
+                    log.warn("Outbox send interrupted, future still pending. id={}", message.getId());
+                }
             }
         }
 
