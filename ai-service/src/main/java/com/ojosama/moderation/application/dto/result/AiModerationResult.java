@@ -20,7 +20,7 @@ public record AiModerationResult (
                 aiModeration.getTargetUserId(),
                 aiModeration.getTargetType(),
                 aiModeration.getCategory(),
-                aiModeration.getContentSnapshot()
+                aiModeration.getContent()
         );
     }
 }
