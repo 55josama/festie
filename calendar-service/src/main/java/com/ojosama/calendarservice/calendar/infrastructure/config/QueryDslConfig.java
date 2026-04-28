@@ -1,4 +1,4 @@
-package com.ojosama.calendarservice.calendar.common.config;
+package com.ojosama.calendarservice.calendar.infrastructure.config;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
