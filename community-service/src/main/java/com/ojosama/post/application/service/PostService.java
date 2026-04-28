@@ -45,7 +45,7 @@ public class PostService {
 
         outbox.publish(
                 AGGREGATE_TYPE, post.getId(),
-                String.valueOf(EventType.POST_CREATED), "community.post.created.v1",
+                EventType.POST_CREATED, "community.post.created.v1",
                 new PostCreatedEvent(
                         post.getId(),
                         post.getUserId(),
@@ -68,7 +68,7 @@ public class PostService {
 
         outbox.publish(
                 AGGREGATE_TYPE, post.getId(),
-                String.valueOf(EventType.POST_UPDATED), "community.post.updated.v1",
+                EventType.POST_UPDATED, "community.post.updated.v1",
                 new PostUpdateEvent(
                         post.getId(),
                         post.getUserId(),
