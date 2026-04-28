@@ -24,6 +24,7 @@ public class KafkaConfig {
         Properties props = new Properties();
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 100);
         props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 100);
+        props.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 10240);
         factory.getContainerProperties().setKafkaConsumerProperties(props);
 
         return factory;
@@ -42,6 +43,7 @@ public class KafkaConfig {
         Properties props = new Properties();
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 50);
         props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 2000);
+        props.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 10240);
         factory.getContainerProperties().setKafkaConsumerProperties(props);
 
         return factory;
