@@ -2,6 +2,7 @@ package com.ojosama.comment.application.service;
 
 import com.ojosama.comment.application.dto.CommentResult;
 import com.ojosama.comment.application.dto.CreateCommentCommand;
+import com.ojosama.comment.application.dto.DeleteCommentCommand;
 import com.ojosama.comment.application.dto.UpdateCommentCommand;
 import com.ojosama.comment.domain.event.payload.CommentCreatedEvent;
 import com.ojosama.comment.domain.event.payload.CommentUpdatedEvent;
@@ -95,6 +96,17 @@ public class CommentService {
 
         return CommentResult.flat(comment);
     }
+
+    @Transactional
+    public void delete(DeleteCommentCommand cmd) {
+        Comment comment = loadAlive(cmd.commentId());
+        if (!cmd.isAdmin() && !comment.isOwnedBy(cmd.requesterId())) {
+            throw new CommentException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+        }
+        comment.deleted(cmd.requesterId());
+        postRepository.decrementCommentCount(comment.getPostId());
+    }
+
 
     private Comment loadAlive(UUID commentId) {
         Comment c = commentRepository.findById(commentId)

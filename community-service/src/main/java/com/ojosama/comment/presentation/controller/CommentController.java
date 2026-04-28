@@ -2,6 +2,7 @@ package com.ojosama.comment.presentation.controller;
 
 import com.ojosama.comment.application.dto.CommentResult;
 import com.ojosama.comment.application.dto.CreateCommentCommand;
+import com.ojosama.comment.application.dto.DeleteCommentCommand;
 import com.ojosama.comment.application.dto.UpdateCommentCommand;
 import com.ojosama.comment.application.service.CommentService;
 import com.ojosama.comment.presentation.dto.request.CreateCommentRequest;
@@ -12,6 +13,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +33,7 @@ public class CommentController {
             @PathVariable UUID postId,
             @Valid @RequestBody CreateCommentRequest req) {
         CommentResult result = commentService.create(new CreateCommentCommand(
-                postId, UUID.randomUUID(), req.parentId(), req.content()));
+                postId, UUID.randomUUID(), req.parentId(), req.content())); //인증인가 구현되면 수정
         return ApiResponse.created(CommentResponse.from(result));
     }
 
@@ -40,7 +42,15 @@ public class CommentController {
             @PathVariable UUID commentId,
             @Valid @RequestBody UpdateCommentRequest req) {
         CommentResult result = commentService.update(new UpdateCommentCommand(
-                commentId, UUID.randomUUID(), req.content()));
+                commentId, UUID.randomUUID(), req.content())); //인증인가 구현되면 수정
         return ApiResponse.success(CommentResponse.from(result));
+    }
+
+    @DeleteMapping("/v1/comments/{commentId}")
+    public ApiResponse<Void> delete(
+            @PathVariable UUID commentId) {
+        commentService.delete(new DeleteCommentCommand(
+                commentId, UUID.randomUUID(), true)); //인증인가 구현되면 수정
+        return ApiResponse.deleted();
     }
 }

@@ -2,23 +2,15 @@ package com.ojosama.comment.domain.model;
 
 import com.ojosama.comment.domain.exception.CommentErrorCode;
 import com.ojosama.comment.domain.exception.CommentException;
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.common.domain.model.Content;
-import com.ojosama.post.domain.model.Post;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -30,7 +22,7 @@ import org.springframework.data.annotation.Version;
 @Table(name = "p_comments")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Comment extends BaseEntity {
+public class Comment extends BaseUserEntity {
 
     @Id
     private UUID id;
