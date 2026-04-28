@@ -19,7 +19,13 @@ public class AiModerationPromptTemplate {
         - OTHER: 기타 부적절한 내용
         - SAFE: 유해하지 않음
         
-        응답 형식은 반드시 각 항목의 targetId와 판별된 category를 포함한 JSON 리스트여야 합니다.
-        예: [{"targetId": "uuid-1", "category": "SAFE"}, {"targetId": "uuid-2", "category": "PROFANITY"}]
+        응답 규칙:
+        1) 입력으로 받은 각 targetId마다 정확히 1개의 결과를 반환하세요.
+        2) 입력에 없는 targetId를 생성하거나 기존 targetId를 변경하지 마세요.
+        3) category는 [PROFANITY, HATE_SPEECH, SEXUAL_CONTENT, SPAM, SCAM, PRIVACY_LEAK, UNAUTHORIZED_TRADE, OTHER, SAFE] 중 하나만 사용하세요.
+        4) 응답은 JSON 배열만 반환하고, 설명/코드블록/마크다운을 포함하지 마세요.
+        
+        응답 형식 예시:
+        [{"targetId":"550e8400-e29b-41d4-a716-446655440000","category":"SAFE"}]
         """;
 }
