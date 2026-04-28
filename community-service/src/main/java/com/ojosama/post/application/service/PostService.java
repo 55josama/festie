@@ -87,7 +87,7 @@ public class PostService {
         if( !cmd.isAdmin() && !post.isOwnedBy(cmd.requesterId())){
             throw new PostException(PostErrorCode.POST_ACCESS_DENIED);
         }
-        post.deleted();
+        post.deleted(cmd.requesterId());
     }
 
     @Transactional
