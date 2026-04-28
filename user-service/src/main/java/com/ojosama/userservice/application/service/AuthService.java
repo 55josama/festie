@@ -30,6 +30,9 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(user);
         String refreshToken = jwtTokenProvider.createRefreshToken(user);
 
+        user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
+
         return new LoginResult(
                 accessToken,
                 refreshToken
@@ -48,8 +51,15 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
+        if (user.getRefreshToken() == null || !user.getRefreshToken().equals(refreshToken)) {
+            throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다.");
+        }
+
         String newAccessToken = jwtTokenProvider.createAccessToken(user);
         String newRefreshToken = jwtTokenProvider.createRefreshToken(user);
+
+        user.updateRefreshToken(newRefreshToken);
+        userRepository.save(user);
 
         return new LoginResult(
                 newAccessToken,

@@ -45,6 +45,9 @@ public class User extends BaseUserEntity {
     @Column(nullable = false)
     private UserRole role;
 
+    @Column(length = 1000)
+    private String refreshToken;
+
     @Builder
     private User(
             String email,
@@ -85,6 +88,14 @@ public class User extends BaseUserEntity {
 
     public void changeRole(UserRole role) {
         this.role = Objects.requireNonNull(role, "올바른 값이 아닙니다.");
+    }
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public void clearRefreshToken() {
+        this.refreshToken = null;
     }
 }
 
