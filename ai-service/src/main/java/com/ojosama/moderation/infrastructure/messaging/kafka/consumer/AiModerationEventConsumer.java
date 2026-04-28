@@ -14,20 +14,45 @@ import org.springframework.stereotype.Component;
 public class AiModerationEventConsumer {
     private final AiModerationService aiModerationService;
 
-    @KafkaListener(topics = "${spring.kafka.topic.ai-moderation-requested}", groupId = "ai-service-group")
-    public void consumeModerationRequestBatch(List<AiModerationRequestEvent> events) {
+    // 채팅용 리스너 (chatBatchFactory 사용)
+    @KafkaListener(
+            topics = "${spring.kafka.topic.chat-moderation-requested}",
+            groupId = "ai-service-group",
+            containerFactory = "chatBatchFactory"
+    )
+    public void consumeChatBatch(List<AiModerationRequestEvent> events) {
         if (events == null || events.isEmpty()) {
             return;
         }
 
         try {
-            log.info("[AI 모더레이션] {}개의 검사 요청 배치를 수신했습니다.", events.size());
+            log.info("[AI 검증] {}개의 검사 요청 배치를 수신했습니다.", events.size());
 
-            // 서비스 계층으로 배치 전달
             aiModerationService.processModerationBatch(events);
 
         } catch (Exception e) {
-            log.error("AI 모더레이션 배치 처리 중 치명적 에러가 발생했습니다. 해당 배치를 스킵합니다. 이벤트 개수: {}", events.size(), e);
+            log.error("AI 검증 배치 처리 중 에러가 발생했습니다. 해당 배치를 스킵합니다. 이벤트 개수: {}", events.size(), e);
+        }
+    }
+
+    // 게시글용 리스너 (communityBatchFactory 사용)
+    @KafkaListener(
+            topics = "${spring.kafka.topic.community-moderation-requested}",
+            groupId = "ai-service-group",
+            containerFactory = "communityBatchFactory"
+    )
+    public void consumeCommunityBatch(List<AiModerationRequestEvent> events) {
+        if (events == null || events.isEmpty()) {
+            return;
+        }
+
+        try {
+            log.info("[AI 검증] {}개의 검사 요청 배치를 수신했습니다.", events.size());
+
+            aiModerationService.processModerationBatch(events);
+
+        } catch (Exception e) {
+            log.error("AI 검증 배치 처리 중 에러가 발생했습니다. 해당 배치를 스킵합니다. 이벤트 개수: {}", events.size(), e);
         }
     }
 }
