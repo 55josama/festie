@@ -3,6 +3,8 @@ package com.ojosama.eventservice.event.application.service;
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand;
 import com.ojosama.eventservice.event.application.dto.command.UpdateEventCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
+import com.ojosama.eventservice.event.domain.event.EventMessagePublisher;
+import com.ojosama.eventservice.event.domain.event.payload.EventCreatedMessage;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.Event;
@@ -25,6 +27,7 @@ public class EventCommandServiceImpl implements EventCommandService {
 
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
+    private final EventMessagePublisher eventMessagePublisher;
 
     @Override
     public EventResult createEvent(CreateEventCommand command) {
@@ -37,6 +40,13 @@ public class EventCommandServiceImpl implements EventCommandService {
                 event.addSchedule(scheduleCommand.toEntity(event)));
 
         Event saved = eventRepository.save(event);
+
+        eventMessagePublisher.publishEventCreated(new EventCreatedMessage(
+                saved.getId(), saved.getName(),
+                saved.getCategory().getId(), saved.getCategory().getName(),
+                saved.getEventTime().getStartAt(), saved.getEventTime().getEndAt()
+        ));
+
         return EventResult.from(saved);
     }
 
