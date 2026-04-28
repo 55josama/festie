@@ -24,6 +24,9 @@ public class UserService {
     //유저 생성
     @Transactional
     public CreateUserResult createUser(CreateUserCommand command) {
+        if (userRepository.existsByEmail(command.email())) {
+            throw new IllegalArgumentException("중복 이메일입니다.");
+        }
 
         String encodedPassword = passwordEncoder.encode(command.password());
 
