@@ -1,10 +1,12 @@
 package com.ojosama.userservice.application.service;
 
 import com.ojosama.userservice.application.dto.command.LoginCommand;
+import com.ojosama.userservice.application.dto.command.ReissueTokenCommand;
 import com.ojosama.userservice.application.dto.result.LoginResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import com.ojosama.userservice.global.security.JwtTokenProvider;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,27 @@ public class AuthService {
         return new LoginResult(
                 accessToken,
                 refreshToken
+        );
+    }
+
+    public LoginResult reissue(ReissueTokenCommand command) {
+        String refreshToken = command.refreshToken();
+
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new IllegalArgumentException("유효하지 않은 Refresh Token입니다.");
+        }
+
+        UUID userId = jwtTokenProvider.getUserId(refreshToken);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(user);
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(user);
+
+        return new LoginResult(
+                newAccessToken,
+                newRefreshToken
         );
     }
 }

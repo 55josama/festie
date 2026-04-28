@@ -3,6 +3,7 @@ package com.ojosama.userservice.presentation.controller;
 import com.ojosama.userservice.application.dto.result.LoginResult;
 import com.ojosama.userservice.application.service.AuthService;
 import com.ojosama.userservice.presentation.dto.request.LoginRequestDto;
+import com.ojosama.userservice.presentation.dto.request.ReissueTokenRequestDto;
 import com.ojosama.userservice.presentation.dto.response.LoginResponseDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,14 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public LoginResponseDto login(@Valid @RequestBody LoginRequestDto requestDto) {
         LoginResult result = authService.login(requestDto.toCommand());
+
+        return LoginResponseDto.from(result);
+    }
+
+    @PostMapping("/reissue")
+    @ResponseStatus(HttpStatus.OK)
+    public LoginResponseDto reissue(@Valid @RequestBody ReissueTokenRequestDto requestDto) {
+        LoginResult result = authService.reissue(requestDto.toCommand());
 
         return LoginResponseDto.from(result);
     }
