@@ -49,7 +49,10 @@ public class ChatRoomService {
         try {
             return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
         } catch (DataIntegrityViolationException e) {
-            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_EXISTS);
+            if (isDuplicateEventIdViolation(e)) {
+                throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_EXISTS);
+            }
+            throw e;
         }
     }
 
@@ -141,4 +144,25 @@ public class ChatRoomService {
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
+
+    private boolean isDuplicateEventIdViolation(DataIntegrityViolationException e) {
+        Throwable cause = e;
+        while (cause != null) {
+            String message = cause.getMessage();
+            if (message != null && isEventIdConstraintMessage(message)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    private boolean isEventIdConstraintMessage(String message) {
+        String normalized = message.toLowerCase();
+        return normalized.contains("uk_chat_room_event_id")
+                || normalized.contains("p_chat_room_event_id_key")
+                || normalized.contains("event_id")
+                && normalized.contains("duplicate key");
+    }
+
 }
