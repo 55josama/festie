@@ -8,13 +8,15 @@ import lombok.Builder;
 public record CreateCalendarCommand(
         UUID eventScheduleId,
         String memo,
-        UUID userId
+        UUID userId,
+        UUID eventId
 ) {
     public static CreateCalendarCommand of(CreateCalendarRequestDto dto, UUID userId) {
         return CreateCalendarCommand.builder()
                 .eventScheduleId(dto.eventScheduleId())
                 .userId(userId)
                 .memo(dto.memo())
+                .eventId(dto.eventId())
                 .build();
     }
 

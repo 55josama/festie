@@ -5,6 +5,7 @@ import com.ojosama.calendarservice.calendar.application.dto.result.CalendarResul
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
+import com.ojosama.calendarservice.calendar.domain.model.EventInfo;
 import com.ojosama.calendarservice.calendar.domain.repository.CalendarRepository;
 import com.ojosama.calendarservice.calendar.presentaion.dto.CalendarResponseDto;
 import java.time.LocalDateTime;
@@ -43,11 +44,12 @@ public class CalendarService {
         // TODO : event-service에서 feign으로 eventScheduleId로 startDate 복사
         LocalDateTime eventStart = LocalDateTime.now();
 
-        // TODO : event-service에서 eventId값으로 ticketing시간 복사
+        // TODO : event-service에서 eventId값으로 ticketing시간, 행사이름 복사
         LocalDateTime ticketingDate = LocalDateTime.now();
+        String eventName = "행사";
 
-        Calendar calendar = Calendar.create(command.userId(), command.eventScheduleId(), eventStart, command.memo(),
-                ticketingDate);
+        Calendar calendar = Calendar.create(command.userId(), command.memo(),
+                EventInfo.of(command.eventId(), eventName, command.eventScheduleId(), eventStart, ticketingDate));
 
         try {
             calendarRepository.saveAndFlush(calendar);

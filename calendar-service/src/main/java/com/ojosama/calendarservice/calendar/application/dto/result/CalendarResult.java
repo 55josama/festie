@@ -11,15 +11,19 @@ public record CalendarResult(
         UUID eventScheduleId,
         LocalDateTime eventDate,
         LocalDateTime ticketingDate,
-        String memo
+        String memo,
+        String eventName,
+        UUID eventId
 ) {
     public static CalendarResult from(Calendar calendar) {
         return CalendarResult.builder()
                 .id(calendar.getId())
-                .eventScheduleId(calendar.getEventScheduleId())
-                .eventDate(calendar.getEventDate())
-                .ticketingDate(calendar.getEventTicketingDate())
+                .eventScheduleId(calendar.getEventInfo().getEventScheduleId())
+                .eventDate(calendar.getEventInfo().getEventDate())
+                .ticketingDate(calendar.getEventInfo().getEventTicketingDate())
                 .memo(calendar.getMemo())
+                .eventName(calendar.getEventInfo().getEventName())
+                .eventId(calendar.getEventInfo().getEventId())
                 .build();
     }
 }
