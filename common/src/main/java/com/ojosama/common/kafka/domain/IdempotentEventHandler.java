@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 //컨슈머의 멱등 처리 헬퍼
 //messageKey 중복 체크 — 이미 있으면 SKIP.
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(noRollbackFor = DataIntegrityViolationException.class)
 public class IdempotentEventHandler {
 
     private final InboxRepository inboxRepository;
@@ -33,11 +35,12 @@ public class IdempotentEventHandler {
 
         try {
             inboxRepository.save(InboxMessage.of(messageKey, consumerGroup, topic, eventType));
-
-            businessLogic.run();
         } catch (DataIntegrityViolationException e) {
             // 동시 처리 중 다른 컨슈머가 먼저 inbox에 기록한 경우 (드물지만 가능)
             log.debug("inbox 동시 INSERT 충돌. 다른 컨슈머가 처리 완료한 것으로 간주. key={}", messageKey);
+            return;
         }
+
+        businessLogic.run();
     }
 }

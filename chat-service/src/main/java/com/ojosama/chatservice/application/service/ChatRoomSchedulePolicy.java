@@ -5,7 +5,9 @@ import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.chatservice.domain.model.ChatRoomSchedule;
 import com.ojosama.common.exception.CommonErrorCode;
 import java.time.LocalDateTime;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ChatRoomSchedulePolicy {
 
     public ChatRoomSchedule calculate(LocalDateTime eventStartAt, LocalDateTime eventEndAt) {

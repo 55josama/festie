@@ -3,6 +3,7 @@ package com.ojosama.common.kafka.domain;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,9 +20,10 @@ public class OutboxEventPublisher {
     public void publish(
             String aggregateType,
             UUID aggregateId,
-            String eventType,
+            EventType eventType,
             String topic,
             Object payload) {
+        Objects.requireNonNull(eventType, "eventType must not be null");
         String json;
         try {
             json = objectMapper.writeValueAsString(payload);
@@ -30,7 +32,7 @@ public class OutboxEventPublisher {
                     "이벤트 페이로드 직렬화 실패: " + eventType, e);
         }
         OutboxMessage message = OutboxMessage.create(
-                aggregateType, aggregateId, eventType, topic, json);
+                aggregateType, aggregateId, eventType.getValue(), topic, json);
         outboxRepository.save(message);
     }
 }
