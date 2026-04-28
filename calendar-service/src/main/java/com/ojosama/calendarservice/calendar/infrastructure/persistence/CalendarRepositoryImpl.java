@@ -1,13 +1,14 @@
 package com.ojosama.calendarservice.calendar.infrastructure.persistence;
 
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
+import com.ojosama.calendarservice.calendar.domain.model.QCalendar;
 import com.ojosama.calendarservice.calendar.domain.repository.CalendarRepository;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -15,25 +16,39 @@ import org.springframework.stereotype.Repository;
 public class CalendarRepositoryImpl implements CalendarRepository {
 
     private final JpaCalendarRepository jpaCalendarRepository;
+    private final JPAQueryFactory queryFactory;
 
     @Override
-    public Calendar save(Calendar calendar) {
-        return jpaCalendarRepository.save(calendar);
+    public void save(Calendar calendar) {
+        jpaCalendarRepository.save(calendar);
     }
 
     @Override
-    public Optional<Calendar> findByIdAndDeletedAtIsNull(UUID id) {
+    public Optional<Calendar> findByIdAndUserIdAndDeletedAtIsNull(UUID id, UUID userId) {
         return jpaCalendarRepository.findByIdAndDeletedAtIsNull(id);
     }
 
     @Override
-    public Page<Calendar> findByUserIdAndDeletedAtIsNull(UUID userId, Pageable pageable) {
-        return jpaCalendarRepository.findByUserIdAndDeletedAtIsNull(userId, pageable);
+    public List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month) {
+        QCalendar qCalendar = QCalendar.calendar;
+
+        // 해당 월 1일
+        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0);
+        // 다음달 1일
+        LocalDateTime end = start.plusMonths(1);
+
+        return queryFactory
+                .selectFrom(qCalendar)
+                .where(
+                        qCalendar.userId.eq(userId),
+                        qCalendar.eventDate.goe(start), // event_date >= start
+                        qCalendar.eventDate.lt(end), // event_date < end
+                        qCalendar.deletedAt.isNull()
+                ).fetch();
     }
 
     @Override
-    public Page<Calendar> findByUserIdAndEventDateBetweenAndDeletedAtIsNull(
-            UUID userId, LocalDateTime start, LocalDateTime end, Pageable pageable) {
-        return jpaCalendarRepository.findByUserIdAndEventDateBetweenAndDeletedAtIsNull(userId, start, end, pageable);
+    public Optional<Calendar> findByEventScheduleIdAndUserId(UUID scheduleId, UUID userId) {
+        return jpaCalendarRepository.findByEventScheduleIdAndUserId(scheduleId, userId);
     }
 }
