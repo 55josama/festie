@@ -1,0 +1,127 @@
+package com.ojosama.chatservice.application.service;
+
+import com.ojosama.chatservice.application.dto.command.ChangeChatRoomStatusCommand;
+import com.ojosama.chatservice.application.dto.command.CreateChatRoomCommand;
+import com.ojosama.chatservice.application.dto.query.FindChatRoomByEventIdQuery;
+import com.ojosama.chatservice.application.dto.query.FindChatRoomQuery;
+import com.ojosama.chatservice.application.dto.result.ChatRoomResult;
+import com.ojosama.chatservice.domain.exception.ChatErrorCode;
+import com.ojosama.chatservice.domain.exception.ChatException;
+import com.ojosama.chatservice.domain.model.ChatRoom;
+import com.ojosama.chatservice.domain.model.ChatRoomSchedule;
+import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
+import com.ojosama.common.exception.CommonErrorCode;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ChatRoomService {
+
+    private final ChatRoomRepository chatRoomRepository;
+
+    public ChatRoomResult createChatRoom(CreateChatRoomCommand command) {
+        if (command == null
+                || command.eventId() == null
+                || command.category() == null
+                || command.scheduledOpenAt() == null
+                || command.scheduledCloseAt() == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        if (chatRoomRepository.findByEventId(command.eventId()).isPresent()) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_EXISTS);
+        }
+
+        ChatRoom chatRoom = ChatRoom.builder()
+                .eventId(command.eventId())
+                .category(command.category())
+                .schedule(new ChatRoomSchedule(command.scheduledOpenAt(), command.scheduledCloseAt()))
+                .build();
+
+        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+    }
+
+    @Transactional(readOnly = true)
+    public ChatRoomResult getChatRoom(FindChatRoomQuery query) {
+        if (query == null || query.chatRoomId() == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        return ChatRoomResult.from(findChatRoomEntity(query.chatRoomId()));
+    }
+
+    @Transactional(readOnly = true)
+    public ChatRoomResult getChatRoomByEventId(FindChatRoomByEventIdQuery query) {
+        if (query == null || query.eventId() == null) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_EVENT_ID_REQUIRED);
+        }
+        return ChatRoomResult.from(chatRoomRepository.findByEventId(query.eventId())
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND)));
+    }
+
+    // 상태 분기 : 상태 변경 요청 API 가 들어왔을 때
+    public ChatRoomResult changeChatRoomStatus(ChangeChatRoomStatusCommand command) {
+        if (command == null || command.chatRoomId() == null || command.action() == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+
+        ChatRoom chatRoom = findChatRoomEntity(command.chatRoomId());
+
+        return switch (command.action()) {
+            case FORCE_OPEN -> forceOpenChatRoom(chatRoom, command.adminId());
+            case FORCE_CLOSE -> forceCloseChatRoom(chatRoom, command.adminId());
+        };
+    }
+
+    // 자동 오픈
+    public int openScheduledChatRooms(LocalDateTime now) {
+        List<ChatRoom> chatRooms = chatRoomRepository.findScheduledToOpen(now);
+        for (ChatRoom chatRoom : chatRooms) {
+            chatRoom.open();
+        }
+        return chatRooms.size();
+    }
+
+    // 자동 종료
+    public int closeScheduledChatRooms(LocalDateTime now) {
+        List<ChatRoom> chatRooms = chatRoomRepository.findScheduledToClose(now);
+        for (ChatRoom chatRoom : chatRooms) {
+            chatRoom.close();
+        }
+        return chatRooms.size();
+    }
+
+    private ChatRoomResult forceOpenChatRoom(ChatRoom chatRoom, UUID adminId) {
+        if (adminId == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        if (chatRoom.isOpen()) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_OPENED);
+        }
+        chatRoom.forceOpen(adminId);
+        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+    }
+
+    private ChatRoomResult forceCloseChatRoom(ChatRoom chatRoom, UUID adminId) {
+        if (adminId == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        if (chatRoom.isClosed()) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_ENDED);
+        }
+        chatRoom.forceClose(adminId);
+        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+    }
+
+    private ChatRoom findChatRoomEntity(UUID chatRoomId) {
+        if (chatRoomId == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        return chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+}

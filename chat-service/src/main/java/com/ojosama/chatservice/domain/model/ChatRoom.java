@@ -51,7 +51,7 @@ public class ChatRoom extends BaseEntity {
     private LocalDateTime closedAt;
 
     @Column(columnDefinition = "uuid")
-    private UUID forceClosedBy;
+    private UUID changedBy;
 
     @Builder
     private ChatRoom(UUID eventId, EventCategory category, ChatRoomSchedule schedule) {
@@ -76,16 +76,28 @@ public class ChatRoom extends BaseEntity {
         this.closedAt = LocalDateTime.now();
     }
 
+    public void forceOpen(UUID adminId) {
+        if (adminId == null) {
+            throw new ChatException(ChatErrorCode.INVALID_ADMIN_ID);
+        }
+        if (this.status == ChatRoomStatus.OPEN) {
+            throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_OPENED);
+        }
+        this.status = ChatRoomStatus.OPEN;
+        this.openedAt = LocalDateTime.now();
+        this.changedBy = adminId;
+    }
+
     public void forceClose(UUID adminId) {
         if (adminId == null) {
             throw new ChatException(ChatErrorCode.INVALID_ADMIN_ID);
         }
-        if (this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED) {
+        if (this.status == ChatRoomStatus.CLOSED) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_ENDED);
         }
-        this.status = ChatRoomStatus.FORCE_CLOSED;
+        this.status = ChatRoomStatus.CLOSED;
         this.closedAt = LocalDateTime.now();
-        this.forceClosedBy = adminId;
+        this.changedBy = adminId;
     }
 
     // 채팅방 상태 확인 메서드
@@ -100,7 +112,7 @@ public class ChatRoom extends BaseEntity {
     }
 
     public boolean isClosed() {
-        return this.status == ChatRoomStatus.CLOSED || this.status == ChatRoomStatus.FORCE_CLOSED;
+        return this.status == ChatRoomStatus.CLOSED;
     }
 
     public boolean shouldOpen(LocalDateTime now) {
