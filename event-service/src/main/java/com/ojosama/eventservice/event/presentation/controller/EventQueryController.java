@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -43,9 +44,7 @@ public class EventQueryController {
             @RequestParam(required = false) Integer month,
             @PageableDefault(size = 10, sort = "eventTime.startAt", direction = Sort.Direction.ASC) Pageable pageable) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+        validateAuthHeaders(userId, userRole);
 
         EventListCommand command = new EventListCommand(category, status, startAt, endAt, year, month);
         Page<EventResult> result = eventQueryService.getEvents(command, pageable);
@@ -58,11 +57,15 @@ public class EventQueryController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @PathVariable UUID eventId) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+        validateAuthHeaders(userId, userRole);
 
         EventResult result = eventQueryService.getEventById(eventId);
         return ResponseEntity.ok(ApiResponse.success(EventResponse.from(result)));
+    }
+
+    private void validateAuthHeaders(UUID userId, String userRole) {
+        if (userId == null || !StringUtils.hasText(userRole)) {
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
+        }
     }
 }

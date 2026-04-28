@@ -20,11 +20,13 @@ import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.Event;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
+import com.ojosama.eventservice.event.domain.model.EventSchedule;
 import com.ojosama.eventservice.event.domain.model.EventStatus;
 import com.ojosama.eventservice.event.domain.model.vo.EventFee;
 import com.ojosama.eventservice.event.domain.model.vo.EventLocation;
 import com.ojosama.eventservice.event.domain.model.vo.EventTicketing;
 import com.ojosama.eventservice.event.domain.model.vo.EventTime;
+import com.ojosama.eventservice.event.domain.model.vo.ScheduleTime;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import java.math.BigDecimal;
@@ -387,6 +389,12 @@ class EventCommandServiceTest {
         @DisplayName("schedules 미포함(null) 시 → 기존 일정 유지")
         void updateEvent_withoutSchedules_schedulesPreserved() {
             Event event = createDefaultEvent();
+            // 기존 일정 추가
+            event.addSchedule(EventSchedule.builder()
+                    .event(event)
+                    .name("기존 공연")
+                    .scheduleTime(new ScheduleTime(FUTURE_START, FUTURE_START.plusHours(2)))
+                    .build());
             given(eventRepository.findById(EVENT_ID)).willReturn(Optional.of(event));
             given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(event.getCategory()));
 
@@ -400,7 +408,8 @@ class EventCommandServiceTest {
 
             EventResult result = eventService.updateEvent(command);
 
-            assertThat(result.schedules()).isEmpty();
+            assertThat(result.schedules()).hasSize(1);
+            assertThat(result.schedules().getFirst().name()).isEqualTo("기존 공연");
         }
 
         @Test
