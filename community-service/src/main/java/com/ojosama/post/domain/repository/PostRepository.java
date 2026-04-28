@@ -50,4 +50,14 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Post p SET p.likeCount = p.likeCount - 1 WHERE p.id = :id AND p.likeCount > 0")
     int decrementLikeCount(@Param("id") UUID id);
+
+    //댓글 수 증감
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Post p SET p.commentCount = p.commentCount + 1 WHERE p.id = :id")
+    int incrementCommentCount(@Param("id") UUID id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Post p SET p.commentCount = p.commentCount - 1 "
+            + "WHERE p.id = :id AND p.commentCount > 0")
+    int decrementCommentCount(@Param("id") UUID id);
 }
