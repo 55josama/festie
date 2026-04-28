@@ -1,29 +1,24 @@
 package com.ojosama.chatservice.presentation.dto.response;
 
-import com.ojosama.chatservice.application.dto.result.ChatRoomResult;
+import com.ojosama.chatservice.application.dto.result.ChatRoomSummaryResult;
 import com.ojosama.chatservice.domain.model.ChatRoomStatus;
-import com.ojosama.chatservice.domain.model.EventCategory;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record ChatRoomResponse(
+public record ChatRoomSummaryResponse(
+        boolean chatRoomExists,
         UUID chatRoomId,
-        UUID eventId,
-        String eventName,
-        EventCategory category,
-        ChatRoomStatus status,
+        ChatRoomStatus chatRoomStatus,
         LocalDateTime scheduledOpenAt,
         LocalDateTime scheduledCloseAt,
         LocalDateTime openedAt,
         LocalDateTime closedAt
 ) {
-    public static ChatRoomResponse from(ChatRoomResult result) {
-        return new ChatRoomResponse(
+    public static ChatRoomSummaryResponse from(ChatRoomSummaryResult result) {
+        return new ChatRoomSummaryResponse(
+                result.chatRoomExists(),
                 result.chatRoomId(),
-                result.eventId(),
-                result.eventName(),
-                result.category(),
-                result.status(),
+                result.chatRoomStatus(),
                 result.scheduledOpenAt(),
                 result.scheduledCloseAt(),
                 result.openedAt(),
