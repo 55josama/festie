@@ -2,6 +2,8 @@ package com.ojosama.moderation.infrastructure.messaging.kafka.producer;
 
 import com.ojosama.moderation.domain.event.AiModerationEventProducer;
 import com.ojosama.moderation.domain.event.payload.AiEvaluateEvent;
+import com.ojosama.moderation.domain.exception.AiModerationErrorCode;
+import com.ojosama.moderation.domain.exception.AiModerationException;
 import com.ojosama.moderation.domain.model.entity.AiModeration;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +28,11 @@ public class AiModerationEventProducerImpl implements AiModerationEventProducer 
         try {
             kafkaTemplate.send(aiEvaluateTopic, moderation.getTargetId().toString(), event)
                     .get(3, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AiModerationException(AiModerationErrorCode.EVENT_PUBLISH_INTERRUPTED);
         } catch (Exception e) {
-            throw new IllegalStateException("AI 모더레이션 평가 완료 이벤트 발행 실패", e);
+            throw new AiModerationException(AiModerationErrorCode.EVENT_PUBLISH_FAILED);
         }
     }
 }

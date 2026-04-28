@@ -6,8 +6,9 @@ import org.springframework.http.HttpStatus;
 
 @RequiredArgsConstructor
 public enum AiModerationErrorCode implements ErrorCode {
-    AI_ALREADY_MODERATED(HttpStatus.BAD_REQUEST, "이미 검증된 항목입니다."),
-    BATCH_INTEGRITY_VIOLATION(HttpStatus.INTERNAL_SERVER_ERROR, "AI 모델이 일부 항목을 누락하거나 중복 반환했습니다. 배치를 중단합니다.");
+    BATCH_INTEGRITY_VIOLATION(HttpStatus.INTERNAL_SERVER_ERROR, "AI 모델이 일부 항목을 누락하거나 중복 반환하여 배치를 중단합니다."),
+    EVENT_PUBLISH_INTERRUPTED(HttpStatus.INTERNAL_SERVER_ERROR, "AI 검증 이벤트 발행 중 스레드 인터럽트가 발생했습니다."),
+    EVENT_PUBLISH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI 검증 평가 완료 이벤트 발행에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;
