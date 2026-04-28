@@ -11,20 +11,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j
 public class OutboxMessageProcessor {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
-    private final OutboxRepository outboxRepository;
+    private final OutboxStatusPersister outboxStatusPersister;
 
     public OutboxMessageProcessor(
-            @Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate, OutboxRepository outboxRepository) {
+            @Qualifier("kafkaTemplate") KafkaTemplate<String, String> kafkaTemplate, OutboxRepository outboxRepository,
+            OutboxStatusPersister outboxStatusPersister) {
         this.kafkaTemplate = kafkaTemplate;
-        this.outboxRepository = outboxRepository;
+        this.outboxStatusPersister = outboxStatusPersister;
     }
 
     // 배치 처리
@@ -69,11 +68,6 @@ public class OutboxMessageProcessor {
                         message.getId(), message.getRetryCount());
             }
         }
-        persistStatuses(messages);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    void persistStatuses(List<OutboxMessage> messages) {
-        outboxRepository.saveAll(messages);
+        outboxStatusPersister.persist(messages);
     }
 }
