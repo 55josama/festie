@@ -35,8 +35,10 @@ public class PostLikeService {
                             .build();
             postLikeRepository.save(like);
         } catch (DataIntegrityViolationException e) {
-            // 동시 INSERT 경합 — 다른 트랜잭션이 먼저 INSERT한 경우
-            throw new PostException(PostErrorCode.ALREADY_LIKED);
+            if (isDuplicateLikeViolation(e)) {
+                throw new PostException(PostErrorCode.ALREADY_LIKED);
+            }
+            throw e; //중복 키 위반만 선별해서 변환하고 나머지는 그대로 전파해야 원인 파악이 가능합니다.
         }
 
         postRepository.incrementLikeCount(postId);
@@ -62,5 +64,10 @@ public class PostLikeService {
         if (post.isBlocked()) {
             throw new PostException(PostErrorCode.POST_BLOCKED);
         }
+    }
+
+    private boolean isDuplicateLikeViolation(DataIntegrityViolationException e) {
+        String message = e.getMostSpecificCause().getMessage();
+        return message != null && message.contains("user_id");
     }
 }
