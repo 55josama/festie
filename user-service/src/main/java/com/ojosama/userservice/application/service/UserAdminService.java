@@ -30,7 +30,7 @@ public class UserAdminService {
 
     @Transactional(readOnly = true)
     public AdminUserDetailResult getDetailUser(AdminDetailUserQuery query) {
-        User user = userRepository.findById(query.userId())
+        User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
         return new AdminUserDetailResult(
@@ -46,8 +46,8 @@ public class UserAdminService {
     }
 
     @Transactional
-    public AdminChangeUserRoleResult ChangeUserRole(AdminChangeUserRoleCommand command) {
-        User user = userRepository.findById(command.userId())
+    public AdminChangeUserRoleResult changeUserRole(AdminChangeUserRoleCommand command) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(command.userId())
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
         user.changeRole(command.role());
