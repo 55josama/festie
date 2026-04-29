@@ -49,4 +49,10 @@ public class Favorite extends BaseUserEntity {
                 .build();
     }
 
+    public void restore(EventInfo eventInfo, UUID categoryId) {
+        super.restore();
+        this.eventInfo = eventInfo;
+        this.categoryId = categoryId;
+    }
+
 }

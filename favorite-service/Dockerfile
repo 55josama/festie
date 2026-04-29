@@ -5,6 +5,7 @@ WORKDIR /app
 COPY build.gradle settings.gradle ./
 COPY gradle ./gradle
 COPY favorite-service ./favorite-service
+COPY common ./common
 
 RUN gradle :favorite-service:bootJar -x test --no-daemon
 
@@ -15,7 +16,7 @@ WORKDIR /app
 RUN addgroup --system appgroup \
     && adduser --system --ingroup appgroup appuser
 
-COPY --from=build /app/operation-service/build/libs/*.jar app.jar
+COPY --from=build /app/favorite-service/build/libs/*.jar app.jar
 
 RUN chown appuser:appgroup /app/app.jar
 

@@ -16,7 +16,7 @@ public record GetFavoritesResponseDto(
 ) {
     public static GetFavoritesResponseDto from(FavoriteResult result) {
         return GetFavoritesResponseDto.builder()
-                .id(result.eventId())
+                .id(result.id())
                 .eventName(result.eventName())
                 .favoriteId(result.favoriteId())
                 .eventId(result.eventId())

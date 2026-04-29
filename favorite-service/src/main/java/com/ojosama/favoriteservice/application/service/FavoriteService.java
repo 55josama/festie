@@ -25,26 +25,25 @@ public class FavoriteService {
     private final EventClient eventClient;
 
     public FavoriteResult createFavorite(CreateFavoriteCommand command, UUID userId) {
-
         // 존재하는 찜인지 확인
         Optional<Favorite> favoriteOpt = favoriteRepository.findByEventInfo_EventIdAndUserId(command.eventId(), userId);
         Favorite favorite;
-        if (favoriteOpt.isPresent()) {
-            // 조회한 찜이 삭제된 상태라면 다시 deletedAt == null로 초기화
-            favorite = favoriteOpt.get();
-            if (favorite.getDeletedAt() == null) {
-                throw new FavoriteException(FavoriteErrorCode.EXIST_FAVORITE);
-            } else {
-                favorite.restore();
-            }
-        } else {
-            // feign을 통해서 event 정보 가져옴.
-            EventInfoResponseDto dto = eventClient.getEvents(command.eventId());
 
+        // 삭제 안 된 찜 -> 예외
+        if (favoriteOpt.isPresent() && favoriteOpt.get().getDeletedAt() == null) {
+            throw new FavoriteException(FavoriteErrorCode.EXIST_FAVORITE);
+        }
+
+        // feign을 통해서 event 정보 가져옴.
+        EventInfoResponseDto dto = eventClient.getEvents(command.eventId());
+        if (favoriteOpt.isPresent()) {
+            favorite = favoriteOpt.get();
+            favorite.restore(new EventInfo(command.eventId(), dto.eventName(), dto.imageUrl()),
+                    command.categoryId());
+        } else {
             favorite = favoriteRepository.save(
                     Favorite.of(userId, new EventInfo(command.eventId(), dto.eventName(), dto.imageUrl()),
                             command.categoryId()));
-
         }
         return FavoriteResult.from(favorite);
     }

@@ -11,5 +11,5 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface EventClient {
 
     @GetMapping("/internal/v1/events/{eventId}")
-    EventInfoResponseDto getEvents(@PathVariable UUID eventId);
+    EventInfoResponseDto getEvents(@PathVariable("eventId") UUID eventId);
 }

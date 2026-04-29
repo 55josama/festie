@@ -7,6 +7,8 @@ import com.ojosama.common.exception.CustomException;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.favoriteservice.application.service.FavoriteService;
+import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
+import com.ojosama.favoriteservice.domain.exception.FavoriteException;
 import com.ojosama.favoriteservice.infrastructure.messaging.kafka.dto.EventDeletedMessage;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class EventCreatedConsumer {
+public class EventDeletedConsumer {
 
     private static final String CONSUMER_GROUP = "favorite-service-group";
     private static final String EVENT_TYPE = EventType.EVENT_DELETED.getValue();
@@ -39,6 +41,11 @@ public class EventCreatedConsumer {
         try {
             messageKey = UUID.fromString(record.key());
             event = parse(record.value());
+
+            if (!messageKey.equals(event.eventId())) {
+                log.error("key값과 messageId 불일치 : {}, {}", messageKey, event.eventId());
+                throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
+            }
             idempotentEventHandler.handle(
                     messageKey,
                     CONSUMER_GROUP,
