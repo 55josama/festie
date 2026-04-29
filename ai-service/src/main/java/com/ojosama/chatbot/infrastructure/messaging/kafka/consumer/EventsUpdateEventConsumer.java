@@ -46,13 +46,8 @@ public class EventsUpdateEventConsumer {
     }
 
     private void dispatch(EventsUpdateEvent message) {
-        if ("CANCELLED".equalsIgnoreCase(message.status()) || "COMPLETED".equalsIgnoreCase(message.status())) {
-            log.info("Kafka: 행사 완료/취소 처리 - VectorStore에서 제거 (EventID: {})", message.eventId());
-            documentIndexer.deleteEvent(message.eventId());
-            return;
-        }
-
-        if ("SCHEDULED".equalsIgnoreCase(message.status()) || "IN_PROGRESS".equalsIgnoreCase(message.status())) {
+        if ("SCHEDULED".equalsIgnoreCase(message.status()) || "IN_PROGRESS".equalsIgnoreCase(message.status())
+                || "CANCELLED".equalsIgnoreCase(message.status()) || "COMPLETED".equalsIgnoreCase(message.status())) {
             log.info("Kafka: 행사 업데이트/생성 Upsert (EventID: {})", message.eventId());
             documentIndexer.indexEvent(
                     message.eventId(),
@@ -64,7 +59,8 @@ public class EventsUpdateEventConsumer {
                     message.hasTicketing(),
                     message.officialLink(),
                     message.description(),
-                    message.performer()
+                    message.performer(),
+                    message.status()
             );
         } else {
             log.warn("Kafka: 알 수 없는 행사 상태 수신 - status: {}", message.status());
