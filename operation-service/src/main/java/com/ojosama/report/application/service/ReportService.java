@@ -122,20 +122,18 @@ public class ReportService {
             category = chatClient.getChatMessageWriter(command.targetId()).category();
         }
 
-        TargetBlindEvent event = new TargetBlindEvent(
-                command.targetId(),
-                command.targetType(),
-                command.targetUserId(),
-                category,
-                "누적 신고 3회로 인해 자동 블라인드 처리되었습니다."
-        );
-
         outbox.publish(
                 "REPORT",
                 command.targetId(),
                 EventType.REPORT_BLINDED,
                 "operation.report.blinded",
-                event
+                new TargetBlindEvent(
+                        command.targetId(),
+                        command.targetType(),
+                        command.targetUserId(),
+                        category,
+                        "누적 신고 3회로 인해 자동 블라인드 처리되었습니다."
+                )
         );
     }
 

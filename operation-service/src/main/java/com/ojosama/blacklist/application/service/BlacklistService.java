@@ -111,18 +111,16 @@ public class BlacklistService {
 
     // 블랙리스트 신규 등록 알림 이벤트 발행
     private void publishRegisterEvent(Blacklist blacklist) {
-        BlacklistRegisterEvent event = new BlacklistRegisterEvent(
-                blacklist.getUserId(),
-                blacklist.getReason(),
-                blacklist.getRegistrationType()
-        );
-
         outbox.publish(
                 "BLACKLIST",
                 blacklist.getUserId(),
                 EventType.BLACKLIST_REGISTERED,
                 "operation.blacklist.registered",
-                event
+                new BlacklistRegisterEvent(
+                        blacklist.getUserId(),
+                        blacklist.getReason(),
+                        blacklist.getRegistrationType()
+                )
         );
     }
 
