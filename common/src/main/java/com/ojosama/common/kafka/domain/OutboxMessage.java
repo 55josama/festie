@@ -105,4 +105,4 @@ public class OutboxMessage {
             this.status = OutboxStatus.FAILED;
         }
     }
-} 
+}
