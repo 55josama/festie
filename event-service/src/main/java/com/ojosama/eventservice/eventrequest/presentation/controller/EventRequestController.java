@@ -6,6 +6,7 @@ import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.eventrequest.application.dto.command.CreateEventRequestCommand;
 import com.ojosama.eventservice.eventrequest.application.dto.result.EventRequestResult;
 import com.ojosama.eventservice.eventrequest.application.service.EventRequestCommandService;
+import com.ojosama.eventservice.eventrequest.application.service.EventRequestQueryService;
 import com.ojosama.eventservice.eventrequest.presentation.dto.request.CreateEventRequestRequest;
 import com.ojosama.eventservice.eventrequest.presentation.dto.response.EventRequestResponse;
 import jakarta.validation.Valid;
@@ -25,9 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/event-requests")
-public class EventRequestCommandController {
+public class EventRequestController {
 
     private final EventRequestCommandService eventRequestCommandService;
+    private final EventRequestQueryService eventRequestQueryService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
