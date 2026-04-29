@@ -45,7 +45,7 @@ public class User extends BaseUserEntity {
     @Column(nullable = false)
     private UserRole role;
 
-    @Column(length = 128)
+    @Column(name = "refresh_token_hash", length = 128)
     private String refreshTokenHash;
 
     @Builder
@@ -95,7 +95,7 @@ public class User extends BaseUserEntity {
         this.refreshTokenHash = refreshTokenHash;
     }
 
-    public void clearRefreshToken() {
+    public void clearRefreshTokenHash() {
         this.refreshTokenHash = null;
     }
 }

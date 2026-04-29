@@ -7,9 +7,8 @@ import com.ojosama.userservice.application.dto.result.LogoutResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import com.ojosama.userservice.global.security.JwtTokenProvider;
-import java.util.UUID;
-
 import com.ojosama.userservice.global.security.RefreshTokenHasher;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -85,11 +84,12 @@ public class AuthService {
     }
 
     //로그아웃
+    @Transactional
     public LogoutResult logout(UUID userId) {
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        user.clearRefreshToken();
+        user.clearRefreshTokenHash();
         userRepository.save(user);
 
         return new LogoutResult(user.getId());
