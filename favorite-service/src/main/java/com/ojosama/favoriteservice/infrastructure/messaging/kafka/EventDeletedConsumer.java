@@ -2,8 +2,6 @@ package com.ojosama.favoriteservice.infrastructure.messaging.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ojosama.common.exception.CommonErrorCode;
-import com.ojosama.common.exception.CustomException;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.favoriteservice.application.service.FavoriteService;
@@ -64,7 +62,7 @@ public class EventDeletedConsumer {
         try {
             return objectMapper.readValue(payload, EventDeletedMessage.class);
         } catch (JsonProcessingException e) {
-            throw new CustomException(CommonErrorCode.EVENT_PUBLISH_FAILED);
+            throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
     }
 }
