@@ -1,4 +1,4 @@
-package com.ojosama.chatbot.infrastructure.config;
+package com.ojosama.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
