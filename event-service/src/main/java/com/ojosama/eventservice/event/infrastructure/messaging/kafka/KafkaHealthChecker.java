@@ -9,22 +9,32 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@Profile("!local")
 @RequiredArgsConstructor
 public class KafkaHealthChecker {
 
     private static final int CONNECT_TIMEOUT_SECONDS = 5;
 
     private final KafkaAdmin kafkaAdmin;
-    private final KafkaTopicProperties topics;
+
+    @Value("${spring.kafka.topic.event-created}")
+    private String eventCreatedTopic;
+
+    @Value("${spring.kafka.topic.event-deleted}")
+    private String eventDeletedTopic;
+
+    @Value("${spring.kafka.topic.event-updated}")
+    private String eventUpdatedTopic;
+
+    @Value("${spring.kafka.topic.schedule-changed}")
+    private String scheduleChangedTopic;
 
     @EventListener(ApplicationReadyEvent.class)
     public void checkOnStartup() {
@@ -56,10 +66,10 @@ public class KafkaHealthChecker {
 
     private void checkRequiredTopics(Set<String> existingTopics) {
         List<String> required = List.of(
-                topics.eventCreated(),
-                topics.eventDeleted(),
-                topics.eventUpdated(),
-                topics.scheduleChanged()
+                eventCreatedTopic,
+                eventDeletedTopic,
+                eventUpdatedTopic,
+                scheduleChangedTopic
         );
 
         List<String> missing = required.stream()
