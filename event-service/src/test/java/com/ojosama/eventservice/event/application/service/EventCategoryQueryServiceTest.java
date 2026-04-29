@@ -28,7 +28,7 @@ class EventCategoryQueryServiceTest {
     private EventCategoryRepository eventCategoryRepository;
 
     @InjectMocks
-    private EventCategoryQueryServiceImpl eventCategoryQueryService;
+    private EventCategoryQueryService eventCategoryQueryService;
 
     private static final UUID CATEGORY_ID = UUID.randomUUID();
 
