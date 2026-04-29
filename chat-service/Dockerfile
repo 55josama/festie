@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY build.gradle settings.gradle ./
 COPY gradle ./gradle
+COPY common ./common
 COPY chat-service ./chat-service
 
 RUN gradle :chat-service:bootJar -x test --no-daemon

@@ -2,8 +2,6 @@ package com.ojosama.eventservice.eventrequest.domain.model;
 
 import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
-import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestErrorCode;
-import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -54,7 +52,7 @@ public class EventRequest extends BaseUserEntity {
     private EventRequestStatus status;
 
     public static EventRequest create(UUID requesterId, String eventName, EventCategory category,
-            String link, String description) {
+                                      String link, String description) {
         EventRequest request = new EventRequest();
         request.requesterId = requesterId;
         request.eventName = eventName;
@@ -63,5 +61,9 @@ public class EventRequest extends BaseUserEntity {
         request.description = description;
         request.status = EventRequestStatus.PENDING;
         return request;
+    }
+
+    public void cancel(UUID userId) {
+        // TODO: 취소 로직 미구현
     }
 }

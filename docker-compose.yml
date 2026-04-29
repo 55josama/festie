@@ -237,9 +237,13 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: festie-redis
+      SPRING_DATA_REDIS_HOST: redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+      SPRING_KAFKA_TOPIC_EVENTCREATED: event-created
+      SPRING_KAFKA_TOPIC_EVENTDELETED: event-deleted
+      SPRING_KAFKA_TOPIC_EVENTUPDATED: event-updated
+      SPRING_KAFKA_TOPIC_SCHEDULECHANGED: schedule-changed
 volumes:
   postgres_data:
 
