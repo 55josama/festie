@@ -1,5 +1,6 @@
 package com.ojosama.chatbot.application.service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -15,7 +16,13 @@ public class DocumentIndexer {
 
     // 일반 정책/가이드 텍스트 인덱싱
     public void indexGuide(String guideId, String content) {
-        Document doc = new Document("guide_" + guideId, content, Map.of("docType", "GUIDE"));
+        String validUuid = UUID.nameUUIDFromBytes(guideId.getBytes(StandardCharsets.UTF_8)).toString();
+
+        Document doc = new Document(validUuid, content, Map.of(
+                "docType", "GUIDE",
+                "guideId", guideId // 메타데이터에 원래 이름 남겨두기
+        ));
+
         vectorStore.add(List.of(doc));
     }
 
@@ -43,7 +50,7 @@ public class DocumentIndexer {
                 name, statusKor, categoryName, startAt, endAt, place, safePerformer, ticketingInfo, safeLink, description, eventId.toString()
         );
 
-        Document doc = new Document("event_" + eventId.toString(), content, Map.of(
+        Document doc = new Document(eventId.toString(), content, Map.of(
                 "docType", "EVENT",
                 "eventId", eventId.toString(),
                 "status", status
@@ -54,6 +61,6 @@ public class DocumentIndexer {
 
     // 행사 삭제/취소 시 VectorStore에서 문서 완전히 제거
     public void deleteEvent(UUID eventId) {
-        vectorStore.delete(List.of("event_" + eventId.toString()));
+        vectorStore.delete(List.of(eventId.toString()));
     }
 }
