@@ -7,8 +7,6 @@ import com.ojosama.comment.domain.model.CommentLike;
 import com.ojosama.comment.domain.model.CommentStatus;
 import com.ojosama.comment.domain.repository.CommentLikeRepository;
 import com.ojosama.comment.domain.repository.CommentRepository;
-import com.ojosama.post.domain.exception.PostErrorCode;
-import com.ojosama.post.domain.exception.PostException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -45,6 +43,19 @@ public class CommentLikeService {
         commentRepository.increaseLikeCount(commentId);
         return likeCount;
 //        return commentRepository.getLikeCount(commentId);
+    }
+
+    @Transactional
+    public int unlike(UUID commentId, UUID userId) {
+        Comment c = validateAlive(commentId);
+        int likeCount = c.getLikeCount() - 1;
+
+        int deleted = commentLikeRepository.deleteByCommentIdAndUserId(commentId, userId);
+        if (deleted == 0) {
+            throw new CommentException(CommentErrorCode.NOT_LIKED);
+        }
+        commentRepository.decrementLikeCount(commentId);
+        return likeCount;
     }
 
     private Comment validateAlive(UUID commentId) {

@@ -81,4 +81,11 @@ public class CommentController {
         int likeCount = commentLikeService.like(commentId,UUID.randomUUID());
         return ApiResponse.success(likeCount);
     }
+
+    @DeleteMapping("/v1/comments/{commentId}/likes")
+    public ApiResponse<Integer> unlike(
+            @PathVariable UUID commentId) {
+        int likeCount = commentLikeService.unlike(commentId, UUID.randomUUID());
+        return ApiResponse.success(likeCount);
+    }
 }

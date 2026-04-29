@@ -1,6 +1,6 @@
 package com.ojosama.comment.domain.model;
 
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import jakarta.persistence.*;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CommentLike extends BaseEntity {
+public class CommentLike extends BaseUserEntity {
 
     @Id
     private UUID id;
