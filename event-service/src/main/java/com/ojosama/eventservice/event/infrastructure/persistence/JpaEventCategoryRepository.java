@@ -11,4 +11,5 @@ public interface JpaEventCategoryRepository extends JpaRepository<EventCategory,
     boolean existsByNameAndIdNotAndDeletedAtIsNull(String name, UUID id);
     List<EventCategory> findAllByDeletedAtIsNull();
     Optional<EventCategory> findByIdAndDeletedAtIsNull(UUID id);
+    Optional<EventCategory> findByNameAndDeletedAtIsNull(String name);
 }
