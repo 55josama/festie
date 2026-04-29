@@ -55,7 +55,7 @@ class EventCommandServiceTest {
     @Mock
     private EventMessagePublisher eventMessagePublisher;
     @InjectMocks
-    private EventCommandServiceImpl eventService;
+    private EventCommandService eventService;
 
     private static final UUID USER_ID = UUID.randomUUID();
     private static final UUID CATEGORY_ID = UUID.randomUUID();
