@@ -8,6 +8,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(name = "event-service")
 public interface EventClient {
-    @GetMapping("/v1/events/{eventId}")
-    EventClientResponse getEvents(@PathVariable("eventId") UUID eventId);
+    @GetMapping("/internal/v1/events")
+    EventClientResponse getEvents();
 }
