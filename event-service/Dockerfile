@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY build.gradle settings.gradle ./
 COPY gradle ./gradle
+COPY common ./common
 COPY event-service ./event-service
 
 RUN gradle :event-service:bootJar -x test --no-daemon
