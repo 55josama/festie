@@ -43,7 +43,8 @@ public class InitialDocumentSaver {
                             event.hasTicketing(),
                             event.officialLink(),
                             event.description(),
-                            event.performer()
+                            event.performer(),
+                            event.status()
                     );
                 }
                 log.info("Chatbot Service: 행사 데이터 {}건 동기화 완료", events.size());
