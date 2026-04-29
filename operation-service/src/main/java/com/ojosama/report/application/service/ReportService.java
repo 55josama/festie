@@ -1,5 +1,7 @@
 package com.ojosama.report.application.service;
 
+import com.ojosama.common.kafka.domain.EventType;
+import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import com.ojosama.report.application.dto.command.CreateReportCommand;
 import com.ojosama.report.application.dto.command.UpdateReportCommand;
 import com.ojosama.report.application.dto.query.ListReportQuery;
@@ -28,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ReportService {
     private final ReportRepository reportRepository;
-    private final ReportEventProducer reportEventProducer;
+    private final OutboxEventPublisher outbox;
     private final ChatClient chatClient;
 
     // 신고 생성
@@ -120,24 +122,38 @@ public class ReportService {
             category = chatClient.getChatMessageWriter(command.targetId()).category();
         }
 
-        reportEventProducer.publishTargetBlindEvent(new TargetBlindEvent(
+        outbox.publish(
+                "REPORT",
                 command.targetId(),
-                command.targetType(),
-                command.targetUserId(),
-                category,
-                "누적 신고 3회로 인해 자동 블라인드 처리되었습니다."
-        ));
+                EventType.REPORT_BLINDED,
+                "operation.report.blinded",
+                new TargetBlindEvent(
+                        command.targetId(),
+                        command.targetType(),
+                        command.targetUserId(),
+                        category,
+                        "누적 신고 3회로 인해 자동 블라인드 처리되었습니다."
+                )
+        );
     }
 
     private void checkBlacklistCondition(UUID targetUserId) {
         long userBlindCount = reportRepository.countBlindedTargetByUserId(targetUserId);
 
         if (userBlindCount == 5) {
-            reportEventProducer.publishBlacklistRegisterEvent(new BlacklistRegisterEvent(
+            BlacklistRegisterEvent event = new BlacklistRegisterEvent(
                     targetUserId,
                     "블라인드 처리가 5회 누적되어 블랙리스트 등록 검토가 필요합니다.",
                     RegistrationType.AUTOMATIC
-            ));
+            );
+
+            outbox.publish(
+                    "BLACKLIST",
+                    targetUserId,
+                    EventType.BLACKLIST_REGISTERED,
+                    "operation.blacklist.registered",
+                    event
+            );
         }
     }
 }

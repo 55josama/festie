@@ -1,6 +1,9 @@
 package com.ojosama.moderation.application.service;
 
+import com.ojosama.common.kafka.domain.EventType;
+import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import com.ojosama.moderation.domain.event.AiModerationEventProducer;
+import com.ojosama.moderation.domain.event.payload.AiEvaluateEvent;
 import com.ojosama.moderation.domain.event.payload.AiModerationRequestEvent;
 import com.ojosama.moderation.domain.exception.AiModerationErrorCode;
 import com.ojosama.moderation.domain.exception.AiModerationException;
@@ -26,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AiModerationService {
     private final AiModerationClient aiModerationClient;
     private final AiModerationRepository aiModerationRepository;
-    private final AiModerationEventProducer eventProducer;
+    private final OutboxEventPublisher outbox;
 
     @Transactional
     public void processModerationBatch(List<AiModerationRequestEvent> events) {
@@ -87,6 +90,20 @@ public class AiModerationService {
         // 유해 콘텐츠(SAFE가 아닌 것)만 필터링하여 운영 서버로 알림 전송
         savedModeration.stream()
                 .filter(m -> m.getCategory() != ReportCategory.SAFE)
-                .forEach(eventProducer::publishEvaluatedEvent);
+                .forEach(m -> {
+                    outbox.publish(
+                            "MODERATION",
+                            m.getTargetId(),
+                            EventType.AI_MODERATION_EVALUATED,
+                            "ai.moderation.evaluated",
+                            new AiEvaluateEvent(
+                                    m.getTargetId(),
+                                    m.getTargetUserId(),
+                                    m.getTargetType(),
+                                    m.getCategory(),
+                                    "AI 적발"
+                            )
+                    );
+                });
     }
 }
