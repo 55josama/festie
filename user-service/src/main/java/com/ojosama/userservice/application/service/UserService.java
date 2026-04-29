@@ -79,18 +79,24 @@ public class UserService {
         );
     }
 
-    //유저 수정
+    // 유저 수정
     @Transactional
     public UpdateUserResult updateUser(UpdateUserCommand command) {
         User savedUser = userRepository.findByIdAndDeletedAtIsNull(command.userId())
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
-        savedUser.update(command.email(), command.nickname());
+        savedUser.update(
+                command.name(),
+                command.nickname(),
+                command.phoneNumber()
+        );
 
         return new UpdateUserResult(
                 savedUser.getId(),
                 savedUser.getEmail(),
+                savedUser.getName(),
                 savedUser.getNickname(),
+                savedUser.getPhoneNumber(),
                 savedUser.getUpdatedAt()
         );
     }

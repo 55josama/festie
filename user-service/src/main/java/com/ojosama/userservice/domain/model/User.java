@@ -82,9 +82,10 @@ public class User extends BaseUserEntity {
                 .build();
     }
 
-    public void update(String email, String nickname) {
-        this.email = email;
+    public void update(String name, String nickname, String phoneNumber) {
+        this.name = name;
         this.nickname = nickname;
+        this.phoneNumber = phoneNumber;
     }
 
     public void changeRole(UserRole role) {
