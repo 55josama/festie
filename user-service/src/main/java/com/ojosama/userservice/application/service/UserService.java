@@ -10,6 +10,8 @@ import com.ojosama.userservice.application.dto.result.UpdateUserResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,7 +52,11 @@ public class UserService {
                     savedUser.getRole()
             );
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("중복 이메일입니다.");
+            if (isEmailUniqueViolation(e)) {
+                throw new IllegalArgumentException("중복 이메일입니다.", e);
+            }
+
+            throw e;
         }
     }
 
@@ -96,5 +102,19 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
         user.deleted(user.getId());
+    }
+
+    private boolean isEmailUniqueViolation(DataIntegrityViolationException e) {
+        Throwable rootCause = NestedExceptionUtils.getMostSpecificCause(e);
+
+        if (rootCause instanceof ConstraintViolationException constraintViolationException) {
+            String constraintName = constraintViolationException.getConstraintName();
+
+            return constraintName != null && constraintName.contains("email");
+        }
+
+        String message = rootCause.getMessage();
+
+        return message != null && message.contains("email");
     }
 }
