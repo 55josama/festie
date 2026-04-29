@@ -4,7 +4,8 @@ import java.util.UUID;
 
 public record UpdateUserCommand(
         UUID userId,
-        String email,
-        String nickname
+        String name,
+        String nickname,
+        String phoneNumber
 ) {
 }

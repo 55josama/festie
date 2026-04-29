@@ -1,15 +1,15 @@
 package com.ojosama.userservice;
 
+import com.ojosama.userservice.global.security.JwtProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
-@EnableJpaAuditing
 @SpringBootApplication
+@EnableConfigurationProperties(JwtProperties.class)
 public class UserServiceApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(UserServiceApplication.class, args);
     }
-
 }

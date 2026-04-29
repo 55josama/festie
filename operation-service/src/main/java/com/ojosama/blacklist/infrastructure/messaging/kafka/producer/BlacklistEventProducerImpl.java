@@ -36,7 +36,7 @@ public class BlacklistEventProducerImpl implements BlacklistEventProducer {
         }
     }
 
-    // 관리자가 직접 특정 유저를 수동으로 블랙리스트에 등록하는 순간 알림
+    // 관리자가 직접 특정 유저를 수동으로 블랙리스트에 등록하는 순간 사용자에게 알림
     @Override
     public void publishBlacklistRegisterEvent(BlacklistRegisterEvent event){
         try {

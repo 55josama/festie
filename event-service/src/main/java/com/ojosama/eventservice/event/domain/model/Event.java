@@ -175,6 +175,34 @@ public class Event extends BaseUserEntity {
         }
     }
 
+    public void update(String name, EventCategory category, EventTime eventTime,
+                       EventLocation eventLocation, EventFee eventFee, EventTicketing eventTicketing,
+                       String officialLink, String description, String performer, String img) {
+        validateEventName(name);
+        validateCategory(category);
+        validateEventTime(eventTime);
+        validateEventLocation(eventLocation);
+        validateDescription(description);
+        validatePerformer(performer);
+        validateImg(img);
+        validateOfficialLink(officialLink);
+
+        this.name = name;
+        this.category = category;
+        this.eventTime = eventTime;
+        this.eventLocation = eventLocation;
+        this.eventFee = eventFee;
+        this.eventTicketing = eventTicketing;
+        this.officialLink = officialLink;
+        this.description = description;
+        this.performer = performer;
+        this.img = img;
+    }
+
+    public void clearSchedules() {
+        this.schedules.clear();
+    }
+
     public void removeSchedule(EventSchedule schedule) {
         if (schedule != null) {
             this.schedules.remove(schedule);
