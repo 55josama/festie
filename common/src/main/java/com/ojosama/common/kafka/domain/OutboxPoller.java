@@ -26,13 +26,9 @@ public class OutboxPoller {
         if (batch.isEmpty()) {
             return;
         }
-        for (OutboxMessage message : batch) {
-            try {
-                processor.send(message);
-            } catch (Exception e) {
-                log.warn("Outbox 메시지 처리 실패. id={}, type={}",
-                        message.getId(), message.getEventType(), e);
-            }
-        }
+        log.debug("Outbox 배치 처리 시작. count={}", batch.size());
+
+        // 기존: 건별 루프 → 변경: 배치 한 번에 처리
+        processor.sendBatch(batch);
     }
 }
