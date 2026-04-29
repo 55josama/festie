@@ -1,11 +1,15 @@
 package com.ojosama.favoriteservice.application.service;
 
-import com.ojosama.common.exception.CustomException;
 import com.ojosama.favoriteservice.application.dto.command.CreateFavoriteCommand;
-import com.ojosama.favoriteservice.application.dto.result.CreateFavoriteResult;
+import com.ojosama.favoriteservice.application.dto.result.FavoriteResult;
 import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
+import com.ojosama.favoriteservice.domain.exception.FavoriteException;
+import com.ojosama.favoriteservice.domain.model.EventInfo;
 import com.ojosama.favoriteservice.domain.model.Favorite;
 import com.ojosama.favoriteservice.domain.repository.FavoriteRepository;
+import com.ojosama.favoriteservice.infrastructure.client.EventClient;
+import com.ojosama.favoriteservice.infrastructure.client.dto.EventInfoResponseDto;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -18,34 +22,50 @@ import org.springframework.transaction.annotation.Transactional;
 public class FavoriteService {
 
     private final FavoriteRepository favoriteRepository;
+    private final EventClient eventClient;
 
-    public CreateFavoriteResult createFavorite(CreateFavoriteCommand command) {
+    public FavoriteResult createFavorite(CreateFavoriteCommand command, UUID userId) {
 
-        Optional<Favorite> favoriteOpt = favoriteRepository.findByEventIdAndUserId(command.eventId(), command.userId());
+        // 존재하는 찜인지 확인
+        Optional<Favorite> favoriteOpt = favoriteRepository.findByEventInfo_EventIdAndUserId(command.eventId(), userId);
         Favorite favorite;
         if (favoriteOpt.isPresent()) {
+            // 조회한 찜이 삭제된 상태라면 다시 deletedAt == null로 초기화
             favorite = favoriteOpt.get();
             if (favorite.getDeletedAt() == null) {
-                throw new CustomException(FavoriteErrorCode.EXIST_FAVORITE);
+                throw new FavoriteException(FavoriteErrorCode.EXIST_FAVORITE);
             } else {
-                favorite.reset(favoriteOpt.get().getId());
+                favorite.restore();
             }
         } else {
+            // feign을 통해서 event 정보 가져옴.
+            EventInfoResponseDto dto = eventClient.getEvents(command.eventId());
+
             favorite = favoriteRepository.save(
-                    Favorite.of(command.userId(), command.eventId(), command.categoryId()));
+                    Favorite.of(userId, new EventInfo(command.eventId(), dto.eventName(), dto.imageUrl()),
+                            command.categoryId()));
+
         }
-
-        // TODO : 나중에 feign 수정 예정
-        String eventName = "콘서트";
-        String userName = "사용자이름";
-
-        return CreateFavoriteResult.of(favorite, eventName, userName);
+        return FavoriteResult.from(favorite);
     }
 
     public void deleteFavorite(UUID favoriteId, UUID userId) {
         Favorite favorite = favoriteRepository.findByIdAndUserIdAndDeletedAtIsNull(favoriteId, userId).orElseThrow(() ->
-                new CustomException(FavoriteErrorCode.FAVORITE_NOT_FOUND));
+                new FavoriteException(FavoriteErrorCode.FAVORITE_NOT_FOUND));
 
-        favorite.delete(favoriteId);
+        favorite.deleted(userId);
+    }
+
+    public List<FavoriteResult> getFavorites(UUID userId) {
+        List<Favorite> favorites = favoriteRepository.findByUserIdAndDeletedAtIsNull(userId);
+
+        return favorites.stream()
+                .map(FavoriteResult::from)
+                .toList();
+    }
+
+    public void deleteAllByEventId(UUID eventId) {
+        List<Favorite> favorites = favoriteRepository.findByEventInfo_EventIdAndDeletedAtIsNull(eventId);
+        favorites.forEach(favorite -> favorite.deleted(null));
     }
 }
