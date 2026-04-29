@@ -55,7 +55,7 @@ public class AdminUserController {
             @RequestBody AdminChangeUserRoleRequestDto request
     ) {
         return AdminChangeUserRoleResponseDto.from(
-                adminUserService.ChangeUserRole(request.toCommand(userId))
+                adminUserService.changeUserRole(request.toCommand(userId))
         );
     }
 }

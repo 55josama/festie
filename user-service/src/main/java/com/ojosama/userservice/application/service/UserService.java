@@ -57,7 +57,7 @@ public class UserService {
     //유저 조회 todo: 관리자 전용, 로그인 사용자 기준 본인만 조회 기능 추가
     @Transactional(readOnly = true)
     public GetUserResult getUser(GetUserQuery query) {
-        User user = userRepository.findById(query.userId())
+        User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
                 //todo 임시 오류 처리
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다"));
 
@@ -76,25 +76,23 @@ public class UserService {
     //유저 수정
     @Transactional
     public UpdateUserResult updateUser(UpdateUserCommand command) {
-        User savedUser = userRepository.findById(command.userId())
+        User savedUser = userRepository.findByIdAndDeletedAtIsNull(command.userId())
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
         savedUser.update(command.email(), command.nickname());
 
-        User updatedUser = userRepository.save(savedUser);
-
         return new UpdateUserResult(
-                updatedUser.getId(),
-                updatedUser.getEmail(),
-                updatedUser.getNickname(),
-                updatedUser.getUpdatedAt()
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getNickname(),
+                savedUser.getUpdatedAt()
         );
     }
 
     //유저 삭제
     @Transactional
     public void deleteUser(DeleteUserCommand command) {
-        User user = userRepository.findById(command.userId())
+        User user = userRepository.findByIdAndDeletedAtIsNull(command.userId())
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
         user.deleted(user.getId());
