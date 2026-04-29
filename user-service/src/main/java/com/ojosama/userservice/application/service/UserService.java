@@ -10,6 +10,10 @@ import com.ojosama.userservice.application.dto.result.UpdateUserResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.core.NestedExceptionUtils;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,33 +22,48 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     //유저 생성
     @Transactional
     public CreateUserResult createUser(CreateUserCommand command) {
+        if (userRepository.existsByEmail(command.email())) {
+            throw new IllegalArgumentException("중복 이메일입니다.");
+        }
+
+        String encodedPassword = passwordEncoder.encode(command.password());
+
         User user = User.create(
                 command.email(),
-                command.password(),
-                command.nickname(),
+                encodedPassword,
                 command.name(),
+                command.nickname(),
                 command.phoneNumber()
         );
 
-        User savedUser = userRepository.save(user);
+        try {
+            User savedUser = userRepository.save(user);
 
-        return new CreateUserResult(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getNickname(),
-                savedUser.getName(),
-                savedUser.getRole()
-        );
+            return new CreateUserResult(
+                    savedUser.getId(),
+                    savedUser.getEmail(),
+                    savedUser.getNickname(),
+                    savedUser.getName(),
+                    savedUser.getRole()
+            );
+        } catch (DataIntegrityViolationException e) {
+            if (isEmailUniqueViolation(e)) {
+                throw new IllegalArgumentException("중복 이메일입니다.", e);
+            }
+
+            throw e;
+        }
     }
 
     //유저 조회 todo: 관리자 전용, 로그인 사용자 기준 본인만 조회 기능 추가
     @Transactional(readOnly = true)
     public GetUserResult getUser(GetUserQuery query) {
-        User user = userRepository.findById(query.userId())
+        User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
                 //todo 임시 오류 처리
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다"));
 
@@ -60,30 +79,48 @@ public class UserService {
         );
     }
 
-    //유저 수정
+    // 유저 수정
     @Transactional
     public UpdateUserResult updateUser(UpdateUserCommand command) {
-        User savedUser = userRepository.findById(command.userId())
+        User savedUser = userRepository.findByIdAndDeletedAtIsNull(command.userId())
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
-        savedUser.update(command.email(), command.nickname());
-
-        User updatedUser = userRepository.save(savedUser);
+        savedUser.update(
+                command.name(),
+                command.nickname(),
+                command.phoneNumber()
+        );
 
         return new UpdateUserResult(
-                updatedUser.getId(),
-                updatedUser.getEmail(),
-                updatedUser.getNickname(),
-                updatedUser.getUpdatedAt()
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getName(),
+                savedUser.getNickname(),
+                savedUser.getPhoneNumber(),
+                savedUser.getUpdatedAt()
         );
     }
 
     //유저 삭제
     @Transactional
     public void deleteUser(DeleteUserCommand command) {
-        User user = userRepository.findById(command.userId())
+        User user = userRepository.findByIdAndDeletedAtIsNull(command.userId())
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
         user.deleted(user.getId());
+    }
+
+    private boolean isEmailUniqueViolation(DataIntegrityViolationException e) {
+        Throwable rootCause = NestedExceptionUtils.getMostSpecificCause(e);
+
+        if (rootCause instanceof ConstraintViolationException constraintViolationException) {
+            String constraintName = constraintViolationException.getConstraintName();
+
+            return constraintName != null && constraintName.contains("email");
+        }
+
+        String message = rootCause.getMessage();
+
+        return message != null && message.contains("email");
     }
 }

@@ -45,6 +45,9 @@ public class User extends BaseUserEntity {
     @Column(nullable = false)
     private UserRole role;
 
+    @Column(name = "refresh_token_hash", length = 128)
+    private String refreshTokenHash;
+
     @Builder
     private User(
             String email,
@@ -52,7 +55,8 @@ public class User extends BaseUserEntity {
             String name,
             String nickname,
             String phoneNumber,
-            UserRole role) {
+            UserRole role
+    ) {
         this.email = email;
         this.password = password;
         this.name = name;
@@ -78,14 +82,21 @@ public class User extends BaseUserEntity {
                 .build();
     }
 
-    public void update(String email, String nickname) {
-        this.email = email;
+    public void update(String name, String nickname, String phoneNumber) {
+        this.name = name;
         this.nickname = nickname;
+        this.phoneNumber = phoneNumber;
     }
 
     public void changeRole(UserRole role) {
         this.role = Objects.requireNonNull(role, "올바른 값이 아닙니다.");
     }
+
+    public void updateRefreshTokenHash(String refreshTokenHash) {
+        this.refreshTokenHash = refreshTokenHash;
+    }
+
+    public void clearRefreshTokenHash() {
+        this.refreshTokenHash = null;
+    }
 }
-
-
