@@ -57,7 +57,7 @@ public class EventRequestCommandController {
             throw new CustomException(CommonErrorCode.INVALID_TOKEN);
         }
 
-        eventRequestCommandService.cancelEventRequest(userId, requestId);
+        eventRequestCommandService.cancelEventRequest(userId, userRole, requestId);
         return ResponseEntity.noContent().build();
     }
 }

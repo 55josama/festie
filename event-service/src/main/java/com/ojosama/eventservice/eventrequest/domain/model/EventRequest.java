@@ -2,6 +2,8 @@ package com.ojosama.eventservice.eventrequest.domain.model;
 
 import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
+import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestErrorCode;
+import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -64,6 +66,17 @@ public class EventRequest extends BaseUserEntity {
     }
 
     public void cancel(UUID userId) {
-        // TODO: 취소 로직 미구현
+        if (!this.requesterId.equals(userId)) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_CANNOT_CANCEL);
+        }
+        if (this.status != EventRequestStatus.PENDING) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_CANNOT_CANCEL);
+        }
+        this.status = EventRequestStatus.CANCELLED;
+    }
+
+    public void adminCancel(UUID adminId) {
+        this.deleted(adminId);
+    }
     }
 }
