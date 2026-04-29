@@ -46,24 +46,28 @@ public class EventsUpdateEventConsumer {
     }
 
     private void dispatch(EventsUpdateEvent message) {
-        if ("CANCELLED".equalsIgnoreCase(message.status())) {
-            log.info("Kafka: 행사 취소 처리 (EventID: {})", message.eventId());
+        if ("CANCELLED".equalsIgnoreCase(message.status()) || "COMPLETED".equalsIgnoreCase(message.status())) {
+            log.info("Kafka: 행사 완료/취소 처리 - VectorStore에서 제거 (EventID: {})", message.eventId());
             documentIndexer.deleteEvent(message.eventId());
             return;
         }
 
-        log.info("Kafka: 행사 업데이트/생성 Upsert (EventID: {})", message.eventId());
-        documentIndexer.indexEvent(
-                message.eventId(),
-                message.name(),
-                message.categoryName(),
-                message.startAt() != null ? message.startAt().toString() : "미정",
-                message.endAt() != null ? message.endAt().toString() : "미정",
-                message.place(),
-                message.hasTicketing(),
-                message.officialLink(),
-                message.description(),
-                message.performer()
-        );
+        if ("SCHEDULED".equalsIgnoreCase(message.status()) || "IN_PROGRESS".equalsIgnoreCase(message.status())) {
+            log.info("Kafka: 행사 업데이트/생성 Upsert (EventID: {})", message.eventId());
+            documentIndexer.indexEvent(
+                    message.eventId(),
+                    message.name(),
+                    message.categoryName(),
+                    message.startAt() != null ? message.startAt().toString() : "미정",
+                    message.endAt() != null ? message.endAt().toString() : "미정",
+                    message.place(),
+                    message.hasTicketing(),
+                    message.officialLink(),
+                    message.description(),
+                    message.performer()
+            );
+        } else {
+            log.warn("Kafka: 알 수 없는 행사 상태 수신 - status: {}", message.status());
+        }
     }
 }
