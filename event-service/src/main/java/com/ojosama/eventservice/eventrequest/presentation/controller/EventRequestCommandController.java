@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -42,5 +44,20 @@ public class EventRequestCommandController {
                 CreateEventRequestCommand.from(userId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(EventRequestResponse.from(result)));
+    }
+
+    @DeleteMapping("/{requestId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+    public ResponseEntity<Void> cancelEventRequest(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @PathVariable UUID requestId) {
+
+        if (userId == null || userRole == null) {
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
+        }
+
+        eventRequestCommandService.cancelEventRequest(userId, requestId);
+        return ResponseEntity.noContent().build();
     }
 }

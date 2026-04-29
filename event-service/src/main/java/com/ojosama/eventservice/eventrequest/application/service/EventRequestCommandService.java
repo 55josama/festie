@@ -6,8 +6,11 @@ import com.ojosama.eventservice.event.domain.model.EventCategory;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.eventrequest.application.dto.command.CreateEventRequestCommand;
 import com.ojosama.eventservice.eventrequest.application.dto.result.EventRequestResult;
+import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestErrorCode;
+import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestException;
 import com.ojosama.eventservice.eventrequest.domain.model.EventRequest;
 import com.ojosama.eventservice.eventrequest.domain.repository.EventRequestRepository;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,5 +37,12 @@ public class EventRequestCommandService {
 
         EventRequest saved = eventRequestRepository.save(request);
         return EventRequestResult.from(saved);
+    }
+
+    public void cancelEventRequest(UUID userId, UUID requestId) {
+        EventRequest request = eventRequestRepository.findById(requestId)
+                .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
+        request.cancel(userId);
+        eventRequestRepository.save(request);
     }
 }
