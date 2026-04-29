@@ -28,7 +28,7 @@ public class AdminUserController {
 
     private final UserAdminService adminUserService;
 
-    //회원 목록 조회
+    // 회원 목록 조회
     @GetMapping
     public Page<AdminUserListResponseDto> getUsers(
             @ModelAttribute AdminUserListRequestDto request
@@ -37,7 +37,7 @@ public class AdminUserController {
                 .map(AdminUserListResponseDto::from);
     }
 
-    //회원 상세 조회
+    // 회원 상세 조회
     @GetMapping("/{userId}")
     public AdminDetailUserResponseDto getDetailUser(
             @PathVariable UUID userId
@@ -48,8 +48,8 @@ public class AdminUserController {
         return AdminDetailUserResponseDto.from(result);
     }
 
-    //유저 권한 수정
-    @PatchMapping("/{userId}")
+    // 유저 권한 수정
+    @PatchMapping("/{userId}/role")
     public AdminChangeUserRoleResponseDto changeUserRole(
             @PathVariable UUID userId,
             @RequestBody AdminChangeUserRoleRequestDto request
