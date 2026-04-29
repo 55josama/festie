@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record CreateChatRoomCommand(
         UUID eventId,
+        String eventName,
         EventCategory category,
         LocalDateTime scheduledOpenAt,
         LocalDateTime scheduledCloseAt

@@ -32,7 +32,7 @@ class EventCategoryCommandServiceTest {
     private EventCategoryRepository eventCategoryRepository;
 
     @InjectMocks
-    private EventCategoryCommandServiceImpl eventCategoryService;
+    private EventCategoryCommandService eventCategoryService;
 
     private static final UUID USER_ID = UUID.randomUUID();
     private static final UUID CATEGORY_ID = UUID.randomUUID();

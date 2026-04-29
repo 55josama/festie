@@ -7,6 +7,5 @@ public record AiReportEvent(
         UUID targetUserId,
         String targetType,
         String category,
-        String description,
         String content
 ) { }

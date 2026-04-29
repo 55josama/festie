@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
@@ -47,4 +48,27 @@ public class Notification extends BaseEntity {
     @OneToMany(mappedBy = "notification")
     private List<EmailLog> emailLogs;
 
+    @Builder
+    public Notification(UUID receiverId, String title, String content, TargetInfo targetInfo) {
+        this.receiverId = receiverId;
+        this.title = title;
+        this.content = content;
+        this.targetInfo = targetInfo;
+    }
+
+    public static Notification of(UUID receiverId, String title, String content, TargetInfo targetInfo) {
+        return Notification.builder()
+                .receiverId(receiverId)
+                .title(title)
+                .content(content)
+                .targetInfo(targetInfo)
+                .build();
+    }
+
+    public void readAt() {
+        if (this.readAt == null) {
+            this.readAt = LocalDateTime.now();
+        }
+
+    }
 }

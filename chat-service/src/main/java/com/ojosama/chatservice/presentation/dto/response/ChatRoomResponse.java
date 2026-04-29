@@ -9,6 +9,7 @@ import java.util.UUID;
 public record ChatRoomResponse(
         UUID chatRoomId,
         UUID eventId,
+        String eventName,
         EventCategory category,
         ChatRoomStatus status,
         LocalDateTime scheduledOpenAt,
@@ -20,6 +21,7 @@ public record ChatRoomResponse(
         return new ChatRoomResponse(
                 result.chatRoomId(),
                 result.eventId(),
+                result.eventName(),
                 result.category(),
                 result.status(),
                 result.scheduledOpenAt(),
