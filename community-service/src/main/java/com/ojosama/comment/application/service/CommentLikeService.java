@@ -40,7 +40,7 @@ public class CommentLikeService {
             }
             throw e;
         }
-        commentRepository.increaseLikeCount(commentId);
+        commentRepository.incrementLikeCount(commentId);
         return likeCount;
 //        return commentRepository.getLikeCount(commentId);
     }

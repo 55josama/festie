@@ -35,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CommentService {
     private static final String AGGREGATE_TYPE = "COMMENT";
+    private static final String TOPIC_COMMENT_CREATED = "community.comment.created.v1";
+    private static final String TOPIC_COMMENT_UPDATED = "community.comment.updated.v1";
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
@@ -68,7 +70,7 @@ public class CommentService {
         postRepository.incrementCommentCount(cmd.postId());
 
         outbox.publish(AGGREGATE_TYPE, comment.getId(), EventType.COMMENT_CREATED,
-                "community.comment.created.v1",
+                TOPIC_COMMENT_CREATED,
                 new CommentCreatedEvent(comment.getId(),
                         comment.getPostId(),
                         comment.getUserId(),
@@ -91,7 +93,7 @@ public class CommentService {
 
         outbox.publish(
                 AGGREGATE_TYPE, comment.getId(),
-                EventType.COMMENT_UPDATED, "community.comment.updated.v1",
+                EventType.COMMENT_UPDATED, TOPIC_COMMENT_UPDATED,
                 new CommentUpdatedEvent(
                         comment.getId(),
                         comment.getPostId(),

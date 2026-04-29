@@ -23,7 +23,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Comment c SET c.likeCount = c.likeCount + 1 WHERE c.id = :id")
-    void increaseLikeCount(@Param("id") UUID Id);
+    void incrementLikeCount(@Param("id") UUID Id);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Comment c SET c.likeCount = c.likeCount - 1 WHERE c.id = :id AND c.likeCount > 0")

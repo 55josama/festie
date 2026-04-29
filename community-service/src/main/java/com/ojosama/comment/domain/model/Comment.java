@@ -11,12 +11,12 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Version;
 
 @Entity
 @Table(name = "p_comments")
@@ -33,7 +33,7 @@ public class Comment extends BaseUserEntity {
     @Column(nullable = false)
     private UUID userId;
 
-    @Column(name = "parent_id", nullable = false)
+    @Column(name = "parent_id")
     private UUID parentId;
 
     @Embedded
