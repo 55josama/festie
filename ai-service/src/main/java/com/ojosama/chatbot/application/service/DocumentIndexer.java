@@ -22,27 +22,37 @@ public class DocumentIndexer {
     // 행사 정보 인덱싱
     public void indexEvent(UUID eventId, String name, String categoryName, String startAt, String endAt,
                            String place, Boolean hasTicketing, String officialLink,
-                           String description, String performer) {
+                           String description, String performer, String status) {
 
         // AI가 문맥을 잘 이해할 수 있도록 null / 빈 값 안전 처리
         String ticketingInfo = (hasTicketing != null && hasTicketing) ? "필요" : "불필요/미정";
         String safePerformer = (performer != null && !performer.isBlank()) ? performer : "정보 없음";
         String safeLink = (officialLink != null && !officialLink.isBlank()) ? officialLink : "없음";
 
+        // 상태값을 한글로 매핑하여 AI가 더 잘 이해하게 돕기
+        String statusKor = switch (status.toUpperCase()) {
+            case "SCHEDULED" -> "예정됨";
+            case "IN_PROGRESS" -> "진행 중";
+            case "COMPLETED" -> "완료됨 (종료)";
+            case "CANCELLED" -> "취소됨";
+            default -> status;
+        };
+
         String content = String.format(
-                "[행사정보] 행사명: %s, 카테고리: %s, 기간: %s ~ %s, 위치: %s, 출연진: %s, 티켓팅: %s, 공식링크: %s, 설명: %s, 상세링크: %s",
-                name, categoryName, startAt, endAt, place, safePerformer, ticketingInfo, safeLink, description, eventId.toString()
+                "[행사정보]\n행사명: %s\n상태: %s\n카테고리: %s\n기간: %s ~ %s\n위치: %s\n출연진: %s\n티켓팅: %s\n공식링크: %s\n설명: %s\n상세링크: %s",
+                name, statusKor, categoryName, startAt, endAt, place, safePerformer, ticketingInfo, safeLink, description, eventId.toString()
         );
 
         Document doc = new Document("event_" + eventId.toString(), content, Map.of(
                 "docType", "EVENT",
-                "eventId", eventId.toString()
+                "eventId", eventId.toString(),
+                "status", status
         ));
 
         vectorStore.add(List.of(doc));
     }
 
-    // 3. 행사 삭제/취소 시 VectorStore에서 문서 완전히 제거
+    // 행사 삭제/취소 시 VectorStore에서 문서 완전히 제거
     public void deleteEvent(UUID eventId) {
         vectorStore.delete(List.of("event_" + eventId.toString()));
     }
