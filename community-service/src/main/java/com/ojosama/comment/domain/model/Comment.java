@@ -83,9 +83,9 @@ public class Comment extends BaseUserEntity {
         return this.userId.equals(userId);
     }
 
-
-    public void increaseLikeCount() {
+    public int increaseLikeCount() {
         this.likeCount++;
+        return likeCount;
     }
 
     public void decreaseLikeCount() {

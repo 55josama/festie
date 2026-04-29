@@ -2,6 +2,7 @@ package com.ojosama.comment.domain.model;
 
 import com.ojosama.common.audit.BaseEntity;
 import jakarta.persistence.*;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "p_comment_likes",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"comment_id", "user_id"})
+                @UniqueConstraint(name = "uq_comment_like_comment_user", columnNames = {"comment_id", "user_id"})
         }
 )
 @Getter
@@ -30,8 +31,8 @@ public class CommentLike extends BaseEntity {
 
     @Builder
     public CommentLike(UUID id, UUID commentId, UUID userId) {
-        this.id = id;
-        this.commentId = commentId;
-        this.userId = userId;
+        this.id = Objects.requireNonNull(id, "id 필수");
+        this.commentId = Objects.requireNonNull(commentId, "commentId 필수");
+        this.userId = Objects.requireNonNull(userId, "userId 필수");
     }
 }

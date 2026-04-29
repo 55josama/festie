@@ -5,6 +5,7 @@ import com.ojosama.comment.application.dto.CreateCommentCommand;
 import com.ojosama.comment.application.dto.DeleteCommentCommand;
 import com.ojosama.comment.application.dto.UpdateCommentCommand;
 import com.ojosama.comment.application.dto.query.CommentListQuery;
+import com.ojosama.comment.application.service.CommentLikeService;
 import com.ojosama.comment.application.service.CommentService;
 import com.ojosama.comment.presentation.dto.request.CreateCommentRequest;
 import com.ojosama.comment.presentation.dto.request.UpdateCommentRequest;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CommentController {
     private final CommentService commentService;
+    private final CommentLikeService commentLikeService;
 
     @PostMapping("/v1/posts/{postId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
@@ -71,5 +73,12 @@ public class CommentController {
     public ApiResponse<CommentResponse> getComment(@PathVariable UUID commentId) {
         CommentResult result = commentService.getComment(commentId);
         return ApiResponse.success(CommentResponse.from(result));
+    }
+
+    @PostMapping("/v1/comments/{commentId}/likes")
+    public ApiResponse<Integer> like(
+            @PathVariable UUID commentId) {
+        int likeCount = commentLikeService.like(commentId,UUID.randomUUID());
+        return ApiResponse.success(likeCount);
     }
 }
