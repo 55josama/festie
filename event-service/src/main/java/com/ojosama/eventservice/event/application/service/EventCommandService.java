@@ -99,7 +99,7 @@ public class EventCommandService {
         eventMessagePublisher.publishEventUpdated(new EventUpdatedMessage(event.getId(), event.getName()));
 
         // 필드 변경사항이 있으면 메시지 발행
-        if (changes.hasChanges()) {
+        if (schedulesChanged || changes.hasChanges()) {
             EventScheduleChangedMessage message = EventScheduleChangedMessage.from(
                     event.getId(),
                     event.getName(),
@@ -110,7 +110,7 @@ public class EventCommandService {
 
         return EventResult.from(event);
     }
-    
+
     public void deleteEvent(UUID userId, UUID eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));

@@ -11,7 +11,7 @@ public class EventChanges {
     public EventChanges(EventSnapshot before, EventSnapshot after) {
         this.before = before;
         this.after = after;
-        this.changedFields = detectChanges();
+        this.changedFields = List.copyOf(detectChanges());
     }
 
     // 변경된 필드들을 감지하고 FieldChange 리스트로 반환
