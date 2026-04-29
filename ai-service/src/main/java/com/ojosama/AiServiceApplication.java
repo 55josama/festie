@@ -3,6 +3,7 @@ package com.ojosama;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@EnableFeignClients(basePackages = "com.ojosama")
 @SpringBootApplication
 public class AiServiceApplication {
 

@@ -15,6 +15,9 @@ dependencies {
     //kafka
     implementation 'org.springframework.kafka:spring-kafka'
 
+    // feign client
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
     // ai
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
     implementation 'org.springframework.ai:spring-ai-advisors-vector-store'
