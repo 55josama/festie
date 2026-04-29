@@ -10,14 +10,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum EventType {
 
-    // Outbound
-    POST_CREATED("PostCreated"),
-    POST_UPDATED("PostUpdated"),
-    COMMENT_CREATED("CommentCreated"),
-    COMMENT_UPDATED("CommentUpdated"),
-    POST_REPORTED("PostReported"),
-    COMMENT_REPORTED("CommentReported"),
-
     EVENT_CREATED("EventCreated"),
     EVENT_DELETED("EventDeleted"),
     EVENT_UPDATED("EventUpdated"),
@@ -31,7 +23,9 @@ public enum EventType {
     // ai
     AI_MODERATION_EVALUATED("AiModerationEvaluated"),
     CHAT_MODERATION_REQUESTED("ChatModerationRequested"),
-    COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested");
+    COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested"),
+
+    TARGET_BLINDED("TargetBlinded");
 
     private final String value;
 

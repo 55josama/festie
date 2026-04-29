@@ -10,6 +10,7 @@ spring:
 
     topic:
       community-moderation-requested: community.moderation.requested.v1
+      operation-blacklist-registered: operation.blacklist.registered.v1
 
     festie:
       outbox:
