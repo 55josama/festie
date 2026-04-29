@@ -20,11 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/auth")
+@RequestMapping("/v1/auth")
 public class AuthController {
 
     private final AuthService authService;
 
+    // 로그인
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
     public LoginResponseDto login(@Valid @RequestBody LoginRequestDto requestDto) {
@@ -33,7 +34,7 @@ public class AuthController {
         return LoginResponseDto.from(result);
     }
 
-    //로그인
+    // 토큰 재발급
     @PostMapping("/reissue")
     @ResponseStatus(HttpStatus.OK)
     public LoginResponseDto reissue(@Valid @RequestBody ReissueTokenRequestDto requestDto) {
@@ -42,7 +43,7 @@ public class AuthController {
         return LoginResponseDto.from(result);
     }
 
-    //로그아웃
+    // 로그아웃
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.OK)
     public LogoutResponseDto logout(Authentication authentication) {
