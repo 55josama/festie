@@ -24,6 +24,8 @@ public enum ChatErrorCode implements ErrorCode {
     MESSAGE_NOT_ACTIVE(HttpStatus.BAD_REQUEST, "ACTIVE 상태에서만 블라인드할 수 있습니다."),
     MESSAGE_CONTENT_REQUIRED(HttpStatus.BAD_REQUEST, "메시지 내용은 필수입니다."),
     MESSAGE_CONTENT_TOO_LONG(HttpStatus.BAD_REQUEST, "메시지 내용이 최대 길이를 초과했습니다."),
+    MESSAGE_WRITER_NICKNAME_REQUIRED(HttpStatus.BAD_REQUEST, "작성자 닉네임은 필수입니다."),
+    MESSAGE_WRITER_NICKNAME_TOO_LONG(HttpStatus.BAD_REQUEST, "작성자 닉네임이 최대 길이를 초과했습니다."),
     MESSAGE_SEND_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "현재 채팅방에는 메시지를 보낼 수 없습니다."),
 
     // Permission

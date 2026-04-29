@@ -9,6 +9,7 @@ public record MessageResult(
         UUID messageId,
         UUID chatRoomId,
         UUID userId,
+        String writerNickname,
         String content,
         MessageStatus status,
         LocalDateTime createdAt
@@ -18,6 +19,7 @@ public record MessageResult(
                 message.getId(),
                 message.getChatRoomId(),
                 message.getUserId(),
+                message.getWriterNickname(),
                 message.getContent(),
                 message.getStatus(),
                 message.getCreatedAt()

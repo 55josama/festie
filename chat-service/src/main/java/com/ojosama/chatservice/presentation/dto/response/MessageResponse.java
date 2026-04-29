@@ -9,6 +9,7 @@ public record MessageResponse(
         UUID messageId,
         UUID chatRoomId,
         UUID userId,
+        String writerNickname,
         String content,
         MessageStatus status,
         LocalDateTime createdAt
@@ -18,6 +19,7 @@ public record MessageResponse(
                 result.messageId(),
                 result.chatRoomId(),
                 result.userId(),
+                result.writerNickname(),
                 result.content(),
                 result.status(),
                 result.createdAt()

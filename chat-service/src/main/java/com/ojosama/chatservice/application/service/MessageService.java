@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MessageService {
 
     private static final int MAX_MESSAGE_CONTENT_LENGTH = 1000;
+    private static final int MAX_WRITER_NICKNAME_LENGTH = 50;
 
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -37,6 +38,7 @@ public class MessageService {
         if (command == null || command.chatRoomId() == null || command.userId() == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
+        validateWriterNickname(command.writerNickname());
         validateContent(command.content());
 
         ChatRoom chatRoom = findChatRoom(command.chatRoomId());
@@ -47,6 +49,7 @@ public class MessageService {
         Message message = Message.builder()
                 .chatRoomId(command.chatRoomId())
                 .userId(command.userId())
+                .writerNickname(command.writerNickname().trim())
                 .content(command.content().trim())
                 .build();
 
@@ -110,6 +113,15 @@ public class MessageService {
         }
         if (content.trim().length() > MAX_MESSAGE_CONTENT_LENGTH) {
             throw new ChatException(ChatErrorCode.MESSAGE_CONTENT_TOO_LONG);
+        }
+    }
+
+    private void validateWriterNickname(String writerNickname) {
+        if (writerNickname == null || writerNickname.isBlank()) {
+            throw new ChatException(ChatErrorCode.MESSAGE_WRITER_NICKNAME_REQUIRED);
+        }
+        if (writerNickname.trim().length() > MAX_WRITER_NICKNAME_LENGTH) {
+            throw new ChatException(ChatErrorCode.MESSAGE_WRITER_NICKNAME_TOO_LONG);
         }
     }
 

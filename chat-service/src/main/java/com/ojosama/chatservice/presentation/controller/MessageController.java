@@ -37,10 +37,11 @@ public class MessageController {
     public ResponseEntity<ApiResponse<MessageResponse>> createMessage(
             @PathVariable UUID chatRoomId,
             @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Nickname") String writerNickname,
             @Valid @RequestBody CreateMessageRequest request
     ) {
         MessageResult result = messageService.createMessage(
-                new CreateMessageCommand(chatRoomId, userId, request.content())
+                new CreateMessageCommand(chatRoomId, userId, writerNickname, request.content())
         );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(MessageResponse.from(result)));
