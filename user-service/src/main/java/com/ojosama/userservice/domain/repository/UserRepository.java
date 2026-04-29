@@ -16,20 +16,18 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmail(String email);
 
-    Optional<User> findByEmail(String email);
-
     Optional<User> findByEmailAndDeletedAtIsNull(String email);
 
     Optional<User> findByIdAndDeletedAtIsNull(UUID id);
 
     @Modifying
     @Query("""
-        update User u
-        set u.refreshTokenHash = :newRefreshTokenHash
-        where u.id = :userId
-          and u.refreshTokenHash = :oldRefreshTokenHash
-          and u.deletedAt is null
-        """)
+            update User u
+            set u.refreshTokenHash = :newRefreshTokenHash
+            where u.id = :userId
+              and u.refreshTokenHash = :oldRefreshTokenHash
+              and u.deletedAt is null
+            """)
     int rotateRefreshTokenHash(
             @Param("userId") UUID userId,
             @Param("oldRefreshTokenHash") String oldRefreshTokenHash,

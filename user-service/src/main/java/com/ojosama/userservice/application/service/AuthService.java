@@ -24,6 +24,7 @@ public class AuthService {
     private final RefreshTokenHasher refreshTokenHasher;
 
     //로그인
+    @Transactional
     public LoginResult login(LoginCommand command) {
         User user = userRepository.findByEmailAndDeletedAtIsNull(command.email())
                 .orElseThrow(() -> new IllegalArgumentException("이메일 혹은 비밀번호가 올바르지 않습니다."));
@@ -38,7 +39,6 @@ public class AuthService {
         String refreshTokenHash = refreshTokenHasher.hash(refreshToken);
 
         user.updateRefreshTokenHash(refreshTokenHash);
-        userRepository.save(user);
 
         return new LoginResult(
                 accessToken,
@@ -61,10 +61,10 @@ public class AuthService {
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
+        String oldRefreshTokenHash = refreshTokenHasher.hash(refreshToken);
+
         String newAccessToken = jwtTokenProvider.createAccessToken(user);
         String newRefreshToken = jwtTokenProvider.createRefreshToken(user);
-
-        String oldRefreshTokenHash = refreshTokenHasher.hash(refreshToken);
         String newRefreshTokenHash = refreshTokenHasher.hash(newRefreshToken);
 
         int updatedCount = userRepository.rotateRefreshTokenHash(
