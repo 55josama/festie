@@ -53,7 +53,8 @@ public class AiModerationEventConsumer {
             return;
         }
 
-        List<AiModerationRequestEvent> validEvents = new ArrayList<>();
+        List<AiModerationRequestEvent> eventsToProcess = new ArrayList<>();
+        List<Runnable> inboxConfirmTasks = new ArrayList<>();
 
         for (ConsumerRecord<String, String> record : records) {
             UUID messageKey;
@@ -63,26 +64,36 @@ public class AiModerationEventConsumer {
                 messageKey = UUID.fromString(record.key());
                 event = objectMapper.readValue(record.value(), AiModerationRequestEvent.class);
             } catch (Exception e) {
-                log.error("메시지 파싱 실패. key={}, value={}", record.key(), record.value(), e);
+                log.error("메시지 파싱 실패. topic={}, partition={}, offset={}, key={}, payloadLength={}",
+                        record.topic(), record.partition(), record.offset(), record.key(),
+                        record.value() == null ? 0 : record.value().length(), e);
                 continue;
             }
 
-            try {
-                // 전달받은 eventType을 사용하여 멱등성 검증
-                idempotentHandler.handle(
-                        messageKey, CONSUMER_GROUP, record.topic(), eventType,
-                        () -> {
-                            validEvents.add(event);
-                        }
-                );
-            } catch (Exception e) {
-                log.error("멱등성 처리 또는 이벤트 담기 실패: {}", messageKey, e);
-            }
+            eventsToProcess.add(event);
+
+            // Inbox 확정 로직을 지금 실행하지 않고 Runnable로 담아두기만 함
+            inboxConfirmTasks.add(() -> {
+                try {
+                    idempotentHandler.handle(messageKey, CONSUMER_GROUP, record.topic(), eventType, () -> {
+                        // 비즈니스 로직은 일괄 처리로 끝났으므로, 여기서는 Inbox 상태만 '완료'로 기록
+                    });
+                } catch (Exception e) {
+                    log.error("Inbox 상태 마킹 실패: key={}, error={}", messageKey, e.getMessage());
+                }
+            });
         }
 
-        if (!validEvents.isEmpty()) {
-            log.info("[AI 검증] 중복 제외 {}개의 유효한 검사 요청 배치를 서비스로 전달합니다. (Type: {})", validEvents.size(), eventType);
-            aiModerationService.processModerationBatch(validEvents);
+        if (!eventsToProcess.isEmpty()) {
+            // 비즈니스 로직(AI 모델 일괄 호출)을 먼저 실행
+            // 여기서 에러가 발생해 던져지면, 아래의 Inbox 마킹(task.run)은 실행되지 않아 유실을 방지
+            log.info("[AI 검증] {}개의 검사 요청 배치를 서비스로 전달합니다. (Type: {})", eventsToProcess.size(), eventType);
+            aiModerationService.processModerationBatch(eventsToProcess);
+
+            // 비즈니스 로직이 무사히 성공한 이후에만 모아둔 Inbox 마킹 작업 확정
+            for (Runnable task : inboxConfirmTasks) {
+                task.run();
+            }
         }
     }
 }
