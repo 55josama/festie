@@ -15,8 +15,8 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     private final JpaCalendarRepository jpaCalendarRepository;
 
     @Override
-    public void saveAndFlush(Calendar calendar) {
-        jpaCalendarRepository.saveAndFlush(calendar);
+    public void save(Calendar calendar) {
+        jpaCalendarRepository.save(calendar);
     }
 
     @Override
@@ -25,8 +25,8 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public Optional<Calendar> findByEventInfo_EventScheduleIdAndUserId(UUID scheduleId, UUID userId) {
-        return jpaCalendarRepository.findByEventInfo_EventScheduleIdAndUserId(scheduleId, userId);
+    public Optional<Calendar> findByEventInfo_EventScheduleIdAndUserIdAndDeletedAtIsNull(UUID scheduleId, UUID userId) {
+        return jpaCalendarRepository.findByEventInfo_EventScheduleIdAndUserIdAndDeletedAtIsNull(scheduleId, userId);
     }
 
     @Override

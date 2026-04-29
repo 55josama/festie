@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface JpaCalendarRepository extends JpaRepository<Calendar, UUID>, CalendarRepositoryCustom {
 
-    Optional<Calendar> findByEventInfo_EventScheduleIdAndUserId(UUID eventScheduleId, UUID userId);
+    Optional<Calendar> findByEventInfo_EventScheduleIdAndUserIdAndDeletedAtIsNull(UUID eventScheduleId, UUID userId);
 
     Optional<Calendar> findByIdAndUserIdAndDeletedAtIsNull(UUID id, UUID userId);
 }

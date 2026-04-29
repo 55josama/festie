@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,17 +27,11 @@ public class CalendarService {
 
     public CalendarResponseDto createCalendar(CreateCalendarCommand command) {
 
-        Optional<Calendar> exists = calendarRepository.findByEventInfo_EventScheduleIdAndUserId(
+        Optional<Calendar> exists = calendarRepository.findByEventInfo_EventScheduleIdAndUserIdAndDeletedAtIsNull(
                 command.eventScheduleId(),
                 command.userId());
 
         if (exists.isPresent()) {
-            Calendar calendar = exists.get();
-            if (calendar.getDeletedAt() != null) {
-                calendar.restore();
-                calendar.updateMemo(command.memo());
-                return CalendarResponseDto.from(CalendarResult.from(calendar));
-            }
             throw new CalendarException(CalendarErrorCode.EXISTS_CALENDAR);
         }
 
@@ -52,11 +45,7 @@ public class CalendarService {
         Calendar calendar = Calendar.create(command.userId(), command.memo(),
                 new EventInfo(command.eventId(), eventName, command.eventScheduleId(), eventStart, ticketingDate));
 
-        try {
-            calendarRepository.saveAndFlush(calendar);
-        } catch (DataIntegrityViolationException e) {
-            throw new CalendarException(CalendarErrorCode.EXISTS_CALENDAR);
-        }
+        calendarRepository.save(calendar);
 
         return CalendarResponseDto.from(CalendarResult.from(calendar));
     }

@@ -11,7 +11,7 @@ public interface CalendarRepository {
 
     List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month);
 
-    Optional<Calendar> findByEventInfo_EventScheduleIdAndUserId(UUID scheduleId, UUID userId);
+    Optional<Calendar> findByEventInfo_EventScheduleIdAndUserIdAndDeletedAtIsNull(UUID scheduleId, UUID userId);
 
-    void saveAndFlush(Calendar calendar);
+    void save(Calendar calendar);
 }
