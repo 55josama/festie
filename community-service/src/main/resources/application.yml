@@ -1,6 +1,19 @@
 spring:
   application:
     name: community-service
+  #kafka설정은 추후 config서버로 옮길 예정
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    consumer:
+      group-id: community-service-group
+
+    topic:
+      community-moderation-requested: community.moderation.requested.v1
+
+    festie:
+      outbox:
+        poll-delay-ms: 1000
 
   config:
     import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"

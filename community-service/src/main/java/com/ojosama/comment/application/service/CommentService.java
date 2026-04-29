@@ -5,14 +5,14 @@ import com.ojosama.comment.application.dto.CreateCommentCommand;
 import com.ojosama.comment.application.dto.DeleteCommentCommand;
 import com.ojosama.comment.application.dto.UpdateCommentCommand;
 import com.ojosama.comment.application.dto.query.CommentListQuery;
-import com.ojosama.comment.domain.event.payload.CommentCreatedEvent;
-import com.ojosama.comment.domain.event.payload.CommentUpdatedEvent;
 import com.ojosama.comment.domain.exception.CommentErrorCode;
 import com.ojosama.comment.domain.exception.CommentException;
 import com.ojosama.comment.domain.model.Comment;
 import com.ojosama.comment.domain.model.CommentStatus;
 import com.ojosama.comment.domain.repository.CommentRepository;
 import com.ojosama.common.domain.model.Content;
+import com.ojosama.common.domain.payload.ModerationRequestedEvent;
+import com.ojosama.common.domain.payload.TargetType;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import com.ojosama.post.domain.exception.PostErrorCode;
@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,12 +36,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CommentService {
     private static final String AGGREGATE_TYPE = "COMMENT";
-    private static final String TOPIC_COMMENT_CREATED = "community.comment.created.v1";
-    private static final String TOPIC_COMMENT_UPDATED = "community.comment.updated.v1";
-
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final OutboxEventPublisher outbox;
+
+    @Value("${spring.kafka.topic.community-moderation-requested}")
+    private String moderationRequestedTopic;
 
     @Transactional
     public CommentResult create(CreateCommentCommand cmd) {
@@ -69,14 +70,14 @@ public class CommentService {
         commentRepository.save(comment);
         postRepository.incrementCommentCount(cmd.postId());
 
-        outbox.publish(AGGREGATE_TYPE, comment.getId(), EventType.COMMENT_CREATED,
-                TOPIC_COMMENT_CREATED,
-                new CommentCreatedEvent(comment.getId(),
-                        comment.getPostId(),
+        outbox.publish(AGGREGATE_TYPE, comment.getId(),
+                EventType.COMMUNITY_MODERATION_REQUESTED,
+                moderationRequestedTopic,
+                ModerationRequestedEvent.of(
+                        comment.getId(),
                         comment.getUserId(),
-                        comment.getParentId(),
-                        comment.getContent().getValue(),
-                        LocalDateTime.now()));
+                        TargetType.COMMENT,
+                        comment.getContent().getValue()));
 
         return CommentResult.flat(comment);
     }
@@ -93,15 +94,13 @@ public class CommentService {
 
         outbox.publish(
                 AGGREGATE_TYPE, comment.getId(),
-                EventType.COMMENT_UPDATED, TOPIC_COMMENT_UPDATED,
-                new CommentUpdatedEvent(
+                EventType.COMMUNITY_MODERATION_REQUESTED,
+                moderationRequestedTopic,
+                ModerationRequestedEvent.of(
                         comment.getId(),
-                        comment.getPostId(),
                         comment.getUserId(),
-                        comment.getContent().getValue(),
-                        LocalDateTime.now()
-                )
-        );
+                        TargetType.COMMENT,
+                        comment.getContent().getValue()));
 
         return CommentResult.flat(comment);
     }
