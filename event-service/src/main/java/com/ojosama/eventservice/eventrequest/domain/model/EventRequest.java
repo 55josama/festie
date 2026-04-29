@@ -78,5 +78,19 @@ public class EventRequest extends BaseUserEntity {
     public void adminCancel(UUID adminId) {
         this.deleted(adminId);
     }
+
+    public void approve() {
+        if (this.status != EventRequestStatus.PENDING) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_ALREADY_PROCESSED);
+        }
+        this.status = EventRequestStatus.APPROVED;
+    }
+
+    public void reject(String rejectReason) {
+        if (this.status != EventRequestStatus.PENDING) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_ALREADY_PROCESSED);
+        }
+        this.status = EventRequestStatus.REJECTED;
+        this.rejectReason = rejectReason;
     }
 }

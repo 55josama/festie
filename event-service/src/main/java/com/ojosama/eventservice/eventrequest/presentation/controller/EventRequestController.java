@@ -74,6 +74,37 @@ public class EventRequestController {
         eventRequestCommandService.cancelEventRequest(userId, userRole, requestId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{requestId}/approval")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+    public ResponseEntity<ApiResponse<EventRequestResponse>> approveEventRequest(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @PathVariable UUID requestId) {
+
+        if (userId == null || userRole == null) {
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
+        }
+
+        EventRequestResult result = eventRequestCommandService.approveEventRequest(requestId);
+        return ResponseEntity.ok(ApiResponse.success(EventRequestResponse.from(result)));
+    }
+
+    @PostMapping("/{requestId}/rejections")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+    public ResponseEntity<ApiResponse<EventRequestResponse>> rejectEventRequest(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @PathVariable UUID requestId,
+            @Valid @RequestBody RejectEventRequestRequest request) {
+
+        if (userId == null || userRole == null) {
+            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
+        }
+
+        EventRequestResult result = eventRequestCommandService.rejectEventRequest(requestId, request.rejectReason());
+        return ResponseEntity.ok(ApiResponse.success(EventRequestResponse.from(result)));
+    }
     @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<EventRequestResponse>> getEventRequest(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
