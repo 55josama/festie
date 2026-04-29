@@ -90,7 +90,6 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         user.clearRefreshTokenHash();
-        userRepository.save(user);
 
         return new LogoutResult(user.getId());
     }
