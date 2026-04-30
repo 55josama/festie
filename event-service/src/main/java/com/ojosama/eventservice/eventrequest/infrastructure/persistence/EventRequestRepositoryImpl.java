@@ -50,12 +50,14 @@ public class EventRequestRepositoryImpl implements EventRequestRepository {
         applySorting(query, er, pageable.getSort());
 
         List<EventRequest> content = query.fetch();
-        long total = queryFactory
+        Long totalCount = queryFactory
                 .select(er.count())
                 .from(er)
                 .where(where)
                 .fetchOne();
 
+        long total = totalCount != null ? totalCount : 0L;
+        
         return new PageImpl<>(content, pageable, total);
     }
 
