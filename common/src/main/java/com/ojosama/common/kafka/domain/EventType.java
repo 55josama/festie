@@ -17,7 +17,8 @@ public enum EventType {
     COMMENT_UPDATED("CommentUpdated"),
     POST_REPORTED("PostReported"),
     COMMENT_REPORTED("CommentReported"),
-
+  
+    // event
     EVENT_CREATED("EventCreated"),
     EVENT_DELETED("EventDeleted"),
     EVENT_UPDATED("EventUpdated"),
@@ -33,6 +34,7 @@ public enum EventType {
     CHAT_MODERATION_REQUESTED("ChatModerationRequested"),
     COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested"),
     EVENT_EVENT_UPDATED("EventEventUpdated");
+
 
     private final String value;
 
