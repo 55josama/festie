@@ -27,8 +27,12 @@ public class UserService {
     //유저 생성
     @Transactional
     public CreateUserResult createUser(CreateUserCommand command) {
-        if (userRepository.existsByEmail(command.email())) {
-            throw new IllegalArgumentException("중복 이메일입니다.");
+        if (userRepository.existsByEmailAndDeletedAtIsNull(command.email())) {
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+        }
+
+        if (userRepository.existsByNicknameAndDeletedAtIsNull(command.nickname())) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
         }
         if (userRepository.existsByNicknameAndDeletedAtIsNull(command.nickname())) {
             throw new IllegalArgumentException("중복 닉네임입니다.");

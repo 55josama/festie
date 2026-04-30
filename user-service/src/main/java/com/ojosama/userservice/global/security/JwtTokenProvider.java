@@ -40,6 +40,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
+                .claim("nickname", user.getNickname())
                 .claim("role", user.getRole().name())
                 .claim(TOKEN_TYPE_CLAIM, tokenType.name())
                 .issuedAt(now)
