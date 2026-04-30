@@ -30,6 +30,9 @@ public class UserService {
         if (userRepository.existsByEmail(command.email())) {
             throw new IllegalArgumentException("중복 이메일입니다.");
         }
+        if (userRepository.existsByNicknameAndDeletedAtIsNull(command.nickname())) {
+            throw new IllegalArgumentException("중복 닉네임입니다.");
+        }
 
         String encodedPassword = passwordEncoder.encode(command.password());
 
@@ -54,6 +57,10 @@ public class UserService {
         } catch (DataIntegrityViolationException e) {
             if (isEmailUniqueViolation(e)) {
                 throw new IllegalArgumentException("중복 이메일입니다.", e);
+            }
+
+            if (isNicknameUniqueViolation(e)) {
+                throw new IllegalArgumentException("중복 닉네임입니다.", e);
             }
 
             throw e;
@@ -85,6 +92,10 @@ public class UserService {
         User savedUser = userRepository.findByIdAndDeletedAtIsNull(command.userId())
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
 
+        if (userRepository.existsByNicknameAndIdNotAndDeletedAtIsNull(command.nickname(), command.userId())) {
+            throw new IllegalArgumentException("중복 닉네임입니다.");
+        }
+
         savedUser.update(
                 command.name(),
                 command.nickname(),
@@ -110,6 +121,7 @@ public class UserService {
         user.deleted(user.getId());
     }
 
+    //이메일 중복 DB 저장 실패 시
     private boolean isEmailUniqueViolation(DataIntegrityViolationException e) {
         Throwable rootCause = NestedExceptionUtils.getMostSpecificCause(e);
 
@@ -122,5 +134,11 @@ public class UserService {
         String message = rootCause.getMessage();
 
         return message != null && message.contains("email");
+    }
+
+    //닉네임 중복 DB 저장 실패 시
+    private boolean isNicknameUniqueViolation(DataIntegrityViolationException e) {
+        String message = NestedExceptionUtils.getMostSpecificCause(e).getMessage();
+        return message != null && message.contains("nickname");
     }
 }
