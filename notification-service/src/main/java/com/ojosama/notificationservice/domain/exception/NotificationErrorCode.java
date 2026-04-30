@@ -12,8 +12,11 @@ public enum NotificationErrorCode implements ErrorCode {
 
     INVALID_TARGET_ID(HttpStatus.BAD_REQUEST, "알림 대상의 식별자(ID)가 누락되었습니다."),
     INVALID_TARGET_TYPE(HttpStatus.BAD_REQUEST, "알림 종류(TYPE) 정보가 누락되었습니다."),
+    INVALID_MESSAGE_PAYLOAD(HttpStatus.BAD_REQUEST, "메시지 응답이 잘못되었습니다."),
 
-    NOT_FOUND_NOTIFICATION(HttpStatus.NOT_FOUND, "알림이 존재하지 않습니다.");
+    NOT_FOUND_NOTIFICATION(HttpStatus.NOT_FOUND, "알림이 존재하지 않습니다."),
+    NOT_FOUND_CALENDAR(HttpStatus.NOT_FOUND, "일정이 존재하지 않습니다."),
+    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다.");
 
 
     private final HttpStatus status;

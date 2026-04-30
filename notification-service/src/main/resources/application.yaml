@@ -9,6 +9,14 @@ spring:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          calendar-service:
+            connectTimeout: 5000
+            readTimeout: 5000
   mail:
     host: ${HOST}
     port: ${PORT}

@@ -233,6 +233,15 @@ services:
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
+
+  # ============ notification-service ============
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: festie-notification
+    restart: unless-stopped
+
   # ============ event-service ============
   event-service:
     build:
@@ -242,6 +251,7 @@ services:
     restart: unless-stopped
     ports:
       - "8082:8082"  # 테스트 시 사용
+
     networks:
       - festie-network
     depends_on:
@@ -251,6 +261,20 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_REDIS_HOST: festie-redis
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+
       eureka-server:
         condition: service_healthy
       config-server:
@@ -271,6 +295,7 @@ services:
       CONFIG_USERNAME: ${CONFIG_USERNAME:-festie}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-festiepw}
       CONFIG_SERVER_URL: http://config-server:8888
+
 volumes:
   postgres_data:
 

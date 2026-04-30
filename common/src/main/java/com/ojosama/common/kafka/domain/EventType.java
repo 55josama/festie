@@ -24,6 +24,13 @@ public enum EventType {
     EVENT_UPDATED("EventUpdated"),
     EVENT_SCHEDULE_CHANGED("EventScheduleChanged"),
 
+    EVENT_REQUEST_CREATED("EventRequestCreated"),
+    EVENT_REQUEST_RESULT("EventRequestResultCreated"),
+
+    // calendar
+    TICKETING_SCHEDULE_REMINDER("EventTicketingSchedule"),
+    SCHEDULE_REMINDER("EventSchedule"),
+
     // operation
     REPORT_BLINDED("ReportBlinded"),
     BLACKLIST_REGISTERED("BlacklistRegistered"),

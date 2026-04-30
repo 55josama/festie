@@ -39,14 +39,13 @@ public class NotificationRepositoryImpl implements NotificationRepository {
     }
 
     @Override
-    public Long deleteOldNotifications() {
+    public Long deleteOldNotifications(LocalDateTime time) {
         QNotification notification = QNotification.notification;
         return jpaQueryFactory.update(notification)
                 .set(notification.deletedAt, LocalDateTime.now())
-                // TODO : 설정 추가 되면 주석 삭제 예정
-                //.set(notification.deletedBy, "SYSTEM")
+                .set(notification.deletedBy, UUID.fromString("00000000-0000-0000-0000-000000000000"))
                 .where(
-                        notification.createdAt.before(LocalDateTime.now().minusDays(15)),
+                        notification.createdAt.before(time),
                         notification.deletedAt.isNull()
                 )
                 .execute();
