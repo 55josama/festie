@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,11 +25,8 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<NotificationResponse>>> getNotification() {
-
-        // TODO : 유저 id 수정 필요
-        UUID receiverId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
-
+    public ResponseEntity<ApiResponse<List<NotificationResponse>>> getNotification(
+            @RequestHeader("X-User-Id") UUID receiverId) {
         List<NotificationResponse> notificationResponseList = notificationService.selectAll(receiverId);
 
         return ResponseEntity
@@ -37,11 +35,8 @@ public class NotificationController {
     }
 
     @PatchMapping
-    public ResponseEntity<ApiResponse<List<NotificationResponse>>> markAllAsRead() {
-
-        // TODO : 유저 id 수정 필요
-        UUID receiverId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
-
+    public ResponseEntity<ApiResponse<List<NotificationResponse>>> markAllAsRead(
+            @RequestHeader("X-User-Id") UUID receiverId) {
         List<NotificationResponse> notificationList = notificationService.markAllAsRead(receiverId);
 
         return ResponseEntity
@@ -50,11 +45,8 @@ public class NotificationController {
     }
 
     @DeleteMapping("/{notificationId}")
-    public ResponseEntity<ApiResponse<Notification>> deleteNotification(@PathVariable UUID notificationId) {
-
-        // TODO : 유저 id 수정 필요
-        UUID receiverId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
-
+    public ResponseEntity<ApiResponse<Notification>> deleteNotification(@PathVariable UUID notificationId,
+                                                                        @RequestHeader("X-User-Id") UUID receiverId) {
         notificationService.deleteNotification(receiverId, notificationId);
         return ResponseEntity
                 .status(HttpStatus.OK)
