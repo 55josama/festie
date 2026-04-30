@@ -1,6 +1,7 @@
 package com.ojosama.userservice.domain.repository;
 
 import com.ojosama.userservice.domain.model.User;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailAndDeletedAtIsNull(String email);
 
     Optional<User> findByIdAndDeletedAtIsNull(UUID id);
+
+    List<User> findAllByIdInAndDeletedAtIsNull(List<UUID> ids);
 
     @Modifying
     @Query("""
