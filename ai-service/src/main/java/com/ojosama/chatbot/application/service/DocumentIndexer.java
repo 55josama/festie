@@ -32,12 +32,13 @@ public class DocumentIndexer {
                            String description, String performer, String status) {
 
         // AI가 문맥을 잘 이해할 수 있도록 null / 빈 값 안전 처리
+        String safeStatus = (status == null || status.isBlank()) ? "UNKNOWN" : status;
         String ticketingInfo = (hasTicketing != null && hasTicketing) ? "필요" : "불필요/미정";
         String safePerformer = (performer != null && !performer.isBlank()) ? performer : "정보 없음";
         String safeLink = (officialLink != null && !officialLink.isBlank()) ? officialLink : "없음";
 
         // 상태값을 한글로 매핑하여 AI가 더 잘 이해하게 돕기
-        String statusKor = switch (status.toUpperCase()) {
+        String statusKor = switch (safeStatus.toUpperCase()) {
             case "SCHEDULED" -> "예정됨";
             case "IN_PROGRESS" -> "진행 중";
             case "COMPLETED" -> "완료됨 (종료)";
@@ -53,7 +54,7 @@ public class DocumentIndexer {
         Document doc = new Document(eventId.toString(), content, Map.of(
                 "docType", "EVENT",
                 "eventId", eventId.toString(),
-                "status", status
+                "status", safeStatus
         ));
 
         vectorStore.add(List.of(doc));
