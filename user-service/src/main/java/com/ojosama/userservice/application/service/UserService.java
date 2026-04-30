@@ -3,12 +3,18 @@ package com.ojosama.userservice.application.service;
 import com.ojosama.userservice.application.dto.command.CreateUserCommand;
 import com.ojosama.userservice.application.dto.command.DeleteUserCommand;
 import com.ojosama.userservice.application.dto.command.UpdateUserCommand;
+import com.ojosama.userservice.application.dto.query.GetInternalUserEmailQuery;
 import com.ojosama.userservice.application.dto.query.GetUserQuery;
 import com.ojosama.userservice.application.dto.result.CreateUserResult;
 import com.ojosama.userservice.application.dto.result.GetUserResult;
+import com.ojosama.userservice.application.dto.result.InternalUserEmailResult;
 import com.ojosama.userservice.application.dto.result.UpdateUserResult;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.core.NestedExceptionUtils;
@@ -141,5 +147,27 @@ public class UserService {
     private boolean isNicknameUniqueViolation(DataIntegrityViolationException e) {
         String message = NestedExceptionUtils.getMostSpecificCause(e).getMessage();
         return message != null && message.contains("nickname");
+    }
+
+    @Transactional(readOnly = true)
+    public InternalUserEmailResult getInternalUserEmail(GetInternalUserEmailQuery query) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+
+        return new InternalUserEmailResult(
+                user.getId(),
+                user.getEmail()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Map<UUID, String> getInternalUserEmails(List<UUID> userIds) {
+        List<User> users = userRepository.findAllByIdInAndDeletedAtIsNull(userIds);
+
+        return users.stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        User::getEmail
+                ));
     }
 }
