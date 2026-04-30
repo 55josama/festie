@@ -11,6 +11,7 @@ import com.ojosama.chatservice.domain.exception.ChatErrorCode;
 import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.chatservice.domain.model.ChatRoom;
 import com.ojosama.chatservice.domain.model.Message;
+import com.ojosama.chatservice.domain.model.MessageStatus;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.chatservice.domain.repository.MessageRepository;
 import com.ojosama.common.exception.CommonErrorCode;
@@ -30,6 +31,7 @@ public class MessageService {
 
     private static final int MAX_MESSAGE_CONTENT_LENGTH = 1000;
     private static final int MAX_WRITER_NICKNAME_LENGTH = 50;
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -61,19 +63,28 @@ public class MessageService {
         if (query == null || query.messageId() == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        return MessageResult.from(findMessage(query.messageId()));
+        Message message = findMessage(query.messageId());
+        if (!message.isVisible()) {
+            throw new ChatException(ChatErrorCode.MESSAGE_NOT_FOUND);
+        }
+        return MessageResult.from(message);
     }
 
     @Transactional(readOnly = true)
     public MessageSliceResult getMessagesByChatRoom(FindMessagesByChatRoomQuery query) {
-        if (query == null || query.chatRoomId() == null || query.page() < 0 || query.size() <= 0) {
+        if (query == null || query.chatRoomId() == null || query.page() < 0
+                || query.size() <= 0 || query.size() > MAX_PAGE_SIZE) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
 
         findChatRoom(query.chatRoomId());
 
         Pageable pageable = PageRequest.of(query.page(), query.size());
-        Slice<Message> messages = messageRepository.findByChatRoomId(query.chatRoomId(), pageable);
+        Slice<Message> messages = messageRepository.findByChatRoomIdAndStatus(
+                query.chatRoomId(),
+                MessageStatus.ACTIVE,
+                pageable
+        );
 
         List<MessageResult> results = messages.getContent().stream()
                 .map(MessageResult::from)
@@ -104,7 +115,7 @@ public class MessageService {
         Message message = findMessage(messageId);
         ChatRoom chatRoom = findChatRoom(message.getChatRoomId());
 
-        return ReportedMessageResult.from(message, chatRoom.getCategory());
+        return ReportedMessageResult.from(message, chatRoom.getCategory().name());
     }
 
     private void validateContent(String content) {
