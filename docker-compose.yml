@@ -100,6 +100,11 @@ services:
       GIT_USERNAME: ${GIT_USERNAME}
       GIT_TOKEN: ${GIT_TOKEN}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --spider -q http://localhost:8888/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   # ============ eureka-server ============
   eureka-server:
@@ -136,7 +141,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
@@ -168,13 +173,14 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
       CONFIG_SERVER_URL: http://config-server:8888
       CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
@@ -200,7 +206,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
