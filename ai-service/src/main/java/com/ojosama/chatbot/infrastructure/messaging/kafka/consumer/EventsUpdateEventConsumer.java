@@ -3,6 +3,8 @@ package com.ojosama.chatbot.infrastructure.messaging.kafka.consumer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.chatbot.application.service.DocumentIndexer;
 import com.ojosama.chatbot.domain.event.payload.EventsUpdateEvent;
+import com.ojosama.chatbot.domain.exception.AiChatErrorCode;
+import com.ojosama.chatbot.domain.exception.AiChatException;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import java.util.UUID;
@@ -34,7 +36,7 @@ public class EventsUpdateEventConsumer {
             event = objectMapper.readValue(record.value(), EventsUpdateEvent.class);
         } catch (Exception e) {
             log.error("Event 메시지 파싱 실패. key={}, value={}", record.key(), record.value(), e);
-            return;
+            throw new AiChatException(AiChatErrorCode.KAFKA_MESSAGE_PARSING_FAILURE);
         }
         idempotentHandler.handle(
                 messageKey,
