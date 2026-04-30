@@ -78,4 +78,13 @@ public class OperationRequest extends BaseEntity {
             this.adminMemo = adminMemo;
         }
     }
+
+    public void validateDeletableBy(UUID userId) {
+        if (!this.requesterId.equals(userId)) {
+            throw new OperationRequestException(OperationRequestErrorCode.UNAUTHORIZED_DELETE);
+        }
+        if (this.status != OperationRequestStatus.PENDING) {
+            throw new OperationRequestException(OperationRequestErrorCode.INVALID_DELETE_STATUS);
+        }
+    }
 }

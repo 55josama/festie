@@ -35,6 +35,7 @@ public enum EventType {
     REPORT_BLINDED("ReportBlinded"),
     BLACKLIST_REGISTERED("BlacklistRegistered"),
     BLACKLIST_UPDATED("BlacklistUpdated"),
+    OPERATION_REQUEST_CREATED("OperationRequestCreated"),
 
     // ai
     AI_MODERATION_EVALUATED("AiModerationEvaluated"),

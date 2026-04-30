@@ -2,10 +2,8 @@ package com.ojosama.operationrequest.infrastructure.messaging.kafka.producer;
 
 import com.ojosama.common.exception.CommonErrorCode;
 import com.ojosama.operationrequest.domain.event.OperationRequestEventProducer;
-import com.ojosama.operationrequest.domain.event.payload.OperationRequestCreateEvent;
+import com.ojosama.operationrequest.domain.event.payload.OperationRequestCreatedEvent;
 import com.ojosama.operationrequest.domain.exception.OperationRequestException;
-import com.ojosama.report.domain.event.payload.TargetBlindEvent;
-import com.ojosama.report.domain.exception.ReportException;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +21,7 @@ public class OperationRequestEventProducerImpl implements OperationRequestEventP
     private String requestCreatedTopic;
 
     @Override
-    public void publishOperationRequestCreateEvent(OperationRequestCreateEvent event) {
+    public void publishOperationRequestCreateEvent(OperationRequestCreatedEvent event) {
         try {
             kafkaTemplate.send(requestCreatedTopic, event.requestId().toString(), event).get(3, TimeUnit.SECONDS);
             log.info("운영 요청 알림 이벤트 발행 성공: requestId={}", event.requestId());
