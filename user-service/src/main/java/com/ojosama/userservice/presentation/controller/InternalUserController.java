@@ -35,9 +35,4 @@ public class InternalUserController {
                 userService.getInternalUserEmails(userIds)
         );
     }
-
-    @GetMapping("/ping")
-    public String ping() {
-        return "internal user api ok";
-    }
 }
