@@ -57,7 +57,7 @@ public class CommentService {
         } else {
             Comment parent = commentRepository.findById(cmd.parentId()).orElseThrow(() -> new CommentException(
                     CommentErrorCode.PARENT_COMMENT_NOT_FOUND));
-            if (parent.getDeletedAt() != null) {
+            if (parent.getDeletedAt() != null || parent.getStatus() == CommentStatus.BLOCKED) {
                 throw new CommentException(CommentErrorCode.PARENT_COMMENT_NOT_FOUND);
             }
             if (!parent.getPostId().equals(cmd.postId())) {

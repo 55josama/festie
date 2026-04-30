@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum EventType {
+    //post브랜치에서 삭제 예정
+    POST_CREATED("PostCreated"),
+    POST_UPDATED("PostUpdated"),
+    POST_REPORTED("PostReported"),
 
     EVENT_CREATED("EventCreated"),
     EVENT_DELETED("EventDeleted"),
@@ -26,7 +30,7 @@ public enum EventType {
     COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested"),
 
     TARGET_BLINDED("TargetBlinded"),
-    USER_BLACKLIST_STATUS_UPDATED("UserBlacklistStatusUpdated");;
+    USER_BLACKLIST_STATUS_UPDATED("UserBlacklistStatusUpdated");
 
     private final String value;
 
