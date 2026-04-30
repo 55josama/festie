@@ -29,7 +29,7 @@ public class BlackListRequestConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(
-            topics = "${spring.kafka.topic.operation-blacklist-registered}",
+            topics = "${spring.kafka.topic.operation-blacklist-requested}",
             groupId = CONSUMER_GROUP,
             containerFactory = "kafkaListenerContainerFactory"
     )

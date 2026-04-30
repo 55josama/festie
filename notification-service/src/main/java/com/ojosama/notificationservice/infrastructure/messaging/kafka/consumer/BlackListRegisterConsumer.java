@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class BlackListSendEmailConsumer {
+public class BlackListRegisterConsumer {
 
     private static final String CONSUMER_GROUP = "notification-service-group";
     private static final String EVENT_TYPE = EventType.BLACKLIST_REGISTERED.getValue();
