@@ -233,6 +233,42 @@ services:
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
+  # ============ notification-service ============
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: festie-notification
+    restart: unless-stopped
+    networks:
+      - festie-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_REDIS_HOST: festie-redis
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+      HOST: ${HOST}
+      PORT: ${PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+
   # ============ event-service ============
   event-service:
     build:
@@ -242,6 +278,7 @@ services:
     restart: unless-stopped
     ports:
       - "8082:8082"  # 테스트 시 사용
+
     networks:
       - festie-network
     depends_on:
@@ -271,6 +308,71 @@ services:
       CONFIG_USERNAME: ${CONFIG_USERNAME:-festie}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-festiepw}
       CONFIG_SERVER_URL: http://config-server:8888
+
+    # ============ favorite-service ============
+  favorite-service:
+    build:
+      context: .
+      dockerfile: favorite-service/Dockerfile
+    container_name: festie-favorite
+    restart: unless-stopped
+    networks:
+      - festie-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_REDIS_HOST: festie-redis
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+
+    # ============ calendar-service ============
+  calendar-service:
+    build:
+      context: .
+      dockerfile: calendar-service/Dockerfile
+    container_name: festie-calendar
+    restart: unless-stopped
+    networks:
+      - festie-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_REDIS_HOST: festie-redis
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+
 volumes:
   postgres_data:
 

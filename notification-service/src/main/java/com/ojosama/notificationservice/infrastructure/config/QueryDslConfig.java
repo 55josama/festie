@@ -1,4 +1,4 @@
-package com.ojosama.notificationservice.common.config;
+package com.ojosama.notificationservice.infrastructure.config;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;

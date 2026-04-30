@@ -20,7 +20,7 @@ public class NotificationScheduler {
     public void cleanNotifications() {
         LocalDateTime time = LocalDateTime.now().minusDays(15);
 
-        Long count = notificationRepository.deleteOldNotifications();
+        Long count = notificationRepository.deleteOldNotifications(time);
 
         log.info("자동 삭제 된 알림 {}건, 기준 날짜 {}", count, time);
     }
