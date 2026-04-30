@@ -96,7 +96,7 @@ public class BlacklistService {
         return saved;
     }
 
-    //유저 블랙리스트 상태 변경 이벤트 발행
+    // 유저 블랙리스트 상태 변경 이벤트 발행
     private void publishStatusChangeEvent(UUID userId, BlacklistStatus status) {
         UserBlacklistStatusEvent event = new UserBlacklistStatusEvent(userId, status.name());
 
