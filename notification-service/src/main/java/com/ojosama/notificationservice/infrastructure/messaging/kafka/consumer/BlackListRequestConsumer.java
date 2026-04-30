@@ -50,6 +50,7 @@ public class BlackListRequestConsumer {
             log.info("Event request created: {}", record.key());
         } catch (RuntimeException e) {
             log.error("블랙리스트 처리 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            throw e;
         }
     }
 

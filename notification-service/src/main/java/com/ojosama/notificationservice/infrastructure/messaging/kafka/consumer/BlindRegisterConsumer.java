@@ -49,6 +49,7 @@ public class BlindRegisterConsumer {
             log.info("Event request created: {}", record.key());
         } catch (RuntimeException e) {
             log.error("블라인드 처리 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            throw e;
         }
     }
 

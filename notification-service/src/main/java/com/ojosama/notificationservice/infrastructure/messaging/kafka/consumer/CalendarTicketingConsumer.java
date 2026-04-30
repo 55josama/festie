@@ -49,6 +49,7 @@ public class CalendarTicketingConsumer {
             log.info("Event request created: {}", record.key());
         } catch (RuntimeException e) {
             log.error("티켓팅 리마인드 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            throw e;
         }
     }
 

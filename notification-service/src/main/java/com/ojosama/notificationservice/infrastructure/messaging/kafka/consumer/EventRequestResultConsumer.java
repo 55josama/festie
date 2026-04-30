@@ -49,6 +49,7 @@ public class EventRequestResultConsumer {
             log.info("Event request created: {}", record.key());
         } catch (RuntimeException e) {
             log.error("요청결과 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            throw e;
         }
     }
 
