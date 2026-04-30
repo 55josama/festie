@@ -34,3 +34,7 @@ eureka:
 internal:
   api:
     token: ${INTERNAL_API_TOKEN:local-internal-token}
+
+kafka:
+  topic:
+    user-blacklist-status: ${KAFKA_TOPIC_USER_BLACKLIST_STATUS:operation.blacklist.updated}
