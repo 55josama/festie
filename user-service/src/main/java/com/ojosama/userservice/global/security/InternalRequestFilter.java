@@ -6,17 +6,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 @RequiredArgsConstructor
 public class InternalRequestFilter extends OncePerRequestFilter {
 
-    private static final String INTERNAL_PATH_PREFIX = "/internal/";
+    private static final String INTERNAL_PATH_PATTERN = "/internal/**";
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
 
     private final InternalApiProperties internalApiProperties;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Override
     protected void doFilterInternal(
@@ -24,17 +28,18 @@ public class InternalRequestFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String requestUri = request.getRequestURI();
+        String servletPath = request.getServletPath();
 
-        if (!requestUri.startsWith(INTERNAL_PATH_PREFIX)) {
+        if (!pathMatcher.match(INTERNAL_PATH_PATTERN, servletPath)) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        String configuredToken = internalApiProperties.token();
         String requestToken = request.getHeader(INTERNAL_TOKEN_HEADER);
 
-        if (!internalApiProperties.token().equals(requestToken)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        if (!StringUtils.hasText(configuredToken) || !configuredToken.equals(requestToken)) {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }
 
