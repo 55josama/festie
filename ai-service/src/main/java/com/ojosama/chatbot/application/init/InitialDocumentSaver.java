@@ -24,9 +24,9 @@ public class InitialDocumentSaver {
     public void loadInitialData() {
         log.info("Chatbot Service: 초기 지식 데이터 동기화 시작...");
 
-        loadSystemGuides();
-
         try {
+            loadSystemGuides();
+
             ApiResponse<List<EventClientResponse>> response = eventClient.getEvents();
 
             if (response != null && response.getData() != null) {
