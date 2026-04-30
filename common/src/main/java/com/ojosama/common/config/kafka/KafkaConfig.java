@@ -1,6 +1,6 @@
 package com.ojosama.common.config.kafka;
 
-import com.fasterxml.jackson.databind.JsonSerializer;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;

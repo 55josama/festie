@@ -1,7 +1,8 @@
 package com.ojosama.favoriteservice.domain.model;
 
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -16,7 +17,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Entity
 @Table(name = "p_favorite")
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
-public class Favorite extends BaseEntity {
+public class Favorite extends BaseUserEntity {
 
     @Id
     @Column(name = "id", nullable = false)
@@ -27,33 +28,31 @@ public class Favorite extends BaseEntity {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "event_id")
-    private UUID eventId;
+    @Embedded
+    private EventInfo eventInfo;
 
     @Column(name = "category_id")
     private UUID categoryId;
 
     @Builder
-    private Favorite(UUID userId, UUID eventId, UUID categoryId) {
+    private Favorite(UUID userId, EventInfo eventInfo, UUID categoryId) {
         this.userId = userId;
-        this.eventId = eventId;
+        this.eventInfo = eventInfo;
         this.categoryId = categoryId;
     }
 
-    public static Favorite of(UUID userId, UUID eventId, UUID categoryId) {
+    public static Favorite of(UUID userId, EventInfo eventInfo, UUID categoryId) {
         return Favorite.builder()
                 .userId(userId)
-                .eventId(eventId)
+                .eventInfo(eventInfo)
                 .categoryId(categoryId)
                 .build();
     }
 
-    public void delete(UUID id) {
-        this.deleted();
-    }
-
-    public void reset(UUID id) {
-        this.undeleted();
+    public void restore(EventInfo eventInfo, UUID categoryId) {
+        super.restore();
+        this.eventInfo = eventInfo;
+        this.categoryId = categoryId;
     }
 
 }

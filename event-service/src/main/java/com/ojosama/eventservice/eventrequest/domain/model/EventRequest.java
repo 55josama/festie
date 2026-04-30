@@ -1,8 +1,9 @@
 package com.ojosama.eventservice.eventrequest.domain.model;
 
-
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
+import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestErrorCode;
+import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,7 +24,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "p_event_request")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EventRequest extends BaseEntity {
+public class EventRequest extends BaseUserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -51,4 +52,45 @@ public class EventRequest extends BaseEntity {
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private EventRequestStatus status;
+
+    public static EventRequest create(UUID requesterId, String eventName, EventCategory category,
+                                      String link, String description) {
+        EventRequest request = new EventRequest();
+        request.requesterId = requesterId;
+        request.eventName = eventName;
+        request.category = category;
+        request.link = link;
+        request.description = description;
+        request.status = EventRequestStatus.PENDING;
+        return request;
+    }
+
+    public void cancel(UUID userId) {
+        if (!this.requesterId.equals(userId)) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_ACCESS_DENIED);
+        }
+        if (this.status != EventRequestStatus.PENDING) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_CANNOT_CANCEL);
+        }
+        this.status = EventRequestStatus.CANCELLED;
+    }
+
+    public void adminCancel(UUID adminId) {
+        this.deleted(adminId);
+    }
+
+    public void approve() {
+        if (this.status != EventRequestStatus.PENDING) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_ALREADY_PROCESSED);
+        }
+        this.status = EventRequestStatus.APPROVED;
+    }
+
+    public void reject(String rejectReason) {
+        if (this.status != EventRequestStatus.PENDING) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_ALREADY_PROCESSED);
+        }
+        this.status = EventRequestStatus.REJECTED;
+        this.rejectReason = rejectReason;
+    }
 }
