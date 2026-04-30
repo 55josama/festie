@@ -4,14 +4,12 @@ import com.ojosama.blacklist.application.dto.command.CreateBlacklistCommand;
 import com.ojosama.blacklist.application.dto.command.UpdateBlacklistCommand;
 import com.ojosama.blacklist.application.dto.query.ListBlacklistQuery;
 import com.ojosama.blacklist.application.dto.result.BlacklistResult;
-import com.ojosama.blacklist.domain.event.BlacklistEventProducer;
 import com.ojosama.blacklist.domain.event.payload.BlacklistRegisterEvent;
 import com.ojosama.blacklist.domain.event.payload.UserBlacklistStatusEvent;
 import com.ojosama.blacklist.domain.exception.BlacklistErrorCode;
 import com.ojosama.blacklist.domain.exception.BlacklistException;
 import com.ojosama.blacklist.domain.model.entity.Blacklist;
 import com.ojosama.blacklist.domain.model.enums.BlacklistStatus;
-import com.ojosama.blacklist.domain.model.enums.RegistrationType;
 import com.ojosama.blacklist.domain.repository.BlacklistRepository;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
@@ -33,7 +31,7 @@ public class BlacklistService {
     public BlacklistResult createBlacklistManual(CreateBlacklistCommand command) {
         validateNotAlreadyActive(command.userId());
 
-        Blacklist savedBlacklist = saveAndPublish(command.userId(), command.reason(), RegistrationType.MANUAL);
+        Blacklist savedBlacklist = saveAndPublish(command.userId(), command.reason());
 
         return BlacklistResult.from(savedBlacklist);
     }
@@ -70,11 +68,10 @@ public class BlacklistService {
     }
 
     // 블랙리스트 저장 및 이벤트 발행
-    private Blacklist saveAndPublish(UUID userId, String reason, RegistrationType type) {
+    private Blacklist saveAndPublish(UUID userId, String reason) {
         Blacklist blacklist = Blacklist.builder()
                 .userId(userId)
                 .reason(reason)
-                .registrationType(type)
                 .build();
 
         Blacklist saved = blacklistRepository.save(blacklist);
@@ -110,8 +107,7 @@ public class BlacklistService {
                 "operation.blacklist.registered",
                 new BlacklistRegisterEvent(
                         blacklist.getUserId(),
-                        blacklist.getReason(),
-                        blacklist.getRegistrationType()
+                        blacklist.getReason()
                 )
         );
     }
