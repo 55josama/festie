@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,14 +60,14 @@ public class OperationRequestController {
     }
 
     // 운영 요청 상세 조회
-    @GetMapping
+    @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<FindOperationResponse>> getOperationRequest(@PathVariable UUID requestId) {
         OperationRequestResult result = operationRequestService.getOperationRequestInfo(requestId);
         return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
     }
 
     // 운영 요청 수정 (요청 작성자 본인)
-    @PatchMapping()
+    @PatchMapping("/{requestId}")
     public ResponseEntity<ApiResponse<FindOperationResponse>> updateOperationRequest(
             @PathVariable UUID requestId,
             @Valid @RequestBody UpdateOperationRequest request,
@@ -88,6 +89,7 @@ public class OperationRequestController {
     }
 
     // 운영 요청 삭제 (작성자 또는 관리자)
+    @DeleteMapping("/{requestId}")
     public ResponseEntity<ApiResponse<Void>> deleteOperationRequest(
             @PathVariable UUID requestId,
             @RequestHeader(value = "X-User-Id") UUID currentUserId,
