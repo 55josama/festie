@@ -12,8 +12,8 @@ public record ListOperationResponse(
         OperationRequestStatus status,
         String adminMemo
 ) {
-    public static FindOperationResponse from(OperationRequestResult result) {
-        return new FindOperationResponse(
+    public static ListOperationResponse from(OperationRequestResult result) {
+        return new ListOperationResponse(
                 result.id(),
                 result.requesterId(),
                 result.title(),
