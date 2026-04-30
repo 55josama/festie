@@ -22,6 +22,7 @@ public class EventRequestQueryService {
 
     @Transactional(readOnly = true)
     public Page<EventRequestResult> getEventRequests(EventRequestListCommand command, Pageable pageable) {
+        validateDateRange(command);
         EventRequestFilter filter = new EventRequestFilter(
                 command.status(),
                 command.categoryName(),
@@ -35,6 +36,7 @@ public class EventRequestQueryService {
 
     @Transactional(readOnly = true)
     public Page<EventRequestResult> getMyEventRequests(UUID requesterId, EventRequestListCommand command, Pageable pageable) {
+        validateDateRange(command);
         EventRequestFilter filter = new EventRequestFilter(
                 command.status(),
                 command.categoryName(),
@@ -44,6 +46,13 @@ public class EventRequestQueryService {
                 command.createdEnd()
         );
         return eventRequestRepository.findAll(filter, pageable).map(EventRequestResult::from);
+    }
+
+    private void validateDateRange(EventRequestListCommand command) {
+        if (command.createdStart() != null && command.createdEnd() != null
+                && command.createdStart().isAfter(command.createdEnd())) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_INVALID_DATE_RANGE);
+        }
     }
 
     @Transactional(readOnly = true)

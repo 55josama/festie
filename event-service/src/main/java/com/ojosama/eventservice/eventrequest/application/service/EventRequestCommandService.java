@@ -39,15 +39,17 @@ public class EventRequestCommandService {
         return EventRequestResult.from(saved);
     }
 
-    public void cancelEventRequest(UUID userId, String userRole, UUID requestId) {
+    public void cancelEventRequest(UUID userId, UUID requestId) {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
+        request.cancel(userId);
+        eventRequestRepository.save(request);
+    }
 
-        if ("ADMIN".equals(userRole)) {
-            request.adminCancel(userId);
-        } else {
-            request.cancel(userId);
-        }
+    public void adminCancelEventRequest(UUID adminId, UUID requestId) {
+        EventRequest request = eventRequestRepository.findById(requestId)
+                .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
+        request.adminCancel(adminId);
         eventRequestRepository.save(request);
     }
 

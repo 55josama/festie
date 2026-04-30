@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
 @Repository
 @RequiredArgsConstructor
@@ -65,11 +66,11 @@ public class EventRequestRepositoryImpl implements EventRequestRepository {
         if (filter.status() != null) {
             builder.and(er.status.eq(filter.status()));
         }
-        if (filter.categoryName() != null) {
-            builder.and(er.category.name.eq(filter.categoryName()));
+        if (StringUtils.hasText(filter.categoryName())) {
+            builder.and(er.category.name.eq(filter.categoryName().trim()));
         }
-        if (filter.eventName() != null) {
-            builder.and(er.eventName.containsIgnoreCase(filter.eventName()));
+        if (StringUtils.hasText(filter.eventName())) {
+            builder.and(er.eventName.containsIgnoreCase(filter.eventName().trim()));
         }
         if (filter.requesterId() != null) {
             builder.and(er.requesterId.eq(filter.requesterId()));

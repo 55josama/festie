@@ -41,7 +41,7 @@ public class EventRequestController {
     private final EventRequestQueryService eventRequestQueryService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+    @PreAuthorize("hasAnyRole('USER')")
     public ResponseEntity<ApiResponse<EventRequestResponse>> createEventRequest(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -58,17 +58,19 @@ public class EventRequestController {
     }
 
     @DeleteMapping("/{requestId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Void> cancelEventRequest(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @PathVariable UUID requestId) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+        validateAuthHeaders(userId, userRole);
 
-        eventRequestCommandService.cancelEventRequest(userId, userRole, requestId);
+        if ("ADMIN".equals(userRole)) {
+            eventRequestCommandService.adminCancelEventRequest(userId, requestId);
+        } else {
+            eventRequestCommandService.cancelEventRequest(userId, requestId);
+        }
         return ResponseEntity.noContent().build();
     }
 
@@ -118,6 +120,7 @@ public class EventRequestController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('USER')")
     public ResponseEntity<ApiResponse<Page<EventRequestResponse>>> getMyEventRequests(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -131,6 +134,7 @@ public class EventRequestController {
     }
 
     @GetMapping("/{requestId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'USER')")
     public ResponseEntity<ApiResponse<EventRequestResponse>> getEventRequest(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,

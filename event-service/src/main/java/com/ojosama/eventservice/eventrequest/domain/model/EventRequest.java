@@ -67,7 +67,7 @@ public class EventRequest extends BaseUserEntity {
 
     public void cancel(UUID userId) {
         if (!this.requesterId.equals(userId)) {
-            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_CANNOT_CANCEL);
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_ACCESS_DENIED);
         }
         if (this.status != EventRequestStatus.PENDING) {
             throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_CANNOT_CANCEL);
