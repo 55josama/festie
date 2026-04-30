@@ -112,6 +112,11 @@ services:
       GIT_USERNAME: ${GIT_USERNAME}
       GIT_TOKEN: ${GIT_TOKEN}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --spider -q http://localhost:8888/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   # ============ eureka-server ============
   eureka-server:
@@ -221,6 +226,8 @@ services:
       dockerfile: event-service/Dockerfile
     container_name: festie-event
     restart: unless-stopped
+    ports:
+      - "8082:8082"  # 테스트 시 사용
     networks:
       - festie-network
     depends_on:
@@ -232,18 +239,22 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+      config-server:
+        condition: service_healthy
     environment:
+      SERVER_PORT: 8082  # 테스트 시 사용
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      DB_USER: ${POSTGRES_USER:-festie}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
-      SPRING_KAFKA_TOPIC_EVENTCREATED: event-created
-      SPRING_KAFKA_TOPIC_EVENTDELETED: event-deleted
-      SPRING_KAFKA_TOPIC_EVENTUPDATED: event-updated
-      SPRING_KAFKA_TOPIC_SCHEDULECHANGED: schedule-changed
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-festie}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-festiepw}
+      CONFIG_SERVER_URL: http://config-server:8888
 volumes:
   postgres_data:
 
