@@ -12,4 +12,5 @@ public interface EventCategoryRepository {
     EventCategory save(EventCategory category);
     boolean existsByName(String name);
     boolean existsByNameExcludingId(String name, UUID id);
+    Optional<EventCategory> findByName(String name);
 }

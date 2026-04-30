@@ -44,6 +44,9 @@ public enum EventErrorCode implements ErrorCode {
     EVENT_CANNOT_DELETE(HttpStatus.CONFLICT, "이 상태의 이벤트는 삭제할 수 없습니다."),
     EVENT_CANNOT_UPDATE(HttpStatus.CONFLICT, "이 상태의 이벤트는 수정할 수 없습니다."),
 
+    // Kafka 에러
+    EVENT_PUBLISH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "이벤트 발행에 실패했습니다."),
+
     // 공통 에러
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "입력 값이 유효하지 않습니다.");
 
