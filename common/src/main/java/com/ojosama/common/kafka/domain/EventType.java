@@ -38,7 +38,8 @@ public enum EventType {
     // ai
     AI_MODERATION_EVALUATED("AiModerationEvaluated"),
     CHAT_MODERATION_REQUESTED("ChatModerationRequested"),
-    COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested");
+    COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested"),
+    EVENT_EVENT_UPDATED("EventEventUpdated");
 
     private final String value;
 

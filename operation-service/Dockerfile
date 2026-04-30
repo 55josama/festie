@@ -4,7 +4,9 @@ WORKDIR /app
 
 COPY build.gradle settings.gradle ./
 COPY gradle ./gradle
+COPY common ./common
 COPY operation-service ./operation-service
+COPY common ./common
 
 RUN gradle :operation-service:bootJar -x test --no-daemon
 

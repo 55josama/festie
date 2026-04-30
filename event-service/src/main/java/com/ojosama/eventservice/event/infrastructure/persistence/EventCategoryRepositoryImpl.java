@@ -43,4 +43,9 @@ public class EventCategoryRepositoryImpl implements EventCategoryRepository {
     public boolean existsByNameExcludingId(String name, UUID id) {
         return jpaEventCategoryRepository.existsByNameAndIdNotAndDeletedAtIsNull(name, id);
     }
+
+    @Override
+    public Optional<EventCategory> findByName(String name) {
+        return jpaEventCategoryRepository.findByNameAndDeletedAtIsNull(name);
+    }
 }

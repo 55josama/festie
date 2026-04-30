@@ -46,12 +46,15 @@ public class AiReportEventConsumer {
 
         // Inbox 패턴의 핵심: 멱등성 핸들러 내부에서 비즈니스 로직 호출
         idempotentHandler.handle(
-                messageKey, CONSUMER_GROUP, record.topic(), EVENT_TYPE,
-                () -> processAiReport(event)
+                messageKey,
+                CONSUMER_GROUP,
+                record.topic(),
+                EVENT_TYPE,
+                () -> dispatch(event)
         );
     }
 
-    private void processAiReport(AiReportEvent event){
+    private void dispatch(AiReportEvent event){
         try {
             if (event == null || event.targetType() == null || event.category() == null) {
                 log.error("AI 신고 이벤트 필수 필드 누락. 처리를 스킵합니다. event: {}", event);
