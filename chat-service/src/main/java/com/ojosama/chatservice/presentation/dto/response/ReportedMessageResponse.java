@@ -1,7 +1,6 @@
 package com.ojosama.chatservice.presentation.dto.response;
 
 import com.ojosama.chatservice.application.dto.result.ReportedMessageResult;
-import com.ojosama.chatservice.domain.model.EventCategory;
 import com.ojosama.chatservice.domain.model.MessageStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,7 +8,7 @@ import java.util.UUID;
 public record ReportedMessageResponse(
         UUID messageId,
         UUID chatRoomId,
-        EventCategory categoryName,
+        String category,
         UUID userId,
         String content,
         MessageStatus status,
@@ -19,7 +18,7 @@ public record ReportedMessageResponse(
         return new ReportedMessageResponse(
                 result.messageId(),
                 result.chatRoomId(),
-                result.categoryName(),
+                result.category(),
                 result.userId(),
                 result.content(),
                 result.status(),
