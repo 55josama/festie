@@ -3,7 +3,6 @@ package com.ojosama.eventservice.event.application.service;
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand;
 import com.ojosama.eventservice.event.application.dto.command.UpdateEventCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
-import com.ojosama.eventservice.event.domain.event.EventMessagePublisher;
 import com.ojosama.eventservice.event.domain.event.payload.EventCreatedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventDeletedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventScheduleChangedMessage;
@@ -22,6 +21,7 @@ import com.ojosama.eventservice.event.domain.support.EventChanges;
 import com.ojosama.eventservice.event.domain.support.EventSnapshot;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventCommandService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
-    private final EventMessagePublisher eventMessagePublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public EventResult createEvent(CreateEventCommand command) {
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
@@ -48,7 +48,7 @@ public class EventCommandService {
 
         Event saved = eventRepository.save(event);
 
-        eventMessagePublisher.publishEventCreated(new EventCreatedMessage(
+        applicationEventPublisher.publishEvent(new EventCreatedMessage(
                 saved.getId(), saved.getName(),
                 saved.getCategory().getId(), saved.getCategory().getName(),
                 saved.getEventTime().getStartAt(), saved.getEventTime().getEndAt()
@@ -95,17 +95,14 @@ public class EventCommandService {
         // 변경사항 추적
         EventChanges changes = EventSnapshot.compareSnapshots(beforeSnapshot, afterSnapshot);
 
-        // EventUpdate 메시지 발행
-        eventMessagePublisher.publishEventUpdated(new EventUpdatedMessage(event.getId(), event.getName()));
+        applicationEventPublisher.publishEvent(new EventUpdatedMessage(event.getId(), event.getName()));
 
-        // 필드 변경사항이 있으면 메시지 발행
         if (schedulesChanged || changes.hasChanges()) {
-            EventScheduleChangedMessage message = EventScheduleChangedMessage.from(
+            applicationEventPublisher.publishEvent(EventScheduleChangedMessage.from(
                     event.getId(),
                     event.getName(),
                     changes.getChangedFields()
-            );
-            eventMessagePublisher.publishScheduleChanged(message);
+            ));
         }
 
         return EventResult.from(event);
@@ -118,6 +115,6 @@ public class EventCommandService {
         event.deleted(userId);
         eventRepository.delete(event);
 
-        eventMessagePublisher.publishEventDeleted(new EventDeletedMessage(event.getId(), event.getName()));
+        applicationEventPublisher.publishEvent(new EventDeletedMessage(event.getId(), event.getName()));
     }
 }
