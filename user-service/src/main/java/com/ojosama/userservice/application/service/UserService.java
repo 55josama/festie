@@ -34,9 +34,6 @@ public class UserService {
         if (userRepository.existsByNicknameAndDeletedAtIsNull(command.nickname())) {
             throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
         }
-        if (userRepository.existsByNicknameAndDeletedAtIsNull(command.nickname())) {
-            throw new IllegalArgumentException("중복 닉네임입니다.");
-        }
 
         String encodedPassword = passwordEncoder.encode(command.password());
 

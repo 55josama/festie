@@ -30,3 +30,7 @@ spring:
 eureka:
   client:
     enabled: false
+
+internal:
+  api:
+    token: ${INTERNAL_API_TOKEN:local-internal-token}
