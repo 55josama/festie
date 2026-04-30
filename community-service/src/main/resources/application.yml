@@ -10,8 +10,8 @@ spring:
 
     topic:
       community-moderation-requested: community.moderation.requested.v1
-      operation-blacklist-registered: operation.blacklist.registered.v1
       blacklist-updated: operation.blacklist.updated.v1
+      report-blinded: operation.report.blinded.v1
 
     festie:
       outbox:

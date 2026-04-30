@@ -18,7 +18,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 //operation-service->신고 누적 등의 사유로 발행하는 블라인드 이벤트 구독
-// 토픽: operation.blacklist.registered.v1
+// 토픽: report-blinded: operation.report.blinded.v1
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -83,6 +83,7 @@ public class TargetBlindedConsumer {
             return;
         }
         comment.block();
+        commentRepository.save(comment);
     }
 
     private void blindPost(UUID postId) {
@@ -96,6 +97,7 @@ public class TargetBlindedConsumer {
             return;
         }
         post.block();
+        postRepository.save(post);
     }
 
     private TargetBlindedEvent parse(String payload) {

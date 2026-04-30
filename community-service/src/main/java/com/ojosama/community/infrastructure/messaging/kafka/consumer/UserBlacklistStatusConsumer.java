@@ -16,7 +16,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 // 유저 블랙리스트 상태 변경 이벤트 구독.
-// 토픽: ${spring.kafka.topic.blacklist-updated} (예: operation.blacklist.updated.v1)
+// 토픽: ${spring.kafka.topic.blacklist-updated} operation.blacklist.updated.v1
 @Slf4j
 @Component
 @RequiredArgsConstructor
