@@ -38,14 +38,6 @@ public class BlacklistService {
         return BlacklistResult.from(savedBlacklist);
     }
 
-    // 블랙리스트 생성(Kafka 자동 등록)
-    @Transactional
-    public void createBlacklistSafe(CreateBlacklistCommand command) {
-        if (!blacklistRepository.existsByUserIdAndStatus(command.userId(), BlacklistStatus.ACTIVE)) {
-            saveAndPublish(command.userId(), command.reason(), RegistrationType.AUTOMATIC);
-        }
-    }
-
     // 블랙리스트 목록 조회
     public Page<BlacklistResult> getBlacklists(ListBlacklistQuery listBlacklistQuery, Pageable pageable) {
         Page<Blacklist> blacklists = fetchBlacklistsByQuery(listBlacklistQuery, pageable);
