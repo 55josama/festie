@@ -52,7 +52,7 @@ public class OperationHandler {
             log.info("이메일 전송 성공 : {}", message.userId());
         } catch (NotificationException e) {
             log.error("이메일 전송 실패 : {}", message.userId());
-
+            throw e;
         }
     }
 

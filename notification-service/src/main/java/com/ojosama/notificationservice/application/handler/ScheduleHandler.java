@@ -42,8 +42,14 @@ public class ScheduleHandler {
                         TargetInfo.event(message.eventId())))
                 .toList();
         notificationRepository.saveAll(notifications);
-        notifications.forEach(notification ->
-                send(notification, emailMap.get(notification.getReceiverId())));
+        notifications.forEach(notification -> {
+            String email = emailMap.get(notification.getReceiverId());
+            if (email == null || email.isBlank()) {
+                log.warn("수신자 이메일 누락: {}", notification.getReceiverId());
+                return;
+            }
+            send(notification, email);
+        });
         log.info("행사 임박 메일 전송");
     }
 
@@ -60,8 +66,14 @@ public class ScheduleHandler {
                 .toList();
 
         notificationRepository.saveAll(notifications);
-        notifications.forEach(notification ->
-                send(notification, emailMap.get(notification.getReceiverId())));
+        notifications.forEach(notification -> {
+            String email = emailMap.get(notification.getReceiverId());
+            if (email == null || email.isBlank()) {
+                log.warn("수신자 이메일 누락: {}", notification.getReceiverId());
+                return;
+            }
+            send(notification, email);
+        });
         log.info("티켓팅 메일 전송");
     }
 
