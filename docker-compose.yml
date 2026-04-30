@@ -69,6 +69,18 @@ services:
       timeout: 10s
       retries: 10
 
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: festie-kafka-ui
+    ports:
+      - "8989:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - festie-network
+
   # ============ zipkin ============
   zipkin:
     image: openzipkin/zipkin:3
@@ -221,6 +233,44 @@ services:
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
+  # ============ event-service ============
+  event-service:
+    build:
+      context: .
+      dockerfile: event-service/Dockerfile
+    container_name: festie-event
+    restart: unless-stopped
+    ports:
+      - "8082:8082"  # 테스트 시 사용
+    networks:
+      - festie-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8082  # 테스트 시 사용
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_CLOUD_CONFIG_URI: http://festie-config:8888
+      DB_USER: ${POSTGRES_USER:-festie}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://festie-eureka:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-festie}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-festiepw}
+      CONFIG_SERVER_URL: http://config-server:8888
 volumes:
   postgres_data:
 

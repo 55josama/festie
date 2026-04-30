@@ -36,6 +36,9 @@ public class Message extends BaseEntity {
     @Column(nullable = false, columnDefinition = "uuid")
     private UUID userId;
 
+    @Column(nullable = false, length = 50)
+    private String writerNickname;
+
     @Column(nullable = false, length = 1000)
     private String content;
 
@@ -50,9 +53,10 @@ public class Message extends BaseEntity {
     private UUID blindedBy;
 
     @Builder
-    private Message(UUID chatRoomId, UUID userId, String content) {
+    private Message(UUID chatRoomId, UUID userId, String writerNickname, String content) {
         this.chatRoomId = chatRoomId;
         this.userId = userId;
+        this.writerNickname = writerNickname;
         this.content = content;
         this.status = MessageStatus.ACTIVE;
     }

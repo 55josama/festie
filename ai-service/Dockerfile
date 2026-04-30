@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY build.gradle settings.gradle ./
 COPY gradle ./gradle
-COPY ai-service ./ai-service
 COPY common ./common
+COPY ai-service ./ai-service
 
 RUN gradle :ai-service:bootJar -x test --no-daemon
 
