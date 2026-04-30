@@ -1,4 +1,4 @@
-package com.ojosama.blacklist.domain.event.payload;
+package com.ojosama.report.domain.event.payload;
 
 import java.util.UUID;
 
