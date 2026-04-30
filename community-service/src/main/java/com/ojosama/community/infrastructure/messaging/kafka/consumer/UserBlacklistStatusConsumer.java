@@ -71,9 +71,9 @@ public class UserBlacklistStatusConsumer {
         }
         // ACTIVE: 해당 유저 콘텐츠 일괄 BLOCKED
         int blockedComments = commentRepository.blockAllByUserId(event.userId());
-        //post쪽 일괄 blocked
-        log.info("블랙리스트 ACTIVE — 유저 콘텐츠 일괄 BLOCKED. userId={}, comments={}",
-                event.userId(), blockedComments);
+        int blockedPosts = postRepository.blockAllByUserId(event.userId());
+        log.info("블랙리스트 ACTIVE — 유저 콘텐츠 일괄 BLOCKED. userId={}, comments={}, posts={}",
+                event.userId(), blockedComments, blockedPosts);
     }
 
     private UserBlacklistStatusEvent parse(String payload) {
