@@ -45,6 +45,10 @@ public class User extends BaseUserEntity {
     @Column(nullable = false)
     private UserRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserStatus status;
+
     @Column(name = "refresh_token_hash", length = 128)
     private String refreshTokenHash;
 
@@ -55,7 +59,8 @@ public class User extends BaseUserEntity {
             String name,
             String nickname,
             String phoneNumber,
-            UserRole role
+            UserRole role,
+            UserStatus status
     ) {
         this.email = email;
         this.password = password;
@@ -63,8 +68,10 @@ public class User extends BaseUserEntity {
         this.nickname = nickname;
         this.phoneNumber = phoneNumber;
         this.role = role;
+        this.status = status;
     }
 
+    //유저 생성
     public static User create(
             String email,
             String password,
@@ -79,17 +86,33 @@ public class User extends BaseUserEntity {
                 .nickname(nickname)
                 .phoneNumber(phoneNumber)
                 .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
                 .build();
     }
 
+    //유저 수정
     public void update(String name, String nickname, String phoneNumber) {
         this.name = name;
         this.nickname = nickname;
         this.phoneNumber = phoneNumber;
     }
 
+    //유저 권한 변경
     public void changeRole(UserRole role) {
         this.role = Objects.requireNonNull(role, "올바른 값이 아닙니다.");
+    }
+
+    //유저 블랙리스트
+    public void changeStatus(UserStatus status) {
+        this.status = Objects.requireNonNull(status, "올바른 회원 상태가 아닙니다.");
+    }
+
+    public boolean isBlocked() {
+        return this.status == UserStatus.BLOCKED;
+    }
+
+    public boolean isActive() {
+        return this.status == UserStatus.ACTIVE;
     }
 
     public void updateRefreshTokenHash(String refreshTokenHash) {

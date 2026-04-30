@@ -33,6 +33,10 @@ public class AuthService {
             throw new IllegalArgumentException("이메일 혹은 비밀번호가 올바르지 않습니다.");
         }
 
+        if (user.isBlocked()) {
+            throw new IllegalArgumentException("차단된 회원은 로그인할 수 없습니다.");
+        }
+
         String accessToken = jwtTokenProvider.createAccessToken(user);
         String refreshToken = jwtTokenProvider.createRefreshToken(user);
 
@@ -60,6 +64,10 @@ public class AuthService {
 
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if (user.isBlocked()) {
+            throw new IllegalArgumentException("차단된 회원은 토큰을 재발급할 수 없습니다.");
+        }
 
         String oldRefreshTokenHash = refreshTokenHasher.hash(refreshToken);
 
