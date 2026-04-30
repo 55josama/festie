@@ -1,6 +1,6 @@
 package com.ojosama.notificationservice.domain.model.emailLog;
 
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.notificationservice.domain.model.notification.Notification;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,7 +23,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EmailLog extends BaseEntity {
+public class EmailLog extends BaseUserEntity {
 
     @Id
     @Column(name = "id", nullable = false)
