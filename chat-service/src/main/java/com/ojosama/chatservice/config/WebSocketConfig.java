@@ -23,10 +23,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     /* 한 클라이언트에서 다른 클라이언트로 메시지를 라우팅하는데 사용될 메시지 브로커
      * /app: 클라이언트가 서버로 보내는 prefix
      * /topic: 서버가 구독자들에게 뿌리는 prefix
+     * /queue: 서버 -> 1명(개인)에게 보내는 주소에 주로 사용
+     * /user: “개인 주소”라는 뜻의 prefix
      * */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");
+        config.enableSimpleBroker("/topic", "/queue");
         config.setApplicationDestinationPrefixes("/app");
+        config.setUserDestinationPrefix("/user");
     }
 }

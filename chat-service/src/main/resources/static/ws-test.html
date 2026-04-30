@@ -52,6 +52,11 @@
                 log("[RECV] " + message.body);
             });
             log("[SUBSCRIBE] " + topic);
+
+            stompClient.subscribe("/user/queue/errors", (message) => {
+                log("[WS-ERROR] " + message.body);
+            });
+            log("[SUBSCRIBE] /user/queue/errors");
         }, (err) => {
             log("[ERROR] " + err);
         });
