@@ -94,9 +94,9 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
+      CONFIG_URL: ${CONFIG_URL}
       CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
-      CONFIG_URL: ${CONFIG_URL}
       GIT_USERNAME: ${GIT_USERNAME}
       GIT_TOKEN: ${GIT_TOKEN}
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
@@ -140,6 +140,9 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
@@ -164,9 +167,14 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      config-server:
+        condition: service_started
       eureka-server:
         condition: service_healthy
     environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
@@ -191,9 +199,14 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      config-server:
+        condition: service_started
       eureka-server:
         condition: service_healthy
     environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}

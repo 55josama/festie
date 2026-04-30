@@ -17,6 +17,7 @@ spring:
           uri: ${CONFIG_URL}
           username: ${GIT_USERNAME}
           password: ${GIT_TOKEN}
+          default-label: main
           ignoreLocalSshSettings: true
 
 server:

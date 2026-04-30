@@ -6,8 +6,6 @@ COPY build.gradle settings.gradle ./
 COPY gradle ./gradle
 COPY ai-service ./ai-service
 COPY common ./common
-COPY operation-service ./operation-service
-COPY user-service ./user-service
 
 RUN gradle :ai-service:bootJar -x test --no-daemon
 
