@@ -1,4 +1,4 @@
-package com.ojosama.common.domain.payload;
+package com.ojosama.community.domain.payload;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;

@@ -1,11 +1,11 @@
-package com.ojosama.common.infrastructure.messaging.kafka.consumer;
+package com.ojosama.community.infrastructure.messaging.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.comment.domain.model.Comment;
 import com.ojosama.comment.domain.model.CommentStatus;
 import com.ojosama.comment.domain.repository.CommentRepository;
-import com.ojosama.common.domain.payload.TargetBlindedEvent;
+import com.ojosama.community.domain.payload.TargetBlindedEvent;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.post.domain.model.Post;

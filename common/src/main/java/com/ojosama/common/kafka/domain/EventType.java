@@ -25,7 +25,8 @@ public enum EventType {
     CHAT_MODERATION_REQUESTED("ChatModerationRequested"),
     COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested"),
 
-    TARGET_BLINDED("TargetBlinded");
+    TARGET_BLINDED("TargetBlinded"),
+    USER_BLACKLIST_STATUS_UPDATED("UserBlacklistStatusUpdated");;
 
     private final String value;
 

@@ -1,6 +1,6 @@
 package com.ojosama.post.application.service;
 
-import com.ojosama.common.domain.model.Content;
+import com.ojosama.community.domain.model.Content;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import com.ojosama.post.application.dto.command.CreatePostCommand;

@@ -28,4 +28,10 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Comment c SET c.likeCount = c.likeCount - 1 WHERE c.id = :id AND c.likeCount > 0")
     void decrementLikeCount(@Param("id") UUID id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Comment c SET c.status = com.ojosama.comment.domain.model.CommentStatus.BLOCKED "
+            + "WHERE c.userId = :userId AND c.deletedAt IS NULL "
+            + "AND c.status <> com.ojosama.comment.domain.model.CommentStatus.BLOCKED")
+    int blockAllByUserId(@Param("userId") UUID userId);
 }

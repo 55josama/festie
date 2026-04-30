@@ -1,11 +1,10 @@
-package com.ojosama.common.domain.model;
+package com.ojosama.community.domain.model;
 
 import com.ojosama.comment.domain.model.BannedWordConstants;
-import com.ojosama.common.domain.exception.CommunityErrorCode;
-import com.ojosama.common.domain.exception.CommunityException;
+import com.ojosama.community.domain.exception.CommunityErrorCode;
+import com.ojosama.community.domain.exception.CommunityException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

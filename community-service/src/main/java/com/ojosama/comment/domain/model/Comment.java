@@ -3,7 +3,7 @@ package com.ojosama.comment.domain.model;
 import com.ojosama.comment.domain.exception.CommentErrorCode;
 import com.ojosama.comment.domain.exception.CommentException;
 import com.ojosama.common.audit.BaseUserEntity;
-import com.ojosama.common.domain.model.Content;
+import com.ojosama.community.domain.model.Content;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -96,6 +96,5 @@ public class Comment extends BaseUserEntity {
     }
 
     public void markAsClean() { this.status = CommentStatus.CLEAN; }
-    public void report() { this.status = CommentStatus.REPORTED; }
     public void block() { this.status = CommentStatus.BLOCKED; }
 }

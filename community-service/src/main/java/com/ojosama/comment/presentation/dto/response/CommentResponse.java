@@ -2,7 +2,7 @@ package com.ojosama.comment.presentation.dto.response;
 
 import com.ojosama.comment.application.dto.CommentResult;
 import com.ojosama.comment.domain.model.CommentStatus;
-import com.ojosama.common.domain.model.Content;
+import com.ojosama.community.domain.model.Content;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
