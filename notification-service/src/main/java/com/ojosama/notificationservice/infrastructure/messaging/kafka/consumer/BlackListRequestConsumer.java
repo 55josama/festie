@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class BlackListRequestConsumer {
 
-    private static final String CONSUMER_GROUP = "notification-service-consumer";
+    private static final String CONSUMER_GROUP = "notification-service-group";
     private static final String EVENT_TYPE = EventType.BLACKLIST_REGISTERED
             .getValue();
 

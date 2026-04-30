@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class BlindRegisterConsumer {
 
-    private static final String CONSUMER_GROUP = "notification-service-consumer";
+    private static final String CONSUMER_GROUP = "notification-service-group";
     private static final String EVENT_TYPE = EventType.REPORT_BLINDED.getValue();
 
     private final IdempotentEventHandler idempotentEventHandler;
