@@ -137,12 +137,13 @@ public class ReportService {
 
     private void publishBlacklistReviewRequestEvent(UUID targetUserId) {
         long userBlindCount = reportRepository.countBlindedTargetByUserId(targetUserId);
+        long blindCountAfter = userBlindCount + 1;
 
-        if (userBlindCount + 1 == 5) {
+        if (blindCountAfter >= 5) {
             BlacklistReviewRequestEvent event = new BlacklistReviewRequestEvent(
                     targetUserId,
                     "블라인드 처리가 5회 누적되어 블랙리스트 등록 검토가 필요합니다.",
-                    userBlindCount
+                    blindCountAfter
             );
 
             outbox.publish(
