@@ -1,6 +1,7 @@
 package com.ojosama.category.application.service;
 
 import com.ojosama.category.application.dto.command.CreateCategoryCommand;
+import com.ojosama.category.application.dto.command.DeleteCategoryCommand;
 import com.ojosama.category.application.dto.result.CategoryResult;
 import com.ojosama.category.domain.exception.CategoryErrorCode;
 import com.ojosama.category.domain.exception.CategoryException;
@@ -31,6 +32,18 @@ public class CategoryService {
                 .build();
         Category saved = categoryRepository.save(category);
         return CategoryResult.from(saved);
+    }
+
+    @Transactional
+    public void delete(DeleteCategoryCommand cmd) {
+        Category category = loadAlive(cmd.categoryId());
+        category.deleted(cmd.requesterId());
+    }
+
+    private Category loadAlive(UUID categoryId) {
+        return categoryRepository
+                .findByIdAndDeletedAtIsNull(categoryId)
+                .orElseThrow(() -> new CategoryException(CategoryErrorCode.CATEGORY_NOT_FOUND));
     }
 
     private static String normalizeOrThrow(String name) {
