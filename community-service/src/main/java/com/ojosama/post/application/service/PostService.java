@@ -1,23 +1,23 @@
 package com.ojosama.post.application.service;
 
-import com.ojosama.common.domain.model.Content;
+import com.ojosama.community.domain.model.Content;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
+import com.ojosama.community.domain.payload.ModerationRequestedEvent;
+import com.ojosama.community.domain.payload.TargetType;
 import com.ojosama.post.application.dto.command.CreatePostCommand;
 import com.ojosama.post.application.dto.command.DeletePostCommand;
 import com.ojosama.post.application.dto.command.UpdatePostCommand;
 import com.ojosama.post.application.dto.result.PostResult;
 import com.ojosama.post.application.query.PostListQuery;
-import com.ojosama.post.domain.event.payload.PostCreatedEvent;
-import com.ojosama.post.domain.event.payload.PostUpdateEvent;
 import com.ojosama.post.domain.exception.PostErrorCode;
 import com.ojosama.post.domain.exception.PostException;
 import com.ojosama.post.domain.model.Post;
 import com.ojosama.post.domain.model.PostStatus;
 import com.ojosama.post.domain.repository.PostRepository;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +30,9 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final OutboxEventPublisher outbox;
+
+    @Value("${spring.kafka.topic.moderation-requested}")
+    private String moderationRequestedTopic;
 
     @Transactional
     public PostResult create(CreatePostCommand cmd){
@@ -45,14 +48,12 @@ public class PostService {
 
         outbox.publish(
                 AGGREGATE_TYPE, post.getId(),
-                EventType.POST_CREATED, "community.post.created.v1",
-                new PostCreatedEvent(
+                EventType.COMMUNITY_MODERATION_REQUESTED, moderationRequestedTopic,
+                ModerationRequestedEvent.of(
                         post.getId(),
                         post.getUserId(),
-                        post.getCategoryId(),
-                        post.getTitle(),
-                        post.getContent().getValue(),
-                        LocalDateTime.now()
+                        TargetType.POST,
+                        post.getContent().getValue()
                 )
         );
         return PostResult.from(post);
@@ -68,14 +69,12 @@ public class PostService {
 
         outbox.publish(
                 AGGREGATE_TYPE, post.getId(),
-                EventType.POST_UPDATED, "community.post.updated.v1",
-                new PostUpdateEvent(
+                EventType.COMMUNITY_MODERATION_REQUESTED, moderationRequestedTopic,
+                ModerationRequestedEvent.of(
                         post.getId(),
                         post.getUserId(),
-                        post.getCategoryId(),
-                        post.getTitle(),
-                        post.getContent().getValue(),
-                        LocalDateTime.now()
+                        TargetType.POST,
+                        post.getContent().getValue()
                 )
         );
         return PostResult.from(post);
