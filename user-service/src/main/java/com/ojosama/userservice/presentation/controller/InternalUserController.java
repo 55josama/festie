@@ -1,8 +1,13 @@
 package com.ojosama.userservice.presentation.controller;
 
+import com.ojosama.userservice.application.dto.query.GetCategoryManagerQuery;
 import com.ojosama.userservice.application.dto.query.GetInternalUserEmailQuery;
+import com.ojosama.userservice.application.dto.result.GetAdminIdResult;
+import com.ojosama.userservice.application.dto.result.GetCategoryManagerIdResult;
 import com.ojosama.userservice.application.dto.result.InternalUserEmailResult;
 import com.ojosama.userservice.application.service.UserService;
+import com.ojosama.userservice.presentation.dto.response.InternalAdminIdResponseDto;
+import com.ojosama.userservice.presentation.dto.response.InternalManagerIdResponseDto;
 import com.ojosama.userservice.presentation.dto.response.InternalUserEmailResponseDto;
 import com.ojosama.userservice.presentation.dto.response.InternalUserEmailsResponseDto;
 import java.util.List;
@@ -13,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -34,5 +40,21 @@ public class InternalUserController {
         return InternalUserEmailsResponseDto.from(
                 userService.getInternalUserEmails(userIds)
         );
+    }
+
+    @GetMapping("/admin")
+    public InternalAdminIdResponseDto getInternalAdminId() {
+        GetAdminIdResult result = userService.getInternalAdminId();
+
+        return InternalAdminIdResponseDto.from(result);
+    }
+
+    @GetMapping("/admins/managers")
+    public InternalManagerIdResponseDto getInternalManagerId(@RequestParam String category) {
+        GetCategoryManagerIdResult result = userService.getInternalManagerId(
+                new GetCategoryManagerQuery(category)
+        );
+
+        return InternalManagerIdResponseDto.from(result);
     }
 }

@@ -3,13 +3,18 @@ package com.ojosama.userservice.application.service;
 import com.ojosama.userservice.application.dto.command.CreateUserCommand;
 import com.ojosama.userservice.application.dto.command.DeleteUserCommand;
 import com.ojosama.userservice.application.dto.command.UpdateUserCommand;
+import com.ojosama.userservice.application.dto.query.GetCategoryManagerQuery;
 import com.ojosama.userservice.application.dto.query.GetInternalUserEmailQuery;
 import com.ojosama.userservice.application.dto.query.GetUserQuery;
 import com.ojosama.userservice.application.dto.result.CreateUserResult;
+import com.ojosama.userservice.application.dto.result.GetAdminIdResult;
+import com.ojosama.userservice.application.dto.result.GetCategoryManagerIdResult;
 import com.ojosama.userservice.application.dto.result.GetUserResult;
 import com.ojosama.userservice.application.dto.result.InternalUserEmailResult;
 import com.ojosama.userservice.application.dto.result.UpdateUserResult;
+import com.ojosama.userservice.domain.model.Category;
 import com.ojosama.userservice.domain.model.User;
+import com.ojosama.userservice.domain.model.UserRole;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
@@ -169,5 +174,23 @@ public class UserService {
                         User::getId,
                         User::getEmail
                 ));
+    }
+
+    @Transactional(readOnly = true)
+    public GetAdminIdResult getInternalAdminId() {
+        User admin = userRepository.findFirstByRoleAndDeletedAtIsNull(UserRole.ADMIN)
+                .orElseThrow(() -> new IllegalArgumentException("시스템 관리자를 찾을 수 없습니다."));
+
+        return new GetAdminIdResult(admin.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public GetCategoryManagerIdResult getInternalManagerId(GetCategoryManagerQuery query) {
+        UserRole managerRole = Category.from(query.category()).getManagerRole();
+
+        User manager = userRepository.findFirstByRoleAndDeletedAtIsNull(managerRole)
+                .orElseThrow(() -> new IllegalArgumentException("해당 카테고리 담당자를 찾을 수 없습니다."));
+
+        return new GetCategoryManagerIdResult(manager.getId());
     }
 }
