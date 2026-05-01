@@ -61,6 +61,18 @@ public class EventInfo {
         }
     }
 
+    public void updateEventDate(LocalDateTime newDate) {
+        this.eventDate = newDate;
+    }
+
+    public void updateEventName(String newName) {
+        this.eventName = newName;
+    }
+
+    public void updateEventTicketingDate(LocalDateTime newDate) {
+        this.eventTicketingDate = newDate;
+    }
+
     private void validateEventDate(LocalDateTime eventDate) {
         if (eventDate == null) {
             throw new CalendarException(CalendarErrorCode.INVALID_INPUT);

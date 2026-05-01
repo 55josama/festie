@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -68,6 +69,12 @@ public class Calendar extends BaseUserEntity {
     public void updateMemo(String memo) {
         validateMemo(memo);
         this.memo = memo;
+    }
+
+    public void updateEventInfo(LocalDateTime newDate, String newName, LocalDateTime newTicketingDate) {
+        if (newDate != null) eventInfo.updateEventDate(newDate);
+        if (newName != null) eventInfo.updateEventName(newName);
+        if (newTicketingDate != null) eventInfo.updateEventTicketingDate(newTicketingDate);
     }
 
     private void validateUserId(UUID userId) {

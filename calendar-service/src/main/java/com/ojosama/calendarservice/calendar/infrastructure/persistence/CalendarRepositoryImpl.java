@@ -33,4 +33,9 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     public List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month) {
         return jpaCalendarRepository.findByUserIdAndYearMonth(userId, year, month);
     }
+
+    @Override
+    public List<Calendar> findAllByEventInfo_EventIdAndDeletedAtIsNull(UUID eventId) {
+        return jpaCalendarRepository.findAllByEventInfo_EventIdAndDeletedAtIsNull(eventId);
+    }
 }

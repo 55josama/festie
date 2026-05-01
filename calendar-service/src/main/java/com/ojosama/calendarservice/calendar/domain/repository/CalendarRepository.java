@@ -13,5 +13,7 @@ public interface CalendarRepository {
 
     Optional<Calendar> findByEventInfo_EventScheduleIdAndUserIdAndDeletedAtIsNull(UUID scheduleId, UUID userId);
 
+    List<Calendar> findAllByEventInfo_EventIdAndDeletedAtIsNull(UUID eventId);
+
     void save(Calendar calendar);
 }

@@ -78,6 +78,16 @@ public class CalendarService {
         calendar.deleted(userId);
     }
 
+    public void deleteAllByEventId(UUID eventId) {
+        List<Calendar> calendars = calendarRepository.findAllByEventInfo_EventIdAndDeletedAtIsNull(eventId);
+        calendars.forEach(c -> c.deleted(null));
+    }
+
+    public void updateEventInfo(UUID eventId, LocalDateTime newDate, String newName, LocalDateTime newTicketingDate) {
+        List<Calendar> calendars = calendarRepository.findAllByEventInfo_EventIdAndDeletedAtIsNull(eventId);
+        calendars.forEach(c -> c.updateEventInfo(newDate, newName, newTicketingDate));
+    }
+
     private Calendar validateCalendarAlive(UUID calendarId, UUID userId) {
 
         return calendarRepository.findByIdAndUserIdAndDeletedAtIsNull(calendarId, userId).orElseThrow(() ->
