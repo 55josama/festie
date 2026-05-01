@@ -31,6 +31,6 @@ public class AdminMessageController {
         MessageSliceResult result = messageService.getMessagesForAdmin(
                 new FindAdminMessagesQuery(status, category, page, size)
         );
-        return ResponseEntity.ok(ApiResponse.success(MessageSliceResponse.from(result)));
+        return ResponseEntity.ok(ApiResponse.success(MessageSliceResponse.from(result, false)));
     }
 }

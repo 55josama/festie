@@ -17,7 +17,13 @@ public record MessageResponse(
     private static final String BLINDED_CONTENT = "블라인드 처리된 메시지입니다.";
 
     public static MessageResponse from(MessageResult result) {
-        String content = result.status() == MessageStatus.BLINDED ? BLINDED_CONTENT : result.content();
+        return from(result, true);
+    }
+
+    public static MessageResponse from(MessageResult result, boolean maskBlindedContent) {
+        String content = maskBlindedContent && result.status() == MessageStatus.BLINDED
+                ? BLINDED_CONTENT
+                : result.content();
         return new MessageResponse(
                 result.messageId(),
                 result.chatRoomId(),

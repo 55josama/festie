@@ -9,13 +9,12 @@ import com.ojosama.chatservice.application.dto.result.MessageResult;
 import com.ojosama.chatservice.application.dto.result.MessageSliceResult;
 import com.ojosama.chatservice.application.service.MessageService;
 import com.ojosama.chatservice.domain.model.MessageStatus;
+import com.ojosama.chatservice.presentation.dto.request.ChangeMessageStatusActionRequest;
 import com.ojosama.chatservice.presentation.dto.request.ChangeMessageStatusRequest;
 import com.ojosama.chatservice.presentation.dto.request.CreateMessageRequest;
 import com.ojosama.chatservice.presentation.dto.response.ChangeMessageStatusResponse;
 import com.ojosama.chatservice.presentation.dto.response.MessageResponse;
 import com.ojosama.chatservice.presentation.dto.response.MessageSliceResponse;
-import com.ojosama.common.exception.CommonErrorCode;
-import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -87,12 +86,17 @@ public class MessageController {
             @RequestHeader("X-User-Id") UUID adminId,
             @Valid @RequestBody ChangeMessageStatusRequest request
     ) {
-        if (request.status() == MessageStatus.DELETED) {
-            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
-        }
+        MessageStatus status = toMessageStatus(request.status());
         MessageResult result = messageService.changeMessageStatus(
-                new ChangeMessageStatusCommand(messageId, adminId, request.status())
+                new ChangeMessageStatusCommand(messageId, adminId, status)
         );
         return ResponseEntity.ok(ApiResponse.success(ChangeMessageStatusResponse.from(result, adminId)));
+    }
+
+    private MessageStatus toMessageStatus(ChangeMessageStatusActionRequest status) {
+        return switch (status) {
+            case ACTIVE -> MessageStatus.ACTIVE;
+            case BLINDED -> MessageStatus.BLINDED;
+        };
     }
 }
