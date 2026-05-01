@@ -10,11 +10,9 @@ import org.springframework.data.domain.Pageable;
 public interface OperationRequestRepository {
     OperationRequest save(OperationRequest operationRequest);
 
-    Optional<OperationRequest> findById(UUID id);
+    Optional<OperationRequest> findByIdAndDeletedAtIsNull(UUID id);
 
-    Page<OperationRequest> findAll(Pageable pageable);
+    Page<OperationRequest> findAllByDeletedAtIsNull(Pageable pageable);
 
-    Page<OperationRequest> findByStatus(OperationRequestStatus status, Pageable pageable);
-
-    void delete(OperationRequest operationRequest);
+    Page<OperationRequest> findByStatusAndDeletedAtIsNull(OperationRequestStatus status, Pageable pageable);
 }

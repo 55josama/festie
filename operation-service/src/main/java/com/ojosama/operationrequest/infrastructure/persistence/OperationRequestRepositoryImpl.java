@@ -21,22 +21,17 @@ public class OperationRequestRepositoryImpl implements OperationRequestRepositor
     }
 
     @Override
-    public Optional<OperationRequest> findById(UUID id) {
-        return operationRequestJpaRepository.findById(id);
+    public Optional<OperationRequest> findByIdAndDeletedAtIsNull(UUID id) {
+        return operationRequestJpaRepository.findByIdAndDeletedAtIsNull(id);
     }
 
     @Override
-    public Page<OperationRequest> findAll(Pageable pageable) {
-        return operationRequestJpaRepository.findAll(pageable);
+    public Page<OperationRequest> findAllByDeletedAtIsNull(Pageable pageable) {
+        return operationRequestJpaRepository.findAllByDeletedAtIsNull(pageable);
     }
 
     @Override
-    public Page<OperationRequest> findByStatus(OperationRequestStatus status, Pageable pageable){
-        return operationRequestJpaRepository.findByStatus(status, pageable);
-    }
-
-    @Override
-    public void delete(OperationRequest operationRequest){
-        operationRequestJpaRepository.delete(operationRequest);
+    public Page<OperationRequest> findByStatusAndDeletedAtIsNull(OperationRequestStatus status, Pageable pageable){
+        return operationRequestJpaRepository.findByStatusAndDeletedAtIsNull(status, pageable);
     }
 }

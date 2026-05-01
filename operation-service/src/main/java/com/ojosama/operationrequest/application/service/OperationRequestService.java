@@ -79,19 +79,19 @@ public class OperationRequestService {
             request.validateDeletableBy(userId);
         }
 
-        operationRequestRepository.delete(request);
+        request.deleted();
     }
 
     private OperationRequest findOperationRequestById(UUID requestId) {
-        return operationRequestRepository.findById(requestId)
+        return operationRequestRepository.findByIdAndDeletedAtIsNull(requestId)
                 .orElseThrow(() -> new OperationRequestException(OperationRequestErrorCode.OPERATION_REQUEST_NOT_FOUND));
     }
 
     private Page<OperationRequest> fetchRequestsByQuery(ListOperationRequestQuery query, Pageable pageable) {
         if (query.status() != null) {
-            return operationRequestRepository.findByStatus(query.status(), pageable);
+            return operationRequestRepository.findByStatusAndDeletedAtIsNull(query.status(), pageable);
         }
-        return operationRequestRepository.findAll(pageable);
+        return operationRequestRepository.findAllByDeletedAtIsNull(pageable);
     }
 
     // 작성자 본인인지 검증

@@ -71,7 +71,7 @@ public class OperationRequestController {
     public ResponseEntity<ApiResponse<FindOperationResponse>> updateOperationRequest(
             @PathVariable UUID requestId,
             @Valid @RequestBody UpdateOperationRequest request,
-            @RequestHeader(value = "X-User-Id") UUID currentUserId
+            @RequestHeader(value = "X-User-Id", defaultValue = "11111111-1111-1111-1111-111111111111") UUID currentUserId
     ) {
         OperationRequestResult result = operationRequestService.updateOperationRequest(requestId, request.toCommand(currentUserId));
         return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
@@ -92,7 +92,7 @@ public class OperationRequestController {
     @DeleteMapping("/{requestId}")
     public ResponseEntity<ApiResponse<Void>> deleteOperationRequest(
             @PathVariable UUID requestId,
-            @RequestHeader(value = "X-User-Id") UUID currentUserId,
+            @RequestHeader(value = "X-User-Id", defaultValue = "11111111-1111-1111-1111-111111111111") UUID currentUserId,
             @RequestHeader(value = "X-User-Role", defaultValue = "USER") String role
     ) {
         boolean isAdmin = role.contains("ADMIN");
