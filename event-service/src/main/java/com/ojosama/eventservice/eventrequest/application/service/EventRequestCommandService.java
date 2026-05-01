@@ -63,13 +63,19 @@ public class EventRequestCommandService {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         request.approve();
-        return EventRequestResult.from(eventRequestRepository.save(request));
+        EventRequestResult result = EventRequestResult.from(eventRequestRepository.save(request));
+        applicationEventPublisher.publishEvent(
+                new EventRequestProcessedMessage(request.getId(), request.getRequesterId(), "approved", request.getEventName()));
+        return result;
     }
 
     public EventRequestResult rejectEventRequest(UUID requestId, String rejectReason) {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         request.reject(rejectReason);
-        return EventRequestResult.from(eventRequestRepository.save(request));
+        EventRequestResult result = EventRequestResult.from(eventRequestRepository.save(request));
+        applicationEventPublisher.publishEvent(
+                new EventRequestProcessedMessage(request.getId(), request.getRequesterId(), "rejected", request.getEventName()));
+        return result;
     }
 }

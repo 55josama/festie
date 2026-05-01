@@ -20,6 +20,9 @@ public class KafkaEventRequestMessagePublisher {
     @Value("${spring.kafka.topic.event-request-created}")
     private String eventRequestCreatedTopic;
 
+    @Value("${spring.kafka.topic.event-request-created-result}")
+    private String eventRequestCreatedResultTopic;
+
     public KafkaEventRequestMessagePublisher(
             @Qualifier("jsonKafkaTemplate") KafkaTemplate<String, Object> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
@@ -36,4 +39,14 @@ public class KafkaEventRequestMessagePublisher {
         }
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void publishEventRequestProcessed(EventRequestProcessedMessage message) {
+        try {
+            kafkaTemplate.send(eventRequestCreatedResultTopic, message.targetId().toString(), message)
+                    .get(3, TimeUnit.SECONDS);
+            log.info("[Kafka] 발행 성공: topic={}, targetId={}", eventRequestCreatedResultTopic, message.targetId());
+        } catch (Exception e) {
+            log.error("[Kafka] 발행 실패: topic={}, targetId={}", eventRequestCreatedResultTopic, message.targetId(), e);
+        }
+    }
 }
