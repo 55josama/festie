@@ -1,6 +1,7 @@
 package com.ojosama.calendarservice.calendar.presentaion;
 
-import com.ojosama.calendarservice.calendar.application.CalendarService;
+import com.ojosama.calendarservice.calendar.application.CalendarCommandService;
+import com.ojosama.calendarservice.calendar.application.CalendarQueryService;
 import com.ojosama.calendarservice.calendar.presentaion.dto.CalendarResponseDto;
 import com.ojosama.calendarservice.calendar.presentaion.dto.CreateCalendarRequestDto;
 import com.ojosama.calendarservice.calendar.presentaion.dto.UpdateMemoCalendarRequestDto;
@@ -28,7 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/calendars")
 public class CalendarController {
 
-    private final CalendarService calendarService;
+    private final CalendarCommandService calendarCommandService;
+    private final CalendarQueryService calendarQueryService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<CalendarResponseDto>> createCalendar(
@@ -36,7 +38,7 @@ public class CalendarController {
         // TODO : userId 수정
         UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
 
-        CalendarResponseDto dto = calendarService.createCalendar(requestDto.toCommand(userId));
+        CalendarResponseDto dto = calendarCommandService.createCalendar(requestDto.toCommand(userId));
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.created(dto));
@@ -47,7 +49,7 @@ public class CalendarController {
         // TODO : userId 수정
         UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
 
-        CalendarResponseDto dto = calendarService.getCalendar(calendarId, userId);
+        CalendarResponseDto dto = calendarQueryService.getCalendar(calendarId, userId);
 
         return ResponseEntity.ok(ApiResponse.success(dto));
     }
@@ -59,7 +61,7 @@ public class CalendarController {
         // TODO : userId 수정
         UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
 
-        List<CalendarResponseDto> list = calendarService.getCalendars(userId, year, month);
+        List<CalendarResponseDto> list = calendarQueryService.getCalendars(userId, year, month);
 
         return ResponseEntity.ok(ApiResponse.success(list));
     }
@@ -71,7 +73,7 @@ public class CalendarController {
         // TODO : userId 수정
         UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
 
-        CalendarResponseDto responseDto = calendarService.updateCalendarMemo(calendarId, dto.memo(), userId);
+        CalendarResponseDto responseDto = calendarCommandService.updateCalendarMemo(calendarId, dto.memo(), userId);
 
         return ResponseEntity.ok(ApiResponse.success(responseDto));
     }
@@ -82,7 +84,7 @@ public class CalendarController {
         // TODO : userId 수정
         UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
 
-        calendarService.deleteCalendar(calendarId, userId);
+        calendarCommandService.deleteCalendar(calendarId, userId);
         return ResponseEntity.ok(ApiResponse.deleted());
     }
 

@@ -1,7 +1,7 @@
 package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ojosama.calendarservice.calendar.application.CalendarService;
+import com.ojosama.calendarservice.calendar.application.CalendarCommandService;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.dto.EventDeletedMessage;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.dto.EventScheduleChangedMessage;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.dto.FieldChange;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class KafkaEventMessageConsumer {
 
-    private final CalendarService calendarService;
+    private final CalendarCommandService calendarCommandService;
     private final IdempotentEventHandler idempotentHandler;
     private final ObjectMapper objectMapper;
 
@@ -39,7 +39,7 @@ public class KafkaEventMessageConsumer {
                 EventType.EVENT_DELETED.getValue(), () -> {
                     try {
                         EventDeletedMessage msg = objectMapper.readValue(record.value(), EventDeletedMessage.class);
-                        calendarService.deleteAllByEventId(msg.eventId());
+                        calendarCommandService.deleteAllByEventId(msg.eventId());
                         log.info("[Kafka] 행사 삭제 처리 완료: eventId={}", msg.eventId());
                     } catch (Exception e) {
                         throw new RuntimeException("[Kafka] 행사 삭제 처리 실패: key=" + messageKey, e);
@@ -64,7 +64,7 @@ public class KafkaEventMessageConsumer {
                         String newName = extractString(changedFields, "name");
                         LocalDateTime newTicketingDate = extractLocalDateTime(changedFields, "ticketingOpenAt");
 
-                        calendarService.updateEventInfo(msg.eventId(), newDate, newName, newTicketingDate);
+                        calendarCommandService.updateEventInfo(msg.eventId(), newDate, newName, newTicketingDate);
                         log.info("[Kafka] 행사 정보 변경 처리 완료: eventId={}", msg.eventId());
                     } catch (Exception e) {
                         throw new RuntimeException("[Kafka] 행사 정보 변경 처리 실패: key=" + messageKey, e);

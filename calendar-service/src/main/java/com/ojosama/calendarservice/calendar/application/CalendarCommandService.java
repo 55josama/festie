@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-public class CalendarService {
+public class CalendarCommandService {
 
     private final CalendarRepository calendarRepository;
 
@@ -50,21 +50,6 @@ public class CalendarService {
         return CalendarResponseDto.from(CalendarResult.from(calendar));
     }
 
-    @Transactional(readOnly = true)
-    public CalendarResponseDto getCalendar(UUID calendarId, UUID userId) {
-        Calendar calendar = validateCalendarAlive(calendarId, userId);
-
-        return CalendarResponseDto.from(CalendarResult.from(calendar));
-    }
-
-    @Transactional(readOnly = true)
-    public List<CalendarResponseDto> getCalendars(UUID userId, int year, int month) {
-        List<Calendar> calendars = calendarRepository.findByUserIdAndYearMonth(userId, year, month);
-        return calendars.stream()
-                .map(calendar -> CalendarResponseDto.from(CalendarResult.from(calendar)))
-                .toList();
-    }
-
     public CalendarResponseDto updateCalendarMemo(UUID calendarId, String memo, UUID userId) {
         Calendar calendar = validateCalendarAlive(calendarId, userId);
 
@@ -89,7 +74,6 @@ public class CalendarService {
     }
 
     private Calendar validateCalendarAlive(UUID calendarId, UUID userId) {
-
         return calendarRepository.findByIdAndUserIdAndDeletedAtIsNull(calendarId, userId).orElseThrow(() ->
                 new CalendarException(CalendarErrorCode.CALENDAR_NOT_FOUND));
     }
