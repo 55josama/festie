@@ -33,7 +33,7 @@ public class KafkaCalendarPublisher {
 
     public void publishCalendarEventDeleted(CalendarEventDeletedMessage message) {
         try {
-            kafkaTemplate.send(deletedTopic, message.eventId().toString(), message.userIds()).get(3, TimeUnit.SECONDS);
+            kafkaTemplate.send(deletedTopic, message.eventId().toString(), message).get(3, TimeUnit.SECONDS);
             log.info("행사 취소 이벤트 발행 성공 : {}", message.eventId());
         } catch (Exception e) {
             log.error("행사 취소 이벤트 발행 실패 : {}", message.eventId());

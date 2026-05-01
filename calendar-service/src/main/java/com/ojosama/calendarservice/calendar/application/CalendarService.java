@@ -77,7 +77,8 @@ public class CalendarService {
     public List<UUID> deleteAllByEventId(UUID eventID) {
         List<Calendar> calendarList = validateCalendarAlive(eventID);
 
-        List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).toList();
+        // userId 중복제거
+        List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
 
         calendarList.forEach(calendar -> calendar.deleted(UUID.fromString("00000000-0000-0000-0000-000000000000")));
 
@@ -106,6 +107,7 @@ public class CalendarService {
                         }
                     }
                     case "eventName" -> calendar.getEventInfo().updateEventName(field.after());
+                    default -> throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
                 }
             });
         });
