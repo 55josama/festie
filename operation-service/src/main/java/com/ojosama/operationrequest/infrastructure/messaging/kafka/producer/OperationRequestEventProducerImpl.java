@@ -25,6 +25,10 @@ public class OperationRequestEventProducerImpl implements OperationRequestEventP
         try {
             kafkaTemplate.send(requestCreatedTopic, event.requestId().toString(), event).get(3, TimeUnit.SECONDS);
             log.info("운영 요청 알림 이벤트 발행 성공: requestId={}", event.requestId());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("운영 요청 알림 이벤트 발행 인터럽트: requestId={}", event.requestId(), e);
+            throw new OperationRequestException(CommonErrorCode.EVENT_PUBLISH_FAILED);
         } catch (Exception e) {
             log.error("운영 요청 알림 이벤트 발행 실패: requestId={}", event.requestId(), e);
             throw new OperationRequestException(CommonErrorCode.EVENT_PUBLISH_FAILED);
