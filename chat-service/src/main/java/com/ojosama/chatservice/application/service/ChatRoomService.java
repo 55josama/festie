@@ -1,6 +1,7 @@
 package com.ojosama.chatservice.application.service;
 
 import com.ojosama.chatservice.application.dto.command.ChangeChatRoomStatusCommand;
+import com.ojosama.chatservice.application.dto.command.ChangeChatRoomScheduleCommand;
 import com.ojosama.chatservice.application.dto.command.CreateChatRoomCommand;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomByEventIdQuery;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomQuery;
@@ -85,6 +86,24 @@ public class ChatRoomService {
                 .orElseGet(ChatRoomSummaryResult::empty);
     }
 
+    public ChatRoomResult changeChatRoomSchedule(ChangeChatRoomScheduleCommand command) {
+        if (command == null || command.eventId() == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+
+        ChatRoom chatRoom = chatRoomRepository.findByEventId(command.eventId())
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+
+        chatRoom.reschedule(
+                new ChatRoomSchedule(
+                        resolveScheduledOpenAt(chatRoom, command),
+                        resolveScheduledCloseAt(chatRoom, command)
+                )
+        );
+
+        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+    }
+
     // 상태 분기 : 상태 변경 요청 API 가 들어왔을 때
     public ChatRoomResult changeChatRoomStatus(ChangeChatRoomStatusCommand command) {
         if (command == null || command.chatRoomId() == null || command.action() == null) {
@@ -145,6 +164,20 @@ public class ChatRoomService {
         }
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private LocalDateTime resolveScheduledOpenAt(ChatRoom chatRoom, ChangeChatRoomScheduleCommand command) {
+        if (command.eventStartAt() != null) {
+            return command.eventStartAt().toLocalDate().atStartOfDay();
+        }
+        return chatRoom.getSchedule().getScheduledOpenAt();
+    }
+
+    private LocalDateTime resolveScheduledCloseAt(ChatRoom chatRoom, ChangeChatRoomScheduleCommand command) {
+        if (command.eventEndAt() != null) {
+            return command.eventEndAt().plusHours(1);
+        }
+        return chatRoom.getSchedule().getScheduledCloseAt();
     }
 
     private boolean isDuplicateEventIdViolation(DataIntegrityViolationException e) {
