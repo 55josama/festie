@@ -3,31 +3,9 @@ spring:
     name: notification-service
 
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
-    openfeign:
-      circuitbreaker:
-        enabled: true
-      client:
-        config:
-          calendar-service:
-            connectTimeout: 5000
-            readTimeout: 5000
-  mail:
-    host: ${HOST}
-    port: ${PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000

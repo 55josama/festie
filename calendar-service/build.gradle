@@ -19,7 +19,7 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.h2database:h2'
 
-    // Kafka (event.cancelled 소비)
+    // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
 
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
