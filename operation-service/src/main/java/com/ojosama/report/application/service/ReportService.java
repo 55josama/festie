@@ -7,13 +7,11 @@ import com.ojosama.report.application.dto.command.UpdateReportCommand;
 import com.ojosama.report.application.dto.query.ListReportQuery;
 import com.ojosama.report.application.dto.result.ReportInfoResult;
 import com.ojosama.report.application.dto.result.ReportResult;
-import com.ojosama.report.domain.event.ReportEventProducer;
-import com.ojosama.blacklist.domain.event.payload.BlacklistRegisterEvent;
+import com.ojosama.report.domain.event.payload.BlacklistReviewRequestEvent;
 import com.ojosama.report.domain.event.payload.TargetBlindEvent;
 import com.ojosama.report.domain.exception.ReportErrorCode;
 import com.ojosama.report.domain.exception.ReportException;
 import com.ojosama.report.domain.model.entity.Report;
-import com.ojosama.blacklist.domain.model.enums.RegistrationType;
 import com.ojosama.report.domain.model.enums.ReportStatus;
 import com.ojosama.report.domain.model.enums.ReporterType;
 import com.ojosama.report.domain.repository.ReportRepository;
@@ -109,9 +107,9 @@ public class ReportService {
         long reportCount = reportRepository.countByTargetId(command.targetId());
 
         // 신고가 3회 이상이면 신고 대상 블라인드 처리 및 유저 블랙리스트 조건 검사
-        if (reportCount == 3) {
+        if (reportCount + 1 == 3) {
             publishBlindEvent(command);
-            checkBlacklistCondition(command.targetUserId());
+            publishBlacklistReviewRequestEvent(command.targetUserId());
         }
     }
 
@@ -137,21 +135,22 @@ public class ReportService {
         );
     }
 
-    private void checkBlacklistCondition(UUID targetUserId) {
+    private void publishBlacklistReviewRequestEvent(UUID targetUserId) {
         long userBlindCount = reportRepository.countBlindedTargetByUserId(targetUserId);
+        long blindCountAfter = userBlindCount + 1;
 
-        if (userBlindCount == 5) {
-            BlacklistRegisterEvent event = new BlacklistRegisterEvent(
+        if (blindCountAfter >= 5) {
+            BlacklistReviewRequestEvent event = new BlacklistReviewRequestEvent(
                     targetUserId,
                     "블라인드 처리가 5회 누적되어 블랙리스트 등록 검토가 필요합니다.",
-                    RegistrationType.AUTOMATIC
+                    blindCountAfter
             );
 
             outbox.publish(
-                    "BLACKLIST",
+                    "REPORT",
                     targetUserId,
-                    EventType.BLACKLIST_REGISTERED,
-                    "operation.blacklist.registered",
+                    EventType.BLACKLIST_REVIEW_REQUESTED,
+                    "operation.blacklist.requested.v1",
                     event
             );
         }

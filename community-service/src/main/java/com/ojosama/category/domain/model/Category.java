@@ -3,6 +3,7 @@ package com.ojosama.category.domain.model;
 import com.ojosama.category.domain.exception.CategoryErrorCode;
 import com.ojosama.category.domain.exception.CategoryException;
 import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -18,21 +19,35 @@ import lombok.NoArgsConstructor;
 @Table(name = "p_community_categories")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Category extends BaseEntity {
+public class Category extends BaseUserEntity {
+
+    private static final int MAX_NAME_LENGTH = 50;
 
     @Id
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = MAX_NAME_LENGTH)
     private String name;
 
     @Builder
     public Category(UUID id, String name) {
         this.id = Objects.requireNonNull(id, "id must not be null");
-        String normalized = Objects.requireNonNull(name, "name must not be null").trim();
-        if (normalized.isEmpty() || normalized.length() > 50) {
+        this.name = normalize(name);
+    }
+
+    public void changeName(String name) {
+        this.name = normalize(name);
+    }
+
+    private static String normalize(String name) {
+        if (name == null) {
             throw new CategoryException(CategoryErrorCode.INVALID_INPUT_VALUE);
         }
-        this.name = normalized;
+            String trimmed = name.trim();
+        if (trimmed.isEmpty() || trimmed.length() > MAX_NAME_LENGTH) {
+            throw new CategoryException(CategoryErrorCode.INVALID_INPUT_VALUE);
+        }
+        return trimmed;
     }
+
 }
