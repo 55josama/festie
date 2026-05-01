@@ -1,52 +1,36 @@
 package com.ojosama.eventservice.eventrequest.infrastructure.messaging.kafka.producer;
 
+import com.ojosama.common.kafka.domain.EventType;
+import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import com.ojosama.eventservice.eventrequest.domain.event.payload.EventRequestCreatedMessage;
 import com.ojosama.eventservice.eventrequest.domain.event.payload.EventRequestProcessedMessage;
-import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-@Slf4j
 @Component
+@RequiredArgsConstructor
 public class KafkaEventRequestMessagePublisher {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OutboxEventPublisher outboxEventPublisher;
 
-    @Value("${spring.kafka.topic.event-request-created}")
+    @Value("${spring.kafka.topic.event-request-created:event.request.created.v1}")
     private String eventRequestCreatedTopic;
 
-    @Value("${spring.kafka.topic.event-request-created-result}")
+    @Value("${spring.kafka.topic.event-request-created-result:event.request.processed.v1}")
     private String eventRequestCreatedResultTopic;
 
-    public KafkaEventRequestMessagePublisher(
-            @Qualifier("jsonKafkaTemplate") KafkaTemplate<String, Object> kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void publishEventRequestCreated(EventRequestCreatedMessage message) {
-        try {
-            kafkaTemplate.send(eventRequestCreatedTopic, message.targetId().toString(), message)
-                    .get(3, TimeUnit.SECONDS);
-            log.info("[Kafka] 발행 성공: topic={}, targetId={}", eventRequestCreatedTopic, message.targetId());
-        } catch (Exception e) {
-            log.error("[Kafka] 발행 실패: topic={}, targetId={}", eventRequestCreatedTopic, message.targetId(), e);
-        }
+        outboxEventPublisher.publish("EventRequest", message.targetId(),
+                EventType.EVENT_REQUEST_CREATED, eventRequestCreatedTopic, message);
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void publishEventRequestProcessed(EventRequestProcessedMessage message) {
-        try {
-            kafkaTemplate.send(eventRequestCreatedResultTopic, message.targetId().toString(), message)
-                    .get(3, TimeUnit.SECONDS);
-            log.info("[Kafka] 발행 성공: topic={}, targetId={}", eventRequestCreatedResultTopic, message.targetId());
-        } catch (Exception e) {
-            log.error("[Kafka] 발행 실패: topic={}, targetId={}", eventRequestCreatedResultTopic, message.targetId(), e);
-        }
+        outboxEventPublisher.publish("EventRequest", message.targetId(),
+                EventType.EVENT_REQUEST_RESULT, eventRequestCreatedResultTopic, message);
     }
 }
