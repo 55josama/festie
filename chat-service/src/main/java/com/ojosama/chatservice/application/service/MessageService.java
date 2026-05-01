@@ -125,11 +125,11 @@ public class MessageService {
         return MessageResult.from(message);
     }
 
-    public MessageResult blindMessageBySystem(UUID messageId) {
+    public void blindMessageBySystem(UUID messageId) {
         if (messageId == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        return changeMessageStatus(new ChangeMessageStatusCommand(messageId, SYSTEM_BLINDER_ID, MessageStatus.BLINDED));
+        changeMessageStatus(new ChangeMessageStatusCommand(messageId, SYSTEM_BLINDER_ID, MessageStatus.BLINDED));
     }
 
     @Transactional(readOnly = true)
