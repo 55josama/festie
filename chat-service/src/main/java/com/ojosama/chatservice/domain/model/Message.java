@@ -2,7 +2,7 @@ package com.ojosama.chatservice.domain.model;
 
 import com.ojosama.chatservice.domain.exception.ChatErrorCode;
 import com.ojosama.chatservice.domain.exception.ChatException;
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,7 +23,7 @@ import org.hibernate.annotations.UuidGenerator;
         indexes = @Index(name = "idx_message_chat_room_id", columnList = "chat_room_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Message extends BaseEntity {
+public class Message extends BaseUserEntity {
 
     @Id
     @UuidGenerator

@@ -3,6 +3,7 @@ package com.ojosama.chatservice.application.service;
 import com.ojosama.chatservice.application.dto.command.ChangeMessageStatusCommand;
 import com.ojosama.chatservice.application.dto.command.CreateMessageCommand;
 import com.ojosama.chatservice.application.dto.command.DeleteMessageCommand;
+import com.ojosama.chatservice.application.dto.query.FindAdminMessagesQuery;
 import com.ojosama.chatservice.application.dto.query.FindMessageQuery;
 import com.ojosama.chatservice.application.dto.query.FindMessagesByChatRoomQuery;
 import com.ojosama.chatservice.application.dto.result.MessageResult;
@@ -81,19 +82,28 @@ public class MessageService {
         }
 
         findChatRoom(query.chatRoomId());
+        return getMessageSlice(
+                messageRepository.findByChatRoomIdAndStatuses(
+                        query.chatRoomId(),
+                        List.copyOf(EnumSet.of(MessageStatus.ACTIVE, MessageStatus.BLINDED)),
+                        PageRequest.of(query.page(), query.size())
+                )
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public MessageSliceResult getMessagesForAdmin(FindAdminMessagesQuery query) {
+        if (query == null || query.page() < 0 || query.size() <= 0 || query.size() > MAX_PAGE_SIZE) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
 
         Pageable pageable = PageRequest.of(query.page(), query.size());
-        Slice<Message> messages = messageRepository.findByChatRoomIdAndStatuses(
-                query.chatRoomId(),
-                List.copyOf(EnumSet.of(MessageStatus.ACTIVE, MessageStatus.BLINDED)),
+        Slice<Message> messages = messageRepository.findByStatusesAndCategory(
+                resolveAdminStatuses(query.status()),
+                query.category(),
                 pageable
         );
-
-        List<MessageResult> results = messages.getContent().stream()
-                .map(MessageResult::from)
-                .toList();
-
-        return new MessageSliceResult(results, messages.hasNext());
+        return getMessageSlice(messages);
     }
 
     public void deleteMessage(DeleteMessageCommand command) {
@@ -170,5 +180,19 @@ public class MessageService {
     private ChatRoom findChatRoom(UUID chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private MessageSliceResult getMessageSlice(Slice<Message> messages) {
+        List<MessageResult> results = messages.getContent().stream()
+                .map(MessageResult::from)
+                .toList();
+        return new MessageSliceResult(results, messages.hasNext());
+    }
+
+    private List<MessageStatus> resolveAdminStatuses(MessageStatus status) {
+        if (status == null) {
+            return List.copyOf(EnumSet.allOf(MessageStatus.class));
+        }
+        return List.of(status);
     }
 }
