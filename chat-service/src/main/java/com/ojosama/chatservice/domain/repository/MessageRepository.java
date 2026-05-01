@@ -2,6 +2,7 @@ package com.ojosama.chatservice.domain.repository;
 
 import com.ojosama.chatservice.domain.model.Message;
 import com.ojosama.chatservice.domain.model.MessageStatus;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,6 @@ public interface MessageRepository {
     Optional<Message> findById(UUID id);
 
     // 채팅 히스토리 조회 (무한스크롤 - cursor 기반)
-    Slice<Message> findByChatRoomIdAndStatus(UUID chatRoomId, MessageStatus status, Pageable pageable);
+    Slice<Message> findByChatRoomIdAndStatuses(UUID chatRoomId, List<MessageStatus> statuses, Pageable pageable);
 
 }

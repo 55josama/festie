@@ -15,6 +15,7 @@ import com.ojosama.chatservice.domain.model.MessageStatus;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.chatservice.domain.repository.MessageRepository;
 import com.ojosama.common.exception.CommonErrorCode;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class MessageService {
     private static final int MAX_MESSAGE_CONTENT_LENGTH = 1000;
     private static final int MAX_WRITER_NICKNAME_LENGTH = 50;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final UUID SYSTEM_BLINDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -80,9 +82,9 @@ public class MessageService {
         findChatRoom(query.chatRoomId());
 
         Pageable pageable = PageRequest.of(query.page(), query.size());
-        Slice<Message> messages = messageRepository.findByChatRoomIdAndStatus(
+        Slice<Message> messages = messageRepository.findByChatRoomIdAndStatuses(
                 query.chatRoomId(),
-                MessageStatus.ACTIVE,
+                List.copyOf(EnumSet.of(MessageStatus.ACTIVE, MessageStatus.BLINDED)),
                 pageable
         );
 
