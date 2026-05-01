@@ -19,8 +19,12 @@ public enum Category {
     }
 
     public static Category from(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("존재하지 않는 카테고리입니다.");
+        }
+
         try {
-            return Category.valueOf(value.toUpperCase(Locale.ROOT));
+            return Category.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("존재하지 않는 카테고리입니다.");
         }
