@@ -21,8 +21,8 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public List<Calendar> findByEventInfo_EventId(UUID eventId) {
-        return jpaCalendarRepository.findByEventInfo_EventId(eventId);
+    public List<Calendar> findByEventInfo_EventIdAndDeletedAtIsNull(UUID eventId) {
+        return jpaCalendarRepository.findByEventInfo_EventIdAndDeletedAtIsNull(eventId);
     }
 
     @Override
@@ -31,23 +31,24 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month) {
-        return jpaCalendarRepository.findByUserIdAndYearMonth(userId, year, month);
+    public List<Calendar> findByUserIdAndYearMonthAndDeletedAtIsNull(UUID userId, int year, int month) {
+        return jpaCalendarRepository.findByUserIdAndYearMonthAndDeletedAtIsNull(userId, year, month);
     }
 
     @Override
-    public List<Calendar> findByEventInfo_EventDate(LocalDateTime start, LocalDateTime end) {
-        return jpaCalendarRepository.findByEventInfo_EventDateBetween(start, end);
+    public List<Calendar> findByEventInfo_EventDateAndDeletedAtIsNull(LocalDateTime start, LocalDateTime end) {
+        return jpaCalendarRepository.findByEventInfo_EventDateBetweenAndDeletedAtIsNull(start, end);
     }
 
     @Override
-    public List<Calendar> findByEventInfo_EventTicketingDateBetween(LocalDateTime now, LocalDateTime oneHourLater) {
-        return jpaCalendarRepository.findByEventInfo_EventTicketingDateBetween(now, oneHourLater);
+    public List<Calendar> findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(LocalDateTime now,
+                                                                                      LocalDateTime oneHourLater) {
+        return jpaCalendarRepository.findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(now, oneHourLater);
     }
 
     @Override
     public Optional<Calendar> findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(
-            LocalDateTime eventDate, UUID eventId, UUID userId) {
+            UUID eventId, LocalDateTime eventDate, UUID userId) {
         return jpaCalendarRepository.findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(eventId,
                 eventDate, userId);
     }

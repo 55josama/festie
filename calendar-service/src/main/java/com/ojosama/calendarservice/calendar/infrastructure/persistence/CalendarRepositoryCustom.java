@@ -6,5 +6,5 @@ import java.util.UUID;
 
 public interface CalendarRepositoryCustom {
 
-    List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month);
+    List<Calendar> findByUserIdAndYearMonthAndDeletedAtIsNull(UUID userId, int year, int month);
 }

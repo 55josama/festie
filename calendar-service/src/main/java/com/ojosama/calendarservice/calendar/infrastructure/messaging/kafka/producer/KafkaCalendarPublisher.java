@@ -1,5 +1,7 @@
 package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer;
 
+import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
+import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto.CalendarEventDeletedMessage;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto.CalendarEventUpdatedMessage;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +37,7 @@ public class KafkaCalendarPublisher {
             log.info("행사 취소 이벤트 발행 성공 : {}", message.eventId());
         } catch (Exception e) {
             log.error("행사 취소 이벤트 발행 실패 : {}", message.eventId());
+            throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
     }
 
@@ -44,6 +47,7 @@ public class KafkaCalendarPublisher {
             log.info("행사 변경 이벤트 발행 성공 : {}", message.eventId());
         } catch (Exception e) {
             log.error("행사 변경 이벤트 발행 실패 : {}", message.eventId());
+            throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
     }
 }

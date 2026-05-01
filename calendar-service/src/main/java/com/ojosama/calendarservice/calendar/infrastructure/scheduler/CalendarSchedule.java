@@ -32,7 +32,7 @@ public class CalendarSchedule {
         LocalDateTime end = tomorrow.plusDays(1).atStartOfDay(); // 모레 00시
 
         // 전날 행사 목록
-        List<Calendar> calendars = calendarRepository.findByEventInfo_EventDate(start, end);
+        List<Calendar> calendars = calendarRepository.findByEventInfo_EventDateAndDeletedAtIsNull(start, end);
 
         Map<UUID, List<Calendar>> groupedCalendars = groupCalendars(calendars);
 
@@ -56,7 +56,8 @@ public class CalendarSchedule {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oneHourLater = now.plusHours(1);
 
-        List<Calendar> calendars = calendarRepository.findByEventInfo_EventTicketingDateBetween(now, oneHourLater);
+        List<Calendar> calendars = calendarRepository.findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(now,
+                oneHourLater);
 
         Map<UUID, List<Calendar>> groupedCalendars = groupCalendars(calendars);
 

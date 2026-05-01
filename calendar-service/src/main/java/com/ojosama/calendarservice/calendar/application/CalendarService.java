@@ -29,8 +29,8 @@ public class CalendarService {
     public CalendarResponseDto createCalendar(CreateCalendarCommand command) {
 
         Optional<Calendar> exists = calendarRepository.findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(
-                command.eventDate(),
                 command.eventId(),
+                command.eventDate(),
                 command.userId());
 
         if (exists.isPresent()) {
@@ -54,7 +54,7 @@ public class CalendarService {
 
     @Transactional(readOnly = true)
     public List<CalendarResponseDto> getCalendars(UUID userId, int year, int month) {
-        List<Calendar> calendars = calendarRepository.findByUserIdAndYearMonth(userId, year, month);
+        List<Calendar> calendars = calendarRepository.findByUserIdAndYearMonthAndDeletedAtIsNull(userId, year, month);
         return calendars.stream()
                 .map(calendar -> CalendarResponseDto.from(CalendarResult.from(calendar)))
                 .toList();
@@ -86,6 +86,9 @@ public class CalendarService {
 
     // 행사 변경(일정, 이름, 시작시간, 티켓팅시간)으로 인한 캘린더 일정 변경
     public List<UUID> updateAllByEventId(UUID eventId, List<FieldChange> changedFields) {
+        if (changedFields == null || changedFields.isEmpty()) {
+            throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
         List<Calendar> calendarList = validateCalendarAlive(eventId);
 
         List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).toList();
@@ -95,8 +98,13 @@ public class CalendarService {
             changedFields.forEach(field -> {
                 switch (field.fieldName()) {
                     case "eventDate" -> calendar.getEventInfo().updateEventDate(LocalDateTime.parse(field.after()));
-                    case "ticketingDate" ->
+                    case "ticketingDate" -> {
+                        if (field.after() == null || field.after().isBlank()) {
+                            calendar.getEventInfo().updateTicketingDate(null);
+                        } else {
                             calendar.getEventInfo().updateTicketingDate(LocalDateTime.parse(field.after()));
+                        }
+                    }
                     case "eventName" -> calendar.getEventInfo().updateEventName(field.after());
                 }
             });
@@ -113,7 +121,7 @@ public class CalendarService {
     }
 
     private List<Calendar> validateCalendarAlive(UUID eventId) {
-        return calendarRepository.findByEventInfo_EventId(eventId);
+        return calendarRepository.findByEventInfo_EventIdAndDeletedAtIsNull(eventId);
     }
 
 }
