@@ -1,6 +1,5 @@
 package com.ojosama.chatservice.application.service;
 
-import com.ojosama.chatservice.application.dto.command.BlindMessageCommand;
 import com.ojosama.chatservice.application.dto.command.ChangeMessageStatusCommand;
 import com.ojosama.chatservice.application.dto.command.CreateMessageCommand;
 import com.ojosama.chatservice.application.dto.command.DeleteMessageCommand;
@@ -110,16 +109,6 @@ public class MessageService {
         message.delete();
     }
 
-    public MessageResult blindMessage(BlindMessageCommand command) {
-        if (command == null || command.messageId() == null || command.adminId() == null) {
-            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
-        }
-
-        Message message = findMessage(command.messageId());
-        message.blind(command.adminId());
-        return MessageResult.from(message);
-    }
-
     public MessageResult changeMessageStatus(ChangeMessageStatusCommand command) {
         if (command == null || command.messageId() == null || command.adminId() == null || command.status() == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
@@ -140,7 +129,7 @@ public class MessageService {
         if (messageId == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        return blindMessage(new BlindMessageCommand(messageId, SYSTEM_BLINDER_ID));
+        return changeMessageStatus(new ChangeMessageStatusCommand(messageId, SYSTEM_BLINDER_ID, MessageStatus.BLINDED));
     }
 
     @Transactional(readOnly = true)
