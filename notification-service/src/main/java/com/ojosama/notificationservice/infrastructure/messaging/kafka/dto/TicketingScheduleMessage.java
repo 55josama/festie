@@ -1,4 +1,4 @@
-package com.ojosama.notificationservice.infrastructure.messaging.kafka.consumer.dto;
+package com.ojosama.notificationservice.infrastructure.messaging.kafka.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
