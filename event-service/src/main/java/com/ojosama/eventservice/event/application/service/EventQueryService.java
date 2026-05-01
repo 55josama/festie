@@ -55,6 +55,13 @@ public class EventQueryService {
     }
 
     @Transactional(readOnly = true)
+    public List<EventResult> getAllEvents() {
+        return eventRepository.findAllActive().stream()
+                .map(EventResult::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<EventResult> getEventsByIds(List<UUID> ids) {
         return eventRepository.findAllByIds(ids).stream()
                 .map(EventResult::from)

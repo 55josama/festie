@@ -29,10 +29,12 @@ public class InternalEventController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<EventResponse>>> getEventsByIds(
-            @RequestParam List<UUID> eventIds) {
+    public ResponseEntity<ApiResponse<List<EventResponse>>> getEvents(
+            @RequestParam(required = false) List<UUID> eventIds) {
 
-        List<EventResponse> responses = eventQueryService.getEventsByIds(eventIds)
+        List<EventResponse> responses = (eventIds != null && !eventIds.isEmpty()
+                ? eventQueryService.getEventsByIds(eventIds)
+                : eventQueryService.getAllEvents())
                 .stream().map(EventResponse::from).toList();
         return ResponseEntity.ok(ApiResponse.success(responses));
     }

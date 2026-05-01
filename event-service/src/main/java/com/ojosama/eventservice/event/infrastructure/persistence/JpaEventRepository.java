@@ -11,5 +11,7 @@ public interface JpaEventRepository extends JpaRepository<Event, UUID> {
 
     Optional<Event> findByIdAndDeletedAtIsNull(UUID id);
 
+    List<Event> findAllByDeletedAtIsNull();
+
     List<Event> findAllByIdInAndDeletedAtIsNull(Collection<UUID> ids);
 }
