@@ -1,37 +1,63 @@
 package com.ojosama.userservice.infrastructure.messaging.kafka.consumer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ojosama.common.kafka.domain.EventType;
+import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.model.UserStatus;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import com.ojosama.userservice.infrastructure.messaging.kafka.dto.UserBlacklistStatusEvent;
-import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class UserBlacklistStatusEventConsumer {
 
+    private static final String CONSUMER_GROUP = "user-service-group";
+    private static final String EVENT_TYPE = EventType.BLACKLIST_UPDATED.getValue();
+
+    private final ObjectMapper objectMapper;
+    private final IdempotentEventHandler idempotentHandler;
     private final UserRepository userRepository;
 
-    @Transactional
     @KafkaListener(
             topics = "${kafka.topic.user-blacklist-status}",
-            groupId = "${spring.kafka.consumer.group-id}"
+            groupId = CONSUMER_GROUP,
+            containerFactory = "kafkaListenerContainerFactory"
     )
-    public void consume(UserBlacklistStatusEvent event) {
-        Optional<User> optionalUser = userRepository.findByIdAndDeletedAtIsNull(event.userId());
+    public void consume(ConsumerRecord<String, String> record) {
+        UUID messageKey;
+        UserBlacklistStatusEvent event;
 
-        if (optionalUser.isEmpty()) {
-            log.warn("블랙리스트 상태 변경 이벤트를 수신했지만 사용자를 찾을 수 없습니다. userId={}", event.userId());
+        try {
+            messageKey = UUID.fromString(record.key());
+            event = objectMapper.readValue(record.value(), UserBlacklistStatusEvent.class);
+        } catch (Exception e) {
+            log.error("블랙리스트 상태 변경 이벤트 파싱 실패. key={}, value={}",
+                    record.key(), record.value(), e);
             return;
         }
 
-        User user = optionalUser.get();
+        idempotentHandler.handle(
+                messageKey,
+                CONSUMER_GROUP,
+                record.topic(),
+                EVENT_TYPE,
+                () -> changeUserStatus(event)
+        );
+    }
+
+    private void changeUserStatus(UserBlacklistStatusEvent event) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(event.userId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "블랙리스트 상태 변경 대상 사용자를 찾을 수 없습니다. userId=" + event.userId()
+                ));
 
         user.changeStatus(toUserStatus(event.status()));
     }
