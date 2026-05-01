@@ -26,7 +26,7 @@ public class Category extends BaseUserEntity {
     @Id
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = MAX_NAME_LENGTH)
+    @Column(nullable = false, length = MAX_NAME_LENGTH)
     private String name;
 
     @Builder

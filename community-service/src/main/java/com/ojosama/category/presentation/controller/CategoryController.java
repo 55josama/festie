@@ -39,7 +39,6 @@ public class CategoryController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<CategoryResponse> create(
             @Valid @RequestBody CreateCategoryRequest req) {
         CategoryResult result = categoryService.create(
@@ -48,7 +47,6 @@ public class CategoryController {
     }
 
     @PatchMapping("/{categoryId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<CategoryResponse> update(
             @PathVariable UUID categoryId,
             @Valid @RequestBody UpdateCategoryRequest req) {
@@ -58,23 +56,19 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{categoryId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> delete(
-            @RequestHeader(USER_ID_HEADER) UUID requesterId,
             @PathVariable UUID categoryId) {
-        categoryService.delete(new DeleteCategoryCommand(categoryId, requesterId));
+        categoryService.delete(new DeleteCategoryCommand(categoryId, UUID.randomUUID())); //게이트웨이 완성 후 수정
         return ApiResponse.deleted();
     }
 
     @GetMapping("/{categoryId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<CategoryResponse> getDetail(@PathVariable UUID categoryId) {
         CategoryResult result = categoryService.getDetail(categoryId);
         return ApiResponse.success(CategoryResponse.from(result));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Page<CategoryResponse>> list(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         Page<CategoryResult> page = categoryService.list(pageable);
