@@ -1,4 +1,4 @@
-package com.ojosama.common.domain.exception;
+package com.ojosama.community.domain.exception;
 
 import com.ojosama.common.exception.CustomException;
 
