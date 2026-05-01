@@ -48,7 +48,7 @@ public class ReportController {
     @PostMapping
     public ResponseEntity<ApiResponse<FindReportResponse>> createReport(
             @Valid @RequestBody CreateReportRequest request,
-            @RequestHeader(value = "X-User-Id") UUID userId) {
+            @RequestHeader(value = "X-User-Id", defaultValue = "11111111-1111-1111-1111-111111111111") UUID userId) {
 
         UUID targetUserId = fetchTargetUserId(request.targetType(), request.targetId());
 

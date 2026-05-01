@@ -40,7 +40,7 @@ public class OperationRequestController {
     @PostMapping
     public ResponseEntity<ApiResponse<FindOperationResponse>> createOperationRequest(
             @Valid @RequestBody CreateOperationRequest request,
-            @RequestHeader("X-User-Id") UUID currentUserId
+            @RequestHeader(value = "X-User-Id", defaultValue = "11111111-1111-1111-1111-111111111111") UUID currentUserId
     ) {
         OperationRequestResult result = operationRequestService.createOperationRequest(request.toCommand(currentUserId));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(FindOperationResponse.from(result)));
