@@ -52,6 +52,12 @@ public class Message extends BaseEntity {
     @Column(columnDefinition = "uuid")
     private UUID blindedBy;
 
+    @Column
+    private LocalDateTime unblindedAt;
+
+    @Column(columnDefinition = "uuid")
+    private UUID unblindedBy;
+
     @Builder
     private Message(UUID chatRoomId, UUID userId, String writerNickname, String content) {
         this.chatRoomId = chatRoomId;
@@ -63,15 +69,35 @@ public class Message extends BaseEntity {
 
     // 도메인 행위 메서드
     public void blind(UUID adminId) {
-        if (this.status != MessageStatus.ACTIVE) {
-            throw new ChatException(ChatErrorCode.MESSAGE_NOT_ACTIVE);
-        }
         if (adminId == null) {
             throw new ChatException(ChatErrorCode.INVALID_ADMIN_ID);
+        }
+        if (this.status == MessageStatus.BLINDED) {
+            return;
+        }
+        if (this.status != MessageStatus.ACTIVE) {
+            throw new ChatException(ChatErrorCode.MESSAGE_NOT_ACTIVE);
         }
         this.status = MessageStatus.BLINDED;
         this.blindedAt = LocalDateTime.now();
         this.blindedBy = adminId;
+        this.unblindedAt = null;
+        this.unblindedBy = null;
+    }
+
+    public void unblind(UUID adminId) {
+        if (adminId == null) {
+            throw new ChatException(ChatErrorCode.INVALID_ADMIN_ID);
+        }
+        if (this.status == MessageStatus.ACTIVE) {
+            return;
+        }
+        if (this.status != MessageStatus.BLINDED) {
+            throw new ChatException(ChatErrorCode.MESSAGE_NOT_ACTIVE);
+        }
+        this.status = MessageStatus.ACTIVE;
+        this.unblindedAt = LocalDateTime.now();
+        this.unblindedBy = adminId;
     }
 
     public void delete() {
@@ -82,6 +108,10 @@ public class Message extends BaseEntity {
     }
 
     public boolean isVisible() {
-        return this.status == MessageStatus.ACTIVE;
+        return this.status != MessageStatus.DELETED;
+    }
+
+    public boolean isBlinded() {
+        return this.status == MessageStatus.BLINDED;
     }
 }
