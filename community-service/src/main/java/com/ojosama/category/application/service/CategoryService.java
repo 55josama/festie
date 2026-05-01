@@ -2,6 +2,7 @@ package com.ojosama.category.application.service;
 
 import com.ojosama.category.application.dto.command.CreateCategoryCommand;
 import com.ojosama.category.application.dto.command.DeleteCategoryCommand;
+import com.ojosama.category.application.dto.command.UpdateCategoryCommand;
 import com.ojosama.category.application.dto.result.CategoryResult;
 import com.ojosama.category.domain.exception.CategoryErrorCode;
 import com.ojosama.category.domain.exception.CategoryException;
@@ -32,6 +33,20 @@ public class CategoryService {
                 .build();
         Category saved = categoryRepository.save(category);
         return CategoryResult.from(saved);
+    }
+
+    @Transactional
+    public CategoryResult update(UpdateCategoryCommand cmd) {
+        Category category = loadAlive(cmd.categoryId());
+        String normalized = normalizeOrThrow(cmd.name());
+
+        if (!category.getName().equals(normalized)) {
+            if (categoryRepository.existsByNameAndDeletedAtIsNull(normalized)) {
+                throw new CategoryException(CategoryErrorCode.CATEGORY_NAME_DUPLICATED);
+            }
+            category.changeName(normalized);
+        }
+        return CategoryResult.from(category);
     }
 
     @Transactional

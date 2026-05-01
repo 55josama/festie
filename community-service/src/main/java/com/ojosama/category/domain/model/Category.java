@@ -38,4 +38,18 @@ public class Category extends BaseUserEntity {
         }
         this.name = normalized;
     }
+
+    public void changeName(String name) {
+        this.name = normalize(name);
+    }
+
+    private static String normalize(String name) {
+        Objects.requireNonNull(name, "name must not be null");
+        String trimmed = name.trim();
+        if (trimmed.isEmpty() || trimmed.length() > MAX_NAME_LENGTH) {
+            throw new CategoryException(CategoryErrorCode.INVALID_INPUT_VALUE);
+        }
+        return trimmed;
+    }
+
 }
