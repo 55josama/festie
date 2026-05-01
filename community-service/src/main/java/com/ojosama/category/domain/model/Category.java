@@ -32,11 +32,7 @@ public class Category extends BaseUserEntity {
     @Builder
     public Category(UUID id, String name) {
         this.id = Objects.requireNonNull(id, "id must not be null");
-        String normalized = Objects.requireNonNull(name, "name must not be null").trim();
-        if (normalized.isEmpty() || normalized.length() > MAX_NAME_LENGTH) {
-            throw new CategoryException(CategoryErrorCode.INVALID_INPUT_VALUE);
-        }
-        this.name = normalized;
+        this.name = normalize(name);
     }
 
     public void changeName(String name) {
@@ -44,8 +40,10 @@ public class Category extends BaseUserEntity {
     }
 
     private static String normalize(String name) {
-        Objects.requireNonNull(name, "name must not be null");
-        String trimmed = name.trim();
+        if (name == null) {
+            throw new CategoryException(CategoryErrorCode.INVALID_INPUT_VALUE);
+        }
+            String trimmed = name.trim();
         if (trimmed.isEmpty() || trimmed.length() > MAX_NAME_LENGTH) {
             throw new CategoryException(CategoryErrorCode.INVALID_INPUT_VALUE);
         }
