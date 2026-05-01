@@ -6,6 +6,9 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum CategoryErrorCode implements ErrorCode {
+    CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."),
+    CATEGORY_NAME_DUPLICATED(HttpStatus.CONFLICT, "이미 존재하는 카테고리명입니다."),
+
     COMMUNITY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 커뮤니티입니다."),
     COMMUNITY_ALREADY_JOINED(HttpStatus.BAD_REQUEST, "이미 가입된 커뮤니티입니다."),
     COMMUNITY_ACCESS_DENIED(HttpStatus.FORBIDDEN, "커뮤니티 접근 권한이 없습니다."),
