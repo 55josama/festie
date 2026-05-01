@@ -32,9 +32,6 @@ public class ScheduleHandler {
 
     // 행사 일정 임박
     public void handleEventScheduled(CalendarScheduleMessage message) {
-        UserInfo userInfo = userClient.getUserInfo(message.userIds());
-        Map<UUID, String> emailMap = userInfo.userInfo();
-
         List<Notification> notifications = message.userIds().stream()
                 .map(receiverId -> Notification.of(
                         receiverId, message.eventName() + " 행사 알림",
@@ -42,22 +39,25 @@ public class ScheduleHandler {
                         TargetInfo.event(message.eventId())))
                 .toList();
         notificationRepository.saveAll(notifications);
-        notifications.forEach(notification -> {
-            String email = emailMap.get(notification.getReceiverId());
-            if (email == null || email.isBlank()) {
-                log.warn("수신자 이메일 누락: {}", notification.getReceiverId());
-                return;
-            }
-            send(notification, email);
-        });
-        log.info("행사 임박 메일 전송");
+
+        try {
+            UserInfo userInfo = userClient.getUserInfo(message.userIds());
+            Map<UUID, String> emailMap = userInfo.userInfo();
+            notifications.forEach(notification -> {
+                String email = emailMap.get(notification.getReceiverId());
+                if (email == null || email.isBlank()) {
+                    log.warn("수신자 이메일 누락: {}", notification.getReceiverId());
+                    return;
+                }
+                send(notification, email);
+            });
+        } catch (Exception e) {
+            log.error("이메일 발송 실패 - user-service 호출 오류: {}", e.getMessage());
+        }
     }
 
     // 티켓팅 일정 임박
     public void handleTicketingScheduled(TicketingScheduleMessage message) {
-        UserInfo userInfo = userClient.getUserInfo(message.userIds());
-        Map<UUID, String> emailMap = userInfo.userInfo();
-
         List<Notification> notifications = message.userIds().stream()
                 .map(receiverId -> Notification.of(
                         receiverId, message.eventName() + " 티켓팅 알림",
@@ -66,15 +66,21 @@ public class ScheduleHandler {
                 .toList();
 
         notificationRepository.saveAll(notifications);
-        notifications.forEach(notification -> {
-            String email = emailMap.get(notification.getReceiverId());
-            if (email == null || email.isBlank()) {
-                log.warn("수신자 이메일 누락: {}", notification.getReceiverId());
-                return;
-            }
-            send(notification, email);
-        });
-        log.info("티켓팅 메일 전송");
+
+        try {
+            UserInfo userInfo = userClient.getUserInfo(message.userIds());
+            Map<UUID, String> emailMap = userInfo.userInfo();
+            notifications.forEach(notification -> {
+                String email = emailMap.get(notification.getReceiverId());
+                if (email == null || email.isBlank()) {
+                    log.warn("수신자 이메일 누락: {}", notification.getReceiverId());
+                    return;
+                }
+                send(notification, email);
+            });
+        } catch (Exception e) {
+            log.error("이메일 발송 실패 - user-service 호출 오류: {}", e.getMessage());
+        }
     }
 
     private void send(Notification notification, String email) {
