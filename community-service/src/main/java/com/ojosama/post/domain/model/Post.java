@@ -1,7 +1,7 @@
 package com.ojosama.post.domain.model;
 
 import com.ojosama.common.audit.BaseUserEntity;
-import com.ojosama.common.domain.model.Content;
+import com.ojosama.community.domain.model.Content;
 import com.ojosama.post.domain.exception.PostErrorCode;
 import com.ojosama.post.domain.exception.PostException;
 import jakarta.persistence.Column;

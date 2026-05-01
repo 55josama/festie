@@ -309,6 +309,16 @@ services:
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-festiepw}
       CONFIG_SERVER_URL: http://config-server:8888
 
+<<<<<<< feature/#70-comment-service-crud
+  # ============ community-service ============
+  community-service:
+    build:
+      context: .
+      dockerfile: community-service/Dockerfile
+    container_name: festie-community
+    ports:
+      - "9001:9001"
+=======
     # ============ favorite-service ============
   favorite-service:
     build:
@@ -347,6 +357,7 @@ services:
       context: .
       dockerfile: calendar-service/Dockerfile
     container_name: festie-calendar
+>>>>>>> dev
     restart: unless-stopped
     networks:
       - festie-network
@@ -362,6 +373,10 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
+<<<<<<< feature/#70-comment-service-crud
+      SERVER_PORT: 9001  # 테스트 시 사용
+=======
+>>>>>>> dev
       CONFIG_SERVER_URL: http://config-server:8888
       CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
