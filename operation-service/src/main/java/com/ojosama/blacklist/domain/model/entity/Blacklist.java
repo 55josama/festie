@@ -2,7 +2,6 @@ package com.ojosama.blacklist.domain.model.entity;
 
 import com.ojosama.common.audit.BaseEntity;
 import com.ojosama.blacklist.domain.model.enums.BlacklistStatus;
-import com.ojosama.blacklist.domain.model.enums.RegistrationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -36,23 +35,17 @@ public class Blacklist extends BaseEntity {
     @Column(name = "status", nullable = false)
     private BlacklistStatus status;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private RegistrationType registrationType;
-
     @Builder
-    public Blacklist(UUID userId, String reason, RegistrationType registrationType) {
+    public Blacklist(UUID userId, String reason) {
         this.userId = userId;
         this.reason = reason;
         this.status = BlacklistStatus.ACTIVE;
-        this.registrationType = registrationType;
     }
 
-    public static Blacklist of(UUID userId, String reason, RegistrationType registrationType) {
+    public static Blacklist of(UUID userId, String reason) {
         return Blacklist.builder()
                 .userId(userId)
                 .reason(reason)
-                .registrationType(registrationType)
                 .build();
     }
 

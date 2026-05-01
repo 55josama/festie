@@ -15,6 +15,9 @@ dependencies {
 
     implementation 'org.springframework.kafka:spring-kafka'
 
+    // 웹소켓
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
     // zipkin 테스트용 추가
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     runtimeOnly 'org.postgresql:postgresql'

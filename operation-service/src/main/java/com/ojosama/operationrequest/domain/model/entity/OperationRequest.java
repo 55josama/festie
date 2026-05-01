@@ -1,6 +1,8 @@
 package com.ojosama.operationrequest.domain.model.entity;
 
 import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.operationrequest.domain.exception.OperationRequestErrorCode;
+import com.ojosama.operationrequest.domain.exception.OperationRequestException;
 import com.ojosama.operationrequest.domain.model.enums.OperationRequestStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -57,13 +59,32 @@ public class OperationRequest extends BaseEntity {
                 .build();
     }
 
-    public void resolve(String adminMemo) {
-        this.status = OperationRequestStatus.RESOLVED;
-        this.adminMemo = adminMemo;
+    public void update(String title, String content) {
+        if (this.status != OperationRequestStatus.PENDING) {
+            throw new OperationRequestException(OperationRequestErrorCode.INVALID_UPDATE_STATUS);
+        }
+        this.title = title;
+        this.content = content;
     }
 
-    public void reject(String adminMemo) {
-        this.status = OperationRequestStatus.REJECTED;
-        this.adminMemo = adminMemo;
+    public void updateStatus(OperationRequestStatus newStatus, String adminMemo) {
+        if (this.status == OperationRequestStatus.PENDING && newStatus != OperationRequestStatus.PENDING) {
+            if (adminMemo == null || adminMemo.isBlank()) {
+                throw new OperationRequestException(OperationRequestErrorCode.ADMIN_MEMO_REQUIRED);
+            }
+        }
+        this.status = newStatus;
+        if (adminMemo != null) {
+            this.adminMemo = adminMemo;
+        }
+    }
+
+    public void validateDeletableBy(UUID userId) {
+        if (!this.requesterId.equals(userId)) {
+            throw new OperationRequestException(OperationRequestErrorCode.UNAUTHORIZED_DELETE);
+        }
+        if (this.status != OperationRequestStatus.PENDING) {
+            throw new OperationRequestException(OperationRequestErrorCode.INVALID_DELETE_STATUS);
+        }
     }
 }

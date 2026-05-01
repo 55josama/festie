@@ -1,6 +1,6 @@
 package com.ojosama.post.presesntation.dto.response;
 
-import com.ojosama.common.domain.model.Content;
+import com.ojosama.community.domain.model.Content;
 import com.ojosama.post.application.dto.result.PostResult;
 import com.ojosama.post.domain.model.PostStatus;
 import java.time.LocalDateTime;
