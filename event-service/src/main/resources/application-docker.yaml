@@ -21,9 +21,11 @@ spring:
 
   kafka:
     topic:
-      event-created: ${KAFKA_TOPIC_EVENT_CREATED:event.info.created}
-      event-deleted: ${KAFKA_TOPIC_EVENT_DELETED:event.info.deleted}
-      event-changed: ${KAFKA_TOPIC_EVENT_CHANGED:event.changed}
+      event-created: ${KAFKA_TOPIC_EVENT_CREATED:event.info.created.v1}
+      event-deleted: ${KAFKA_TOPIC_EVENT_DELETED:event.info.deleted.v1}
+      event-changed: ${KAFKA_TOPIC_EVENT_CHANGED:event.schedule.changed.v1}
+      event-request-created: ${KAFKA_TOPIC_EVENT_REQUEST_CREATED:event.request.created.v1}
+      event-request-created-result: ${KAFKA_TOPIC_EVENT_REQUEST_CREATED_RESULT:event.request.processed.v1}
 
 eureka:
   instance:

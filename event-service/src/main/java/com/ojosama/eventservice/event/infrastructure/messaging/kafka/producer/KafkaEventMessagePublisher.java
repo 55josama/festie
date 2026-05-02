@@ -17,13 +17,13 @@ public class KafkaEventMessagePublisher {
 
     private final OutboxEventPublisher outboxEventPublisher;
 
-    @Value("${spring.kafka.topic.event-created}")
+    @Value("${spring.kafka.topic.event-created:event.info.created.v1}")
     private String eventCreatedTopic;
 
-    @Value("${spring.kafka.topic.event-deleted}")
+    @Value("${spring.kafka.topic.event-deleted:event.info.deleted.v1}")
     private String eventDeletedTopic;
 
-    @Value("${spring.kafka.topic.event-changed}")
+    @Value("${spring.kafka.topic.event-changed:event.schedule.changed.v1}")
     private String eventChangedTopic;
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
