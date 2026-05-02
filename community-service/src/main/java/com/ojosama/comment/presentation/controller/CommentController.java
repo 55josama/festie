@@ -69,7 +69,7 @@ public class CommentController {
         return ApiResponse.success(page.map(CommentResponse::from));
     }
 
-    @GetMapping("internal/v1/comments/{commentId}")
+    @GetMapping("/internal/v1/comments/{commentId}")
     public ApiResponse<CommentResponse> getComment(@PathVariable UUID commentId) {
         CommentResult result = commentService.getComment(commentId);
         return ApiResponse.success(CommentResponse.from(result));
