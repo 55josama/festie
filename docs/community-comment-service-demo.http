@@ -1,0 +1,59 @@
+###Comment Service Demo
+### IntelliJ HTTP Client용
+
+###루트 댓글 작성
+POST {{communityUrl}}/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments
+Content-Type: application/json
+
+{
+"content":"루트 댓글입니다.",
+
+"parentId":null
+}
+
+###대댓글 작성
+POST {{communityUrl}}/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments
+Content-Type: application/json
+
+{
+"content":"대댓글입니다.",
+"parentId":"f48431e4-db13-4e34-a19f-1d143faaeabb"
+}
+
+###대댓글의 대댓글 검출 확인용
+POST {{communityUrl}}/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments
+Content-Type: application/json"
+
+{
+"content":"대댓글의 대댓글입니다",
+"parentId":"353da047-7411-4339-9cb8-aca77167fb0e;"
+}
+
+
+###수정
+PATCH {{communityUrl}}/v1/]({{communityUrl}}/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments)comments/{commentId}
+
+{
+"content":"댓글 수정합니다."
+}
+
+###삭제
+DELETE {{communityUrl}}/v1/]({{communityUrl}}/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments)comments/{commentId}
+
+###posts에 해당하는 댓글 조회
+{{communityUrl}}/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments
+
+###댓글 상세조회(internal)
+internal/v1/comments/{commentId}
+
+###게시글 좋아요
+POST {{communityUrl}}/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/likes
+
+#- 결과값
+#    {"status":200,"message":"성공하였습니다.","timestamp":"2026-05-02T10:45:41.798439008"}
+
+###댓글 좋아요
+POST {{communityUrl}}/v1/comments/f48431e4-db13-4e34-a19f-1d143faaeabb/likes
+
+#operation-service → UserBlacklist 시연
+#operation-service → TargetBlinded 시연
