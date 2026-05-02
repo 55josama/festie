@@ -38,7 +38,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
         HttpMethod method = exchange.getRequest().getMethod();
 
-        if (isPublicEndpoint(method, path)) {
+        if (HttpMethod.OPTIONS.equals(method) || isPublicEndpoint(method, path)) {
             return chain.filter(exchange);
         }
 
