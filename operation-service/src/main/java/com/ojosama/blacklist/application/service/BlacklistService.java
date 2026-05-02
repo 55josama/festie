@@ -93,7 +93,7 @@ public class BlacklistService {
                 "BLACKLIST",
                 userId,
                 EventType.BLACKLIST_UPDATED, // EventType 상수 확인 필요
-                "operation.blacklist.updated",
+                "operation.blacklist.updated.v1",
                 event
         );
     }
@@ -104,7 +104,7 @@ public class BlacklistService {
                 "BLACKLIST",
                 blacklist.getUserId(),
                 EventType.BLACKLIST_REGISTERED,
-                "operation.blacklist.registered",
+                "operation.blacklist.registered.v1",
                 new BlacklistRegisterEvent(
                         blacklist.getUserId(),
                         blacklist.getReason()

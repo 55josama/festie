@@ -124,7 +124,7 @@ public class ReportService {
                 "REPORT",
                 command.targetId(),
                 EventType.REPORT_BLINDED,
-                "operation.report.blinded",
+                "operation.report.blinded.v1",
                 new TargetBlindEvent(
                         command.targetId(),
                         command.targetType(),
