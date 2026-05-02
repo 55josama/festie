@@ -63,7 +63,7 @@ public class Comment extends BaseUserEntity {
     public static Comment createReply(UUID id, UUID userId, Content content, Comment parent){
         Objects.requireNonNull(parent, "parent must not be null");
         if(parent.parentId != null){
-            throw new CommentException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+            throw new CommentException(CommentErrorCode.REPLY_DEPTH_EXCEEDED);
         }
         Comment c = new Comment();
         c.id = Objects.requireNonNull(id, "id must not be null");
