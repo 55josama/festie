@@ -1,0 +1,39 @@
+###  **자신의 알림 전체 읽음 처리**
+
+Content-Type: application/json
+X-User-Id: 11111111-2222-1111-1111-111111111111
+
+PATCH : {{notificationUrl}}/v1/notifications
+
+### **알림 조회**
+
+Content-Type: application/json
+X-User-Id: 11111111-2222-1111-1111-111111111111
+
+GET : {{notificationUrl}}/v1/notifications
+
+### **알림 삭제**
+
+DELETE : {{notificationUrl}}/v1/notificaitons/{notificationId}
+
+### **알림 자동 삭제 스케줄러 (일단 5분마다 자동으로 삭제할 수 있게끔 변경해놨음)**
+
+notification 테이블 상태확인 필
+
+---
+
+ kafka … 지옥..
+
+- 운영
+    - operation-service 블랙리스트 처리 → 블랙리스트 처리 당한 유저 이메일 확인 필
+    - operation-service 블라인드 처리 → 각 카테고리 담당자에게 알림 발송
+    - operation-service 운영 요청 // 이거 테스트 결과보고 수정 예정
+- 행사 요청
+    - event-service 행사요청
+    - event-service 행사요청 결과
+- 캘린더
+    - 이벤트 삭제 → 캘린더 삭제 → 알림 연결확인 필
+    - 이벤트 변경→ 캘린더 변경 → 알림 연결확인 필
+    - (위에 적긴한건데..)
+    - 캘린더 행사 임박 이벤트 → 알림, 이메일 확인
+    - 캘린더 티켓팅 임박 이벤트 → 알림, 이메일 확인

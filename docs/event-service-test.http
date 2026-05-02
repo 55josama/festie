@@ -1,0 +1,335 @@
+### 카테고리 목록 조회
+GET {{eventUrl}}/v1/event-categories
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 카테고리 등록
+POST {{eventUrl}}/v1/event-categories
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "name": "CONCERT"
+}
+
+###
+
+### 카테고리 수정
+PATCH {{eventUrl}}/v1/event-categories/{{categoryId}}
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "name": "FESTIVAL"
+}
+
+###
+
+### 카테고리 삭제
+DELETE {{eventUrl}}/v1/event-categories/{{categoryId}}
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### [Internal] 카테고리 단건 조회
+GET {{eventUrl}}/internal/v1/event-categories/{{categoryId}}
+
+### 행사 등록
+POST {{eventUrl}}/v1/events
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "name": "2026 인천 락 페스티벌",
+  "categoryId": "{{categoryId}}",
+  "startAt": "2026-08-01T14:00:00",
+  "endAt": "2026-08-03T23:00:00",
+  "place": "송도달빛축제공원",
+  "latitude": 37.46,
+  "longitude": 126.71,
+  "minFee": 50000,
+  "maxFee": 150000,
+  "hasTicketing": true,
+  "ticketingOpenAt": "2026-05-01T10:00:00",
+  "ticketingCloseAt": "2026-07-31T23:59:59",
+  "ticketingLink": "https://ticket.example.com/rock2026",
+  "officialLink": "https://festival.example.com",
+  "description": "국내 최대 규모의 여름 락 페스티벌입니다.",
+  "performer": "잔나비, 루시, 실리카겔",
+  "img": "https://cdn.example.com/images/poster.jpg",
+  "schedules": [
+    {
+      "name": "Day 1 - Opening",
+      "startTime": "2026-08-01T14:00:00",
+      "endTime": "2026-08-01T22:00:00"
+    },
+    {
+      "name": "Day 2 - Main Stage",
+      "startTime": "2026-08-02T13:00:00",
+      "endTime": "2026-08-02T23:00:00"
+    },
+    {
+      "name": "Day 3 - Closing",
+      "startTime": "2026-08-03T13:00:00",
+      "endTime": "2026-08-03T23:00:00"
+    }
+  ]
+}
+
+###
+
+### 행사 등록 (티켓팅 없음)
+POST {{eventUrl}}/v1/events
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "name": "2026 봄 팝업 스토어",
+  "categoryId": "{{categoryId}}",
+  "startAt": "2026-04-01T10:00:00",
+  "endAt": "2026-04-30T20:00:00",
+  "place": "성수동 복합문화공간",
+  "latitude": 37.54,
+  "longitude": 127.05,
+  "minFee": 0,
+  "maxFee": 0,
+  "hasTicketing": false,
+  "description": "봄 시즌 한정 팝업 스토어입니다.",
+  "img": "https://cdn.example.com/images/popup.jpg",
+  "schedules": [
+    {
+      "name": "오픈 기간",
+      "startTime": "2026-04-01T10:00:00",
+      "endTime": "2026-04-30T20:00:00"
+    }
+  ]
+}
+
+###
+
+### 행사 목록 조회 (필터 없음)
+GET {{eventUrl}}/v1/events
+
+###
+
+### 행사 목록 조회 - 카테고리 필터
+GET {{eventUrl}}/v1/events?category=CONCERT
+
+###
+
+### 행사 목록 조회 - 상태 필터
+GET {{eventUrl}}/v1/events?status=SCHEDULED
+
+###
+
+### 행사 목록 조회 - 연월 필터
+GET {{eventUrl}}/v1/events?year=2026&month=8
+
+###
+
+### 행사 목록 조회 - 날짜 범위 필터
+GET {{eventUrl}}/v1/events?startAt=2026-06-01T00:00:00&endAt=2026-09-30T23:59:59
+
+###
+
+### 행사 상세 조회 (chatRoom 포함)
+GET {{eventUrl}}/v1/events/{{eventId}}
+
+###
+
+### 행사 수정 (schedules 포함 → 기존 일정 전체 교체)
+PATCH {{eventUrl}}/v1/events/{{eventId}}
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "name": "2026 인천 락 페스티벌 (수정)",
+  "categoryId": "{{categoryId}}",
+  "startAt": "2026-08-01T14:00:00",
+  "endAt": "2026-08-04T23:00:00",
+  "place": "송도달빛축제공원",
+  "latitude": 37.46,
+  "longitude": 126.71,
+  "minFee": 50000,
+  "maxFee": 180000,
+  "hasTicketing": true,
+  "ticketingOpenAt": "2026-05-01T10:00:00",
+  "ticketingCloseAt": "2026-08-01T23:59:59",
+  "ticketingLink": "https://ticket.example.com/rock2026",
+  "officialLink": "https://festival.example.com",
+  "description": "국내 최대 규모의 여름 락 페스티벌입니다. (3일 → 4일로 연장)",
+  "performer": "잔나비, 루시, 실리카겔, 혁오",
+  "img": "https://cdn.example.com/images/poster-v2.jpg",
+  "schedules": [
+    {
+      "name": "Day 1 - Opening",
+      "startTime": "2026-08-01T14:00:00",
+      "endTime": "2026-08-01T22:00:00"
+    },
+    {
+      "name": "Day 2 - Main Stage",
+      "startTime": "2026-08-02T13:00:00",
+      "endTime": "2026-08-02T23:00:00"
+    },
+    {
+      "name": "Day 3 - Special",
+      "startTime": "2026-08-03T13:00:00",
+      "endTime": "2026-08-03T23:00:00"
+    },
+    {
+      "name": "Day 4 - Closing",
+      "startTime": "2026-08-04T13:00:00",
+      "endTime": "2026-08-04T23:00:00"
+    }
+  ]
+}
+
+###
+
+### 행사 수정 (schedules 생략 → 기존 일정 유지)
+PATCH {{eventUrl}}/v1/events/{{eventId}}
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "name": "2026 인천 락 페스티벌 (이름만 변경)",
+  "categoryId": "{{categoryId}}",
+  "startAt": "2026-08-01T14:00:00",
+  "endAt": "2026-08-03T23:00:00",
+  "place": "송도달빛축제공원",
+  "latitude": 37.46,
+  "longitude": 126.71,
+  "minFee": 50000,
+  "maxFee": 150000,
+  "hasTicketing": true,
+  "ticketingOpenAt": "2026-05-01T10:00:00",
+  "ticketingCloseAt": "2026-07-31T23:59:59",
+  "ticketingLink": "https://ticket.example.com/rock2026",
+  "description": "국내 최대 규모의 여름 락 페스티벌입니다.",
+  "img": "https://cdn.example.com/images/poster.jpg"
+}
+
+###
+
+### 행사 삭제 (soft delete → 204)
+DELETE {{eventUrl}}/v1/events/{{eventId}}
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 삭제 후 상세 조회 → 404 확인 (soft delete 검증)
+GET {{eventUrl}}/v1/events/{{eventId}}
+
+###
+
+### [Internal] 전체 행사 목록 조회
+GET {{eventUrl}}/internal/v1/events
+
+###
+
+### [Internal] 지정 ID 행사 벌크 조회
+GET {{eventUrl}}/internal/v1/events?eventIds={{eventId}},{{eventId2}}
+
+###
+
+### [Internal] 행사 단건 조회 (chatRoom 미포함)
+GET {{eventUrl}}/internal/v1/events/{{eventId}}
+
+
+### 행사 신청 등록
+POST {{eventUrl}}/v1/event-requests
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "title": "2026 버스킹 페스티벌 개최 요청",
+  "category": "FESTIVAL",
+  "link": "https://busking.example.com",
+  "description": "홍대 앞 거리에서 열리는 버스킹 페스티벌입니다."
+}
+
+###
+
+### 행사 신청 등록 (description 생략)
+POST {{eventUrl}}/v1/event-requests
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "title": "팝업 스토어 신청",
+  "category": "POPUPSTORE",
+  "link": "https://popup.example.com"
+}
+
+###
+
+### 신청 목록 조회 (필터 없음)
+GET {{eventUrl}}/v1/event-requests
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 신청 목록 조회 - status 필터
+GET {{eventUrl}}/v1/event-requests?status=PENDING
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 신청 목록 조회 - categoryName 필터
+GET {{eventUrl}}/v1/event-requests?categoryName=FESTIVAL
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 신청 목록 조회 - eventName 부분 검색
+GET {{eventUrl}}/v1/event-requests?eventName=버스킹
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 신청 목록 조회 - 생성일 범위 필터
+GET {{eventUrl}}/v1/event-requests?createdStart=2026-01-01T00:00:00&createdEnd=2026-12-31T23:59:59
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 내 신청 목록 조회
+GET {{eventUrl}}/v1/event-requests/me
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 신청 상세 조회
+GET {{eventUrl}}/v1/event-requests/{{requestId}}
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 신청 승인
+POST {{eventUrl}}/v1/event-requests/{{requestId}}/approval
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 신청 반려 (rejectReason 필수)
+POST {{eventUrl}}/v1/event-requests/{{requestId}}/rejections
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "rejectReason": "행사 정보가 불충분합니다. 장소 및 일정을 포함해 다시 신청해주세요."
+}
+
+###
+
+### 신청 취소 (PENDING만 가능 → status=CANCELLED)
+DELETE {{eventUrl}}/v1/event-requests/{{requestId}}
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+###
+
+### 취소 후 상세 조회 → CANCELLED 상태로 여전히 조회됨
+GET {{eventUrl}}/v1/event-requests/{{requestId}}
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
