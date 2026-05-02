@@ -76,6 +76,10 @@ public class FavoriteService {
 
     // 이벤트를 통한 행사 변경
     public void updateAllByEventId(UUID eventId, EventUpdatedMessage message) {
+        if (message == null || message.changedFields() == null || message.changedFields().isEmpty()) {
+            throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+
         for (var field : message.changedFields()) {
             String fieldName = field.fieldName();
             String after = field.after();
