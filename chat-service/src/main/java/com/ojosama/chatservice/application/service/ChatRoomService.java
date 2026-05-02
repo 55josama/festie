@@ -90,6 +90,9 @@ public class ChatRoomService {
         if (command == null || command.eventId() == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
+        if (command.eventStartAt() == null && command.eventEndAt() == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
 
         ChatRoom chatRoom = chatRoomRepository.findByEventId(command.eventId())
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
