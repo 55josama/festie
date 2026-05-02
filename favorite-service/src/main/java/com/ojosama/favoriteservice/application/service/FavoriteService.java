@@ -9,17 +9,24 @@ import com.ojosama.favoriteservice.domain.model.Favorite;
 import com.ojosama.favoriteservice.domain.repository.FavoriteRepository;
 import com.ojosama.favoriteservice.infrastructure.client.EventClient;
 import com.ojosama.favoriteservice.infrastructure.client.dto.EventInfoResponseDto;
+import com.ojosama.favoriteservice.infrastructure.messaging.kafka.dto.EventUpdatedMessage;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class FavoriteService {
+
+    private static final UUID system = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     private final FavoriteRepository favoriteRepository;
     private final EventClient eventClient;
@@ -55,16 +62,24 @@ public class FavoriteService {
         favorite.deleted(userId);
     }
 
-    public List<FavoriteResult> getFavorites(UUID userId) {
-        List<Favorite> favorites = favoriteRepository.findByUserIdAndDeletedAtIsNull(userId);
+    public Page<FavoriteResult> getFavorites(UUID userId, Pageable pageable) {
+        Page<Favorite> favorites = favoriteRepository.findByUserIdAndDeletedAtIsNull(userId, pageable);
 
-        return favorites.stream()
-                .map(FavoriteResult::from)
-                .toList();
+        return favorites.map(FavoriteResult::from);
     }
 
+    // 이벤트를 통한 행사 삭제
     public void deleteAllByEventId(UUID eventId) {
         List<Favorite> favorites = favoriteRepository.findByEventInfo_EventIdAndDeletedAtIsNull(eventId);
-        favorites.forEach(favorite -> favorite.deleted(null));
+        favorites.forEach(favorite -> favorite.deleted(system));
+    }
+
+    // 이벤트를 통한 행사 변경
+    public void updateAllByEventId(UUID eventId, EventUpdatedMessage message) {
+        for (var field : message.changedFields()) {
+            String fieldName = field.fieldName();
+            String after = field.after();
+            favoriteRepository.updateEventInfoBulk(eventId, fieldName, after);
+        }
     }
 }
