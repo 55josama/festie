@@ -95,7 +95,7 @@ public class AiModerationService {
                             "MODERATION",
                             m.getTargetId(),
                             EventType.AI_MODERATION_EVALUATED,
-                            "ai.moderation.evaluated",
+                            "ai.moderation.evaluated.v1",
                             new AiEvaluateEvent(
                                     m.getTargetId(),
                                     m.getTargetUserId(),
