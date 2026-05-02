@@ -48,5 +48,6 @@ CLAUDE.md
 **/CLAUDE.md
 
 ### Querydsl ###
-src/main/generated/
-src/test/generated/
+**/src/main/generated/
+**/src/test/generated/
+**/build/generated/
