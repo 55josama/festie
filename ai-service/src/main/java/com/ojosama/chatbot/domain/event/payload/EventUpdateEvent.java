@@ -3,7 +3,7 @@ package com.ojosama.chatbot.domain.event.payload;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record EventsUpdateEvent(
+public record EventUpdateEvent(
         UUID eventId,
         String name,
         String categoryName,

@@ -2,7 +2,7 @@ package com.ojosama.chatbot.infrastructure.messaging.kafka.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.chatbot.application.service.DocumentIndexer;
-import com.ojosama.chatbot.domain.event.payload.EventsUpdateEvent;
+import com.ojosama.chatbot.domain.event.payload.EventUpdateEvent;
 import com.ojosama.chatbot.domain.exception.AiChatErrorCode;
 import com.ojosama.chatbot.domain.exception.AiChatException;
 import com.ojosama.common.kafka.domain.EventType;
@@ -28,12 +28,12 @@ public class EventsUpdateEventConsumer {
     @KafkaListener(topics = "event-event-updated", groupId = "ai-service-group")
     public void consumeEvent(ConsumerRecord<String, String> record) {
         UUID messageKey;
-        EventsUpdateEvent event;
+        EventUpdateEvent event;
 
         try {
             // 메시지 키 파싱 및 이벤트 역직렬화
             messageKey = UUID.fromString(record.key());
-            event = objectMapper.readValue(record.value(), EventsUpdateEvent.class);
+            event = objectMapper.readValue(record.value(), EventUpdateEvent.class);
         } catch (Exception e) {
             log.error("Event 메시지 파싱 실패. key={}, value={}", record.key(), record.value(), e);
             throw new AiChatException(AiChatErrorCode.KAFKA_MESSAGE_PARSING_FAILURE);
@@ -47,7 +47,7 @@ public class EventsUpdateEventConsumer {
         );
     }
 
-    private void dispatch(EventsUpdateEvent message) {
+    private void dispatch(EventUpdateEvent message) {
         if ("SCHEDULED".equalsIgnoreCase(message.status()) || "IN_PROGRESS".equalsIgnoreCase(message.status())
                 || "CANCELLED".equalsIgnoreCase(message.status()) || "COMPLETED".equalsIgnoreCase(message.status())) {
             log.info("Kafka: 행사 업데이트/생성 Upsert (EventID: {})", message.eventId());
