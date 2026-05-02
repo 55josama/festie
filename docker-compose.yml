@@ -129,6 +129,8 @@ services:
       - "8761:8761"
     networks:
       - festie-network
+    environment:
+      MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED: "false"
     healthcheck:
       test: [ "CMD-SHELL", "wget --spider -q http://localhost:8761/actuator/health || exit 1" ]
       interval: 10s
@@ -289,20 +291,17 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-      config-server:
-        condition: service_healthy
     environment:
-      SERVER_PORT: 8082  # 테스트 시 사용
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8082
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
-      SPRING_CLOUD_CONFIG_URI: http://festie-config:8888
       DB_USER: ${POSTGRES_USER:-festie}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://festie-eureka:8761/eureka/
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
       CONFIG_USERNAME: ${CONFIG_USERNAME:-festie}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-festiepw}
