@@ -9,11 +9,49 @@ spring:
     gateway:
       server:
         webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - "http://localhost:3000"
+                  - "http://localhost:5173"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+
           routes:
             - id: user-service
               uri: lb://user-service
               predicates:
                 - Path=/user-service/**
+              filters:
+                - StripPrefix=1
+
+            - id: chat-service
+              uri: lb://chat-service
+              predicates:
+                - Path=/chat-service/**
+              filters:
+                - StripPrefix=1
+
+            - id: operation-service
+              uri: lb://operation-service
+              predicates:
+                - Path=/operation-service/**
+              filters:
+                - StripPrefix=1
+
+            - id: event-service
+              uri: lb://event-service
+              predicates:
+                - Path=/event-service/**
               filters:
                 - StripPrefix=1
 
