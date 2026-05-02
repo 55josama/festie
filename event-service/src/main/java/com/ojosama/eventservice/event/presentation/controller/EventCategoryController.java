@@ -94,8 +94,6 @@ public class EventCategoryController {
     }
 
     private void validateGatewayHeaders(UUID userId, String userRole) {
-        if (userId == null || userRole == null || userRole.isBlank()) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+//        if (userId == null || userRole == null || userRole.isBlank()) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
     }
 }

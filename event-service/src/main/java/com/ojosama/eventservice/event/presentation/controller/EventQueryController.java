@@ -66,8 +66,6 @@ public class EventQueryController {
     }
 
     private void validateAuthHeaders(UUID userId, String userRole) {
-        if (userId == null || !StringUtils.hasText(userRole)) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+//        if (userId == null || !StringUtils.hasText(userRole)) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
     }
 }

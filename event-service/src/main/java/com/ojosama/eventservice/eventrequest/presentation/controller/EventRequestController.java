@@ -47,10 +47,7 @@ public class EventRequestController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @Valid @RequestBody CreateEventRequestRequest request) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
-
+//        if (userId == null || userRole == null) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
         EventRequestResult result = eventRequestCommandService.createEventRequest(
                 CreateEventRequestCommand.from(userId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -81,10 +78,7 @@ public class EventRequestController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @PathVariable UUID requestId) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
-
+//        if (userId == null || userRole == null) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
         EventRequestResult result = eventRequestCommandService.approveEventRequest(requestId);
         return ResponseEntity.ok(ApiResponse.success(EventRequestResponse.from(result)));
     }
@@ -97,10 +91,7 @@ public class EventRequestController {
             @PathVariable UUID requestId,
             @Valid @RequestBody RejectEventRequestRequest request) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
-
+//        if (userId == null || userRole == null) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
         EventRequestResult result = eventRequestCommandService.rejectEventRequest(requestId, request.rejectReason());
         return ResponseEntity.ok(ApiResponse.success(EventRequestResponse.from(result)));
     }
@@ -147,8 +138,6 @@ public class EventRequestController {
     }
 
     private void validateAuthHeaders(UUID userId, String userRole) {
-        if (userId == null || !StringUtils.hasText(userRole)) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+//        if (userId == null || !StringUtils.hasText(userRole)) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
     }
 }
