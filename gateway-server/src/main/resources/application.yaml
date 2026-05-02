@@ -55,6 +55,41 @@ spring:
               filters:
                 - StripPrefix=1
 
+            - id: community-service
+              uri: lb://community-service
+              predicates:
+                - Path=/community-service/**
+              filters:
+                - StripPrefix=1
+
+            - id: favorite-service
+              uri: lb://favorite-service
+              predicates:
+                - Path=/favorite-service/**
+              filters:
+                - StripPrefix=1
+
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/notification-service/**
+              filters:
+                - StripPrefix=1
+
+            - id: calendar-service
+              uri: lb://calendar-service
+              predicates:
+                - Path=/calendar-service/**
+              filters:
+                - StripPrefix=1
+
+            - id: ai-service
+              uri: lb://ai-service
+              predicates:
+                - Path=/ai-service/**
+              filters:
+                - StripPrefix=1
+
 eureka:
   client:
     service-url:
