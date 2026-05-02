@@ -1,13 +1,20 @@
 package com.ojosama.report.infrastructure.client.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record CommentClientResponse(
-        UUID id,
-        UUID postId,
-        UUID userId,
-        UUID parentId,
-        String content,
-        String status,
-        int likeCount
-) { }
+        Integer status,
+        String message,
+        CommentData data
+) {
+    public UUID userId() {
+        return data != null ? data.userId() : null;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record CommentData(
+            UUID userId
+    ) { }
+}
