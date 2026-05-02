@@ -1,5 +1,8 @@
 package com.ojosama.blacklist.presentation.controller;
 
+import com.ojosama.blacklist.application.dto.command.CreateBlacklistCommand;
+import com.ojosama.blacklist.application.dto.result.BlacklistResult;
+import com.ojosama.blacklist.domain.model.enums.BlacklistStatus;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.blacklist.application.dto.query.ListBlacklistQuery;
 import com.ojosama.blacklist.application.service.BlacklistService;
@@ -22,7 +25,9 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -36,7 +41,8 @@ public class BlacklistController {
     public ResponseEntity<ApiResponse<FindBlacklistResponse>> createBlacklist(
             @Valid @RequestBody CreateBlacklistRequest request) {
 
-        var result = blacklistService.createBlacklistManual(request.toCommand());
+        CreateBlacklistCommand command = request.toCommand();
+        BlacklistResult result = blacklistService.createBlacklistManual(command);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(FindBlacklistResponse.from(result)));
@@ -45,9 +51,10 @@ public class BlacklistController {
     // 블랙리스트 목록 조회
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ListBlacklistResponse>>> getBlacklists(
-            @ModelAttribute ListBlacklistQuery query,
+            @RequestParam(required = false) BlacklistStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
+        ListBlacklistQuery query = new ListBlacklistQuery(status);
         Page<ListBlacklistResponse> response = blacklistService.getBlacklists(query, pageable)
                 .map(ListBlacklistResponse::from);
 
@@ -60,7 +67,7 @@ public class BlacklistController {
             @PathVariable UUID blacklistId,
             @Valid @RequestBody UpdateBlacklistRequest request) {
 
-        var result = blacklistService.releaseBlacklist(blacklistId, request.toCommand());
+        BlacklistResult result = blacklistService.releaseBlacklist(blacklistId, request.toCommand());
         return ResponseEntity.ok(ApiResponse.success(FindBlacklistResponse.from(result)));
     }
 }

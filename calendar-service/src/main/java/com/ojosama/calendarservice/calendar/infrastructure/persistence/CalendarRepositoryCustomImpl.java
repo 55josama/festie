@@ -17,7 +17,7 @@ public class CalendarRepositoryCustomImpl implements CalendarRepositoryCustom {
     private final QCalendar qCalendar = QCalendar.calendar;
 
     @Override
-    public List<Calendar> findByUserIdAndYearMonth(UUID userId, int year, int month) {
+    public List<Calendar> findByUserIdAndYearMonthAndDeletedAtIsNull(UUID userId, int year, int month) {
         // 해당 월 1일
         LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0);
         // 다음달 1일

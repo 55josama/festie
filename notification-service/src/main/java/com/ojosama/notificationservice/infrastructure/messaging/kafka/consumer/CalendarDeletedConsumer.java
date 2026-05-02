@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 public class CalendarDeletedConsumer {
 
     private static final String CONSUMER_GROUP = "notification-service-group";
-    private static final String EVENT_TYPE = EventType.EVENT_DELETED.getValue();
+    private static final String EVENT_TYPE = EventType.CALENDAR_DELETED.getValue();
 
     private final ObjectMapper objectMapper;
     private final IdempotentEventHandler idempotentEventHandler;
