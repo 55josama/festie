@@ -25,7 +25,9 @@ public class CalendarSchedule {
     private final KafkaCalendarSchedulerPublisher publisher;
 
     // 행사 스케줄 -> 전날 오후 1시
-    @Scheduled(cron = "0 0 13 * * *")
+    //@Scheduled(cron = "0 0 13 * * *")
+    // 테스트 -> 1분마다
+    @Scheduled(fixedRate = 60000)
     public void eventImminent() {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         LocalDateTime start = tomorrow.atStartOfDay(); // 내일 00시

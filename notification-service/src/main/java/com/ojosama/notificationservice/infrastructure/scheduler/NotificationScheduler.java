@@ -15,11 +15,13 @@ public class NotificationScheduler {
 
     private final NotificationRepository notificationRepository;
 
-    @Scheduled(cron = "0 0 3 * * *")
+    // 테스트 -> 5분마다
+    // @Scheduled(cron = "0 0 3 * * *")
+    @Scheduled(fixedDelay = 300000)
     @Transactional
     public void cleanNotifications() {
-        LocalDateTime time = LocalDateTime.now().minusDays(15);
-
+        // LocalDateTime time = LocalDateTime.now().minusDays(15);
+        LocalDateTime time = LocalDateTime.now();
         Long count = notificationRepository.deleteOldNotifications(time);
 
         log.info("자동 삭제 된 알림 {}건, 기준 날짜 {}", count, time);
