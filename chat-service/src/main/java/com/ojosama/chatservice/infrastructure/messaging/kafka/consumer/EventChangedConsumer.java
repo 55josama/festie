@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.chatservice.application.dto.command.ChangeChatRoomScheduleCommand;
 import com.ojosama.chatservice.application.service.ChatRoomService;
+import com.ojosama.chatservice.domain.exception.ChatErrorCode;
+import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.chatservice.infrastructure.messaging.kafka.dto.EventChangedEvent;
 import com.ojosama.chatservice.infrastructure.messaging.kafka.dto.EventChangedEvent.FieldChange;
 import com.ojosama.common.kafka.domain.EventType;
@@ -34,12 +36,17 @@ public class EventChangedConsumer {
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void onMessage(ConsumerRecord<String, String> record) {
-        UUID messageKey;
-        EventChangedEvent event;
-
         try {
-            messageKey = UUID.fromString(record.key());
-            event = parse(record.value());
+            UUID messageKey = parseMessageKey(record.key(), record.topic());
+            if (messageKey == null) {
+                return;
+            }
+
+            EventChangedEvent event = parse(record.value(), record.topic());
+            if (event == null) {
+                return;
+            }
+
             idempotentHandler.handle(
                     messageKey,
                     CONSUMER_GROUP,
@@ -49,8 +56,8 @@ public class EventChangedConsumer {
             );
             log.info("행사 일정 변경 메시지 처리를 완료했습니다. key={}, topic={}", record.key(), record.topic());
         } catch (RuntimeException e) {
-            log.error("행사 일정 변경 이벤트 처리에 실패했습니다. key={}, payload={}",
-                    record.key(), record.value(), e);
+            log.error("행사 일정 변경 이벤트 처리에 실패했습니다. key={}, topic={}",
+                    record.key(), record.topic(), e);
             throw e;
         }
     }
@@ -67,14 +74,22 @@ public class EventChangedConsumer {
         LocalDateTime eventStartAt = extractAfter(event, "startAt");
         LocalDateTime eventEndAt = extractAfter(event, "endAt");
 
-        chatRoomService.changeChatRoomSchedule(
-                new ChangeChatRoomScheduleCommand(
-                        event.eventId(),
-                        eventStartAt,
-                        eventEndAt
-                )
-        );
-        log.info("행사 변경을 반영해 채팅방 정보를 갱신했습니다. eventId={}", event.eventId());
+        try {
+            chatRoomService.changeChatRoomSchedule(
+                    new ChangeChatRoomScheduleCommand(
+                            event.eventId(),
+                            eventStartAt,
+                            eventEndAt
+                    )
+            );
+            log.info("행사 변경을 반영해 채팅방 정보를 갱신했습니다. eventId={}", event.eventId());
+        } catch (ChatException e) {
+            if (e.getStatus().equals(ChatErrorCode.CHAT_ROOM_NOT_FOUND.getStatus())) {
+                log.warn("채팅방이 없어 일정 변경을 건너뜁니다. eventId={}", event.eventId());
+                return;
+            }
+            throw e;
+        }
     }
 
     private boolean hasRelevantChanges(EventChangedEvent event) {
@@ -112,11 +127,25 @@ public class EventChangedConsumer {
         return LocalDateTime.parse(value.toString());
     }
 
-    private EventChangedEvent parse(String payload) {
+    private UUID parseMessageKey(String key, String topic) {
+        if (key == null || key.isBlank()) {
+            log.warn("행사 일정 변경 이벤트 key가 비어 있어 건너뜁니다. topic={}", topic);
+            return null;
+        }
+        try {
+            return UUID.fromString(key);
+        } catch (IllegalArgumentException e) {
+            log.warn("행사 일정 변경 이벤트 key 형식이 올바르지 않아 건너뜁니다. key={}, topic={}", key, topic);
+            return null;
+        }
+    }
+
+    private EventChangedEvent parse(String payload, String topic) {
         try {
             return objectMapper.readValue(payload, EventChangedEvent.class);
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("행사 일정 변경 이벤트 페이로드 파싱에 실패했습니다.", e);
+            log.warn("행사 일정 변경 이벤트 페이로드 파싱에 실패해 건너뜁니다. topic={}", topic);
+            return null;
         }
     }
 }

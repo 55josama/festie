@@ -51,8 +51,8 @@ public class TargetBlindedConsumer {
             log.info("블라인드 이벤트 처리를 완료했습니다. key={}, topic={}, targetType={}, targetId={}",
                     record.key(), record.topic(), event.targetType(), event.targetId());
         } catch (RuntimeException e) {
-            log.error("블라인드 이벤트 처리에 실패했습니다. key={}, payload={}",
-                    record.key(), record.value(), e);
+            log.error("블라인드 이벤트 처리에 실패했습니다. key={}, topic={}",
+                    record.key(), record.topic(), e);
             throw e;
         }
     }
@@ -89,4 +89,3 @@ public class TargetBlindedConsumer {
         }
     }
 }
-
