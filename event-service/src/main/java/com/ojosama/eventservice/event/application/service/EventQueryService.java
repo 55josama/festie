@@ -8,6 +8,7 @@ import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.Event;
 import com.ojosama.eventservice.event.domain.repository.EventFilter;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
+import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.infrastructure.client.ChatServiceClient;
 import com.ojosama.eventservice.event.infrastructure.client.dto.ChatRoomSummaryDto;
 import jakarta.annotation.PostConstruct;
@@ -58,8 +59,12 @@ public class EventQueryService {
                     .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
             return EventResult.from(event);  // LAZY(category, schedules) 초기화 트랜잭션 안에서
         }));
-        ChatRoomSummaryDto chatRoom = chatServiceClient.getChatRoomSummary(id).getData();
-        return new EventDetailResult(eventResult, chatRoom != null ? chatRoom : ChatRoomSummaryDto.empty());
+        ApiResponse<ChatRoomSummaryDto> response = chatServiceClient.getChatRoomSummary(id);
+        ChatRoomSummaryDto chatRoom = (response != null) ? response.getData() : null;
+        return new EventDetailResult(
+                eventResult,
+                chatRoom != null ? chatRoom : ChatRoomSummaryDto.empty()
+        );
     }
 
     @Transactional(readOnly = true)
