@@ -108,6 +108,13 @@ public class ChatRoom extends BaseUserEntity {
         this.changedBy = adminId;
     }
 
+    public void reschedule(ChatRoomSchedule schedule) {
+        if (schedule == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        this.schedule = schedule;
+    }
+
     // 채팅방 상태 확인 메서드
     private void validateStatus(ChatRoomStatus required) {
         if (this.status != required) {
