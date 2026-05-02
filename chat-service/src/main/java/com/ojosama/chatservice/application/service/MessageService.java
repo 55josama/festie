@@ -1,7 +1,9 @@
 package com.ojosama.chatservice.application.service;
 
+import com.ojosama.chatservice.application.dto.command.ChangeMessageStatusCommand;
 import com.ojosama.chatservice.application.dto.command.CreateMessageCommand;
 import com.ojosama.chatservice.application.dto.command.DeleteMessageCommand;
+import com.ojosama.chatservice.application.dto.query.FindAdminMessagesQuery;
 import com.ojosama.chatservice.application.dto.query.FindMessageQuery;
 import com.ojosama.chatservice.application.dto.query.FindMessagesByChatRoomQuery;
 import com.ojosama.chatservice.application.dto.result.MessageResult;
@@ -15,6 +17,7 @@ import com.ojosama.chatservice.domain.model.MessageStatus;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.chatservice.domain.repository.MessageRepository;
 import com.ojosama.common.exception.CommonErrorCode;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,7 @@ public class MessageService {
     private static final int MAX_MESSAGE_CONTENT_LENGTH = 1000;
     private static final int MAX_WRITER_NICKNAME_LENGTH = 50;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final UUID SYSTEM_BLINDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -78,19 +82,28 @@ public class MessageService {
         }
 
         findChatRoom(query.chatRoomId());
+        return getMessageSlice(
+                messageRepository.findByChatRoomIdAndStatuses(
+                        query.chatRoomId(),
+                        List.copyOf(EnumSet.of(MessageStatus.ACTIVE, MessageStatus.BLINDED)),
+                        PageRequest.of(query.page(), query.size())
+                )
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public MessageSliceResult getMessagesForAdmin(FindAdminMessagesQuery query) {
+        if (query == null || query.page() < 0 || query.size() <= 0 || query.size() > MAX_PAGE_SIZE) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
 
         Pageable pageable = PageRequest.of(query.page(), query.size());
-        Slice<Message> messages = messageRepository.findByChatRoomIdAndStatus(
-                query.chatRoomId(),
-                MessageStatus.ACTIVE,
+        Slice<Message> messages = messageRepository.findByStatusesAndCategory(
+                resolveAdminStatuses(query.status()),
+                query.category(),
                 pageable
         );
-
-        List<MessageResult> results = messages.getContent().stream()
-                .map(MessageResult::from)
-                .toList();
-
-        return new MessageSliceResult(results, messages.hasNext());
+        return getMessageSlice(messages);
     }
 
     public void deleteMessage(DeleteMessageCommand command) {
@@ -104,6 +117,29 @@ public class MessageService {
         }
 
         message.delete();
+    }
+
+    public MessageResult changeMessageStatus(ChangeMessageStatusCommand command) {
+        if (command == null || command.messageId() == null || command.adminId() == null || command.status() == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+
+        Message message = findMessage(command.messageId());
+        if (command.status() == MessageStatus.BLINDED) {
+            message.blind(command.adminId());
+        } else if (command.status() == MessageStatus.ACTIVE) {
+            message.unblind(command.adminId());
+        } else {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        return MessageResult.from(message);
+    }
+
+    public void blindMessageBySystem(UUID messageId) {
+        if (messageId == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        changeMessageStatus(new ChangeMessageStatusCommand(messageId, SYSTEM_BLINDER_ID, MessageStatus.BLINDED));
     }
 
     @Transactional(readOnly = true)
@@ -144,5 +180,19 @@ public class MessageService {
     private ChatRoom findChatRoom(UUID chatRoomId) {
         return chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+    }
+
+    private MessageSliceResult getMessageSlice(Slice<Message> messages) {
+        List<MessageResult> results = messages.getContent().stream()
+                .map(MessageResult::from)
+                .toList();
+        return new MessageSliceResult(results, messages.hasNext());
+    }
+
+    private List<MessageStatus> resolveAdminStatuses(MessageStatus status) {
+        if (status == null) {
+            return List.copyOf(EnumSet.allOf(MessageStatus.class));
+        }
+        return List.of(status);
     }
 }

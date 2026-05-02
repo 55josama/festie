@@ -14,13 +14,22 @@ public record MessageResponse(
         MessageStatus status,
         LocalDateTime createdAt
 ) {
+    private static final String BLINDED_CONTENT = "블라인드 처리된 메시지입니다.";
+
     public static MessageResponse from(MessageResult result) {
+        return from(result, true);
+    }
+
+    public static MessageResponse from(MessageResult result, boolean maskBlindedContent) {
+        String content = maskBlindedContent && result.status() == MessageStatus.BLINDED
+                ? BLINDED_CONTENT
+                : result.content();
         return new MessageResponse(
                 result.messageId(),
                 result.chatRoomId(),
                 result.userId(),
                 result.writerNickname(),
-                result.content(),
+                content,
                 result.status(),
                 result.createdAt()
         );
