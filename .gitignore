@@ -46,3 +46,7 @@ application-secret.yml
 .claude/*
 CLAUDE.md
 **/CLAUDE.md
+
+### Querydsl ###
+src/main/generated/
+src/test/generated/
