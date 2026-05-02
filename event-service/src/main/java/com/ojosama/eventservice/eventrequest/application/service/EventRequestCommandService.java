@@ -49,21 +49,19 @@ public class EventRequestCommandService {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         request.cancel(userId);
-        eventRequestRepository.save(request);
     }
 
     public void adminCancelEventRequest(UUID adminId, UUID requestId) {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         request.adminCancel(adminId);
-        eventRequestRepository.save(request);
     }
 
     public EventRequestResult approveEventRequest(UUID requestId) {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         request.approve();
-        EventRequestResult result = EventRequestResult.from(eventRequestRepository.save(request));
+        EventRequestResult result = EventRequestResult.from(request);
         applicationEventPublisher.publishEvent(
                 new EventRequestProcessedMessage(request.getId(), request.getRequesterId(), "approved", request.getEventName()));
         return result;
@@ -73,7 +71,7 @@ public class EventRequestCommandService {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         request.reject(rejectReason);
-        EventRequestResult result = EventRequestResult.from(eventRequestRepository.save(request));
+        EventRequestResult result = EventRequestResult.from(request);
         applicationEventPublisher.publishEvent(
                 new EventRequestProcessedMessage(request.getId(), request.getRequesterId(), "rejected", request.getEventName()));
         return result;
