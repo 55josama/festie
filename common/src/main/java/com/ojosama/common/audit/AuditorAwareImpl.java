@@ -10,6 +10,6 @@ public class AuditorAwareImpl implements AuditorAware<UUID> {
 
     @Override
     public Optional<UUID> getCurrentAuditor() {
-        return Optional.empty(); //todo: 사용자 값 나중ㅇ 연결 예정
+        return Optional.of(UUID.fromString("00000000-0000-0000-0000-000000000000")); //테스트를 위한 임의값 지정
     }
 }

@@ -31,7 +31,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final OutboxEventPublisher outbox;
 
-    @Value("${spring.kafka.topic.moderation-requested}")
+    @Value("${spring.kafka.topic.community-moderation-requested}")
     private String moderationRequestedTopic;
 
     @Transactional

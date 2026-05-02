@@ -1,27 +1,21 @@
 spring:
   application:
     name: community-service
-  #kafka설정은 추후 config서버로 옮길 예정
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-
-    consumer:
-      group-id: community-service-group
-
-    topic:
-      community-moderation-requested: community.moderation.requested.v1
-      blacklist-updated: operation.blacklist.updated.v1
-      report-blinded: operation.report.blinded.v1
-
-    festie:
-      outbox:
-        poll-delay-ms: 1000
 
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://festie-config:8888}"
 
   cloud:
     config:
-      uri: ${CONFIG_SERVER_URL:http://localhost:8888}
+      uri: ${CONFIG_SERVER_URL:http://festie-config:8888}
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
+
+  jpa:
+    properties:
+      hibernate:
+        default_schema: community_schema
+
+logging:
+  level:
+    com.ojosama.community.infrastructure.persistence.outbox: INFO
