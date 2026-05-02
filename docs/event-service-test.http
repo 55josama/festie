@@ -16,7 +16,7 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 ###
 
 ### 카테고리 수정
-PATCH {{eventUrl}}/v1/event-categories/{{categoryId}}
+PATCH {{eventUrl}}/v1/event-categories/{categoryId}
 Content-Type: application/json
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
@@ -27,13 +27,13 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 ###
 
 ### 카테고리 삭제
-DELETE {{eventUrl}}/v1/event-categories/{{categoryId}}
+DELETE {{eventUrl}}/v1/event-categories/{categoryId}
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
 ###
 
 ### [Internal] 카테고리 단건 조회
-GET {{eventUrl}}/internal/v1/event-categories/{{categoryId}}
+GET {{eventUrl}}/internal/v1/event-categories/{categoryId}
 
 ### 행사 등록
 POST {{eventUrl}}/v1/events
@@ -42,7 +42,7 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 
 {
   "name": "2026 인천 락 페스티벌",
-  "categoryId": "{{categoryId}}",
+  "categoryId": "{categoryId}",
   "startAt": "2026-08-01T14:00:00",
   "endAt": "2026-08-03T23:00:00",
   "place": "송도달빛축제공원",
@@ -86,7 +86,7 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 
 {
   "name": "2026 봄 팝업 스토어",
-  "categoryId": "{{categoryId}}",
+  "categoryId": "{categoryId}",
   "startAt": "2026-04-01T10:00:00",
   "endAt": "2026-04-30T20:00:00",
   "place": "성수동 복합문화공간",
@@ -134,18 +134,18 @@ GET {{eventUrl}}/v1/events?startAt=2026-06-01T00:00:00&endAt=2026-09-30T23:59:59
 ###
 
 ### 행사 상세 조회 (chatRoom 포함)
-GET {{eventUrl}}/v1/events/{{eventId}}
+GET {{eventUrl}}/v1/events/{eventId}
 
 ###
 
 ### 행사 수정 (schedules 포함 → 기존 일정 전체 교체)
-PATCH {{eventUrl}}/v1/events/{{eventId}}
+PATCH {{eventUrl}}/v1/events/{eventId}
 Content-Type: application/json
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
 {
   "name": "2026 인천 락 페스티벌 (수정)",
-  "categoryId": "{{categoryId}}",
+  "categoryId": "{categoryId}",
   "startAt": "2026-08-01T14:00:00",
   "endAt": "2026-08-04T23:00:00",
   "place": "송도달빛축제공원",
@@ -188,13 +188,13 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 ###
 
 ### 행사 수정 (schedules 생략 → 기존 일정 유지)
-PATCH {{eventUrl}}/v1/events/{{eventId}}
+PATCH {{eventUrl}}/v1/events/{eventId}
 Content-Type: application/json
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
 {
   "name": "2026 인천 락 페스티벌 (이름만 변경)",
-  "categoryId": "{{categoryId}}",
+  "categoryId": "{categoryId}",
   "startAt": "2026-08-01T14:00:00",
   "endAt": "2026-08-03T23:00:00",
   "place": "송도달빛축제공원",
@@ -213,13 +213,13 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 ###
 
 ### 행사 삭제 (soft delete → 204)
-DELETE {{eventUrl}}/v1/events/{{eventId}}
+DELETE {{eventUrl}}/v1/events/{eventId}
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
 ###
 
 ### 삭제 후 상세 조회 → 404 확인 (soft delete 검증)
-GET {{eventUrl}}/v1/events/{{eventId}}
+GET {{eventUrl}}/v1/events/{eventId}
 
 ###
 
@@ -229,12 +229,12 @@ GET {{eventUrl}}/internal/v1/events
 ###
 
 ### [Internal] 지정 ID 행사 벌크 조회
-GET {{eventUrl}}/internal/v1/events?eventIds={{eventId}},{{eventId2}}
+GET {{eventUrl}}/internal/v1/events?eventIds={eventId},{eventId2}
 
 ###
 
 ### [Internal] 행사 단건 조회 (chatRoom 미포함)
-GET {{eventUrl}}/internal/v1/events/{{eventId}}
+GET {{eventUrl}}/internal/v1/events/{eventId}
 
 
 ### 행사 신청 등록
@@ -301,19 +301,19 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 ###
 
 ### 신청 상세 조회
-GET {{eventUrl}}/v1/event-requests/{{requestId}}
+GET {{eventUrl}}/v1/event-requests/{requestId}
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
 ###
 
 ### 신청 승인
-POST {{eventUrl}}/v1/event-requests/{{requestId}}/approval
+POST {{eventUrl}}/v1/event-requests/{requestId}/approval
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
 ###
 
 ### 신청 반려 (rejectReason 필수)
-POST {{eventUrl}}/v1/event-requests/{{requestId}}/rejections
+POST {{eventUrl}}/v1/event-requests/{requestId}/rejections
 Content-Type: application/json
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
@@ -324,12 +324,12 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 ###
 
 ### 신청 취소 (PENDING만 가능 → status=CANCELLED)
-DELETE {{eventUrl}}/v1/event-requests/{{requestId}}
+DELETE {{eventUrl}}/v1/event-requests/{requestId}
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
 ###
 
 ### 취소 후 상세 조회 → CANCELLED 상태로 여전히 조회됨
-GET {{eventUrl}}/v1/event-requests/{{requestId}}
+GET {{eventUrl}}/v1/event-requests/{requestId}
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
