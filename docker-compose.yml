@@ -129,6 +129,8 @@ services:
       - "8761:8761"
     networks:
       - festie-network
+    environment:
+      MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED: "false"
     healthcheck:
       test: [ "CMD-SHELL", "wget --spider -q http://localhost:8761/actuator/health || exit 1" ]
       interval: 10s
@@ -143,6 +145,8 @@ services:
       dockerfile: chat-service/Dockerfile
     container_name: festie-chat
     restart: unless-stopped
+    ports:
+      - "8088:8088"
     networks:
       - festie-network
     depends_on:
@@ -175,6 +179,8 @@ services:
       dockerfile: ai-service/Dockerfile
     container_name: festie-ai
     restart: unless-stopped
+    ports:
+      - "8083:8083"
     networks:
       - festie-network
     depends_on:
@@ -208,6 +214,8 @@ services:
       dockerfile: operation-service/Dockerfile
     container_name: festie-operation
     restart: unless-stopped
+    ports:
+      - "8084:8084"
     networks:
       - festie-network
     depends_on:
@@ -240,6 +248,8 @@ services:
       dockerfile: notification-service/Dockerfile
     container_name: festie-notification
     restart: unless-stopped
+    ports:
+      - "8085:8085"
     networks:
       - festie-network
     depends_on:
@@ -289,20 +299,17 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-      config-server:
-        condition: service_healthy
     environment:
-      SERVER_PORT: 8082  # 테스트 시 사용
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8082
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
-      SPRING_CLOUD_CONFIG_URI: http://festie-config:8888
       DB_USER: ${POSTGRES_USER:-festie}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
-      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://festie-eureka:8761/eureka/
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
       CONFIG_USERNAME: ${CONFIG_USERNAME:-festie}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-festiepw}
@@ -350,6 +357,8 @@ services:
       dockerfile: favorite-service/Dockerfile
     container_name: festie-favorite
     restart: unless-stopped
+    ports:
+      - "8086:8086"
     networks:
       - festie-network
     depends_on:
@@ -382,6 +391,8 @@ services:
       dockerfile: calendar-service/Dockerfile
     container_name: festie-calendar
     restart: unless-stopped
+    ports:
+      - "8087:8087"
     networks:
       - festie-network
     depends_on:
@@ -405,6 +416,44 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+
+    # ============ user-service ============
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: festie-user
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    networks:
+      - festie-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      USER_DB_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
+      USER_DB_USERNAME: ${POSTGRES_USER:-festie}
+      USER_DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+
+      JWT_SECRET: ${JWT_SECRET:-ojosamaojosamaoojosamaojosamaojosamaojosama}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-3600000}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION:-1296000000}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-local-internal-token}
+      KAFKA_TOPIC_USER_BLACKLIST_STATUS: operation.blacklist.updated.v1
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
 volumes:

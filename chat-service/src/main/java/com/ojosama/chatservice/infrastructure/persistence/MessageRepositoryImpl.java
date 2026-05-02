@@ -2,6 +2,8 @@ package com.ojosama.chatservice.infrastructure.persistence;
 
 import com.ojosama.chatservice.domain.model.Message;
 import com.ojosama.chatservice.domain.model.MessageStatus;
+import com.ojosama.chatservice.domain.model.EventCategory;
+import java.util.List;
 import com.ojosama.chatservice.domain.repository.MessageRepository;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,7 +29,12 @@ public class MessageRepositoryImpl implements MessageRepository {
     }
 
     @Override
-    public Slice<Message> findByChatRoomIdAndStatus(UUID chatRoomId, MessageStatus status, Pageable pageable) {
-        return messageJpaRepository.findByChatRoomIdAndStatusOrderByCreatedAtDescIdDesc(chatRoomId, status, pageable);
+    public Slice<Message> findByChatRoomIdAndStatuses(UUID chatRoomId, List<MessageStatus> statuses, Pageable pageable) {
+        return messageJpaRepository.findByChatRoomIdAndStatusInOrderByCreatedAtDescIdDesc(chatRoomId, statuses, pageable);
+    }
+
+    @Override
+    public Slice<Message> findByStatusesAndCategory(List<MessageStatus> statuses, EventCategory category, Pageable pageable) {
+        return messageJpaRepository.findByStatusInAndCategoryOrderByCreatedAtDescIdDesc(statuses, category, pageable);
     }
 }

@@ -1,10 +1,18 @@
 package com.ojosama.eventservice.event.infrastructure.messaging.kafka;
 
 import com.ojosama.common.config.kafka.KafkaConfig;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @Import(KafkaConfig.class)
+@EnableScheduling
+@ComponentScan(basePackages = "com.ojosama.common.kafka.domain")
+@EntityScan(basePackages = {"com.ojosama.eventservice", "com.ojosama.common.kafka.domain"})
+@EnableJpaRepositories(basePackages = {"com.ojosama.eventservice", "com.ojosama.common.kafka.domain"})
 public class EventKafkaConfig {
 }

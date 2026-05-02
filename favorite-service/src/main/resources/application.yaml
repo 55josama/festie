@@ -3,22 +3,9 @@ spring:
     name: favorite-service
 
   config:
-    import: "optional:configserver:http://localhost:8888"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: favorite-service-group
-  jpa:
-    properties:
-      hibernate:
-        type:
-          preferred_uuid_jdbc_type: UUID
-
-festie:
-  outbox:
-    poll-delay-ms: 1000

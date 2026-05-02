@@ -2,7 +2,7 @@ package com.ojosama.chatservice.domain.model;
 
 import com.ojosama.chatservice.domain.exception.ChatErrorCode;
 import com.ojosama.chatservice.domain.exception.ChatException;
-import com.ojosama.common.audit.BaseEntity;
+import com.ojosama.common.audit.BaseUserEntity;
 import com.ojosama.common.exception.CommonErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -27,7 +27,7 @@ import org.hibernate.annotations.UuidGenerator;
         })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ChatRoom extends BaseEntity {
+public class ChatRoom extends BaseUserEntity {
 
     @Id
     @UuidGenerator
@@ -106,6 +106,13 @@ public class ChatRoom extends BaseEntity {
         this.status = ChatRoomStatus.CLOSED;
         this.closedAt = LocalDateTime.now();
         this.changedBy = adminId;
+    }
+
+    public void reschedule(ChatRoomSchedule schedule) {
+        if (schedule == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        this.schedule = schedule;
     }
 
     // 채팅방 상태 확인 메서드

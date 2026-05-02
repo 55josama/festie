@@ -1,0 +1,35 @@
+# Docker 컨테이너 실행 프로파일
+# config-server(optional)가 대부분 설정 주입. 여기서는 fallback 값 제공.
+
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://festie-postgres:5432/festie}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:festie}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:1234}}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: event_schema
+
+  kafka:
+    topic:
+      event-created: ${KAFKA_TOPIC_EVENT_CREATED:event.info.created.v1}
+      event-deleted: ${KAFKA_TOPIC_EVENT_DELETED:event.info.deleted.v1}
+      event-changed: ${KAFKA_TOPIC_EVENT_CHANGED:event.schedule.changed.v1}
+      event-request-created: ${KAFKA_TOPIC_EVENT_REQUEST_CREATED:event.request.created.v1}
+      event-request-created-result: ${KAFKA_TOPIC_EVENT_REQUEST_CREATED_RESULT:event.request.processed.v1}
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}

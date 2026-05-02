@@ -1,0 +1,62 @@
+### 생성
+
+Content-Type: application/json
+X-User-Id: 11111111-2222-1111-1111-111111111111
+
+POST : {{calendarUrl}}/v1/calendars
+
+{
+
+"memo": "꼭 가고 싶은 공연!",
+"eventId": "22222222-2222-2222-2222-222222222222",
+"eventDate": "2026-05-3T10:00:00",
+"ticketingDate": "2026-05-2T21:00:00",
+"eventName": "2026 서울 재즈 페스티벌"
+
+}
+
+#### ### 단건조회 (캘린더 uuid)
+
+Content-Type: application/json
+X-User-Id: 11111111-2222-1111-1111-111111111111
+
+GET : {{calendarUrl}}/v1/calendars/{calendarId}
+
+#### ### 전체조회
+
+Content-Type: application/json
+X-User-Id: 11111111-2222-1111-1111-111111111111
+
+GET : {{calendarUrl}}/v1/calendars?year=2026&month=5
+
+### **수정 (캘린더 uuid)**
+
+Content-Type: application/json
+X-User-Id: 11111111-2222-1111-1111-111111111111
+
+PATCH : {{calendarUrl}}/v1/calendars/{calendarId}
+
+{
+”memo” : “2명으로 변경”
+
+}
+
+---
+
+#### 행사 임박 스케줄러
+
+1분마다 → notification-service 생성 확인 (이메일 확인, 이메일로그 테이블 확인, 알림 테이블 확인)
+
+#### 티켓팅 임박 스케줄러
+
+1분마다 → notification-service 생성 확인 (이메일 확인, 이메일로그 테이블 확인, 알림 테이블 확인) 
+
+**생각해보니까.. 지금 … 메인 캘린더를 아직 못만들어서 이건 .. 오늘 끝나고 만들겠습니다.**
+
+---
+
+**카프카 확인**
+
+event-service 변경 → calendar-service 변경 → notification-service 확인 
+
+event-serivce 삭제 → calendar-service 삭제 → notification-service 확인

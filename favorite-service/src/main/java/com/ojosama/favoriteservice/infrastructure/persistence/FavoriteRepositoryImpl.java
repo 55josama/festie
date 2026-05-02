@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Repository;
 public class FavoriteRepositoryImpl implements FavoriteRepository {
 
     private final JpaFavoriteRepository jpaFavoriteRepository;
+    private final FavoriteRepositoryCustom favoriteRepositoryCustom;
 
     @Override
     public Favorite save(Favorite favorite) {
@@ -30,8 +33,8 @@ public class FavoriteRepositoryImpl implements FavoriteRepository {
     }
 
     @Override
-    public List<Favorite> findByUserIdAndDeletedAtIsNull(UUID userId) {
-        return jpaFavoriteRepository.findByUserIdAndDeletedAtIsNull(userId);
+    public Page<Favorite> findByUserIdAndDeletedAtIsNull(UUID userId, Pageable pageable) {
+        return jpaFavoriteRepository.findByUserIdAndDeletedAtIsNull(userId, pageable);
     }
 
     @Override
@@ -39,4 +42,8 @@ public class FavoriteRepositoryImpl implements FavoriteRepository {
         return jpaFavoriteRepository.findByEventInfo_EventIdAndDeletedAtIsNull(eventId);
     }
 
+    @Override
+    public void updateEventInfoBulk(UUID eventId, String field, String after) {
+        favoriteRepositoryCustom.updateEventInfoBulk(eventId, field, after);
+    }
 }

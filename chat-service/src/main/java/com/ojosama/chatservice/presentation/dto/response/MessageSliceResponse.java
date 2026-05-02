@@ -8,9 +8,13 @@ public record MessageSliceResponse(
         boolean hasNext
 ) {
     public static MessageSliceResponse from(MessageSliceResult result) {
+        return from(result, true);
+    }
+
+    public static MessageSliceResponse from(MessageSliceResult result, boolean maskBlindedContent) {
         return new MessageSliceResponse(
                 result.messages().stream()
-                        .map(MessageResponse::from)
+                        .map(message -> MessageResponse.from(message, maskBlindedContent))
                         .toList(),
                 result.hasNext()
         );

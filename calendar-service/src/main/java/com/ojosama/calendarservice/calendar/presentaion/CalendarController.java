@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,9 +33,8 @@ public class CalendarController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<CalendarResponseDto>> createCalendar(
-            @Valid @RequestBody CreateCalendarRequestDto requestDto) {
-        // TODO : userId 수정
-        UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
+            @Valid @RequestBody CreateCalendarRequestDto requestDto,
+            @RequestHeader("X-User-Id") UUID userId) {
 
         CalendarResponseDto dto = calendarService.createCalendar(requestDto.toCommand(userId));
         return ResponseEntity
@@ -43,9 +43,8 @@ public class CalendarController {
     }
 
     @GetMapping("/{calendarId}")
-    public ResponseEntity<ApiResponse<CalendarResponseDto>> getCalendar(@PathVariable UUID calendarId) {
-        // TODO : userId 수정
-        UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
+    public ResponseEntity<ApiResponse<CalendarResponseDto>> getCalendar(@PathVariable UUID calendarId,
+                                                                        @RequestHeader("X-User-Id") UUID userId) {
 
         CalendarResponseDto dto = calendarService.getCalendar(calendarId, userId);
 
@@ -55,9 +54,8 @@ public class CalendarController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<CalendarResponseDto>>> getCalendars(
             @RequestParam("year") @Min(2000) @Max(9999) int year,
-            @RequestParam("month") @Min(1) @Max(12) int month) {
-        // TODO : userId 수정
-        UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
+            @RequestParam("month") @Min(1) @Max(12) int month,
+            @RequestHeader("X-User-Id") UUID userId) {
 
         List<CalendarResponseDto> list = calendarService.getCalendars(userId, year, month);
 
@@ -67,21 +65,16 @@ public class CalendarController {
     // TODO : 일정을 바꾸는 ...
     @PatchMapping("/{calendarId}")
     public ResponseEntity<ApiResponse<CalendarResponseDto>> updateMemoCalendars(@PathVariable UUID calendarId,
-                                                                                @RequestBody UpdateMemoCalendarRequestDto dto) {
-        // TODO : userId 수정
-        UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
-
+                                                                                @RequestBody UpdateMemoCalendarRequestDto dto,
+                                                                                @RequestHeader("X-User-Id") UUID userId) {
         CalendarResponseDto responseDto = calendarService.updateCalendarMemo(calendarId, dto.memo(), userId);
 
         return ResponseEntity.ok(ApiResponse.success(responseDto));
     }
 
     @DeleteMapping("/{calendarId}")
-    public ResponseEntity<ApiResponse<Void>> deleteCalendar(@PathVariable UUID calendarId) {
-
-        // TODO : userId 수정
-        UUID userId = UUID.fromString("bd4e3ba4-55dd-45d4-b1ca-55f38f0c4804");
-
+    public ResponseEntity<ApiResponse<Void>> deleteCalendar(@PathVariable UUID calendarId,
+                                                            @RequestHeader("X-User-Id") UUID userId) {
         calendarService.deleteCalendar(calendarId, userId);
         return ResponseEntity.ok(ApiResponse.deleted());
     }

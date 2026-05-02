@@ -1,0 +1,174 @@
+### Gateway 미사용 / user-service 직접 호출 기준
+
+### ============================================================
+### 인증(Auth) API - /v1/auth
+### ============================================================
+
+### 로그인
+POST {{userUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "oojosama5@gmail.com",
+  "password": "1234"
+}
+
+### 토큰 재발급
+POST {{userUrl}}/v1/auth/reissue
+Content-Type: application/json
+
+{
+  "refreshToken": "refreshToken"
+}
+
+### 로그아웃
+POST {{userUrl}}/v1/auth/logout
+Authorization: Bearer accessToken
+
+
+### ============================================================
+### 사용자(User) API - /v1/users
+### ============================================================
+
+### 회원가입
+POST {{userUrl}}/v1/users
+Content-Type: application/json
+
+{
+  "email": "oojosama5@gmail.com",
+  "password": "1234",
+  "nickname": "oojosamaUser",
+  "name": "오죠사마유저",
+  "phoneNumber": "010-1111-1111"
+}
+
+### 회원가입 - 관리자 테스트 계정
+POST {{userUrl}}/v1/users
+Content-Type: application/json
+
+{
+  "email": "oojosama5+admin@gmail.com",
+  "password": "1234",
+  "nickname": "oojosamaAdmin",
+  "name": "오죠사마관리자",
+  "phoneNumber": "010-2222-2222"
+}
+
+### 회원가입 - 매니저 테스트 계정
+POST {{userUrl}}/v1/users
+Content-Type: application/json
+
+{
+  "email": "oojosama5+manager@gmail.com",
+  "password": "1234",
+  "nickname": "oojosamaManager",
+  "name": "오죠사마매니저",
+  "phoneNumber": "010-3333-3333"
+}
+
+### 내 정보 조회
+GET {{userUrl}}/v1/users/me
+Authorization: Bearer accessToken
+
+### 내 정보 수정
+PATCH {{userUrl}}/v1/users/me
+Content-Type: application/json
+Authorization: Bearer accessToken
+
+{
+  "name": "오죠사마유저수정",
+  "nickname": "oojosamaUserUpdated",
+  "phoneNumber": "010-9999-9999"
+}
+
+### 회원 탈퇴
+DELETE {{userUrl}}/v1/users/me
+Authorization: Bearer accessToken
+
+
+### ============================================================
+### 관리자(User Admin) API - /v1/users/admin
+### ADMIN 권한 필요
+### ============================================================
+
+### 사용자 목록 조회
+GET {{userUrl}}/v1/users/admin?page=0&size=10
+Authorization: Bearer accessToken
+
+### 사용자 상세 조회
+GET {{userUrl}}/v1/users/admin/{userId}
+Authorization: Bearer accessToken
+
+### 사용자 권한 변경 - MANAGER로 변경
+PATCH {{userUrl}}/v1/users/admin/{userId}/role
+Content-Type: application/json
+Authorization: Bearer accessToken
+
+{
+  "role": "MANAGER"
+}
+
+### 사용자 권한 변경 - ADMIN으로 변경
+PATCH {{userUrl}}/v1/users/admin/669329e7-2951-4ac4-bff9-248840e7eb27/role
+Content-Type: application/json
+Authorization: Bearer accessToken
+
+{
+  "role": "ADMIN"
+}
+
+### 사용자 권한 변경 - USER로 변경
+PATCH {{userUrl}}/v1/users/admin/{userId}/role
+Content-Type: application/json
+Authorization: Bearer accessToken
+
+{
+  "role": "USER"
+}
+
+
+### ============================================================
+### JWT 테스트
+### ============================================================
+
+### 토큰 없이 내 정보 조회
+### 기대 결과: 401 또는 403
+GET {{userUrl}}/v1/users/me
+
+### 잘못된 토큰으로 내 정보 조회
+### 기대 결과: 401 또는 403
+GET {{userUrl}}/v1/users/me
+Authorization: Bearer invalid.token.value
+
+### Refresh Token으로 보호 API 접근 시도
+### 기대 결과: 401 또는 403
+GET {{userUrl}}/v1/users/me
+Authorization: Bearer refreshToken
+
+
+### ============================================================
+### Internal User API - /internal/v1/users
+### Gateway 미사용이므로 직접 호출 가능
+### X-Internal-Token 필요
+### ============================================================
+
+### 내부용 사용자 이메일 단건 조회
+GET {{userUrl}}/internal/v1/users/{userId}/email
+X-Internal-Token: local-internal-token
+
+### 내부용 사용자 이메일 다건 조회
+POST {{userUrl}}/internal/v1/users/emails
+Content-Type: application/json
+X-Internal-Token: local-internal-token
+
+[
+  "{userId}"
+]
+
+### 내부용 관리자 ID 조회
+GET {{userUrl}}/internal/v1/users/admin
+X-Internal-Token: local-internal-token
+
+### 내부용 카테고리 매니저 ID 조회
+GET {{userUrl}}/internal/v1/users/admins/managers?category=CONCERT
+X-Internal-Token: local-internal-token

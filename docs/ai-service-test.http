@@ -1,0 +1,18 @@
+### Ai Service Demo
+### IntelliJ HTTP Client용
+
+### 챗봇
+POST {{aiUrl}}/v1/chatbot
+Content-Type: application/json
+
+{
+  "question": "안녕 너는 누구야?"
+}
+
+### 운영 문서 등록
+POST {{aiUrl}}/v1/chatbot/index
+Content-Type: application/json
+
+{
+  "content": "채팅방은 행사 시작 당일 자정에 열립니다."
+}
