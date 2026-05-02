@@ -11,6 +11,7 @@ import com.ojosama.chatservice.infrastructure.messaging.kafka.dto.EventChangedEv
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +74,10 @@ public class EventChangedConsumer {
 
         LocalDateTime eventStartAt = extractAfter(event, "startAt");
         LocalDateTime eventEndAt = extractAfter(event, "endAt");
+        if (eventStartAt == null && eventEndAt == null) {
+            log.info("일정 변경 after 값이 없어 채팅방 갱신을 건너뜁니다. eventId={}", event.eventId());
+            return;
+        }
 
         try {
             chatRoomService.changeChatRoomSchedule(
@@ -124,7 +129,12 @@ public class EventChangedConsumer {
         if (value instanceof LocalDateTime localDateTime) {
             return localDateTime;
         }
-        return LocalDateTime.parse(value.toString());
+        try {
+            return LocalDateTime.parse(value.toString());
+        } catch (DateTimeParseException e) {
+            log.warn("일정 시간 형식 파싱에 실패해 해당 필드를 무시합니다. value={}", value);
+            return null;
+        }
     }
 
     private UUID parseMessageKey(String key, String topic) {
