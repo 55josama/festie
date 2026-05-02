@@ -33,48 +33,39 @@ public class EventCommandController {
     private final EventCommandService eventCommandService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
     public ResponseEntity<ApiResponse<EventResponse>> createEvent(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @Valid @RequestBody CreateEventRequest request) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
-
+//        if (userId == null || userRole == null) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
         EventResult result = eventCommandService.createEvent(CreateEventCommand.from(userId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(EventResponse.from(result)));
     }
 
     @PatchMapping("/{eventId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
     public ResponseEntity<ApiResponse<EventResponse>> updateEvent(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @PathVariable UUID eventId,
             @Valid @RequestBody UpdateEventRequest request) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
-
+//        if (userId == null || userRole == null) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
         EventResult result = eventCommandService.updateEvent(UpdateEventCommand.from(eventId, userId, request));
         return ResponseEntity.ok(ApiResponse.success(EventResponse.from(result)));
     }
 
     @DeleteMapping("/{eventId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
     public ResponseEntity<Void> deleteEvent(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @PathVariable UUID eventId) {
 
-        if (userId == null || userRole == null) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
-
+//        if (userId == null || userRole == null) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
         eventCommandService.deleteEvent(userId, eventId);
         return ResponseEntity.noContent().build();
     }

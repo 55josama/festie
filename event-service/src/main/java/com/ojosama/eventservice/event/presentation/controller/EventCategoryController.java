@@ -37,7 +37,7 @@ public class EventCategoryController {
     private final EventCategoryQueryService eventCategoryQueryService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<EventCategoryResponse>>> getCategories(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
@@ -51,7 +51,7 @@ public class EventCategoryController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<EventCategoryResponse>> createCategory(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -66,7 +66,7 @@ public class EventCategoryController {
     }
 
     @PatchMapping("/{categoryId}")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<EventCategoryResponse>> updateCategory(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -81,7 +81,7 @@ public class EventCategoryController {
     }
 
     @DeleteMapping("/{categoryId}")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCategory(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
@@ -94,8 +94,6 @@ public class EventCategoryController {
     }
 
     private void validateGatewayHeaders(UUID userId, String userRole) {
-        if (userId == null || userRole == null || userRole.isBlank()) {
-            throw new CustomException(CommonErrorCode.INVALID_TOKEN);
-        }
+//        if (userId == null || userRole == null || userRole.isBlank()) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
     }
 }
