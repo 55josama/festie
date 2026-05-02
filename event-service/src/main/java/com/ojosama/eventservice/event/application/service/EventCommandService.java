@@ -6,7 +6,6 @@ import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.domain.event.payload.EventCreatedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventDeletedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventScheduleChangedMessage;
-import com.ojosama.eventservice.event.domain.event.payload.EventUpdatedMessage;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.Event;
@@ -94,8 +93,6 @@ public class EventCommandService {
 
         // 변경사항 추적
         EventChanges changes = EventSnapshot.compareSnapshots(beforeSnapshot, afterSnapshot);
-
-        applicationEventPublisher.publishEvent(new EventUpdatedMessage(event.getId(), event.getName()));
 
         if (schedulesChanged || changes.hasChanges()) {
             applicationEventPublisher.publishEvent(EventScheduleChangedMessage.from(

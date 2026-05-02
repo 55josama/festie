@@ -6,12 +6,15 @@ import com.ojosama.eventservice.event.domain.model.EventCategory;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.eventrequest.application.dto.command.CreateEventRequestCommand;
 import com.ojosama.eventservice.eventrequest.application.dto.result.EventRequestResult;
+import com.ojosama.eventservice.eventrequest.domain.event.payload.EventRequestCreatedMessage;
+import com.ojosama.eventservice.eventrequest.domain.event.payload.EventRequestProcessedMessage;
 import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestErrorCode;
 import com.ojosama.eventservice.eventrequest.domain.exception.EventRequestException;
 import com.ojosama.eventservice.eventrequest.domain.model.EventRequest;
 import com.ojosama.eventservice.eventrequest.domain.repository.EventRequestRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +25,7 @@ public class EventRequestCommandService {
 
     private final EventRequestRepository eventRequestRepository;
     private final EventCategoryRepository eventCategoryRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public EventRequestResult createEventRequest(CreateEventRequestCommand command) {
         EventCategory category = eventCategoryRepository.findByName(command.categoryName())
@@ -36,6 +40,8 @@ public class EventRequestCommandService {
         );
 
         EventRequest saved = eventRequestRepository.save(request);
+        applicationEventPublisher.publishEvent(
+                new EventRequestCreatedMessage(saved.getRequesterId(), category.getName(), saved.getEventName()));
         return EventRequestResult.from(saved);
     }
 
@@ -57,13 +63,19 @@ public class EventRequestCommandService {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         request.approve();
-        return EventRequestResult.from(eventRequestRepository.save(request));
+        EventRequestResult result = EventRequestResult.from(eventRequestRepository.save(request));
+        applicationEventPublisher.publishEvent(
+                new EventRequestProcessedMessage(request.getId(), request.getRequesterId(), "approved", request.getEventName()));
+        return result;
     }
 
     public EventRequestResult rejectEventRequest(UUID requestId, String rejectReason) {
         EventRequest request = eventRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         request.reject(rejectReason);
-        return EventRequestResult.from(eventRequestRepository.save(request));
+        EventRequestResult result = EventRequestResult.from(eventRequestRepository.save(request));
+        applicationEventPublisher.publishEvent(
+                new EventRequestProcessedMessage(request.getId(), request.getRequesterId(), "rejected", request.getEventName()));
+        return result;
     }
 }

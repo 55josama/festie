@@ -4,9 +4,11 @@ import com.ojosama.common.exception.CommonErrorCode;
 import com.ojosama.common.exception.CustomException;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.dto.command.EventListCommand;
+import com.ojosama.eventservice.event.application.dto.result.EventDetailResult;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.domain.model.EventStatus;
+import com.ojosama.eventservice.event.presentation.dto.response.EventDetailResponse;
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -52,15 +54,15 @@ public class EventQueryController {
     }
 
     @GetMapping("/{eventId}")
-    public ResponseEntity<ApiResponse<EventResponse>> getEvent(
+    public ResponseEntity<ApiResponse<EventDetailResponse>> getEvent(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @PathVariable UUID eventId) {
 
         validateAuthHeaders(userId, userRole);
 
-        EventResult result = eventQueryService.getEventById(eventId);
-        return ResponseEntity.ok(ApiResponse.success(EventResponse.from(result)));
+        EventDetailResult result = eventQueryService.getEventDetailById(eventId);
+        return ResponseEntity.ok(ApiResponse.success(EventDetailResponse.from(result)));
     }
 
     private void validateAuthHeaders(UUID userId, String userRole) {

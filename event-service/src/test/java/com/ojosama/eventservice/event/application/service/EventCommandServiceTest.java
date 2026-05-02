@@ -11,11 +11,9 @@ import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand
 import com.ojosama.eventservice.event.application.dto.command.CreateScheduleCommand;
 import com.ojosama.eventservice.event.application.dto.command.UpdateEventCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
-import com.ojosama.eventservice.event.domain.event.EventMessagePublisher;
 import com.ojosama.eventservice.event.domain.event.payload.EventCreatedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventDeletedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventScheduleChangedMessage;
-import com.ojosama.eventservice.event.domain.event.payload.EventUpdatedMessage;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.Event;
@@ -42,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,7 +52,7 @@ class EventCommandServiceTest {
     @Mock
     private EventCategoryRepository eventCategoryRepository;
     @Mock
-    private EventMessagePublisher eventMessagePublisher;
+    private ApplicationEventPublisher applicationEventPublisher;
     @InjectMocks
     private EventCommandService eventService;
 
@@ -89,9 +88,6 @@ class EventCommandServiceTest {
                 schedules);
     }
 
-    /**
-     * 단위 테스트용 Event 생성 (id는 ReflectionTestUtils로 주입). JPA @GeneratedValue는 영속 시점에 채워지므로 직접 설정 필요.
-     */
     private Event createDefaultEvent() {
         EventCategory category = EventCategory.create("CONCERT");
         Event event = Event.builder()
@@ -208,7 +204,7 @@ class EventCommandServiceTest {
             assertThat(result.name()).isEqualTo("서울 재즈 페스티벌");
             assertThat(result.schedules()).hasSize(1);
             verify(eventRepository).save(any());
-            verify(eventMessagePublisher).publishEventCreated(any());
+            verify(applicationEventPublisher).publishEvent(any(EventCreatedMessage.class));
         }
 
         @Test
@@ -225,7 +221,7 @@ class EventCommandServiceTest {
             assertThat(result.ticketingLink()).isEqualTo("http://ticket.example.com");
             assertThat(result.schedules()).hasSize(1);
             verify(eventRepository).save(any());
-            verify(eventMessagePublisher).publishEventCreated(any());
+            verify(applicationEventPublisher).publishEvent(any(EventCreatedMessage.class));
         }
 
         @Test
@@ -237,10 +233,10 @@ class EventCommandServiceTest {
 
             eventService.createEvent(buildCommand(CATEGORY_ID, false));
 
-            ArgumentCaptor<EventCreatedMessage> captor = ArgumentCaptor.forClass(EventCreatedMessage.class);
-            verify(eventMessagePublisher).publishEventCreated(captor.capture());
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            verify(applicationEventPublisher).publishEvent(captor.capture());
 
-            EventCreatedMessage message = captor.getValue();
+            EventCreatedMessage message = (EventCreatedMessage) captor.getValue();
             assertThat(message.categoryName()).isEqualTo("FESTIVAL");
             assertThat(message.eventStartAt()).isEqualTo(FUTURE_START);
             assertThat(message.eventEndAt()).isEqualTo(FUTURE_END);
@@ -291,26 +287,6 @@ class EventCommandServiceTest {
     class UpdateEventSuccess {
 
         @Test
-        @DisplayName("이름 변경 → publishEventUpdated에 변경된 eventId, eventName 포함")
-        void updateEvent_nameChanged_publishEventUpdatedWithCorrectPayload() {
-            Event event = createDefaultEvent();
-            given(eventRepository.findById(EVENT_ID)).willReturn(Optional.of(event));
-            given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(event.getCategory()));
-
-            UpdateEventCommand command = buildUpdateCommand(
-                    EVENT_ID, "변경된 이름",
-                    FUTURE_START, FUTURE_END, "올림픽공원",
-                    10000, 50000, false, null, null, null, null);
-
-            eventService.updateEvent(command);
-
-            ArgumentCaptor<EventUpdatedMessage> captor = ArgumentCaptor.forClass(EventUpdatedMessage.class);
-            verify(eventMessagePublisher).publishEventUpdated(captor.capture());
-            assertThat(captor.getValue().eventId()).isEqualTo(EVENT_ID);
-            assertThat(captor.getValue().eventName()).isEqualTo("변경된 이름");
-        }
-
-        @Test
         @DisplayName("필드 변경 시 → publishScheduleChanged에 변경된 fieldName 목록 포함")
         void updateEvent_fieldChanged_publishScheduleChangedWithChangedFields() {
             Event event = createDefaultEvent();
@@ -324,11 +300,10 @@ class EventCommandServiceTest {
 
             eventService.updateEvent(command);
 
-            ArgumentCaptor<EventScheduleChangedMessage> captor =
-                    ArgumentCaptor.forClass(EventScheduleChangedMessage.class);
-            verify(eventMessagePublisher).publishScheduleChanged(captor.capture());
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            verify(applicationEventPublisher).publishEvent(captor.capture());
 
-            EventScheduleChangedMessage message = captor.getValue();
+            EventScheduleChangedMessage message = (EventScheduleChangedMessage) captor.getValue();
             assertThat(message.eventId()).isEqualTo(EVENT_ID);
             assertThat(message.changedFields())
                     .extracting("fieldName")
@@ -336,13 +311,12 @@ class EventCommandServiceTest {
         }
 
         @Test
-        @DisplayName("변경 없이 동일 값 전달 → publishEventUpdated만 발행, publishScheduleChanged 미발행")
-        void updateEvent_noFieldChanges_onlyPublishEventUpdated() {
+        @DisplayName("변경 없이 동일 값 전달 → publishScheduleChanged 미발행")
+        void updateEvent_noFieldChanges_publishScheduleChanged_notCalled() {
             Event event = createDefaultEvent();
             given(eventRepository.findById(EVENT_ID)).willReturn(Optional.of(event));
             given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(event.getCategory()));
 
-            // 기존 값과 동일하게 전달
             UpdateEventCommand command = buildUpdateCommand(
                     EVENT_ID, event.getName(),
                     event.getEventTime().getStartAt(), event.getEventTime().getEndAt(),
@@ -353,8 +327,7 @@ class EventCommandServiceTest {
 
             eventService.updateEvent(command);
 
-            verify(eventMessagePublisher).publishEventUpdated(any());
-            verify(eventMessagePublisher, never()).publishScheduleChanged(any());
+            verify(applicationEventPublisher, never()).publishEvent(any(EventScheduleChangedMessage.class));
         }
 
         @Test
@@ -389,7 +362,6 @@ class EventCommandServiceTest {
         @DisplayName("schedules 미포함(null) 시 → 기존 일정 유지")
         void updateEvent_withoutSchedules_schedulesPreserved() {
             Event event = createDefaultEvent();
-            // 기존 일정 추가
             event.addSchedule(EventSchedule.builder()
                     .event(event)
                     .name("기존 공연")
@@ -404,7 +376,7 @@ class EventCommandServiceTest {
                     event.getEventLocation().getPlace(),
                     event.getEventFee().getMinFee(), event.getEventFee().getMaxFee(),
                     event.getEventTicketing().getHasTicketing(),
-                    null, null, null, null);  // schedules = null
+                    null, null, null, null);
 
             EventResult result = eventService.updateEvent(command);
 
@@ -421,17 +393,17 @@ class EventCommandServiceTest {
 
             UpdateEventCommand command = buildUpdateCommand(
                     EVENT_ID, "새 이름",
-                    FUTURE_START, FUTURE_END, "잠실종합운동장",  // place 변경
-                    0, 30000,                                      // maxFee 변경
+                    FUTURE_START, FUTURE_END, "잠실종합운동장",
+                    0, 30000,
                     false, null, null, null, null);
 
             eventService.updateEvent(command);
 
-            ArgumentCaptor<EventScheduleChangedMessage> captor =
-                    ArgumentCaptor.forClass(EventScheduleChangedMessage.class);
-            verify(eventMessagePublisher).publishScheduleChanged(captor.capture());
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            verify(applicationEventPublisher).publishEvent(captor.capture());
 
-            assertThat(captor.getValue().changedFields())
+            EventScheduleChangedMessage message = (EventScheduleChangedMessage) captor.getValue();
+            assertThat(message.changedFields())
                     .extracting("fieldName")
                     .contains("name", "place", "maxFee");
         }
@@ -452,7 +424,7 @@ class EventCommandServiceTest {
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining(EventErrorCode.EVENT_NOT_FOUND.getMessage());
 
-            verify(eventMessagePublisher, never()).publishEventDeleted(any());
+            verify(applicationEventPublisher, never()).publishEvent(any(EventDeletedMessage.class));
         }
     }
 
@@ -470,10 +442,12 @@ class EventCommandServiceTest {
 
             verify(eventRepository).delete(event);
 
-            ArgumentCaptor<EventDeletedMessage> captor = ArgumentCaptor.forClass(EventDeletedMessage.class);
-            verify(eventMessagePublisher).publishEventDeleted(captor.capture());
-            assertThat(captor.getValue().eventId()).isEqualTo(EVENT_ID);
-            assertThat(captor.getValue().eventName()).isEqualTo("서울 재즈 페스티벌");
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            verify(applicationEventPublisher).publishEvent(captor.capture());
+
+            EventDeletedMessage message = (EventDeletedMessage) captor.getValue();
+            assertThat(message.eventId()).isEqualTo(EVENT_ID);
+            assertThat(message.eventName()).isEqualTo("서울 재즈 페스티벌");
         }
     }
 }
