@@ -8,7 +8,6 @@ import lombok.Builder;
 @Builder
 public record CalendarResponseDto(
         UUID id,
-        UUID eventScheduleId,
         LocalDateTime eventDate,
         LocalDateTime ticketingDate,
         String memo,
@@ -18,7 +17,6 @@ public record CalendarResponseDto(
     public static CalendarResponseDto from(CalendarResult result) {
         return CalendarResponseDto.builder()
                 .id(result.id())
-                .eventScheduleId(result.eventScheduleId())
                 .eventDate(result.eventDate())
                 .ticketingDate(result.ticketingDate())
                 .memo(result.memo())

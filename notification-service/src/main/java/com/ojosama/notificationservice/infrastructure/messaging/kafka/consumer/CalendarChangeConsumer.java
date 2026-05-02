@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 public class CalendarChangeConsumer {
 
     private static final String CONSUMER_GROUP = "notification-service-group";
-    private static final String EVENT_TYPE = EventType.EVENT_UPDATED.getValue();
+    private static final String EVENT_TYPE = EventType.CALENDAR_UPDATED.getValue();
 
     private final IdempotentEventHandler idempotentEventHandler;
     private final NotificationService notificationService;

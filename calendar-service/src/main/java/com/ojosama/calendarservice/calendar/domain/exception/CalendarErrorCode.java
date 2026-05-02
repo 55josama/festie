@@ -8,10 +8,13 @@ import org.springframework.http.HttpStatus;
 public enum CalendarErrorCode implements ErrorCode {
 
     CALENDAR_NOT_FOUND(HttpStatus.NOT_FOUND, "요청하신 일정을 찾을 수 없습니다."),
+    EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "요청하신 행사를 찾을 수 없습니다."),
     CALENDAR_ACCESS_DENIED(HttpStatus.FORBIDDEN, "다른 사용자의 일정은 수정할 수 없습니다."),
     CALENDAR_DELETE_DENIED(HttpStatus.FORBIDDEN, "다른 사용자의 일정은 삭제할 수 없습니다."),
     EVENT_SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청하신 행사 일정을 찾을 수 없습니다."),
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
+
+    INVALID_MESSAGE_PAYLOAD(HttpStatus.BAD_REQUEST, "메시지 응답이 잘못되었습니다."),
 
     EXISTS_CALENDAR(HttpStatus.CONFLICT, "이미 존재하는 일정입니다.");
 

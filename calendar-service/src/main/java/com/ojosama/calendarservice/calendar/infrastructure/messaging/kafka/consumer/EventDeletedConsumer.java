@@ -1,13 +1,16 @@
-package com.ojosama.notificationservice.infrastructure.messaging.kafka.consumer;
+package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ojosama.calendarservice.calendar.application.CalendarService;
+import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
+import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
+import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventDeletedMessage;
+import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.KafkaCalendarPublisher;
+import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto.CalendarEventDeletedMessage;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
-import com.ojosama.notificationservice.application.NotificationService;
-import com.ojosama.notificationservice.domain.exception.NotificationErrorCode;
-import com.ojosama.notificationservice.domain.exception.NotificationException;
-import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventDeletedMessage;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,17 +21,18 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CalendarDeletedConsumer {
+public class EventDeletedConsumer {
 
-    private static final String CONSUMER_GROUP = "notification-service-group";
-    private static final String EVENT_TYPE = EventType.CALENDAR_DELETED.getValue();
+    private static final String CONSUMER_GROUP = "calendar-service-group";
+    private static final String EVENT_TYPE = EventType.EVENT_DELETED.getValue();
 
     private final ObjectMapper objectMapper;
     private final IdempotentEventHandler idempotentEventHandler;
-    private final NotificationService notificationService;
+    private final CalendarService calendarService;
+    private final KafkaCalendarPublisher publisher;
 
     @KafkaListener(
-            topics = "${spring.kafka.topic.calendar-deleted}",
+            topics = "${spring.kafka.topic.event-deleted}",
             groupId = CONSUMER_GROUP,
             containerFactory = "kafkaListenerContainerFactory"
     )
@@ -42,15 +46,18 @@ public class CalendarDeletedConsumer {
 
             if (!messageKey.equals(event.eventId())) {
                 log.error("key값과 messageId 불일치 : {}, {}", messageKey, event.eventId());
-                throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
+                throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
             }
             idempotentEventHandler.handle(
                     messageKey,
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> notificationService.deleteEventNotification(event)
-            );
+                    () -> {
+                        List<UUID> userIds = calendarService.deleteAllByEventId(event.eventId());
+                        publisher.publishCalendarEventDeleted(new CalendarEventDeletedMessage(event.eventId(),
+                                event.eventName(), userIds));
+                    });
             log.info("Event deleted: {}", record.key());
         } catch (RuntimeException e) {
             log.error("삭제 이벤트 실패 : {}, {}", record.key(), e.getMessage());
@@ -62,7 +69,7 @@ public class CalendarDeletedConsumer {
         try {
             return objectMapper.readValue(payload, EventDeletedMessage.class);
         } catch (JsonProcessingException e) {
-            throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
+            throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
     }
 }

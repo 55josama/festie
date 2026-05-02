@@ -21,27 +21,37 @@ public class EventInfo {
     @Column(name = "event_name", nullable = false)
     private String eventName;
 
-    @Column(name = "event_schedule_id", nullable = false)
-    private UUID eventScheduleId;
-
     @Column(name = "event_date", nullable = false)
     private LocalDateTime eventDate;
 
     @Column(name = "event_ticketing_date")
     private LocalDateTime eventTicketingDate;
 
-    public EventInfo(UUID eventId, String eventName, UUID eventScheduleId, LocalDateTime eventDate,
+    public EventInfo(UUID eventId, String eventName, LocalDateTime eventDate,
                      LocalDateTime eventTicketingDate) {
         validateEventId(eventId);
         validateEventName(eventName);
-        validateEventScheduleId(eventScheduleId);
         validateEventDate(eventDate);
         this.eventId = eventId;
         this.eventName = eventName;
-        this.eventScheduleId = eventScheduleId;
         this.eventDate = eventDate;
         this.eventTicketingDate = eventTicketingDate;
     }
+
+    public void updateEventDate(LocalDateTime eventDate) {
+        validateEventDate(eventDate);
+        this.eventDate = eventDate;
+    }
+
+    public void updateTicketingDate(LocalDateTime eventTicketingDate) {
+        this.eventTicketingDate = eventTicketingDate;
+    }
+
+    public void updateEventName(String eventName) {
+        validateEventName(eventName);
+        this.eventName = eventName;
+    }
+
 
     private void validateEventId(UUID eventId) {
         if (eventId == null) {
@@ -55,15 +65,10 @@ public class EventInfo {
         }
     }
 
-    private void validateEventScheduleId(UUID eventScheduleId) {
-        if (eventScheduleId == null) {
-            throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
-        }
-    }
-
     private void validateEventDate(LocalDateTime eventDate) {
         if (eventDate == null) {
             throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
         }
     }
+
 }

@@ -9,6 +9,16 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum EventType {
+
+
+    // Outbound
+    POST_CREATED("PostCreated"),
+    POST_UPDATED("PostUpdated"),
+    COMMENT_CREATED("CommentCreated"),
+    COMMENT_UPDATED("CommentUpdated"),
+    POST_REPORTED("PostReported"),
+    COMMENT_REPORTED("CommentReported"),
+    
     // event
     EVENT_CREATED("EventCreated"),
     EVENT_DELETED("EventDeleted"),
@@ -21,6 +31,8 @@ public enum EventType {
     // calendar
     TICKETING_SCHEDULE_REMINDER("EventTicketingSchedule"),
     SCHEDULE_REMINDER("EventSchedule"),
+    CALENDAR_UPDATED("CalendarUpdated"),
+    CALENDAR_DELETED("CalendarDeleted"),
 
     // operation
     REPORT_BLINDED("ReportBlinded"),
