@@ -65,7 +65,8 @@ public class EventChangedConsumer {
 
     private void dispatch(EventChangedEvent event) {
         if (event == null || event.eventId() == null) {
-            throw new IllegalArgumentException("행사 일정 변경 이벤트에 eventId가 없습니다.");
+            log.warn("eventId가 없는 행사 일정 변경 이벤트라 건너뜁니다.");
+            return;
         }
         if (!hasRelevantChanges(event)) {
             log.info("반영할 변경 필드가 없어 채팅방 갱신을 건너뜁니다. eventId={}", event.eventId());
@@ -151,9 +152,13 @@ public class EventChangedConsumer {
     }
 
     private EventChangedEvent parse(String payload, String topic) {
+        if (payload == null || payload.isBlank()) {
+            log.warn("행사 일정 변경 이벤트 payload가 비어 있어 건너뜁니다. topic={}", topic);
+            return null;
+        }
         try {
             return objectMapper.readValue(payload, EventChangedEvent.class);
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             log.warn("행사 일정 변경 이벤트 페이로드 파싱에 실패해 건너뜁니다. topic={}", topic);
             return null;
         }
