@@ -1,5 +1,6 @@
 package com.ojosama.report.infrastructure.client;
 
+import com.ojosama.report.infrastructure.client.dto.CommentClientResponse;
 import com.ojosama.report.infrastructure.client.dto.PostClientResponse;
 import java.util.UUID;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -12,5 +13,5 @@ public interface CommunityClient {
     PostClientResponse getPostWriter(@PathVariable("postId") UUID userId);
 
     @GetMapping("/internal/v1/comments/{commentId}")
-    PostClientResponse getCommentWriter(@PathVariable("commentId") UUID userId);
+    CommentClientResponse getCommentWriter(@PathVariable("commentId") UUID userId);
 }
