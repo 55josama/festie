@@ -42,8 +42,8 @@ Content-Type: application/json
 
 {
   "categoryId":"b1ba71d8-323f-49a5-957d-2b65318dbc7e",
-  "title":"젠장",
-  "content":"쒸팔"
+  "title":"테스트 게시글 수정",
+  "content":"카프카 발행 수정용 본문입니다."
 }
 
 ###게시글 수정
