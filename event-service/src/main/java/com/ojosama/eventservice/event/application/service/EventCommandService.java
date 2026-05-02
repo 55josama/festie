@@ -110,7 +110,6 @@ public class EventCommandService {
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
         event.deleted(userId);
-        eventRepository.delete(event);
 
         applicationEventPublisher.publishEvent(new EventDeletedMessage(event.getId(), event.getName()));
     }
