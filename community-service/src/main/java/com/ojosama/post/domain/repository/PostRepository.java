@@ -2,6 +2,7 @@ package com.ojosama.post.domain.repository;
 
 import com.ojosama.post.domain.model.Post;
 import com.ojosama.post.domain.model.PostStatus;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -66,4 +67,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
             + "WHERE p.userId = :userId AND p.deletedAt IS NULL "
             + "AND p.status <> com.ojosama.post.domain.model.PostStatus.BLOCKED")
     int blockAllByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT p.userId FROM Post p WHERE p.id = :id")
+    Optional<UUID> findWriterIdById(@Param("id") UUID id);
 }

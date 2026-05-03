@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,30 +34,38 @@ public class CommentController {
     private final CommentService commentService;
     private final CommentLikeService commentLikeService;
 
+    private static final String USER_ID_HEADER = "X-User-Id";
+    private static final String USER_ROLE_HEADER = "X-User-Role";
+
     @PostMapping("/v1/posts/{postId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CommentResponse> create(
             @PathVariable UUID postId,
-            @Valid @RequestBody CreateCommentRequest req) {
+            @Valid @RequestBody CreateCommentRequest req,
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         CommentResult result = commentService.create(new CreateCommentCommand(
-                postId, UUID.randomUUID(), req.parentId(), req.content())); //인증인가 구현되면 수정
+                postId, userId, req.parentId(), req.content())); //인증인가 구현되면 수정
         return ApiResponse.created(CommentResponse.from(result));
     }
 
     @PatchMapping("/v1/comments/{commentId}")
     public ApiResponse<CommentResponse> update(
             @PathVariable UUID commentId,
-            @Valid @RequestBody UpdateCommentRequest req) {
+            @Valid @RequestBody UpdateCommentRequest req,
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         CommentResult result = commentService.update(new UpdateCommentCommand(
-                commentId, UUID.randomUUID(), req.content())); //인증인가 구현되면 수정
+                commentId, userId, req.content()));
         return ApiResponse.success(CommentResponse.from(result));
     }
 
     @DeleteMapping("/v1/comments/{commentId}")
     public ApiResponse<Void> delete(
-            @PathVariable UUID commentId) {
+            @PathVariable UUID commentId,
+            @RequestHeader(USER_ID_HEADER) UUID userId,
+            @RequestHeader(USER_ROLE_HEADER) String role) {
+        boolean isAdmin = "ADMIN".equals(role);
         commentService.delete(new DeleteCommentCommand(
-                commentId, UUID.randomUUID(), true)); //인증인가 구현되면 수정
+                commentId, userId, isAdmin));
         return ApiResponse.deleted();
     }
 
@@ -69,23 +78,19 @@ public class CommentController {
         return ApiResponse.success(page.map(CommentResponse::from));
     }
 
-    @GetMapping("/internal/v1/comments/{commentId}")
-    public ApiResponse<CommentResponse> getComment(@PathVariable UUID commentId) {
-        CommentResult result = commentService.getComment(commentId);
-        return ApiResponse.success(CommentResponse.from(result));
-    }
-
     @PostMapping("/v1/comments/{commentId}/likes")
     public ApiResponse<Integer> like(
-            @PathVariable UUID commentId) {
-        int likeCount = commentLikeService.like(commentId,UUID.randomUUID());
+            @PathVariable UUID commentId,
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
+        int likeCount = commentLikeService.like(commentId,userId);
         return ApiResponse.success(likeCount);
     }
 
     @DeleteMapping("/v1/comments/{commentId}/likes")
     public ApiResponse<Integer> unlike(
-            @PathVariable UUID commentId) {
-        int likeCount = commentLikeService.unlike(commentId, UUID.randomUUID());
+            @PathVariable UUID commentId,
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
+        int likeCount = commentLikeService.unlike(commentId, userId);
         return ApiResponse.success(likeCount);
     }
 }
