@@ -65,7 +65,7 @@ public class InternalUserController {
         );
         return InternalManagerIdResponseDto.from(result);
     }
-
+    
     @GetMapping("/managers")
     public UUID getInternalManagerIdValue(@RequestParam("categoryName") String categoryName) {
         GetCategoryManagerIdResult result = userService.getInternalManagerId(
