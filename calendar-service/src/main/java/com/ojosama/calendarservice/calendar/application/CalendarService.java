@@ -47,7 +47,8 @@ public class CalendarService {
 
     @Transactional(readOnly = true)
     public CalendarResponseDto getCalendar(UUID calendarId, UUID userId) {
-        Calendar calendar = validateCalendarAlive(calendarId, userId);
+        Calendar calendar = calendarRepository.findByIdAndUserIdAndDeletedAtIsNull(calendarId, userId).orElseThrow(() ->
+                new CalendarException(CalendarErrorCode.CALENDAR_NOT_FOUND));
 
         return CalendarResponseDto.from(CalendarResult.from(calendar));
     }
