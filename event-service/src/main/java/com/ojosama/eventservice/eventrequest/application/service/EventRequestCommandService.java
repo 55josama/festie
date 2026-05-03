@@ -28,7 +28,7 @@ public class EventRequestCommandService {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public EventRequestResult createEventRequest(CreateEventRequestCommand command) {
-        EventCategory category = eventCategoryRepository.findByName(command.categoryName())
+        EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND));
 
         EventRequest request = EventRequest.create(
