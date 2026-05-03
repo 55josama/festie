@@ -65,6 +65,14 @@ public class InternalUserController {
         );
         return InternalManagerIdResponseDto.from(result);
     }
+    
+    @GetMapping("/managers")
+    public UUID getInternalManagerIdValue(@RequestParam("categoryName") String categoryName) {
+        GetCategoryManagerIdResult result = userService.getInternalManagerId(
+                new GetCategoryManagerQuery(categoryName)
+        );
+        return result.managerId();
+    }
 
     @GetMapping("/{userId}/nickname")
     public InternalUserNicknameResponseDto getInternalUserNickname(@PathVariable UUID userId) {
