@@ -23,6 +23,20 @@ Content-Type: application/json
   "phoneNumber": "010-0000-0000"
 }
 
+### ADMIN 로그인
+### 응답의 accessToken을 adminAccessToken 전역 변수로 저장
+POST {{userUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "1234"
+}
+
+> {%
+    client.global.set("adminAccessToken", response.body.accessToken);
+%}
+
 
 ### 회원가입
 ### 기본 role은 USER로 생성
