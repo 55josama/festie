@@ -1,5 +1,6 @@
 package com.ojosama.eventservice.event.domain.event.payload;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -9,5 +10,19 @@ public record EventCreatedMessage(
         UUID categoryId,
         String categoryName,
         LocalDateTime eventStartAt,
-        LocalDateTime eventEndAt
+        LocalDateTime eventEndAt,
+        String place,
+        BigDecimal latitude,
+        BigDecimal longitude,
+        Integer minFee,
+        Integer maxFee,
+        Boolean hasTicketing,
+        LocalDateTime ticketingOpenAt,
+        LocalDateTime ticketingCloseAt,
+        String ticketingLink,
+        String status,
+        String officialLink,
+        String description,
+        String performer,
+        String img
 ) {}
