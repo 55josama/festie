@@ -439,7 +439,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
