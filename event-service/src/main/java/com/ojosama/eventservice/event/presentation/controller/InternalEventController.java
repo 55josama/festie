@@ -1,6 +1,5 @@
 package com.ojosama.eventservice.event.presentation.controller;
 
-import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
 import java.util.List;
@@ -21,21 +20,21 @@ public class InternalEventController {
     private final EventQueryService eventQueryService;
 
     @GetMapping("/{eventId}")
-    public ResponseEntity<ApiResponse<EventResponse>> getEventById(
+    public ResponseEntity<EventResponse> getEventById(
             @PathVariable UUID eventId) {
 
         EventResponse response = EventResponse.from(eventQueryService.getEventById(eventId));
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<EventResponse>>> getEvents(
+    public ResponseEntity<List<EventResponse>> getEvents(
             @RequestParam(required = false) List<UUID> eventIds) {
 
         List<EventResponse> responses = (eventIds != null && !eventIds.isEmpty()
                 ? eventQueryService.getEventsByIds(eventIds)
                 : eventQueryService.getAllEvents())
                 .stream().map(EventResponse::from).toList();
-        return ResponseEntity.ok(ApiResponse.success(responses));
+        return ResponseEntity.ok(responses);
     }
 }
