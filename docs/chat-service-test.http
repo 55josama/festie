@@ -26,7 +26,6 @@ GET {{chatUrl}}/v1/chat/rooms/{chatRoomId}/messages?page=0&size=20
 POST {{chatUrl}}/v1/chat/rooms/{chatRoomId}/messages
 Content-Type: application/json
 X-User-Id: 44444444-4444-4444-4444-444444444441
-X-User-Nickname: Love
 
 {
   "content": "시연용메시지1 빵 맛있어"
@@ -36,7 +35,6 @@ X-User-Nickname: Love
 POST {{chatUrl}}/v1/chat/rooms/{chatRoomId}/messages
 Content-Type: application/json
 X-User-Id: 44444444-4444-4444-4444-444444444442
-X-User-Nickname: Bread
 
 {
   "content": "시연용메시지2 빵 좋아요"
@@ -46,7 +44,6 @@ X-User-Nickname: Bread
 POST {{chatUrl}}/v1/chat/rooms/{chatRoomId}/messages
 Content-Type: application/json
 X-User-Id: 44444444-4444-4444-4444-444444444443
-X-User-Nickname: Daejeon
 
 {
   "content": "시연용메시지3 빵은역시 성심당아닌가요 ㅋㅋ "
@@ -56,7 +53,6 @@ X-User-Nickname: Daejeon
 POST {{chatUrl}}/v1/chat/rooms/{chatRoomId}/messages
 Content-Type: application/json
 X-User-Id: 44444444-4444-4444-4444-444444444444
-X-User-Nickname: zzzzz
 
 {
   "content": "시연용메시지4 이런데 왜감ㅋㅋ? "
@@ -67,25 +63,19 @@ GET {{chatUrl}}/v1/chat/rooms/{chatRoomId}/messages?page=0&size=20
 
 ### 6) 3번째 메시지 삭제 (작성한 유저만 삭제가능, 일단 테스트할땐 응답값에나온 메시지아이디로, 유저아이디는 일치해야함 )
 DELETE {{chatUrl}}/v1/chat/messages/{messageId}
-
 X-User-Id: 44444444-4444-4444-4444-444444444443
 
 ### 7) 2번째 메시지 삭제 다른 유저가 삭제시도할경우?
 DELETE {{chatUrl}}/v1/chat/messages/{messageId}
-
 X-User-Id: 44444444-4444-4444-4444-444444444443
 
 ### 8) 4번째 메시지 상태 변경 , 관리자의 블라인드처리
 PATCH {{chatUrl}}/v1/chat/messages/{messageId}/status
-
 Content-Type: application/json
-
 X-User-Id: 99999999-9999-9999-9999-999999999999
 
 {
-
-"status": "BLINDED"
-
+  "status": "BLINDED"
 }
 
 ###  9) 다시 방별 메시지 목록 조회 → 4개의 메시지중 3번째는 딜리티트, 4번째는 블라인드(마스킹) 1,2번째는 정상노출 기대(4번도 블라인드라서 보이긴함’가려진 메시지입니다’)
