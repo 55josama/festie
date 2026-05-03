@@ -29,23 +29,31 @@ public class InternalUserController {
     private final UserService userService;
 
     @GetMapping("/{userId}/email")
-    public InternalUserEmailResponseDto getInternalUserEmail(@PathVariable UUID userId) {
+    public String getInternalUserEmail(@PathVariable UUID userId) {
         InternalUserEmailResult result = userService.getInternalUserEmail(new GetInternalUserEmailQuery(userId));
+        return result.email();
+    }
 
+    @GetMapping("/{userId}/email/detail")
+    public InternalUserEmailResponseDto getInternalUserEmailDetail(@PathVariable UUID userId) {
+        InternalUserEmailResult result = userService.getInternalUserEmail(new GetInternalUserEmailQuery(userId));
         return InternalUserEmailResponseDto.from(result);
     }
 
     @PostMapping("/emails")
     public InternalUserEmailsResponseDto getInternalUserEmails(@RequestBody List<UUID> userIds) {
-        return InternalUserEmailsResponseDto.from(
-                userService.getInternalUserEmails(userIds)
-        );
+        return InternalUserEmailsResponseDto.from(userService.getInternalUserEmails(userIds));
     }
 
     @GetMapping("/admin")
-    public InternalAdminIdResponseDto getInternalAdminId() {
+    public UUID getInternalAdminId() {
         GetAdminIdResult result = userService.getInternalAdminId();
+        return result.adminId();
+    }
 
+    @GetMapping("/admin/detail")
+    public InternalAdminIdResponseDto getInternalAdminIdDetail() {
+        GetAdminIdResult result = userService.getInternalAdminId();
         return InternalAdminIdResponseDto.from(result);
     }
 
@@ -54,7 +62,14 @@ public class InternalUserController {
         GetCategoryManagerIdResult result = userService.getInternalManagerId(
                 new GetCategoryManagerQuery(category)
         );
-
         return InternalManagerIdResponseDto.from(result);
+    }
+
+    @GetMapping("/managers")
+    public UUID getInternalManagerIdValue(@RequestParam("categoryName") String categoryName) {
+        GetCategoryManagerIdResult result = userService.getInternalManagerId(
+                new GetCategoryManagerQuery(categoryName)
+        );
+        return result.managerId();
     }
 }

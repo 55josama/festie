@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -20,6 +22,7 @@ public class InternalRequestFilter extends OncePerRequestFilter {
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
 
     private final InternalApiProperties internalApiProperties;
+    private final Environment environment;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Override
@@ -30,7 +33,8 @@ public class InternalRequestFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String servletPath = request.getServletPath();
 
-        if (!pathMatcher.match(INTERNAL_PATH_PATTERN, servletPath)) {
+        if (!pathMatcher.match(INTERNAL_PATH_PATTERN, servletPath)
+                || environment.acceptsProfiles(Profiles.of("local", "test"))) {
             filterChain.doFilter(request, response);
             return;
         }

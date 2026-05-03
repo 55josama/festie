@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.UUID;
 
 public record InternalUserEmailsResponseDto(
-        Map<UUID, String> emails
+        Map<UUID, String> userInfo
 ) {
-    public static InternalUserEmailsResponseDto from(Map<UUID, String> emails) {
-        return new InternalUserEmailsResponseDto(emails);
+    public static InternalUserEmailsResponseDto from(Map<UUID, String> userInfo) {
+        return new InternalUserEmailsResponseDto(userInfo);
     }
 }
