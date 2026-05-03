@@ -141,8 +141,6 @@ public class EventDocumentConsumer {
         log.info("[챗봇] 행사 삭제 → 문서 제거: eventId={}, eventName={}",
                 event.eventId(), event.eventName());
 
-        documentIndexer.deleteEvent(event.eventId());
-
         try {
             documentIndexer.deleteEvent(event.eventId());
             log.info("[챗봇] 행사 문서 제거 완료: eventId={}", event.eventId());
