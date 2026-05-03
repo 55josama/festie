@@ -109,10 +109,24 @@ public class EventCommandService {
         EventChanges changes = EventSnapshot.compareSnapshots(beforeSnapshot, afterSnapshot);
 
         if (schedulesChanged || changes.hasChanges()) {
-            applicationEventPublisher.publishEvent(EventScheduleChangedMessage.from(
+            applicationEventPublisher.publishEvent(new EventScheduleChangedMessage(
                     event.getId(),
                     event.getName(),
-                    changes.getChangedFields()
+                    changes.getChangedFields(),
+                    event.getEventLocation().getPlace(),
+                    event.getEventLocation().getLatitude(),
+                    event.getEventLocation().getLongitude(),
+                    event.getEventFee().getMinFee(),
+                    event.getEventFee().getMaxFee(),
+                    event.getEventTicketing().getHasTicketing(),
+                    event.getEventTicketing().getTicketingOpenAt(),
+                    event.getEventTicketing().getTicketingCloseAt(),
+                    event.getEventTicketing().getTicketingLink(),
+                    event.getStatus().name(),
+                    event.getOfficialLink(),
+                    event.getDescription(),
+                    event.getPerformer(),
+                    event.getImg()
             ));
         }
 
