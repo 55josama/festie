@@ -1,20 +1,20 @@
 ###  **자신의 알림 전체 읽음 처리**
 
+PATCH {{notificationUrl}}/v1/notifications
 Content-Type: application/json
 X-User-Id: 11111111-2222-1111-1111-111111111111
 
-PATCH : {{notificationUrl}}/v1/notifications
 
 ### **알림 조회**
-
+GET {{notificationUrl}}/v1/notifications
 Content-Type: application/json
 X-User-Id: 11111111-2222-1111-1111-111111111111
-
-GET : {{notificationUrl}}/v1/notifications
 
 ### **알림 삭제**
 
-DELETE : {{notificationUrl}}/v1/notificaitons/{notificationId}
+DELETE {{notificationUrl}}/v1/notificaitons/0ce33ea5-1ee3-4a60-a0c7-47797a9983d7
+Content-Type: application/json
+X-User-Id: 11111111-2222-1111-1111-111111111111
 
 ### **알림 자동 삭제 스케줄러 (일단 5분마다 자동으로 삭제할 수 있게끔 변경해놨음)**
 
