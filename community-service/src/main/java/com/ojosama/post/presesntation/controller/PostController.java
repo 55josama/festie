@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -38,24 +39,27 @@ public class PostController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<PostResponse> create(@Valid @RequestBody CreatePostRequest req){
-        PostResult result = postService.create(new CreatePostCommand(UUID.randomUUID(), req.categoryId(), req.title(), req.content()));
+    public ApiResponse<PostResponse> create(@Valid @RequestBody CreatePostRequest req,
+                                            @RequestHeader("X-User-Id") UUID userId){
+        PostResult result = postService.create(new CreatePostCommand(userId, req.categoryId(), req.title(), req.content()));
         return ApiResponse.created(PostResponse.from(result));
     }
 
     @PatchMapping("/{postId}")
     public ApiResponse<PostResponse> update(
             @PathVariable UUID postId,
-            @Valid @RequestBody UpdatePostRequest req) {
+            @Valid @RequestBody UpdatePostRequest req,
+            @RequestHeader("X-User-Id") UUID userId) {
         PostResult result = postService.update(new UpdatePostCommand(
-                postId, UUID.randomUUID(), req.categoryId(), req.title(), req.content()));
+                postId, userId, req.categoryId(), req.title(), req.content()));
         return ApiResponse.success(PostResponse.from(result));
     }
 
     @DeleteMapping("/{postId}")
     public ApiResponse<Void> delete(
-            @PathVariable UUID postId) {
-        postService.delete(new DeletePostCommand(postId, UUID.randomUUID(), true)); //인가 완료 후 수정'
+            @PathVariable UUID postId,
+            @RequestHeader("X-User-Id") UUID userId) {
+        postService.delete(new DeletePostCommand(postId, userId, true));
         return ApiResponse.deleted();
     }
 
@@ -68,7 +72,7 @@ public class PostController {
     @GetMapping
     public ApiResponse<Page<PostResponse>> list(
             @RequestParam(required = false) UUID categoryId,
-            @RequestParam(required = false) UUID userId,
+            @RequestHeader("X-User-Id") UUID userId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         PostListQuery query;
         if (categoryId != null) {
@@ -84,15 +88,17 @@ public class PostController {
 
     @PostMapping("/{postId}/likes")
     public ApiResponse<Void> like(
-            @PathVariable UUID postId) {
-        postLikeService.like(postId, UUID.randomUUID());
+            @PathVariable UUID postId,
+            @RequestHeader("X-User-Id") UUID userId) {
+        postLikeService.like(postId, userId);
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{postId}/likes")
     public ApiResponse<Void> unlike(
-            @PathVariable UUID postId) {
-        postLikeService.unlike(postId, UUID.randomUUID());
+            @PathVariable UUID postId,
+            @RequestHeader("X-User-Id") UUID userId) {
+        postLikeService.unlike(postId, userId);
         return ApiResponse.success();
     }
 }

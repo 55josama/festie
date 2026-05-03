@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,8 +56,9 @@ public class CategoryController {
 
     @DeleteMapping("/{categoryId}")
     public ApiResponse<Void> delete(
-            @PathVariable UUID categoryId) {
-        categoryService.delete(new DeleteCategoryCommand(categoryId, UUID.randomUUID())); //게이트웨이 완성 후 수정
+            @PathVariable UUID categoryId,
+            @RequestHeader("X-User-Id") UUID userId) {
+        categoryService.delete(new DeleteCategoryCommand(categoryId, userId));
         return ApiResponse.deleted();
     }
 
