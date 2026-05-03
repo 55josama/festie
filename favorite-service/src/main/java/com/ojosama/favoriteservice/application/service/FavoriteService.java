@@ -45,11 +45,11 @@ public class FavoriteService {
         EventInfoResponseDto dto = eventClient.getEvents(command.eventId());
         if (favoriteOpt.isPresent()) {
             favorite = favoriteOpt.get();
-            favorite.restore(new EventInfo(command.eventId(), dto.eventName(), dto.imageUrl()),
+            favorite.restore(new EventInfo(command.eventId(), dto.name(), dto.img()),
                     command.categoryId());
         } else {
             favorite = favoriteRepository.save(
-                    Favorite.of(userId, new EventInfo(command.eventId(), dto.eventName(), dto.imageUrl()),
+                    Favorite.of(userId, new EventInfo(command.eventId(), dto.name(), dto.img()),
                             command.categoryId()));
         }
         return FavoriteResult.from(favorite);
