@@ -17,10 +17,13 @@ import com.ojosama.chatservice.domain.model.MessageStatus;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.chatservice.domain.repository.MessageRepository;
 import com.ojosama.common.exception.CommonErrorCode;
+import com.ojosama.common.kafka.domain.EventType;
+import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -36,9 +39,14 @@ public class MessageService {
     private static final int MAX_WRITER_NICKNAME_LENGTH = 50;
     private static final int MAX_PAGE_SIZE = 100;
     private static final UUID SYSTEM_BLINDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final String AGGREGATE_TYPE = "CHAT";
 
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final OutboxEventPublisher outboxEventPublisher;
+
+    @Value("${spring.kafka.topic.chat-moderation-requested}")
+    private String chatModerationRequestedTopic;
 
     public MessageResult createMessage(CreateMessageCommand command) {
         if (command == null || command.chatRoomId() == null || command.userId() == null) {
@@ -59,7 +67,16 @@ public class MessageService {
                 .content(command.content().trim())
                 .build();
 
-        return MessageResult.from(messageRepository.save(message));
+        Message savedMessage = messageRepository.save(message);
+        outboxEventPublisher.publish(
+                AGGREGATE_TYPE,
+                savedMessage.getId(),
+                EventType.CHAT_MODERATION_REQUESTED,
+                chatModerationRequestedTopic,
+                com.ojosama.chatservice.infrastructure.messaging.kafka.dto.AiModerationRequestEvent.from(savedMessage)
+        );
+
+        return MessageResult.from(savedMessage);
     }
 
     @Transactional(readOnly = true)
