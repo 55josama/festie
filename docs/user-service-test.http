@@ -1,4 +1,4 @@
-user-service-test@userUrl = http://localhost:8081
+@userUrl = http://localhost:8081
 @email = oojosama5@gmail.com
 @password = 1234
 @userId = 여기에_조회할_userId_UUID_붙여넣기
@@ -34,7 +34,9 @@ Content-Type: application/json
 }
 
 > {%
+
     client.global.set("adminAccessToken", response.body.accessToken);
+
 %}
 
 
@@ -68,8 +70,10 @@ Content-Type: application/json
 > {%
 
 
+
     client.global.set("accessToken", response.body.accessToken);
     client.global.set("refreshToken", response.body.refreshToken);
+
 
 
 %}
@@ -86,8 +90,10 @@ Content-Type: application/json
 > {%
 
 
+
     client.global.set("accessToken", response.body.accessToken);
     client.global.set("refreshToken", response.body.refreshToken);
+
 
 
 %}
