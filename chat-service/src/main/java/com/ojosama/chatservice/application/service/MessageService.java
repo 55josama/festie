@@ -189,7 +189,7 @@ public class MessageService {
 
     private void validateWriterNickname(String writerNickname) {
         if (writerNickname == null || writerNickname.isBlank()) {
-            throw new ChatException(ChatErrorCode.MESSAGE_WRITER_NICKNAME_REQUIRED);
+            throw new ChatException(ChatErrorCode.MESSAGE_USER_NICKNAME_EMPTY);
         }
         if (writerNickname.trim().length() > MAX_WRITER_NICKNAME_LENGTH) {
             throw new ChatException(ChatErrorCode.MESSAGE_WRITER_NICKNAME_TOO_LONG);
@@ -198,7 +198,11 @@ public class MessageService {
 
     private String resolveWriterNickname(UUID userId) {
         try {
-            return userClient.getInternalUserNickname(userId).nickname();
+            var response = userClient.getInternalUserNickname(userId);
+            if (response == null || response.nickname() == null || response.nickname().isBlank()) {
+                throw new ChatException(ChatErrorCode.MESSAGE_USER_NICKNAME_EMPTY);
+            }
+            return response.nickname();
         } catch (FeignException e) {
             throw new ChatException(ChatErrorCode.MESSAGE_USER_NICKNAME_FETCH_FAILED);
         }
