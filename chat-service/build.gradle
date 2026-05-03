@@ -17,11 +17,7 @@ dependencies {
 
     // 웹소켓
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
-
-    // flyway
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
-
+    
     // zipkin 테스트용 추가
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     runtimeOnly 'org.postgresql:postgresql'
