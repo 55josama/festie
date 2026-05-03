@@ -7,6 +7,9 @@ spring:
       group-id: chat-service-group
     topic:
       event-created: event.info.created
+      event-changed: event.info.changed
+      report-blinded: report.blinded
+      chat-moderation-requested: chat.moderation.requested.v1
   datasource:
     url: jdbc:h2:mem:testdb;INIT=CREATE SCHEMA IF NOT EXISTS chat_schema
     driver-class-name: org.h2.Driver
