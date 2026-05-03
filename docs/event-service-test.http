@@ -189,7 +189,7 @@ GET {{eventUrl}}/v1/events/{{eventId}}
 ###
 
 ### 행사 수정 (schedules 포함 → 기존 일정 전체 교체)
-PATCH {{eventUrl}}/v1/events/{{eventId}}
+PATCH {{eventUrl}}/v1/events/{eventId}
 Content-Type: application/json
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
@@ -238,7 +238,7 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 ###
 
 ### 행사 수정 (schedules 생략 → 기존 일정 유지)
-PATCH {{eventUrl}}/v1/events/{{eventId}}
+PATCH {{eventUrl}}/v1/events/{eventId}
 Content-Type: application/json
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
@@ -263,7 +263,7 @@ X-User-Id: 00000000-0000-0000-0000-000000000001
 ###
 
 ### 행사 삭제 (soft delete → 204)
-DELETE {{eventUrl}}/v1/events/{{eventId}}
+DELETE {{eventUrl}}/v1/events/{eventId}
 X-User-Id: 00000000-0000-0000-0000-000000000001
 
 ###
@@ -279,7 +279,7 @@ GET {{eventUrl}}/internal/v1/events
 ###
 
 ### [Internal] 지정 ID 행사 벌크 조회
-GET {{eventUrl}}/internal/v1/events?eventIds={{eventId}},{{eventId2}}
+GET {{eventUrl}}/internal/v1/events?eventIds={eventId},{eventId2}
 
 ###
 

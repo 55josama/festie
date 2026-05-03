@@ -1,6 +1,7 @@
 package com.ojosama.comment.application.service;
 
 import com.ojosama.comment.application.dto.CommentResult;
+import com.ojosama.comment.application.dto.CommentWriterResult;
 import com.ojosama.comment.application.dto.CreateCommentCommand;
 import com.ojosama.comment.application.dto.DeleteCommentCommand;
 import com.ojosama.comment.application.dto.UpdateCommentCommand;
@@ -142,13 +143,10 @@ public class CommentService {
                 root, repliesByParent.getOrDefault(root.getId(), List.of())));
     }
 
-    public CommentResult getComment(UUID commentId) {
-        Comment comment = commentRepository.findById(commentId)
+    public CommentWriterResult getWriter(UUID commentId) {
+        UUID writerId = commentRepository.findWriterIdById(commentId)
                 .orElseThrow(() -> new CommentException(CommentErrorCode.COMMENT_NOT_FOUND));
-        if (comment.getDeletedAt() != null) {
-            throw new CommentException(CommentErrorCode.COMMENT_NOT_FOUND);
-        }
-        return CommentResult.flat(comment);
+        return new CommentWriterResult(commentId, writerId);
     }
 
     private Comment loadAlive(UUID commentId) {
