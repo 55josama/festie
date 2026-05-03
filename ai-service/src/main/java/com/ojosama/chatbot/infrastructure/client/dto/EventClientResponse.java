@@ -11,9 +11,17 @@ public record EventClientResponse(
         LocalDateTime startAt,
         LocalDateTime endAt,
         String place,
+        BigDecimal latitude,
+        BigDecimal longitude,
+        Integer minFee,
+        Integer maxFee,
         Boolean hasTicketing,
+        LocalDateTime ticketingOpenAt,
+        LocalDateTime ticketingCloseAt,
+        String ticketingLink,
         String officialLink,
         String description,
         String performer,
-        String status
+        String status,
+        String img
 ) { }

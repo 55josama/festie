@@ -40,15 +40,13 @@ public enum EventType {
     BLACKLIST_UPDATED("BlacklistUpdated"),
     BLACKLIST_REVIEW_REQUESTED("BlacklistReviewRequested"),
     OPERATION_REQUEST_CREATED("OperationRequestCreated"),
+    TARGET_BLINDED("TargetBlinded"),
+    USER_BLACKLIST_STATUS_UPDATED("UserBlacklistStatusUpdated"),
 
     // ai
     AI_MODERATION_EVALUATED("AiModerationEvaluated"),
     CHAT_MODERATION_REQUESTED("ChatModerationRequested"),
-    COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested"),
-    EVENT_EVENT_UPDATED("EventEventUpdated"),
-
-    TARGET_BLINDED("TargetBlinded"),
-    USER_BLACKLIST_STATUS_UPDATED("UserBlacklistStatusUpdated");
+    COMMUNITY_MODERATION_REQUESTED("CommunityModerationRequested");
 
     private final String value;
 

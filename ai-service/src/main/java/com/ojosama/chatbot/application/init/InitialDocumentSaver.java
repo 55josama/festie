@@ -37,14 +37,22 @@ public class InitialDocumentSaver {
                             event.id(),
                             event.name(),
                             event.categoryName(),
-                            event.startAt() != null ? event.startAt().toString() : "미정",
-                            event.endAt() != null ? event.endAt().toString() : "미정",
+                            event.startAt(),
+                            event.endAt(),
                             event.place(),
+                            event.latitude(),
+                            event.longitude(),
+                            event.minFee(),
+                            event.maxFee(),
                             event.hasTicketing(),
+                            event.ticketingOpenAt(),
+                            event.ticketingCloseAt(),
+                            event.ticketingLink(),
+                            event.status(),
                             event.officialLink(),
                             event.description(),
                             event.performer(),
-                            event.status()
+                            event.img()
                     );
                 }
                 log.info("Chatbot Service: 행사 데이터 {}건 동기화 완료", events.size());

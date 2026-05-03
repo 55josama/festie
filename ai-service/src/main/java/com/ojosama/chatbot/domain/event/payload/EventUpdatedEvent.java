@@ -2,15 +2,13 @@ package com.ojosama.chatbot.domain.event.payload;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
-public record EventCreatedEvent(
+public record EventUpdatedEvent(
         UUID eventId,
         String eventName,
-        UUID categoryId,
-        String categoryName,
-        LocalDateTime eventStartAt,
-        LocalDateTime eventEndAt,
+        List<FieldChange> changedFields,
         String place,
         BigDecimal latitude,
         BigDecimal longitude,
@@ -25,4 +23,19 @@ public record EventCreatedEvent(
         String description,
         String performer,
         String img
-) { }
+) {
+    public boolean hasChanges() {
+        return changedFields != null && !changedFields.isEmpty();
+    }
+
+    public boolean isFieldChanged(String fieldName) {
+        return changedFields != null && changedFields.stream()
+                .anyMatch(change -> change.fieldName().equals(fieldName));
+    }
+
+    public record FieldChange(
+            String fieldName,
+            Object before,
+            Object after
+    ) { }
+}
