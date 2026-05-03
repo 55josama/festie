@@ -19,7 +19,7 @@ public class BlacklistEventProducerImpl implements BlacklistEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${spring.kafka.topic.blacklist-updated}")
-    private String updateTopic;
+    private String blacklistUpdatedTopic;
 
     @Value("${spring.kafka.topic.blacklist-registered}")
     private String blacklistRegisteredTopic;
@@ -27,8 +27,8 @@ public class BlacklistEventProducerImpl implements BlacklistEventProducer {
     @Override
     public void publishStatusChangeEvent(UserBlacklistStatusEvent event) {
         try {
-            kafkaTemplate.send(updateTopic, event.userId().toString(), event).get(3, TimeUnit.SECONDS);
-            log.info("유저 블랙리스트 상태 변경 이벤트 발행 성공 - topic: {}, userId: {}", updateTopic, event.userId());
+            kafkaTemplate.send(blacklistUpdatedTopic, event.userId().toString(), event).get(3, TimeUnit.SECONDS);
+            log.info("유저 블랙리스트 상태 변경 이벤트 발행 성공 - topic: {}, userId: {}", blacklistUpdatedTopic, event.userId());
 
         } catch (Exception e) {
             log.error("유저 블랙리스트 상태 변경 이벤트 발행 실패. DB 트랜잭션을 롤백합니다.", e);

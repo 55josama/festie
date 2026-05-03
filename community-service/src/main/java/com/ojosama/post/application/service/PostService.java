@@ -9,6 +9,7 @@ import com.ojosama.post.application.dto.command.CreatePostCommand;
 import com.ojosama.post.application.dto.command.DeletePostCommand;
 import com.ojosama.post.application.dto.command.UpdatePostCommand;
 import com.ojosama.post.application.dto.result.PostResult;
+import com.ojosama.post.application.dto.result.PostWriterResult;
 import com.ojosama.post.application.query.PostListQuery;
 import com.ojosama.post.domain.exception.PostErrorCode;
 import com.ojosama.post.domain.exception.PostException;
@@ -117,6 +118,13 @@ public class PostService {
                     PostStatus.BLOCKED, query.pageable());
         }
         return posts.map(PostResult::from);
+    }
+
+    @Transactional(readOnly = true)
+    public PostWriterResult getWriter(UUID postId) {
+        UUID writerId = postRepository.findWriterIdById(postId)
+                .orElseThrow(() -> new PostException(PostErrorCode.POST_NOT_FOUND));
+        return new PostWriterResult(postId, writerId);
     }
 
     private Post loadAlive(UUID postId) {

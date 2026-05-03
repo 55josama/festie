@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,9 @@ public class AiModerationService {
     private final AiModerationClient aiModerationClient;
     private final AiModerationRepository aiModerationRepository;
     private final OutboxEventPublisher outbox;
+
+    @Value("${spring.kafka.topic.ai-evaluated}")
+    private String aiEvaluatedTopic;
 
     @Transactional
     public void processModerationBatch(List<AiModerationRequestEvent> events) {
@@ -95,7 +99,7 @@ public class AiModerationService {
                             "MODERATION",
                             m.getTargetId(),
                             EventType.AI_MODERATION_EVALUATED,
-                            "ai.moderation.evaluated",
+                            aiEvaluatedTopic,
                             new AiEvaluateEvent(
                                     m.getTargetId(),
                                     m.getTargetUserId(),
