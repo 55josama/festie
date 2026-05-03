@@ -26,11 +26,12 @@ public class InitialDocumentSaver {
 
         try {
             loadSystemGuides();
+            log.info("Chatbot Service: 시스템 가이드 인덱싱 완료");
 
-            ApiResponse<List<EventClientResponse>> response = eventClient.getEvents();
+            List<EventClientResponse> events = eventClient.getEvents();
 
-            if (response != null && response.getData() != null) {
-                List<EventClientResponse> events = response.getData();
+            if (events != null && !events.isEmpty()) {
+                log.info("Chatbot Service: 행사 데이터 {}건 인덱싱 시작", events.size());
 
                 for (EventClientResponse event : events) {
                     documentIndexer.indexEvent(
