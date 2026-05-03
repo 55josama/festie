@@ -106,29 +106,35 @@ public class EventDocumentConsumer {
         log.info("[챗봇] 행사 생성 → 문서 인덱싱: eventId={}, eventName={}",
                 event.eventId(), event.eventName());
 
-        documentIndexer.indexEvent(
-                event.eventId(),
-                event.eventName(),
-                event.categoryName(),
-                event.eventStartAt(),
-                event.eventEndAt(),
-                event.place(),
-                event.latitude(),
-                event.longitude(),
-                event.minFee(),
-                event.maxFee(),
-                event.hasTicketing(),
-                event.ticketingOpenAt(),
-                event.ticketingCloseAt(),
-                event.ticketingLink(),
-                event.status(),
-                event.officialLink(),
-                event.description(),
-                event.performer(),
-                event.img()
-        );
+        try {
+            documentIndexer.indexEvent(
+                    event.eventId(),
+                    event.eventName(),
+                    event.categoryName(),
+                    event.eventStartAt(),
+                    event.eventEndAt(),
+                    event.place(),
+                    event.latitude(),
+                    event.longitude(),
+                    event.minFee(),
+                    event.maxFee(),
+                    event.hasTicketing(),
+                    event.ticketingOpenAt(),
+                    event.ticketingCloseAt(),
+                    event.ticketingLink(),
+                    event.status(),
+                    event.officialLink(),
+                    event.description(),
+                    event.performer(),
+                    event.img()
+            );
 
-        log.info("[챗봇] 행사 문서 인덱싱 완료: eventId={}", event.eventId());
+            log.info("[챗봇] 행사 문서 인덱싱 완료: eventId={}", event.eventId());
+        } catch (Exception e) {
+            log.error("[챗봇] 행사 문서 인덱싱 실패: eventId={}, eventName={}",
+                    event.eventId(), event.eventName(), e);
+            throw e;
+        }
     }
 
     private void dispatchEventDeleted(EventDeletedEvent event) {
@@ -137,7 +143,14 @@ public class EventDocumentConsumer {
 
         documentIndexer.deleteEvent(event.eventId());
 
-        log.info("[챗봇] 행사 문서 제거 완료: eventId={}", event.eventId());
+        try {
+            documentIndexer.deleteEvent(event.eventId());
+            log.info("[챗봇] 행사 문서 제거 완료: eventId={}", event.eventId());
+        } catch (Exception e) {
+            log.error("[챗봇] 행사 문서 제거 실패: eventId={}, eventName={}",
+                    event.eventId(), event.eventName(), e);
+            throw e;
+        }
     }
 
     private void dispatchEventUpdated(EventUpdatedEvent event) {
@@ -146,28 +159,35 @@ public class EventDocumentConsumer {
                 event.changedFields() != null ? event.changedFields().size() : 0);
 
         // 변경된 내용으로 문서 재인덱싱 (전체 업데이트)
-        documentIndexer.indexEvent(
-                event.eventId(),
-                event.eventName(),
-                null,  // categoryName은 변경 이벤트에 없으므로 null
-                null,  // startAt은 변경 이벤트에 없으므로 null
-                null,  // endAt은 변경 이벤트에 없으므로 null
-                event.place(),
-                event.latitude(),
-                event.longitude(),
-                event.minFee(),
-                event.maxFee(),
-                event.hasTicketing(),
-                event.ticketingOpenAt(),
-                event.ticketingCloseAt(),
-                event.ticketingLink(),
-                event.status(),
-                event.officialLink(),
-                event.description(),
-                event.performer(),
-                event.img()
-        );
+        try {
+            // EventScheduleChangedMessage에는 categoryName, startAt, endAt이 없음
+            documentIndexer.indexEvent(
+                    event.eventId(),
+                    event.eventName(),
+                    null,  // categoryName은 변경 이벤트에 없음 → "카테고리 미정"으로 처리
+                    null,  // startAt은 변경 이벤트에 없음 → "미정"으로 처리
+                    null,  // endAt은 변경 이벤트에 없음 → "미정"으로 처리
+                    event.place(),
+                    event.latitude(),
+                    event.longitude(),
+                    event.minFee(),
+                    event.maxFee(),
+                    event.hasTicketing(),
+                    event.ticketingOpenAt(),
+                    event.ticketingCloseAt(),
+                    event.ticketingLink(),
+                    event.status(),
+                    event.officialLink(),
+                    event.description(),
+                    event.performer(),
+                    event.img()
+            );
 
-        log.info("[챗봇] 행사 문서 재인덱싱 완료: eventId={}", event.eventId());
+            log.info("[챗봇] 행사 문서 재인덱싱 완료: eventId={}", event.eventId());
+        } catch (Exception e) {
+            log.error("[챗봇] 행사 문서 재인덱싱 실패: eventId={}, eventName={}",
+                    event.eventId(), event.eventName(), e);
+            throw e;
+        }
     }
 }
