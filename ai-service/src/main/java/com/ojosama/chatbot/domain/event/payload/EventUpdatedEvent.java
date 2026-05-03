@@ -1,11 +1,12 @@
-package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto;
+package com.ojosama.chatbot.domain.event.payload;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
-public record EventUpdatedMessage(
+public record EventUpdatedEvent(
         UUID eventId,
         String eventName,
         List<FieldChange> changedFields,
@@ -24,10 +25,19 @@ public record EventUpdatedMessage(
         String performer,
         String img
 ) {
+    public boolean hasChanges() {
+        return changedFields != null && !changedFields.isEmpty();
+    }
+
+    public boolean isFieldChanged(String fieldName) {
+        return changedFields != null && changedFields.stream()
+                .filter(Objects::nonNull)
+                .anyMatch(change -> Objects.equals(change.fieldName(), fieldName));
+    }
+
     public record FieldChange(
             String fieldName,
-            String before,
-            String after
-    ) {
-    }
+            Object before,
+            Object after
+    ) { }
 }

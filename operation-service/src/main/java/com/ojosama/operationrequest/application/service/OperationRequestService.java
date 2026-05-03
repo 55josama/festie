@@ -112,7 +112,7 @@ public class OperationRequestService {
                 "OPERATION_REQUEST",
                 request.getId(),
                 EventType.OPERATION_REQUEST_CREATED,
-                "operation.request.created",
+                "operation.request.created.v1",
                 event
         );
     }

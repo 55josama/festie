@@ -1,11 +1,9 @@
-package com.ojosama.chatservice.infrastructure.messaging.kafka.dto;
+package com.ojosama.chatbot.domain.event.payload;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public record EventCreatedEvent(
         UUID eventId,
         String eventName,
@@ -27,5 +25,4 @@ public record EventCreatedEvent(
         String description,
         String performer,
         String img
-) {
-}
+) { }
