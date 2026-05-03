@@ -9,7 +9,7 @@ public record EventCreatedEvent(
         UUID eventId,
         String eventName,
         UUID categoryId,
-        String categoryCode,
+        String categoryName,
         LocalDateTime eventStartAt,
         LocalDateTime eventEndAt
 ) {
