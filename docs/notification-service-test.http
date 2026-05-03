@@ -12,7 +12,7 @@ X-User-Id: 11111111-2222-1111-1111-111111111111
 
 ### **알림 삭제**
 
-DELETE {{notificationUrl}}/v1/notificaitons/0ce33ea5-1ee3-4a60-a0c7-47797a9983d7
+DELETE {{notificationUrl}}/v1/notifications/0ce33ea5-1ee3-4a60-a0c7-47797a9983d7
 Content-Type: application/json
 X-User-Id: 11111111-2222-1111-1111-111111111111
 
