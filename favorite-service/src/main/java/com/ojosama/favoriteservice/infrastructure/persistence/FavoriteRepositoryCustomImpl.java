@@ -6,7 +6,9 @@ import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
+@Repository
 @RequiredArgsConstructor
 public class FavoriteRepositoryCustomImpl implements FavoriteRepositoryCustom {
 

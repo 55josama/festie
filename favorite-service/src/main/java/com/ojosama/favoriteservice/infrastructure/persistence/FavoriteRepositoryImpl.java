@@ -5,17 +5,23 @@ import com.ojosama.favoriteservice.domain.repository.FavoriteRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@RequiredArgsConstructor
 public class FavoriteRepositoryImpl implements FavoriteRepository {
 
     private final JpaFavoriteRepository jpaFavoriteRepository;
     private final FavoriteRepositoryCustom favoriteRepositoryCustom;
+
+    public FavoriteRepositoryImpl(
+            @Qualifier("jpaFavoriteRepository") JpaFavoriteRepository jpaFavoriteRepository,
+            @Qualifier("favoriteRepositoryCustomImpl") FavoriteRepositoryCustom favoriteRepositoryCustom) {
+        this.jpaFavoriteRepository = jpaFavoriteRepository;
+        this.favoriteRepositoryCustom = favoriteRepositoryCustom;
+    }
 
     @Override
     public Favorite save(Favorite favorite) {
