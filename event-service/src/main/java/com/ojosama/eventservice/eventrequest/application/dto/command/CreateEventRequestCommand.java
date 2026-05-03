@@ -6,7 +6,7 @@ import java.util.UUID;
 public record CreateEventRequestCommand(
         UUID requesterId,
         String eventName,
-        String categoryName,
+        UUID categoryId,
         String link,
         String description
 ) {
@@ -14,7 +14,7 @@ public record CreateEventRequestCommand(
         return new CreateEventRequestCommand(
                 requesterId,
                 request.title(),
-                request.category(),
+                request.categoryId(),
                 request.link(),
                 request.description()
         );
