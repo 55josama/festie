@@ -6,14 +6,14 @@ import java.util.UUID;
 public record AiModerationRequestEvent(
         UUID targetId,
         UUID targetUserId,
-        String targetType,
+        TargetType targetType,
         String content
 ) {
     public static AiModerationRequestEvent from(Message message) {
         return new AiModerationRequestEvent(
                 message.getId(),
                 message.getUserId(),
-                "CHAT",
+                TargetType.CHAT,
                 message.getContent()
         );
     }

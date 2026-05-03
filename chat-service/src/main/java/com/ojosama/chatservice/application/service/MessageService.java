@@ -1,5 +1,7 @@
 package com.ojosama.chatservice.application.service;
 
+import static com.ojosama.chatservice.infrastructure.messaging.kafka.dto.AiModerationRequestEvent.from;
+
 import com.ojosama.chatservice.application.dto.command.ChangeMessageStatusCommand;
 import com.ojosama.chatservice.application.dto.command.CreateMessageCommand;
 import com.ojosama.chatservice.application.dto.command.DeleteMessageCommand;
@@ -78,7 +80,7 @@ public class MessageService {
                 savedMessage.getId(),
                 EventType.CHAT_MODERATION_REQUESTED,
                 chatModerationRequestedTopic,
-                com.ojosama.chatservice.infrastructure.messaging.kafka.dto.AiModerationRequestEvent.from(savedMessage)
+                from(savedMessage) // ai 검증 dto 의 from
         );
 
         return MessageResult.from(savedMessage);
