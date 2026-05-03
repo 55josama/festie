@@ -1,6 +1,5 @@
 package com.ojosama.eventservice.event.presentation.dto.response;
 
-import com.ojosama.eventservice.event.application.dto.result.EventDetailResult;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,11 +27,9 @@ public record EventDetailResponse(
         String performer,
         String img,
         String status,
-        List<ScheduleResponse> schedules,
-        ChatRoomInfo chatRoom
+        List<ScheduleResponse> schedules
 ) {
-    public static EventDetailResponse from(EventDetailResult result) {
-        EventResult event = result.event();
+    public static EventDetailResponse from(EventResult event) {
         return new EventDetailResponse(
                 event.id(),
                 event.name(),
@@ -56,8 +53,7 @@ public record EventDetailResponse(
                 event.status(),
                 event.schedules() != null
                         ? event.schedules().stream().map(ScheduleResponse::from).toList()
-                        : List.of(),
-                ChatRoomInfo.from(result.chatRoom())
+                        : List.of()
         );
     }
 }

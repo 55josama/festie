@@ -1,6 +1,5 @@
 package com.ojosama.eventservice.event.presentation.controller;
 
-import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.service.EventCategoryQueryService;
 import com.ojosama.eventservice.event.presentation.dto.response.EventCategoryResponse;
 import java.util.UUID;
@@ -19,11 +18,11 @@ public class InternalEventCategoryController {
     private final EventCategoryQueryService eventCategoryQueryService;
 
     @GetMapping("/{categoryId}")
-    public ResponseEntity<ApiResponse<EventCategoryResponse>> getCategoryById(
+    public ResponseEntity<EventCategoryResponse> getCategoryById(
             @PathVariable UUID categoryId) {
 
         EventCategoryResponse response = EventCategoryResponse.from(
                 eventCategoryQueryService.getCategoryById(categoryId));
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(response);
     }
 }

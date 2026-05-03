@@ -1,6 +1,7 @@
 package com.ojosama.chatservice.infrastructure.messaging.kafka.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -11,6 +12,20 @@ public record EventCreatedEvent(
         UUID categoryId,
         String categoryCode,
         LocalDateTime eventStartAt,
-        LocalDateTime eventEndAt
+        LocalDateTime eventEndAt,
+        String place,
+        BigDecimal latitude,
+        BigDecimal longitude,
+        Integer minFee,
+        Integer maxFee,
+        Boolean hasTicketing,
+        LocalDateTime ticketingOpenAt,
+        LocalDateTime ticketingCloseAt,
+        String ticketingLink,
+        String status,
+        String officialLink,
+        String description,
+        String performer,
+        String img
 ) {
 }

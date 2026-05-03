@@ -50,7 +50,21 @@ public class EventCommandService {
         applicationEventPublisher.publishEvent(new EventCreatedMessage(
                 saved.getId(), saved.getName(),
                 saved.getCategory().getId(), saved.getCategory().getName(),
-                saved.getEventTime().getStartAt(), saved.getEventTime().getEndAt()
+                saved.getEventTime().getStartAt(), saved.getEventTime().getEndAt(),
+                saved.getEventLocation().getPlace(),
+                saved.getEventLocation().getLatitude(),
+                saved.getEventLocation().getLongitude(),
+                saved.getEventFee().getMinFee(),
+                saved.getEventFee().getMaxFee(),
+                saved.getEventTicketing().getHasTicketing(),
+                saved.getEventTicketing().getTicketingOpenAt(),
+                saved.getEventTicketing().getTicketingCloseAt(),
+                saved.getEventTicketing().getTicketingLink(),
+                saved.getStatus().name(),
+                saved.getOfficialLink(),
+                saved.getDescription(),
+                saved.getPerformer(),
+                saved.getImg()
         ));
 
         return EventResult.from(saved);
@@ -95,10 +109,24 @@ public class EventCommandService {
         EventChanges changes = EventSnapshot.compareSnapshots(beforeSnapshot, afterSnapshot);
 
         if (schedulesChanged || changes.hasChanges()) {
-            applicationEventPublisher.publishEvent(EventScheduleChangedMessage.from(
+            applicationEventPublisher.publishEvent(new EventScheduleChangedMessage(
                     event.getId(),
                     event.getName(),
-                    changes.getChangedFields()
+                    changes.getChangedFields(),
+                    event.getEventLocation().getPlace(),
+                    event.getEventLocation().getLatitude(),
+                    event.getEventLocation().getLongitude(),
+                    event.getEventFee().getMinFee(),
+                    event.getEventFee().getMaxFee(),
+                    event.getEventTicketing().getHasTicketing(),
+                    event.getEventTicketing().getTicketingOpenAt(),
+                    event.getEventTicketing().getTicketingCloseAt(),
+                    event.getEventTicketing().getTicketingLink(),
+                    event.getStatus().name(),
+                    event.getOfficialLink(),
+                    event.getDescription(),
+                    event.getPerformer(),
+                    event.getImg()
             ));
         }
 
