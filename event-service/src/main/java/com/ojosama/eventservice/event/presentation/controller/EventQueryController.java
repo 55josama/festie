@@ -4,7 +4,6 @@ import com.ojosama.common.exception.CommonErrorCode;
 import com.ojosama.common.exception.CustomException;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.dto.command.EventListCommand;
-import com.ojosama.eventservice.event.application.dto.result.EventDetailResult;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.domain.model.EventStatus;
@@ -61,7 +60,7 @@ public class EventQueryController {
 
         validateAuthHeaders(userId, userRole);
 
-        EventDetailResult result = eventQueryService.getEventDetailById(eventId);
+        EventResult result = eventQueryService.getEventById(eventId);
         return ResponseEntity.ok(ApiResponse.success(EventDetailResponse.from(result)));
     }
 

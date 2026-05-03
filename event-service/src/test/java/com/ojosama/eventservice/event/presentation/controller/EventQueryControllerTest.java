@@ -7,13 +7,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.ojosama.common.exception.GlobalExceptionHandler;
-import com.ojosama.eventservice.event.application.dto.result.EventDetailResult;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.dto.result.ScheduleResult;
 import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
-import com.ojosama.eventservice.event.infrastructure.client.dto.ChatRoomSummaryDto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -73,10 +71,6 @@ class EventQueryControllerTest {
                 "SCHEDULED",
                 schedules
         );
-    }
-
-    private EventDetailResult buildEventDetailResult(boolean hasTicketing) {
-        return new EventDetailResult(buildEventResult(hasTicketing), ChatRoomSummaryDto.empty());
     }
 
     @Nested
@@ -159,7 +153,7 @@ class EventQueryControllerTest {
         @Test
         @DisplayName("존재하지 않는 행사 ID → 404")
         void getEvent_unknownEventId_returns404() throws Exception {
-            given(eventQueryService.getEventDetailById(any()))
+            given(eventQueryService.getEventById(any()))
                     .willThrow(new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
             mockMvc.perform(get("/v1/events/{eventId}", UUID.randomUUID())
@@ -177,7 +171,7 @@ class EventQueryControllerTest {
         @DisplayName("정상 조회 → 200, schedules 포함")
         void getEvent_validEventId_returns200() throws Exception {
             UUID eventId = UUID.randomUUID();
-            given(eventQueryService.getEventDetailById(eventId)).willReturn(buildEventDetailResult(false));
+            given(eventQueryService.getEventById(eventId)).willReturn(buildEventResult(false));
 
             mockMvc.perform(get("/v1/events/{eventId}", eventId)
                             .header("X-User-Id", USER_ID.toString())
