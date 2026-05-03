@@ -3,7 +3,7 @@ package com.ojosama.report.domain.model.entity;
 import com.ojosama.common.audit.BaseEntity;
 import com.ojosama.report.domain.model.enums.ReportCategory;
 import com.ojosama.report.domain.model.enums.ReportStatus;
-import com.ojosama.report.domain.model.enums.ReportTargetType;
+import com.ojosama.report.domain.model.enums.TargetType;
 import com.ojosama.report.domain.model.enums.ReporterType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -49,7 +49,7 @@ public class Report extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "target_type", nullable = false)
-    private ReportTargetType targetType;
+    private TargetType targetType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
@@ -70,7 +70,7 @@ public class Report extends BaseEntity {
 
     @Builder
     public Report(UUID reporterId, ReporterType reporterType, UUID targetId, UUID targetUserId,
-                  ReportTargetType targetType, ReportCategory category, String description, String content) {
+                  TargetType targetType, ReportCategory category, String description, String content) {
         this.reporterId = reporterId;
         this.reporterType = reporterType; // 생성 시 주입
         this.targetId = targetId;
@@ -83,7 +83,7 @@ public class Report extends BaseEntity {
     }
 
     public static Report of(UUID reporterId, ReporterType reporterType, UUID targetId, UUID targetUserId,
-                            ReportTargetType targetType, ReportCategory category, String description, String content) {
+                            TargetType targetType, ReportCategory category, String description, String content) {
         return Report.builder()
                 .reporterId(reporterId)
                 .reporterType(reporterType)

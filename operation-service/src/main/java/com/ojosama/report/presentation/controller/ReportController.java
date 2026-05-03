@@ -8,7 +8,7 @@ import com.ojosama.report.application.service.ReportService;
 import com.ojosama.report.domain.exception.ReportErrorCode;
 import com.ojosama.report.domain.exception.ReportException;
 import com.ojosama.report.domain.model.enums.ReportStatus;
-import com.ojosama.report.domain.model.enums.ReportTargetType;
+import com.ojosama.report.domain.model.enums.TargetType;
 import com.ojosama.report.domain.model.enums.ReporterType;
 import com.ojosama.report.infrastructure.client.ChatClient;
 import com.ojosama.report.infrastructure.client.CommunityClient;
@@ -26,7 +26,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -93,11 +92,11 @@ public class ReportController {
     }
 
     // 작성자 ID 확인
-    private UUID fetchTargetUserId(ReportTargetType type, UUID targetId) {
+    private UUID fetchTargetUserId(TargetType type, UUID targetId) {
         try {
             return switch (type) {
-                case POST -> communityClient.getPostWriter(targetId).userId();
-                case COMMENT -> communityClient.getCommentWriter(targetId).userId();
+                case POST -> communityClient.getPostWriter(targetId).writerId();
+                case COMMENT -> communityClient.getCommentWriter(targetId).writerId();
                 case CHAT -> chatClient.getChatMessageWriter(targetId).userId();
             };
         } catch (Exception e) {

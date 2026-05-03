@@ -2,7 +2,7 @@ package com.ojosama.report.presentation.dto;
 
 import com.ojosama.report.application.dto.command.CreateReportCommand;
 import com.ojosama.report.domain.model.enums.ReportCategory;
-import com.ojosama.report.domain.model.enums.ReportTargetType;
+import com.ojosama.report.domain.model.enums.TargetType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -13,7 +13,7 @@ public record CreateReportRequest (
         UUID targetId,
 
         @NotNull(message = "신고 대상 타입을 입력해주세요.")
-        ReportTargetType targetType,
+        TargetType targetType,
 
         @NotNull(message = "신고 카테고리를 선택해주세요.")
         ReportCategory category,

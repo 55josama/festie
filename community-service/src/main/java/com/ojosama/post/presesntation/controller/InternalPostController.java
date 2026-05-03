@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("internal/v1/post")
+@RequestMapping("/internal/v1/posts")
 @RequiredArgsConstructor
 public class InternalPostController {
 

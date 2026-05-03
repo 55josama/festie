@@ -1,11 +1,11 @@
 package com.ojosama.report.domain.event.payload;
 
-import com.ojosama.report.domain.model.enums.ReportTargetType;
+import com.ojosama.report.domain.model.enums.TargetType;
 import java.util.UUID;
 
 public record TargetBlindEvent (
         UUID targetId,
-        ReportTargetType reportTargetType,
+        TargetType targetType,
         UUID targetUserId,
         String category,
         String reason

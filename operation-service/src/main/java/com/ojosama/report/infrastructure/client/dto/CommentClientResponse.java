@@ -9,12 +9,12 @@ public record CommentClientResponse(
         String message,
         CommentData data
 ) {
-    public UUID userId() {
-        return data != null ? data.userId() : null;
+    public UUID writerId() {
+        return data != null ? data.writerId() : null;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record CommentData(
-            UUID userId
+            UUID writerId
     ) { }
 }
