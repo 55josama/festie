@@ -10,7 +10,6 @@ import com.ojosama.userservice.presentation.dto.response.InternalAdminIdResponse
 import com.ojosama.userservice.presentation.dto.response.InternalManagerIdResponseDto;
 import com.ojosama.userservice.presentation.dto.response.InternalUserEmailResponseDto;
 import com.ojosama.userservice.presentation.dto.response.InternalUserEmailsResponseDto;
-import com.ojosama.userservice.presentation.dto.response.InternalUserNicknameResponseDto;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -72,12 +71,5 @@ public class InternalUserController {
                 new GetCategoryManagerQuery(categoryName)
         );
         return result.managerId();
-    }
-
-    @GetMapping("/{userId}/nickname")
-    public InternalUserNicknameResponseDto getInternalUserNickname(@PathVariable UUID userId) {
-        String nickname = userService.getInternalUserNickname(userId);
-
-        return new InternalUserNicknameResponseDto(nickname);
     }
 }
