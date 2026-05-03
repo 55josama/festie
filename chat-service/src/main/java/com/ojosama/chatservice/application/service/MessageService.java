@@ -16,9 +16,11 @@ import com.ojosama.chatservice.domain.model.Message;
 import com.ojosama.chatservice.domain.model.MessageStatus;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.chatservice.domain.repository.MessageRepository;
+import com.ojosama.chatservice.infrastructure.client.UserClient;
 import com.ojosama.common.exception.CommonErrorCode;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
+import feign.FeignException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +45,7 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final UserClient userClient;
     private final OutboxEventPublisher outboxEventPublisher;
 
     @Value("${spring.kafka.topic.chat-moderation-requested}")
@@ -52,7 +55,6 @@ public class MessageService {
         if (command == null || command.chatRoomId() == null || command.userId() == null) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        validateWriterNickname(command.writerNickname());
         validateContent(command.content());
 
         ChatRoom chatRoom = findChatRoom(command.chatRoomId());
@@ -60,10 +62,13 @@ public class MessageService {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_NOT_OPEN);
         }
 
+        String writerNickname = resolveWriterNickname(command.userId());
+        validateWriterNickname(writerNickname);
+
         Message message = Message.builder()
                 .chatRoomId(command.chatRoomId())
                 .userId(command.userId())
-                .writerNickname(command.writerNickname().trim())
+                .writerNickname(writerNickname.trim())
                 .content(command.content().trim())
                 .build();
 
@@ -186,6 +191,14 @@ public class MessageService {
         }
         if (writerNickname.trim().length() > MAX_WRITER_NICKNAME_LENGTH) {
             throw new ChatException(ChatErrorCode.MESSAGE_WRITER_NICKNAME_TOO_LONG);
+        }
+    }
+
+    private String resolveWriterNickname(UUID userId) {
+        try {
+            return userClient.getInternalUserNickname(userId).nickname();
+        } catch (FeignException e) {
+            throw new ChatException(ChatErrorCode.MESSAGE_USER_NICKNAME_FETCH_FAILED);
         }
     }
 

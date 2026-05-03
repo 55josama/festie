@@ -27,6 +27,7 @@ public enum ChatErrorCode implements ErrorCode {
     MESSAGE_WRITER_NICKNAME_REQUIRED(HttpStatus.BAD_REQUEST, "작성자 닉네임은 필수입니다."),
     MESSAGE_WRITER_NICKNAME_TOO_LONG(HttpStatus.BAD_REQUEST, "작성자 닉네임이 최대 길이를 초과했습니다."),
     MESSAGE_SEND_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "현재 채팅방에는 메시지를 보낼 수 없습니다."),
+    MESSAGE_USER_NICKNAME_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "닉네임을 가져오는 데 실패했습니다."),
 
     // Permission
     INVALID_USER_ID(HttpStatus.BAD_REQUEST, "userId는 필수입니다."),
