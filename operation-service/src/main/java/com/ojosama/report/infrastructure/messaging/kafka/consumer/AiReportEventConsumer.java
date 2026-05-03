@@ -7,7 +7,7 @@ import com.ojosama.report.application.dto.command.CreateReportCommand;
 import com.ojosama.report.application.service.ReportService;
 import com.ojosama.report.domain.event.payload.AiReportEvent;
 import com.ojosama.report.domain.model.enums.ReportCategory;
-import com.ojosama.report.domain.model.enums.ReportTargetType;
+import com.ojosama.report.domain.model.enums.TargetType;
 import com.ojosama.report.domain.model.enums.ReporterType;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +62,7 @@ public class AiReportEventConsumer {
             }
 
             // 대소문자 무시 및 공백 제거 후 파싱, 실패 시 예외 발생
-            ReportTargetType targetType = ReportTargetType.valueOf(event.targetType().toUpperCase().trim());
+            TargetType targetType = TargetType.valueOf(event.targetType().toUpperCase().trim());
             ReportCategory category = ReportCategory.valueOf(event.category().toUpperCase().trim());
 
             CreateReportCommand command = new CreateReportCommand(

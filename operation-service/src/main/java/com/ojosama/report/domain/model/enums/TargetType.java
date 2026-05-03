@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ReportTargetType {
+public enum TargetType {
     POST("게시글"),
     COMMENT("댓글"),
     CHAT("채팅 메시지");

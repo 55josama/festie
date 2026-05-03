@@ -9,12 +9,12 @@ public record PostClientResponse(
         String message,
         PostData data
 ) {
-    public UUID userId() {
-        return data != null ? data.userId() : null;
+    public UUID writerId() {
+        return data != null ? data.writerId() : null;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record PostData(
-            UUID userId
+            UUID writerId
     ) { }
 }
