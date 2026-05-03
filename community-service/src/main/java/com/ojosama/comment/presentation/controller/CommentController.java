@@ -36,7 +36,6 @@ public class CommentController {
 
     private static final String USER_ID_HEADER = "X-User-Id";
 
-
     @PostMapping("/v1/posts/{postId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CommentResponse> create(
@@ -74,12 +73,6 @@ public class CommentController {
         Page<CommentResult> page = commentService.listByPost(
                 new CommentListQuery(postId, pageable));
         return ApiResponse.success(page.map(CommentResponse::from));
-    }
-
-    @GetMapping("internal/v1/comments/{commentId}")
-    public ApiResponse<CommentResponse> getComment(@PathVariable UUID commentId) {
-        CommentResult result = commentService.getComment(commentId);
-        return ApiResponse.success(CommentResponse.from(result));
     }
 
     @PostMapping("/v1/comments/{commentId}/likes")

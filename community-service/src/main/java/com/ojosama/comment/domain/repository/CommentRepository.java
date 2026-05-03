@@ -3,6 +3,7 @@ package com.ojosama.comment.domain.repository;
 import com.ojosama.comment.domain.model.Comment;
 import com.ojosama.comment.domain.model.CommentStatus;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,4 +35,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
             + "WHERE c.userId = :userId AND c.deletedAt IS NULL "
             + "AND c.status <> com.ojosama.comment.domain.model.CommentStatus.BLOCKED")
     int blockAllByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT c.userId FROM Comment c WHERE c.id = :id")
+    Optional<UUID> findWriterIdById(@Param("id") UUID id);
 }

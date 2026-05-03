@@ -5,14 +5,12 @@ import com.ojosama.post.application.dto.command.CreatePostCommand;
 import com.ojosama.post.application.dto.command.DeletePostCommand;
 import com.ojosama.post.application.dto.command.UpdatePostCommand;
 import com.ojosama.post.application.dto.result.PostResult;
-import com.ojosama.post.application.dto.result.PostWriterResult;
 import com.ojosama.post.application.query.PostListQuery;
 import com.ojosama.post.application.service.PostService;
 import com.ojosama.post.application.service.PostLikeService;
 import com.ojosama.post.presesntation.dto.request.CreatePostRequest;
 import com.ojosama.post.presesntation.dto.request.UpdatePostRequest;
 import com.ojosama.post.presesntation.dto.response.PostResponse;
-import com.ojosama.post.presesntation.dto.response.PostWriterResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -104,11 +102,5 @@ public class PostController {
             @RequestHeader(USER_ID_HEADER) UUID userId) {
         postLikeService.unlike(postId, userId);
         return ApiResponse.success();
-    }
-
-    @GetMapping("internal/v1/post/{postId}")
-    public ApiResponse<PostWriterResponse> getPost(@PathVariable UUID postId) {
-        PostWriterResult result = postService.getWriter(postId);
-        return ApiResponse.success(PostWriterResponse.from(result));
     }
 }
