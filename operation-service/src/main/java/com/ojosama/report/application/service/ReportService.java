@@ -18,6 +18,7 @@ import com.ojosama.report.domain.repository.ReportRepository;
 import com.ojosama.report.infrastructure.client.ChatClient;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +31,12 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final OutboxEventPublisher outbox;
     private final ChatClient chatClient;
+
+    @Value("${spring.kafka.topic.report-blinded}")
+    private String targetBlindedTopic;
+
+    @Value("${spring.kafka.topic.blacklist-requested}")
+    private String blacklistReviewRequestedTopic;
 
     // 신고 생성
     @Transactional
@@ -124,7 +131,7 @@ public class ReportService {
                 "REPORT",
                 command.targetId(),
                 EventType.REPORT_BLINDED,
-                "operation.report.blinded.v1",
+                targetBlindedTopic,
                 new TargetBlindEvent(
                         command.targetId(),
                         command.targetType(),
@@ -150,7 +157,7 @@ public class ReportService {
                     "REPORT",
                     targetUserId,
                     EventType.BLACKLIST_REVIEW_REQUESTED,
-                    "operation.blacklist.requested.v1",
+                    blacklistReviewRequestedTopic,
                     event
             );
         }

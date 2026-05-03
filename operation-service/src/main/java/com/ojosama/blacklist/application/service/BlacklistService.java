@@ -15,6 +15,7 @@ import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class BlacklistService {
     private final BlacklistRepository blacklistRepository;
     private final OutboxEventPublisher outbox;
+
+    @Value("${spring.kafka.topic.blacklist-updated}")
+    private String blacklistUpdatedTopic;
+
+    @Value("${spring.kafka.topic.blacklist-registered}")
+    private String blacklistRegisteredTopic;
 
     // 블랙리스트 생성(관리자 수동 등록)
     @Transactional
@@ -93,7 +100,7 @@ public class BlacklistService {
                 "BLACKLIST",
                 userId,
                 EventType.BLACKLIST_UPDATED, // EventType 상수 확인 필요
-                "operation.blacklist.updated.v1",
+                blacklistUpdatedTopic,
                 event
         );
     }
@@ -104,7 +111,7 @@ public class BlacklistService {
                 "BLACKLIST",
                 blacklist.getUserId(),
                 EventType.BLACKLIST_REGISTERED,
-                "operation.blacklist.registered.v1",
+                blacklistRegisteredTopic,
                 new BlacklistRegisterEvent(
                         blacklist.getUserId(),
                         blacklist.getReason()
