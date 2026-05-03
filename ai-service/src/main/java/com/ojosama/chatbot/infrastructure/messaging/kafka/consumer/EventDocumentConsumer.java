@@ -5,6 +5,8 @@ import com.ojosama.chatbot.application.service.DocumentIndexer;
 import com.ojosama.chatbot.domain.event.payload.EventCreatedEvent;
 import com.ojosama.chatbot.domain.event.payload.EventDeletedEvent;
 import com.ojosama.chatbot.domain.event.payload.EventUpdatedEvent;
+import com.ojosama.chatbot.infrastructure.client.EventClient;
+import com.ojosama.chatbot.infrastructure.client.dto.EventClientResponse;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import java.util.UUID;
@@ -21,6 +23,7 @@ public class EventDocumentConsumer {
     private final DocumentIndexer documentIndexer;
     private final IdempotentEventHandler idempotentHandler;
     private final ObjectMapper objectMapper;
+    private final EventClient eventClient;
 
     private static final String CONSUMER_GROUP = "ai-service-group";
 
@@ -158,30 +161,63 @@ public class EventDocumentConsumer {
 
         // 변경된 내용으로 문서 재인덱싱 (전체 업데이트)
         try {
-            // EventScheduleChangedMessage에는 categoryName, startAt, endAt이 없음
-            documentIndexer.indexEvent(
-                    event.eventId(),
-                    event.eventName(),
-                    null,  // categoryName은 변경 이벤트에 없음 → "카테고리 미정"으로 처리
-                    null,  // startAt은 변경 이벤트에 없음 → "미정"으로 처리
-                    null,  // endAt은 변경 이벤트에 없음 → "미정"으로 처리
-                    event.place(),
-                    event.latitude(),
-                    event.longitude(),
-                    event.minFee(),
-                    event.maxFee(),
-                    event.hasTicketing(),
-                    event.ticketingOpenAt(),
-                    event.ticketingCloseAt(),
-                    event.ticketingLink(),
-                    event.status(),
-                    event.officialLink(),
-                    event.description(),
-                    event.performer(),
-                    event.img()
-            );
+            log.debug("[챗봇] event-service에서 행사 전체 정보 조회 시작: eventId={}", event.eventId());
 
-            log.info("[챗봇] 행사 문서 재인덱싱 완료: eventId={}", event.eventId());
+            EventClientResponse fullEvent = eventClient.getEventById(event.eventId());
+
+            if (fullEvent != null) {
+                log.debug("[챗봇] 행사 전체 정보 조회 성공: eventId={}, categoryName={}",
+                        event.eventId(), fullEvent.categoryName());
+
+                documentIndexer.indexEvent(
+                        fullEvent.id(),
+                        fullEvent.name(),
+                        fullEvent.categoryName(),      // event-service에서 조회한 값
+                        fullEvent.startAt(),           // event-service에서 조회한 값
+                        fullEvent.endAt(),             // event-service에서 조회한 값
+                        fullEvent.place(),
+                        fullEvent.latitude(),
+                        fullEvent.longitude(),
+                        fullEvent.minFee(),
+                        fullEvent.maxFee(),
+                        fullEvent.hasTicketing(),
+                        fullEvent.ticketingOpenAt(),
+                        fullEvent.ticketingCloseAt(),
+                        fullEvent.ticketingLink(),
+                        fullEvent.status(),
+                        fullEvent.officialLink(),
+                        fullEvent.description(),
+                        fullEvent.performer(),
+                        fullEvent.img()
+                );
+
+                log.info("[챗봇] 행사 문서 재인덱싱 완료: eventId={}", event.eventId());
+            } else {
+                log.warn("[챗봇] event-service에서 행사 정보를 찾을 수 없음: eventId={}", event.eventId());
+                // 조회 실패 시 변경 이벤트의 정보만으로 업데이트
+                documentIndexer.indexEvent(
+                        event.eventId(),
+                        event.eventName(),
+                        null,  // categoryName 누락 → "카테고리 미정"
+                        null,  // startAt 누락 → "미정"
+                        null,  // endAt 누락 → "미정"
+                        event.place(),
+                        event.latitude(),
+                        event.longitude(),
+                        event.minFee(),
+                        event.maxFee(),
+                        event.hasTicketing(),
+                        event.ticketingOpenAt(),
+                        event.ticketingCloseAt(),
+                        event.ticketingLink(),
+                        event.status(),
+                        event.officialLink(),
+                        event.description(),
+                        event.performer(),
+                        event.img()
+                );
+                log.warn("[챗봇] 행사 문서 재인덱싱 완료 (일부 필드 누락): eventId={}", event.eventId());
+            }
         } catch (Exception e) {
             log.error("[챗봇] 행사 문서 재인덱싱 실패: eventId={}, eventName={}",
                     event.eventId(), event.eventName(), e);
