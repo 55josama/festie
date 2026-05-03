@@ -45,6 +45,10 @@ public class User extends BaseUserEntity {
     @Column(nullable = false)
     private UserRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserStatus status;
+
     @Column(name = "refresh_token_hash", length = 128)
     private String refreshTokenHash;
 
@@ -55,7 +59,8 @@ public class User extends BaseUserEntity {
             String name,
             String nickname,
             String phoneNumber,
-            UserRole role
+            UserRole role,
+            UserStatus status
     ) {
         this.email = email;
         this.password = password;
@@ -63,6 +68,7 @@ public class User extends BaseUserEntity {
         this.nickname = nickname;
         this.phoneNumber = phoneNumber;
         this.role = role;
+        this.status = status;
     }
 
     public static User create(
@@ -79,6 +85,7 @@ public class User extends BaseUserEntity {
                 .nickname(nickname)
                 .phoneNumber(phoneNumber)
                 .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
                 .build();
     }
 
@@ -90,6 +97,10 @@ public class User extends BaseUserEntity {
 
     public void changeRole(UserRole role) {
         this.role = Objects.requireNonNull(role, "올바른 값이 아닙니다.");
+    }
+
+    public void changeStatus(UserStatus status) {
+        this.status = Objects.requireNonNull(status, "올바른 상태가 아닙니다.");
     }
 
     public void updateRefreshTokenHash(String refreshTokenHash) {

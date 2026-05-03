@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@Profile("!local")
+@Profile("!local & !test")
 @RequiredArgsConstructor
 public class UserBlacklistStatusEventConsumer {
 
