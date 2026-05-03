@@ -43,6 +43,7 @@ public class DocumentIndexer {
         String safePlace = (place != null && !place.isBlank()) ? place : "장소 미정";
         String safePerformer = (performer != null && !performer.isBlank()) ? performer : "정보 없음";
         String safeLink = (officialLink != null && !officialLink.isBlank()) ? officialLink : "없음";
+        String safeCategory = (categoryName != null && !categoryName.isBlank()) ? categoryName : "카테고리 미정";
         String safeDescription = (description != null && !description.isBlank()) ? description : "설명 없음";
         String safeImg = (img != null && !img.isBlank()) ? img : "이미지 없음";
 
@@ -117,7 +118,7 @@ public class DocumentIndexer {
                         "설명: %s\n" +
                         "이미지: %s\n" +
                         "상세링크: %s",
-                name, statusKor, categoryName, periodInfo, locationInfo,
+                name, statusKor, safeCategory, periodInfo, locationInfo,
                 safePerformer, feeInfo, ticketingInfo, safeLink,
                 safeDescription, safeImg, eventId.toString()
         );
@@ -126,7 +127,7 @@ public class DocumentIndexer {
                 "docType", "EVENT",
                 "eventId", eventId.toString(),
                 "status", safeStatus,
-                "categoryName", categoryName,
+                "categoryName", safeCategory,
                 "place", safePlace
         ));
 

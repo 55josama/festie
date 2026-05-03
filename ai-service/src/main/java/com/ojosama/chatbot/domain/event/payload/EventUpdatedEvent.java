@@ -3,6 +3,7 @@ package com.ojosama.chatbot.domain.event.payload;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public record EventUpdatedEvent(
@@ -30,7 +31,8 @@ public record EventUpdatedEvent(
 
     public boolean isFieldChanged(String fieldName) {
         return changedFields != null && changedFields.stream()
-                .anyMatch(change -> change.fieldName().equals(fieldName));
+                .filter(Objects::nonNull)
+                .anyMatch(change -> Objects.equals(change.fieldName(), fieldName));
     }
 
     public record FieldChange(
