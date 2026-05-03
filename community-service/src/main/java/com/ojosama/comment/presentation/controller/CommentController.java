@@ -34,12 +34,15 @@ public class CommentController {
     private final CommentService commentService;
     private final CommentLikeService commentLikeService;
 
+    private static final String USER_ID_HEADER = "X-User-Id";
+
+
     @PostMapping("/v1/posts/{postId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CommentResponse> create(
             @PathVariable UUID postId,
             @Valid @RequestBody CreateCommentRequest req,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         CommentResult result = commentService.create(new CreateCommentCommand(
                 postId, userId, req.parentId(), req.content())); //인증인가 구현되면 수정
         return ApiResponse.created(CommentResponse.from(result));
@@ -49,7 +52,7 @@ public class CommentController {
     public ApiResponse<CommentResponse> update(
             @PathVariable UUID commentId,
             @Valid @RequestBody UpdateCommentRequest req,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         CommentResult result = commentService.update(new UpdateCommentCommand(
                 commentId, userId, req.content()));
         return ApiResponse.success(CommentResponse.from(result));
@@ -58,7 +61,7 @@ public class CommentController {
     @DeleteMapping("/v1/comments/{commentId}")
     public ApiResponse<Void> delete(
             @PathVariable UUID commentId,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         commentService.delete(new DeleteCommentCommand(
                 commentId, userId, true));
         return ApiResponse.deleted();
@@ -82,7 +85,7 @@ public class CommentController {
     @PostMapping("/v1/comments/{commentId}/likes")
     public ApiResponse<Integer> like(
             @PathVariable UUID commentId,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         int likeCount = commentLikeService.like(commentId,userId);
         return ApiResponse.success(likeCount);
     }
@@ -90,7 +93,7 @@ public class CommentController {
     @DeleteMapping("/v1/comments/{commentId}/likes")
     public ApiResponse<Integer> unlike(
             @PathVariable UUID commentId,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         int likeCount = commentLikeService.unlike(commentId, userId);
         return ApiResponse.success(likeCount);
     }

@@ -57,7 +57,7 @@ public class CategoryController {
     @DeleteMapping("/{categoryId}")
     public ApiResponse<Void> delete(
             @PathVariable UUID categoryId,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         categoryService.delete(new DeleteCategoryCommand(categoryId, userId));
         return ApiResponse.deleted();
     }

@@ -39,10 +39,12 @@ public class PostController {
     private final PostService postService;
     private final PostLikeService postLikeService;
 
+    private static final String USER_ID_HEADER = "X-User-Id";
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<PostResponse> create(@Valid @RequestBody CreatePostRequest req,
-                                            @RequestHeader("X-User-Id") UUID userId){
+                                            @RequestHeader(USER_ID_HEADER) UUID userId){
         PostResult result = postService.create(new CreatePostCommand(userId, req.categoryId(), req.title(), req.content()));
         return ApiResponse.created(PostResponse.from(result));
     }
@@ -51,7 +53,7 @@ public class PostController {
     public ApiResponse<PostResponse> update(
             @PathVariable UUID postId,
             @Valid @RequestBody UpdatePostRequest req,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         PostResult result = postService.update(new UpdatePostCommand(
                 postId, userId, req.categoryId(), req.title(), req.content()));
         return ApiResponse.success(PostResponse.from(result));
@@ -60,7 +62,7 @@ public class PostController {
     @DeleteMapping("/{postId}")
     public ApiResponse<Void> delete(
             @PathVariable UUID postId,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         postService.delete(new DeletePostCommand(postId, userId, true));
         return ApiResponse.deleted();
     }
@@ -74,7 +76,7 @@ public class PostController {
     @GetMapping
     public ApiResponse<Page<PostResponse>> list(
             @RequestParam(required = false) UUID categoryId,
-            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(USER_ID_HEADER) UUID userId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         PostListQuery query;
         if (categoryId != null) {
@@ -91,7 +93,7 @@ public class PostController {
     @PostMapping("/{postId}/likes")
     public ApiResponse<Void> like(
             @PathVariable UUID postId,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         postLikeService.like(postId, userId);
         return ApiResponse.success();
     }
@@ -99,7 +101,7 @@ public class PostController {
     @DeleteMapping("/{postId}/likes")
     public ApiResponse<Void> unlike(
             @PathVariable UUID postId,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId) {
         postLikeService.unlike(postId, userId);
         return ApiResponse.success();
     }
