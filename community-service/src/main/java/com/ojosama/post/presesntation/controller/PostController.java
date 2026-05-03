@@ -38,6 +38,7 @@ public class PostController {
     private final PostLikeService postLikeService;
 
     private static final String USER_ID_HEADER = "X-User-Id";
+    private static final String USER_ROLE_HEADER = "X-User-Role";
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -60,8 +61,10 @@ public class PostController {
     @DeleteMapping("/{postId}")
     public ApiResponse<Void> delete(
             @PathVariable UUID postId,
-            @RequestHeader(USER_ID_HEADER) UUID userId) {
-        postService.delete(new DeletePostCommand(postId, userId, true));
+            @RequestHeader(USER_ID_HEADER) UUID userId,
+            @RequestHeader(USER_ROLE_HEADER) String role) {
+        boolean isAdmin = "ADMIN".equals(role);
+        postService.delete(new DeletePostCommand(postId, userId, isAdmin));
         return ApiResponse.deleted();
     }
 

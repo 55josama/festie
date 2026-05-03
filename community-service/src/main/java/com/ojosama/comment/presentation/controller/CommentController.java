@@ -35,6 +35,7 @@ public class CommentController {
     private final CommentLikeService commentLikeService;
 
     private static final String USER_ID_HEADER = "X-User-Id";
+    private static final String USER_ROLE_HEADER = "X-User-Role";
 
     @PostMapping("/v1/posts/{postId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
@@ -60,9 +61,11 @@ public class CommentController {
     @DeleteMapping("/v1/comments/{commentId}")
     public ApiResponse<Void> delete(
             @PathVariable UUID commentId,
-            @RequestHeader(USER_ID_HEADER) UUID userId) {
+            @RequestHeader(USER_ID_HEADER) UUID userId,
+            @RequestHeader(USER_ROLE_HEADER) String role) {
+        boolean isAdmin = "ADMIN".equals(role);
         commentService.delete(new DeleteCommentCommand(
-                commentId, userId, true));
+                commentId, userId, isAdmin));
         return ApiResponse.deleted();
     }
 

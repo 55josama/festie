@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class InternalCommentController {
     private final CommentService commentService;
 
-    @GetMapping("{commentId}")
+    @GetMapping("/{commentId}")
     public ApiResponse<CommentWriterResponse> getComment(@PathVariable UUID commentId) {
         CommentWriterResult result = commentService.getWriter(commentId);
         return ApiResponse.success(CommentWriterResponse.from(result));
