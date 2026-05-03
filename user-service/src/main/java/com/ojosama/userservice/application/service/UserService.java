@@ -193,4 +193,14 @@ public class UserService {
 
         return new GetCategoryManagerIdResult(manager.getId());
     }
+
+
+    //유저 Id 로 이메일 조회
+    @Transactional(readOnly = true)
+    public String getInternalUserNickname(UUID userId) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+
+        return user.getNickname();
+    }
 }
