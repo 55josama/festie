@@ -33,12 +33,12 @@ public class OperationHandler {
     public void handleBlackListRequest(BlackListRegisterEventMessage message) {
         UUID adminId = userClient.getAdminInfo();
         notificationRepository.save(Notification.of(adminId, "운영알림", message.reason() + "로 블랙리스트 추가되었습니다.",
-                TargetInfo.of(message.userId(), Target.OPERATION, TargetType.BLACKLIST_REGISTERED)));
+                TargetInfo.of(message.targetUserId(), Target.OPERATION, TargetType.BLACKLIST_REGISTERED)));
     }
 
     // 블라인드 처리(각각의 카테고리 관리자에게 알림) -> 일단 ... 매니저가 한명인걸로 ,,
     public void handleBlindRegister(TargetBlindEventMessage message) {
-        UUID managerId = userClient.getManagerInfo(message.categoryName());
+        UUID managerId = userClient.getManagerInfo(message.category());
         notificationRepository.save(Notification.of(managerId, "운영알림", message.targetType() + "에서 블라인드 처리되었습니다.",
                 TargetInfo.of(message.targetId(), Target.OPERATION, TargetType.BLIND_REGISTERED)));
     }
