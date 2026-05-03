@@ -50,7 +50,21 @@ public class EventCommandService {
         applicationEventPublisher.publishEvent(new EventCreatedMessage(
                 saved.getId(), saved.getName(),
                 saved.getCategory().getId(), saved.getCategory().getName(),
-                saved.getEventTime().getStartAt(), saved.getEventTime().getEndAt()
+                saved.getEventTime().getStartAt(), saved.getEventTime().getEndAt(),
+                saved.getEventLocation().getPlace(),
+                saved.getEventLocation().getLatitude(),
+                saved.getEventLocation().getLongitude(),
+                saved.getEventFee().getMinFee(),
+                saved.getEventFee().getMaxFee(),
+                saved.getEventTicketing().getHasTicketing(),
+                saved.getEventTicketing().getTicketingOpenAt(),
+                saved.getEventTicketing().getTicketingCloseAt(),
+                saved.getEventTicketing().getTicketingLink(),
+                saved.getStatus().name(),
+                saved.getOfficialLink(),
+                saved.getDescription(),
+                saved.getPerformer(),
+                saved.getImg()
         ));
 
         return EventResult.from(saved);
