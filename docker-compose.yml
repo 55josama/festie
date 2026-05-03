@@ -444,10 +444,24 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+
+      DB_USER: ${POSTGRES_USER:-festie}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC_USER_BLACKLIST_STATUS: operation.blacklist.updated.v1
+
       USER_DB_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       USER_DB_USERNAME: ${POSTGRES_USER:-festie}
       USER_DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
@@ -457,8 +471,8 @@ services:
       JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-3600000}
       JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION:-1296000000}
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-local-internal-token}
-      KAFKA_TOPIC_USER_BLACKLIST_STATUS: operation.blacklist.updated.v1
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+
 
 volumes:
   postgres_data:

@@ -1,12 +1,8 @@
 spring:
-  cloud:
-    config:
-      enabled: false
-
   datasource:
-    url: ${USER_DB_URL:jdbc:postgresql://localhost:5432/ojosama_db}
-    username: ${USER_DB_USERNAME:postgres}
-    password: ${USER_DB_PASSWORD:1234}
+    url: ${SPRING_DATASOURCE_URL:${USER_DB_URL:jdbc:postgresql://localhost:5432/festie}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:${USER_DB_USERNAME:festie}}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:${USER_DB_PASSWORD:1234}}}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -17,6 +13,28 @@ spring:
         format_sql: true
         show_sql: true
 
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:user-service-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.ojosama.userservice.infrastructure.messaging.kafka.dto"
+
 eureka:
   client:
-    enabled: false
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}}
+    register-with-eureka: true
+    fetch-registry: true
+
+internal:
+  api:
+    token: ${INTERNAL_API_TOKEN:local-internal-token}
+
+kafka:
+  topic:
+    user-blacklist-status: ${KAFKA_TOPIC_USER_BLACKLIST_STATUS:operation.blacklist.updated.v1}
