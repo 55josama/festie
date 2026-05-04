@@ -46,10 +46,15 @@ public class EventHandler {
     }
 
     public void handleEventCanceled(EventDeletedMessage message) {
+        if (message.userIds() == null || message.userIds().isEmpty()) {
+            log.warn("행사 취소 알림 대상이 비어 있습니다: {}", message.eventId());
+            return;
+        }
         List<Notification> notifications = message.userIds().stream()
                 .map(receiverId -> Notification.of(receiverId, "행사 취소 알림", message.eventName() + " 행사가 취소 되었습니다.",
                         TargetInfo.of(message.eventId(), Target.EVENT, TargetType.EVENT_CANCELED)))
                 .toList();
+
         notificationRepository.saveAll(notifications);
     }
 
