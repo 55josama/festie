@@ -18,10 +18,6 @@
     <input id="userId" size="40" value="11111111-2222-3333-4444-555555555555"/>
 </div>
 <div>
-    <label>Nickname</label>
-    <input id="nickname" value="isubin"/>
-</div>
-<div>
     <button onclick="connect()">Connect</button>
     <button onclick="sendMsg()">Send</button>
 </div>
@@ -70,7 +66,6 @@
         const payload = {
             chatRoomId: document.getElementById("roomId").value,
             userId: document.getElementById("userId").value,
-            writerNickname: document.getElementById("nickname").value,
             content: document.getElementById("content").value
         };
         stompClient.send("/app/chat.send", {}, JSON.stringify(payload));

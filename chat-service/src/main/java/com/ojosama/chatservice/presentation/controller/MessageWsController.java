@@ -35,7 +35,6 @@ public class MessageWsController {
                 new CreateMessageCommand(
                         request.chatRoomId(),
                         request.userId(),
-                        request.writerNickname(),
                         request.content()
                 )
         );
