@@ -46,13 +46,9 @@ public class EventHandler {
     }
 
     public void handleEventCanceled(EventDeletedMessage message) {
-        // 캘린더서비스를 동기 호출해서 알림
-        CalendarUserInfo userInfo = calendarClient.getCalendarUserInfo(message.eventId());
-
-        List<Notification> notifications = userInfo.userIds().stream()
+        List<Notification> notifications = message.userIds().stream()
                 .map(receiverId -> Notification.of(receiverId, "행사 취소 알림", message.eventName() + " 행사가 취소 되었습니다.",
-                        TargetInfo.of(message.eventId(), Target.EVENT,
-                                TargetType.EVENT_CANCELED)))
+                        TargetInfo.of(message.eventId(), Target.EVENT, TargetType.EVENT_CANCELED)))
                 .toList();
         notificationRepository.saveAll(notifications);
     }
