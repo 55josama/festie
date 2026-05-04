@@ -1,14 +1,16 @@
-### 포트 확인 후 baseUrl 수정
+### favorite-service
+@userId = e6ab78d7-74c4-4bcd-8851-afd7b95daa02
+@eventId = b716d8e3-94b7-4592-a4cf-191293526884
 
 ### **생성**
 
 POST {{favoriteUrl}}/v1/favorites
 Content-Type: application/json
-X-User-Id: 11111111-2222-1111-1111-111111111111
+X-User-Id: {{userId}}
 
 
 {
-  "eventId": "381f3064-112e-4de2-ac70-7b65999e0aeb",
+  "eventId": "{{eventId}}",
   "categoryId": "8b54a7e0-cd7a-4ed8-b42d-6489dd4b0e2e"
 }
 
@@ -16,13 +18,13 @@ X-User-Id: 11111111-2222-1111-1111-111111111111
 
 GET {{favoriteUrl}}/v1/favorites
 Content-Type: application/json
-X-User-Id: 11111111-2222-1111-1111-111111111111
+X-User-Id: {{userId}}
 
 ### **삭제 ( 생성에서 생긴 uuid  )**
 
-DELETE {{favoriteUrl}}/v1/favorites/{favoriteId}
+DELETE {{favoriteUrl}}/v1/favorites/50906657-7dec-49a2-88e3-61bd67283620
 Content-Type: application/json
-X-User-Id: 11111111-2222-1111-1111-111111111111
+X-User-Id: {{userId}}
 
 
 
