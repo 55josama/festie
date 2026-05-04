@@ -40,10 +40,6 @@ public class CalendarDeletedConsumer {
             messageKey = UUID.fromString(record.key());
             event = parse(record.value());
 
-            if (!messageKey.equals(event.eventId())) {
-                log.error("key값과 messageId 불일치 : {}, {}", messageKey, event.eventId());
-                throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
-            }
             idempotentEventHandler.handle(
                     messageKey,
                     CONSUMER_GROUP,

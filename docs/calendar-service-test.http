@@ -1,13 +1,17 @@
+### calendar-service
 ### 생성
+
+@userId = e6ab78d7-74c4-4bcd-8851-afd7b95daa02
+@calendarId = c992bf88-eccc-46e3-a17a-b8829f5cd04f
 
 POST {{calendarUrl}}/v1/calendars
 Content-Type: application/json
-X-User-Id: 11111111-2222-1111-1111-111111111111
+X-User-Id: {{userId}}
 
 
 {
   "memo": "성공해라..!",
-  "eventId": "231acb67-f066-4ec2-adbe-77b34a5b1fa4",
+  "eventId": "b716d8e3-94b7-4592-a4cf-191293526884",
   "eventDate": "2026-05-03T10:00:00",
   "ticketingDate": "2026-05-30T20:00:00",
   "eventName": "꽃 축제"
@@ -15,26 +19,26 @@ X-User-Id: 11111111-2222-1111-1111-111111111111
 
 #### ### 단건조회 (캘린더 uuid)
 
-GET {{calendarUrl}}/v1/calendars/c6f8ee12-fa61-4ffc-a72c-662af22af9ea
+GET {{calendarUrl}}/v1/calendars/{{calendarId}}
 Content-Type: application/json
-X-User-Id: 11111111-2222-1111-1111-111111111111
+X-User-Id: {{userId}}
 
 
 #### ### 전체조회
 
 GET {{calendarUrl}}/v1/calendars?year=2026&month=5
 Content-Type: application/json
-X-User-Id: 11111111-2222-1111-1111-111111111111
+X-User-Id: {{userId}}
 
 
 ### **수정 (캘린더 uuid)**
 
-PATCH {{calendarUrl}}/v1/calendars/c6f8ee12-fa61-4ffc-a72c-662af22af9ea
+PATCH {{calendarUrl}}/v1/calendars/{{calendarId}}
 Content-Type: application/json
-X-User-Id: 11111111-2222-1111-1111-111111111111
+X-User-Id: {{userId}}
 
 {
-  "memo": "2명으로 변경"
+  "memo": "날 살려주겠니.."
 }
 
 

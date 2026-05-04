@@ -12,6 +12,7 @@ import com.ojosama.notificationservice.infrastructure.mail.MailService;
 import com.ojosama.notificationservice.infrastructure.mail.dto.MailSendDto;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.BlackListRegisterEventMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.BlackListSendEmailMessage;
+import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.OperationRequestMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TargetBlindEventMessage;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -38,8 +39,9 @@ public class OperationHandler {
 
     // 블라인드 처리(각각의 카테고리 관리자에게 알림) -> 일단 ... 매니저가 한명인걸로 ,,
     public void handleBlindRegister(TargetBlindEventMessage message) {
+        log.info("매니저 정보 : {}", message.category());
         UUID managerId = userClient.getManagerInfo(message.category());
-        notificationRepository.save(Notification.of(managerId, "운영알림", message.targetType() + "에서 블라인드 처리되었습니다.",
+        notificationRepository.save(Notification.of(managerId, "운영알림", message.targetType() + " 에서 블라인드 처리되었습니다.",
                 TargetInfo.of(message.targetId(), Target.OPERATION, TargetType.BLIND_REGISTERED)));
     }
 
@@ -54,6 +56,14 @@ public class OperationHandler {
             log.error("이메일 전송 실패 : {}", message.userId());
             throw e;
         }
+    }
+
+    // 운영요청 알림 관리자,,
+    public void handleOperationRequest(OperationRequestMessage message) {
+        log.info("요청자 정보 : {}", message.requesterId());
+        UUID adminId = userClient.getAdminInfo();
+        notificationRepository.save(Notification.of(adminId, "운영알림", message.title() + " 요청이 들어왔습니다.",
+                TargetInfo.operation(message.requestId())));
     }
 
 

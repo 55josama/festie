@@ -89,6 +89,7 @@ public class TargetInfo {
                             TargetType.EVENT_REMINDER,
                             TargetType.REPORT_CREATED,
                             TargetType.EVENT_CHANGED,
+                            TargetType.EVENT_CANCELED,
                             TargetType.TICKETING_REMINDER,
                             TargetType.EVENT_REQUEST,
                             TargetType.EVENT_REQUEST_RESULT)
