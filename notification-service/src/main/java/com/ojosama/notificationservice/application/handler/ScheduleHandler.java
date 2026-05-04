@@ -42,6 +42,7 @@ public class ScheduleHandler {
 
         try {
             UserInfo userInfo = userClient.getUserInfo(message.userIds());
+            log.error("유저 feign 호출 실패");
             Map<UUID, String> emailMap = userInfo.userInfo();
             notifications.forEach(notification -> {
                 String email = emailMap.get(notification.getReceiverId());

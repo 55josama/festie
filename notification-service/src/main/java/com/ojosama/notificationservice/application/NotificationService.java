@@ -14,6 +14,7 @@ import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventD
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventRequestCreatedMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventRequestCreatedResultMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventUpdatedMessage;
+import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.OperationRequestMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TargetBlindEventMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TicketingScheduleMessage;
 import com.ojosama.notificationservice.presentation.dto.NotificationResponse;
@@ -66,6 +67,10 @@ public class NotificationService {
 
     public void blackListSendEmail(BlackListSendEmailMessage message) {
         operationHandler.handelSendBlackListEmail(message);
+    }
+
+    public void operationRequest(OperationRequestMessage message) {
+        operationHandler.handleOperationRequest(message);
     }
 
     public void blindNotification(TargetBlindEventMessage message) {

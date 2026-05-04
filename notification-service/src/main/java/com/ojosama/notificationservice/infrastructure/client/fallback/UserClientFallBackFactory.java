@@ -41,6 +41,9 @@ public class UserClientFallBackFactory implements FallbackFactory<UserClient> {
             @Override
             public UUID getAdminInfo() {
                 log.error("UserClientFallBackFactory: {}", cause.getMessage());
+                if (cause instanceof FeignException.NotFound) {
+                    throw new NotificationException(NotificationErrorCode.NOT_FOUND_USER);
+                }
                 throw new CustomException(CommonErrorCode.UNEXPECTED_ERROR);
             }
 

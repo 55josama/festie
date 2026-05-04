@@ -23,4 +23,8 @@ public interface CalendarRepository {
 
     Optional<Calendar> findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(
             UUID eventId, LocalDateTime localDateTime, UUID userId);
+
+    Optional<Calendar> findFirstByEventInfo_EventId(UUID eventId);
+
 }
+

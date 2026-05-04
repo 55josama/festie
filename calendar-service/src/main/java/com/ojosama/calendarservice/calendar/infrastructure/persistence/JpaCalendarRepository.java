@@ -27,4 +27,6 @@ public interface JpaCalendarRepository extends JpaRepository<Calendar, UUID>, Ca
                                                                                                 LocalDateTime eventDate,
                                                                                                 UUID userId);
 
+    Optional<Calendar> findFirstByEventInfo_EventId(UUID eventId);
+
 }

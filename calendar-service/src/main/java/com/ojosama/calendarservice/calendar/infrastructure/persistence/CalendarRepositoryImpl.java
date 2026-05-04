@@ -52,4 +52,10 @@ public class CalendarRepositoryImpl implements CalendarRepository {
         return jpaCalendarRepository.findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(eventId,
                 eventDate, userId);
     }
+
+    @Override
+    public Optional<Calendar> findFirstByEventInfo_EventId(UUID eventId) {
+        return jpaCalendarRepository.findFirstByEventInfo_EventId(eventId);
+    }
+
 }
