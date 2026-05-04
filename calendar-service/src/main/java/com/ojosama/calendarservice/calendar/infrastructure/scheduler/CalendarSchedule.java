@@ -27,7 +27,7 @@ public class CalendarSchedule {
     // 행사 스케줄 -> 전날 오후 1시
     //@Scheduled(cron = "0 0 13 * * *")
     // 테스트 -> 1분마다
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 300000)
     public void eventImminent() {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         LocalDateTime start = tomorrow.atStartOfDay(); // 내일 00시
@@ -52,8 +52,8 @@ public class CalendarSchedule {
         });
     }
 
-    // 티켓팅 일정 1시간 마다 (테스트 1초마다)
-    @Scheduled(fixedRate = 10000)
+    // 티켓팅 일정 1시간 마다 (테스트 30분마다)
+    @Scheduled(fixedRate = 300000)
     public void ticketingImminent() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oneHourLater = now.plusHours(1);
