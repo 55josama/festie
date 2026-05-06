@@ -65,7 +65,7 @@ public class CommentLikeService {
             throw new CommentException(CommentErrorCode.COMMENT_NOT_FOUND);
         }
         if (c.getStatus()== CommentStatus.BLINDED) {
-            throw new CommentException(CommentErrorCode.COMMENT_BLOCKED);
+            throw new CommentException(CommentErrorCode.COMMENT_BLINDED);
         }
         return c;
     }

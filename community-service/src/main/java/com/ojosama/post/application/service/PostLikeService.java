@@ -62,7 +62,7 @@ public class PostLikeService {
             throw new PostException(PostErrorCode.POST_NOT_FOUND);
         }
         if (post.isBlinded()) {
-            throw new PostException(PostErrorCode.POST_BLOCKED);
+            throw new PostException(PostErrorCode.POST_BLINDED);
         }
     }
 
