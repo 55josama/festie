@@ -96,5 +96,5 @@ public class Comment extends BaseUserEntity {
     }
 
     public void markAsClean() { this.status = CommentStatus.CLEAN; }
-    public void block() { this.status = CommentStatus.BLOCKED; }
+    public void blind() { this.status = CommentStatus.BLINDED; }
 }

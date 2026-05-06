@@ -109,13 +109,13 @@ public class PostService {
         Page<Post> posts;
         if (query.categoryId() != null) {
             posts = postRepository.findByCategoryIdAndDeletedAtIsNullAndStatusNot(
-                    query.categoryId(), PostStatus.BLOCKED, query.pageable());
+                    query.categoryId(), PostStatus.BLINDED, query.pageable());
         } else if (query.userId() != null) {
             posts = postRepository.findByUserIdAndDeletedAtIsNullAndStatusNot(
-                    query.userId(), PostStatus.BLOCKED, query.pageable());
+                    query.userId(), PostStatus.BLINDED, query.pageable());
         } else {
             posts = postRepository.findByDeletedAtIsNullAndStatusNot(
-                    PostStatus.BLOCKED, query.pageable());
+                    PostStatus.BLINDED, query.pageable());
         }
         return posts.map(PostResult::from);
     }

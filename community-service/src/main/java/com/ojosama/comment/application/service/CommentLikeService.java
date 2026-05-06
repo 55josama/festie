@@ -64,7 +64,7 @@ public class CommentLikeService {
         if (c.getDeletedAt() != null) {
             throw new CommentException(CommentErrorCode.COMMENT_NOT_FOUND);
         }
-        if (c.getStatus()== CommentStatus.BLOCKED) {
+        if (c.getStatus()== CommentStatus.BLINDED) {
             throw new CommentException(CommentErrorCode.COMMENT_BLOCKED);
         }
         return c;

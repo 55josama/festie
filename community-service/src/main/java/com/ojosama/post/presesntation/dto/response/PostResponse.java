@@ -20,7 +20,7 @@ public record PostResponse(
         LocalDateTime updatedAt
 ) {
     public static PostResponse from(PostResult r) {
-        boolean blocked = r.status() == PostStatus.BLOCKED;
+        boolean blocked = r.status() == PostStatus.BLINDED;
         return new PostResponse(
                 r.id(),
                 r.userId(),

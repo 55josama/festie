@@ -78,11 +78,11 @@ public class TargetBlindedConsumer {
             log.warn("블라인드 대상 댓글을 찾을 수 없습니다. commentId={}", commentId);
             return;
         }
-        if (comment.getStatus() == CommentStatus.BLOCKED) {
+        if (comment.getStatus() == CommentStatus.BLINDED) {
             log.debug("이미 BLOCKED 상태. 추가 처리 없이 종료. commentId={}", commentId);
             return;
         }
-        comment.block();
+        comment.blind();
         commentRepository.save(comment);
     }
 
@@ -92,11 +92,11 @@ public class TargetBlindedConsumer {
             log.warn("블라인드 대상 게시글을 찾을 수 없습니다. postId={}", postId);
             return;
         }
-        if (post.isBlocked()) {
+        if (post.isBlinded()) {
             log.debug("이미 BLOCKED 상태. 추가 처리 없이 종료. postId={}", postId);
             return;
         }
-        post.block();
+        post.blind();
         postRepository.save(post);
     }
 

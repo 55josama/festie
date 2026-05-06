@@ -58,7 +58,7 @@ public class CommentService {
         } else {
             Comment parent = commentRepository.findById(cmd.parentId()).orElseThrow(() -> new CommentException(
                     CommentErrorCode.PARENT_COMMENT_NOT_FOUND));
-            if (parent.getDeletedAt() != null || parent.getStatus() == CommentStatus.BLOCKED) {
+            if (parent.getDeletedAt() != null || parent.getStatus() == CommentStatus.BLINDED) {
                 throw new CommentException(CommentErrorCode.PARENT_COMMENT_NOT_FOUND);
             }
             if (!parent.getPostId().equals(cmd.postId())) {
@@ -118,7 +118,7 @@ public class CommentService {
     public Page<CommentResult> listByPost(CommentListQuery query) {
         Page<Comment> roots = commentRepository
                 .findByPostIdAndParentIdIsNullAndDeletedAtIsNullAndStatusNot(
-                        query.postId(), CommentStatus.BLOCKED, query.pageable());
+                        query.postId(), CommentStatus.BLINDED, query.pageable());
 
         if (roots.isEmpty()) {
             return roots.map(CommentResult::flat);
@@ -129,7 +129,7 @@ public class CommentService {
 
         List<Comment> replies = commentRepository
                 .findByParentIdInAndDeletedAtIsNullAndStatusNotOrderByCreatedAtAsc(
-                        rootIds, CommentStatus.BLOCKED);
+                        rootIds, CommentStatus.BLINDED);
         //WHERE parent_id IN (댓글A_id, 댓글B_id) 쿼리 하나로 모든 대댓글을 가져온다.
 
         Map<UUID, List<CommentResult>> repliesByParent = replies.stream()
