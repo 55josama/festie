@@ -20,6 +20,11 @@ public class NoticeRepositoryImpl implements NoticeRepository {
     }
 
     @Override
+    public Notice saveAndFlush(Notice notice){
+        return noticeJpaRepository.saveAndFlush(notice);
+    }
+
+    @Override
     public Optional<Notice> findByIdAndDeletedAtIsNull(UUID id){
         return noticeJpaRepository.findById(id);
     }
@@ -27,10 +32,5 @@ public class NoticeRepositoryImpl implements NoticeRepository {
     @Override
     public Page<Notice> findAllByDeletedAtIsNull(Pageable pageable){
         return noticeJpaRepository.findAll(pageable);
-    }
-
-    @Override
-    public boolean existsById(UUID id){
-        return noticeJpaRepository.existsById(id);
     }
 }

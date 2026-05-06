@@ -11,6 +11,4 @@ public interface NoticeJpaRepository extends JpaRepository<Notice, UUID> {
     Optional<Notice> findByIdAndDeletedAtIsNull(UUID id);
 
     Page<Notice> findAllByDeletedAtIsNull(Pageable pageable);
-
-    boolean existsById(UUID id);
 }

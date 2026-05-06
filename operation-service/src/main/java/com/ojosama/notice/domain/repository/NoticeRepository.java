@@ -9,9 +9,9 @@ import org.springframework.data.domain.Pageable;
 public interface NoticeRepository {
     Notice save(Notice notice);
 
+    Notice saveAndFlush(Notice notice);
+
     Optional<Notice> findByIdAndDeletedAtIsNull(UUID id);
 
     Page<Notice> findAllByDeletedAtIsNull(Pageable pageable);
-
-    boolean existsById(UUID id);
 }
