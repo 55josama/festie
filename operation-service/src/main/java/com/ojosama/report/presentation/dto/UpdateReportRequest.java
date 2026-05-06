@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateReportRequest(
-        @NotNull(message = "제재 확정 여부를 선택해주세요.")
+        @NotNull(message = "신고 처리 상태를 선택해주세요.")
         ReportStatus status,
 
         @NotBlank(message = "관리자 처리 사유를 입력해주세요.")
