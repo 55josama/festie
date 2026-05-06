@@ -77,7 +77,7 @@ public class PostController {
     @GetMapping
     public ApiResponse<Page<PostResponse>> list(
             @RequestParam(required = false) UUID categoryId,
-            @RequestHeader(USER_ID_HEADER) UUID userId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) UUID userId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         PostListQuery query;
         if (categoryId != null) {
