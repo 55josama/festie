@@ -36,6 +36,11 @@ eureka:
 server:
   port: 8082
 
+festie:
+  event:
+    schedule-action:
+      poll-delay-ms: 60000
+
 logging:
   level:
     org.hibernate.SQL: debug

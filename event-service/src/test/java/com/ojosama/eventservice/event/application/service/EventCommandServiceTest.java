@@ -27,11 +27,13 @@ import com.ojosama.eventservice.event.domain.model.vo.EventTime;
 import com.ojosama.eventservice.event.domain.model.vo.ScheduleTime;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
+import com.ojosama.eventservice.event.domain.repository.EventScheduleActionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -52,8 +54,10 @@ class EventCommandServiceTest {
     @Mock
     private EventCategoryRepository eventCategoryRepository;
     @Mock
+    private EventScheduleActionRepository scheduleActionRepository;
+    @Mock
     private ApplicationEventPublisher applicationEventPublisher;
-    @InjectMocks
+
     private EventCommandService eventService;
 
     private static final UUID USER_ID = UUID.randomUUID();
@@ -61,6 +65,12 @@ class EventCommandServiceTest {
     private static final UUID EVENT_ID = UUID.randomUUID();
     private static final LocalDateTime FUTURE_START = LocalDateTime.now().plusDays(30);
     private static final LocalDateTime FUTURE_END = LocalDateTime.now().plusDays(60);
+
+    @BeforeEach
+    void setUp() {
+        eventService = new EventCommandService(eventRepository, eventCategoryRepository,
+            scheduleActionRepository, applicationEventPublisher);
+    }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -195,7 +205,11 @@ class EventCommandServiceTest {
         void createEvent_withoutTicketing_returnsScheduledStatus() {
             EventCategory category = EventCategory.create("FESTIVAL");
             given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
-            given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+            given(eventRepository.save(any())).willAnswer(invocation -> {
+                Event event = invocation.getArgument(0);
+                ReflectionTestUtils.setField(event, "id", EVENT_ID);
+                return event;
+            });
 
             EventResult result = eventService.createEvent(buildCommand(CATEGORY_ID, false));
 
@@ -212,7 +226,11 @@ class EventCommandServiceTest {
         void createEvent_withTicketing_savedSuccessfully() {
             EventCategory category = EventCategory.create("CONCERT");
             given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
-            given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+            given(eventRepository.save(any())).willAnswer(invocation -> {
+                Event event = invocation.getArgument(0);
+                ReflectionTestUtils.setField(event, "id", EVENT_ID);
+                return event;
+            });
 
             EventResult result = eventService.createEvent(buildCommand(CATEGORY_ID, true));
 
@@ -229,7 +247,11 @@ class EventCommandServiceTest {
         void createEvent_publishesCreatedMessageWithCorrectPayload() {
             EventCategory category = EventCategory.create("FESTIVAL");
             given(eventCategoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
-            given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+            given(eventRepository.save(any())).willAnswer(invocation -> {
+                Event event = invocation.getArgument(0);
+                ReflectionTestUtils.setField(event, "id", EVENT_ID);
+                return event;
+            });
 
             eventService.createEvent(buildCommand(CATEGORY_ID, false));
 
@@ -436,11 +458,10 @@ class EventCommandServiceTest {
         @DisplayName("유효한 eventId → soft delete 후 event.info.deleted 발행")
         void deleteEvent_validEventId_publishEventDeleted() {
             Event event = createDefaultEvent();
+            ReflectionTestUtils.setField(event, "id", EVENT_ID);
             given(eventRepository.findById(EVENT_ID)).willReturn(Optional.of(event));
 
             eventService.deleteEvent(USER_ID, EVENT_ID);
-
-            verify(eventRepository).delete(event);
 
             ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
             verify(applicationEventPublisher).publishEvent(captor.capture());

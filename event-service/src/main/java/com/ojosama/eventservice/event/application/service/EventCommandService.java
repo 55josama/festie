@@ -18,6 +18,11 @@ import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import com.ojosama.eventservice.event.domain.support.EventChanges;
 import com.ojosama.eventservice.event.domain.support.EventSnapshot;
+import com.ojosama.eventservice.event.domain.model.EventScheduleAction;
+import com.ojosama.eventservice.event.domain.model.EventAction;
+import com.ojosama.eventservice.event.domain.model.ScheduleActionStatus;
+import com.ojosama.eventservice.event.domain.repository.EventScheduleActionRepository;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventCommandService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
+    private final EventScheduleActionRepository scheduleActionRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public EventResult createEvent(CreateEventCommand command) {
@@ -46,6 +52,8 @@ public class EventCommandService {
                 event.addSchedule(scheduleCommand.toEntity(event)));
 
         Event saved = eventRepository.save(event);
+
+        registerScheduleActions(saved);
 
         applicationEventPublisher.publishEvent(new EventCreatedMessage(
                 saved.getId(), saved.getName(),
@@ -140,5 +148,33 @@ public class EventCommandService {
         event.deleted(userId);
 
         applicationEventPublisher.publishEvent(new EventDeletedMessage(event.getId(), event.getName()));
+    }
+
+    private void registerScheduleActions(Event event) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (event.getEventTime().getStartAt() != null &&
+            event.getEventTime().getStartAt().isAfter(now)) {
+            EventScheduleAction startAction = EventScheduleAction.builder()
+                .eventId(event.getId())
+                .action(EventAction.MARK_IN_PROGRESS)
+                .scheduledAt(event.getEventTime().getStartAt())
+                .status(ScheduleActionStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .build();
+            scheduleActionRepository.save(startAction);
+        }
+
+        if (event.getEventTime().getEndAt() != null &&
+            event.getEventTime().getEndAt().isAfter(now)) {
+            EventScheduleAction endAction = EventScheduleAction.builder()
+                .eventId(event.getId())
+                .action(EventAction.MARK_COMPLETED)
+                .scheduledAt(event.getEventTime().getEndAt())
+                .status(ScheduleActionStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .build();
+            scheduleActionRepository.save(endAction);
+        }
     }
 }
