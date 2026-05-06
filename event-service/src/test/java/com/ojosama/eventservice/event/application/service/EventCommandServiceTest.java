@@ -27,7 +27,7 @@ import com.ojosama.eventservice.event.domain.model.vo.EventTime;
 import com.ojosama.eventservice.event.domain.model.vo.ScheduleTime;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
-import com.ojosama.common.kafka.domain.OutboxEventPublisher;
+import com.ojosama.eventservice.event.domain.repository.EventScheduleActionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,7 +54,7 @@ class EventCommandServiceTest {
     @Mock
     private EventCategoryRepository eventCategoryRepository;
     @Mock
-    private OutboxEventPublisher outboxEventPublisher;
+    private EventScheduleActionRepository scheduleActionRepository;
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
 
@@ -69,7 +69,7 @@ class EventCommandServiceTest {
     @BeforeEach
     void setUp() {
         eventService = new EventCommandService(eventRepository, eventCategoryRepository,
-            outboxEventPublisher, applicationEventPublisher);
+            scheduleActionRepository, applicationEventPublisher);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

@@ -28,9 +28,6 @@ public enum EventType {
     EVENT_REQUEST_CREATED("EventRequestCreated"),
     EVENT_REQUEST_RESULT("EventRequestResultCreated"),
 
-    // scheduled events (internal)
-    SCHEDULED_EVENT_ACTION("ScheduledEventAction"),
-
     // calendar
     TICKETING_SCHEDULE_REMINDER("EventTicketingSchedule"),
     SCHEDULE_REMINDER("EventSchedule"),
