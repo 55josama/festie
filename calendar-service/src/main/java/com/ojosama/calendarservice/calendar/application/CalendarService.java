@@ -7,6 +7,8 @@ import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
 import com.ojosama.calendarservice.calendar.domain.model.EventInfo;
 import com.ojosama.calendarservice.calendar.domain.repository.CalendarRepository;
+import com.ojosama.calendarservice.calendar.infrastructure.client.EventClient;
+import com.ojosama.calendarservice.calendar.infrastructure.client.dto.GetEventInfo;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventUpdatedMessage.FieldChange;
 import com.ojosama.calendarservice.calendar.presentaion.dto.CalendarResponseDto;
 import java.time.LocalDateTime;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CalendarService {
 
     private final CalendarRepository calendarRepository;
+    private final EventClient eventClient;
 
     public CalendarResponseDto createCalendar(CreateCalendarCommand command) {
 
@@ -37,8 +40,17 @@ public class CalendarService {
             throw new CalendarException(CalendarErrorCode.EXISTS_CALENDAR);
         }
 
+        GetEventInfo event = eventClient.getEventInfo(command.eventId());
+
+        boolean isValidSchedule = event.schedules().stream()
+                .anyMatch(schedule -> schedule.startTime().equals(command.eventDate()));
+
+        if (!isValidSchedule) {
+            throw new CalendarException(CalendarErrorCode.EVENT_SCHEDULE_NOT_FOUND);
+        }
+
         Calendar calendar = Calendar.create(command.userId(), command.memo(),
-                new EventInfo(command.eventId(), command.eventName(), command.eventDate(), command.ticketingDate()));
+                new EventInfo(command.eventId(), event.name(), command.eventDate(), event.ticketingOpenAt()));
 
         calendarRepository.save(calendar);
 
@@ -74,14 +86,17 @@ public class CalendarService {
         calendar.deleted(userId);
     }
 
-    // 행사 삭제로 인한 캘린더 일정 삭제
+    // 행사 삭제 -> 캘린더 행사 상태 (false)
     public List<UUID> deleteAllByEventId(UUID eventID) {
         List<Calendar> calendarList = validateCalendarAlive(eventID);
 
-        // userId 중복제거
+        // userId 중복제거 -> 알림 이벤트로 보낼 user정보 리스트
         List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
 
-        calendarList.forEach(calendar -> calendar.deleted(UUID.fromString("00000000-0000-0000-0000-000000000000")));
+        // 행사 삭제로 인한 캘린더 상태 변경
+        calendarList.forEach(calendar -> {
+            calendar.updateEventStatus(false);
+        });
 
         return userIds;
     }
@@ -93,22 +108,27 @@ public class CalendarService {
         }
         List<Calendar> calendarList = validateCalendarAlive(eventId);
 
-        List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).toList();
+        List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
 
         // 행사에서 변경 된 필드를 가지고 수정
         calendarList.forEach(calendar -> {
             changedFields.forEach(field -> {
+                String valueAfter = field.after() != null ? String.valueOf(field.after()) : null;
                 switch (field.fieldName()) {
-                    case "eventDate" -> calendar.getEventInfo().updateEventDate(LocalDateTime.parse(field.after()));
-                    case "ticketingDate" -> {
-                        if (field.after() == null || field.after().isBlank()) {
-                            calendar.getEventInfo().updateTicketingDate(null);
-                        } else {
-                            calendar.getEventInfo().updateTicketingDate(LocalDateTime.parse(field.after()));
+                    case "startAt" -> {
+                        if (calendar.getEventInfo().getEventDate().equals(field.before())) {
+                            calendar.getEventInfo().updateEventDate(LocalDateTime.parse(valueAfter));
                         }
                     }
-                    case "eventName" -> calendar.getEventInfo().updateEventName(field.after());
-                    default -> throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
+                    case "ticketingOpenAt" -> {
+                        if (field.after() == null) {
+                            calendar.getEventInfo().updateTicketingDate(null);
+                        } else {
+                            calendar.getEventInfo().updateTicketingDate(LocalDateTime.parse(valueAfter));
+                        }
+                    }
+                    case "name" -> calendar.getEventInfo().updateEventName(valueAfter);
+                    default -> log.info("필요없는 정보가 넘어왔습니다.");
                 }
             });
         });
