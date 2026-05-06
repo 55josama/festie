@@ -47,7 +47,7 @@ public class CommentService {
     public CommentResult create(CreateCommentCommand cmd) {
         Post post = postRepository.findById(cmd.postId()).orElseThrow(
                 () -> new PostException(PostErrorCode.POST_NOT_FOUND));
-        if (post.getDeletedAt() != null || post.isBlocked()) {
+        if (post.getDeletedAt() != null || post.isBlinded()) {
             throw new PostException(PostErrorCode.POST_NOT_FOUND);
         }
 

@@ -61,7 +61,7 @@ public class PostLikeService {
         if (post.getDeletedAt() != null) {
             throw new PostException(PostErrorCode.POST_NOT_FOUND);
         }
-        if (post.isBlocked()) {
+        if (post.isBlinded()) {
             throw new PostException(PostErrorCode.POST_BLOCKED);
         }
     }
