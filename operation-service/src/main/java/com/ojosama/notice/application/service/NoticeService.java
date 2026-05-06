@@ -65,8 +65,6 @@ public class NoticeService {
     public void deleteNotice(UUID noticeId) {
         Notice notice = findNoticeById(noticeId);
         notice.deleted();
-
-        noticeRepository.saveAndFlush(notice);
     }
 
     private Notice findNoticeById(UUID noticeId) {
