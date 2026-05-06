@@ -33,14 +33,11 @@ public class EventScheduleActionExecutor {
             log.info("[Event Schedule] 실행 성공. eventId={}, action={}",
                 action.getEventId(), action.getAction());
 
-        } catch (EventException e) {
-            log.error("[Event Schedule] 실행 실패. actionId={}, error={}",
-                action.getId(), e.getErrorCode(), e);
-            action.markFailed(e.getErrorCode().name());
         } catch (Exception e) {
+            String errorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             log.error("[Event Schedule] 실행 실패. actionId={}, error={}",
-                action.getId(), e.getClass().getSimpleName(), e);
-            action.markFailed(e.getClass().getSimpleName());
+                action.getId(), errorMessage, e);
+            action.markFailed(errorMessage);
         } finally {
             scheduleActionRepo.save(action);
         }
