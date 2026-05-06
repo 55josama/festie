@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum EventType {
 
-
     // Outbound
     POST_CREATED("PostCreated"),
     POST_UPDATED("PostUpdated"),
