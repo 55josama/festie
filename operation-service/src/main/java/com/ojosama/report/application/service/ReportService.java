@@ -98,7 +98,7 @@ public class ReportService {
     }
 
     private void validateReportIsPending(Report report) {
-        if (report.getStatus() != ReportStatus.PENDING) {
+        if (report.getStatus() != ReportStatus.AUTO_BLINDED) {
             throw new ReportException(ReportErrorCode.REPORT_ALREADY_PROCESSED);
         }
     }
