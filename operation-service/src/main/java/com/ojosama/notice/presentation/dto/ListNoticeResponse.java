@@ -9,8 +9,8 @@ public record ListNoticeResponse(
         String title,
         String content
 ) {
-    public static FindNoticeResponse from(NoticeResult result){
-        return new FindNoticeResponse(
+    public static ListNoticeResponse from(NoticeResult result){
+        return new ListNoticeResponse(
                 result.noticeId(),
                 result.adminId(),
                 result.title(),
