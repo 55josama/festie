@@ -18,7 +18,7 @@ public enum EventType {
     COMMENT_UPDATED("CommentUpdated"),
     POST_REPORTED("PostReported"),
     COMMENT_REPORTED("CommentReported"),
-
+    
     // event
     EVENT_CREATED("EventCreated"),
     EVENT_DELETED("EventDeleted"),
