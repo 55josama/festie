@@ -83,6 +83,6 @@ public class NoticeController {
     ) {
         noticeService.deleteNotice(noticeId);
 
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok(ApiResponse.deleted());
     }
 }

@@ -98,6 +98,6 @@ public class OperationRequestController {
         boolean isAdmin = role.contains("ADMIN");
         operationRequestService.deleteOperationRequest(requestId, currentUserId, isAdmin);
 
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok(ApiResponse.deleted());
     }
 }
