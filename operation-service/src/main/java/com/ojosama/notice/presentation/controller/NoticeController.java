@@ -7,7 +7,6 @@ import com.ojosama.notice.presentation.dto.CreateNoticeRequest;
 import com.ojosama.notice.presentation.dto.FindNoticeResponse;
 import com.ojosama.notice.presentation.dto.ListNoticeResponse;
 import com.ojosama.notice.presentation.dto.UpdateNoticeRequest;
-import com.ojosama.operationrequest.presentation.dto.ListOperationResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -63,7 +62,7 @@ public class NoticeController {
     ) {
         NoticeResult result = noticeService.getNotice(noticeId);
 
-        return ResponseEntity.ok(ApiResponse.created(FindNoticeResponse.from(result)));
+        return ResponseEntity.ok(ApiResponse.success(FindNoticeResponse.from(result)));
     }
 
     // 공지사항 수정
@@ -74,7 +73,7 @@ public class NoticeController {
     ) {
         NoticeResult result = noticeService.updateNotice(noticeId, request.toCommand(noticeId));
 
-        return ResponseEntity.ok(ApiResponse.created(FindNoticeResponse.from(result)));
+        return ResponseEntity.ok(ApiResponse.success(FindNoticeResponse.from(result)));
     }
 
     // 공지사항 삭제
