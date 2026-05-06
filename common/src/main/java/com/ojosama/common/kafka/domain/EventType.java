@@ -36,6 +36,7 @@ public enum EventType {
 
     //community
     POST_DELETED("PostDeleted"),
+    TARGET_UNBLINDED("TargetUnblinded"),
 
     // ai
     AI_MODERATION_EVALUATED("AiModerationEvaluated"),
