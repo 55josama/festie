@@ -45,7 +45,7 @@ public class NoticeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(FindNoticeResponse.from(result)));
     }
 
-    // 공지사항 목록 조회 (최신순 정렬, 페이징)
+    // 공지사항 목록 조회
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ListNoticeResponse>>> getNoticeList(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
