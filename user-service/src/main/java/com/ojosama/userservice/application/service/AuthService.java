@@ -101,7 +101,7 @@ public class AuthService {
 
     private void validateActiveUser(User user) {
         if (user.getStatus() == UserStatus.BLOCKED) {
-            throw new IllegalArgumentException("Blocked user cannot login.");
+            throw new IllegalArgumentException("차단된 사용자입니다.");
         }
     }
 }
