@@ -2,6 +2,7 @@ package com.ojosama.comment.domain.repository;
 
 import com.ojosama.comment.domain.model.Comment;
 import com.ojosama.comment.domain.model.CommentStatus;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,11 +32,18 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     void decrementLikeCount(@Param("id") UUID id);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Comment c SET c.status = com.ojosama.comment.domain.model.CommentStatus.BLOCKED "
+    @Query("UPDATE Comment c SET c.status = com.ojosama.comment.domain.model.CommentStatus.BLINDED "
             + "WHERE c.userId = :userId AND c.deletedAt IS NULL "
-            + "AND c.status <> com.ojosama.comment.domain.model.CommentStatus.BLOCKED")
-    int blockAllByUserId(@Param("userId") UUID userId);
+            + "AND c.status <> com.ojosama.comment.domain.model.CommentStatus.BLINDED")
+    int blindAllByUserId(@Param("userId") UUID userId);
 
     @Query("SELECT c.userId FROM Comment c WHERE c.id = :id")
     Optional<UUID> findWriterIdById(@Param("id") UUID id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Comment c SET c.deletedAt = :deletedAt "
+            + "WHERE c.postId = :postId AND c.deletedAt IS NULL")
+    int softDeleteAllByPostId(@Param("postId") java.util.UUID postId,
+                              @Param("deletedAt") LocalDateTime deletedAt);
+
 }

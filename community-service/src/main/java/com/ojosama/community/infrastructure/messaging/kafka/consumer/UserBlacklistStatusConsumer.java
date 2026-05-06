@@ -64,16 +64,16 @@ public class UserBlacklistStatusConsumer {
             return;
         }
         if (event.status() == BlacklistStatus.INACTIVE) {
-            // 사유 추적 컬럼이 없어 신고 누적 BLOCKED 와 구분 불가 → 운영 합의에 따라 무시
+            // 사유 추적 컬럼이 없어 신고 누적 BLINDED 와 구분 불가 → 운영 합의에 따라 무시
             log.info("INACTIVE 이벤트 수신 — 사유 추적 도입 전이므로 community 측 복구 없이 종료. userId={}",
                     event.userId());
             return;
         }
-        // ACTIVE: 해당 유저 콘텐츠 일괄 BLOCKED
-        int blockedComments = commentRepository.blockAllByUserId(event.userId());
-        int blockedPosts = postRepository.blockAllByUserId(event.userId());
-        log.info("블랙리스트 ACTIVE — 유저 콘텐츠 일괄 BLOCKED. userId={}, comments={}, posts={}",
-                event.userId(), blockedComments, blockedPosts);
+        // ACTIVE: 해당 유저 콘텐츠 일괄 BLINDED
+        int blindedComments = commentRepository.blindAllByUserId(event.userId());
+        int blindedPosts = postRepository.blindAllByUserId(event.userId());
+        log.info("블랙리스트 ACTIVE — 유저 콘텐츠 일괄 BLINDED. userId={}, comments={}, posts={}",
+                event.userId(), blindedComments, blindedPosts);
     }
 
     private UserBlacklistStatusEvent parse(String payload) {

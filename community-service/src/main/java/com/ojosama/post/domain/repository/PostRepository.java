@@ -63,10 +63,10 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 
     //블랙리스트 post 삭제 처리
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Post p SET p.status = com.ojosama.post.domain.model.PostStatus.BLOCKED "
+    @Query("UPDATE Post p SET p.status = com.ojosama.post.domain.model.PostStatus.BLINDED "
             + "WHERE p.userId = :userId AND p.deletedAt IS NULL "
-            + "AND p.status <> com.ojosama.post.domain.model.PostStatus.BLOCKED")
-    int blockAllByUserId(@Param("userId") UUID userId);
+            + "AND p.status <> com.ojosama.post.domain.model.PostStatus.BLINDED")
+    int blindAllByUserId(@Param("userId") UUID userId);
 
     @Query("SELECT p.userId FROM Post p WHERE p.id = :id")
     Optional<UUID> findWriterIdById(@Param("id") UUID id);

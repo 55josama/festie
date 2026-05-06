@@ -1,5 +1,6 @@
 package com.ojosama.post.application.service;
 
+import com.ojosama.community.domain.event.payload.PostDeletedEvent;
 import com.ojosama.community.domain.model.Content;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
@@ -34,6 +35,9 @@ public class PostService {
 
     @Value("${spring.kafka.topic.community-moderation-requested}")
     private String moderationRequestedTopic;
+
+    @Value("${spring.kafka.topic.post-deleted}")
+    private String postDeletedTopic;
 
     @Transactional
     public PostResult create(CreatePostCommand cmd){
@@ -88,14 +92,21 @@ public class PostService {
             throw new PostException(PostErrorCode.POST_ACCESS_DENIED);
         }
         post.deleted(cmd.requesterId());
+
+        // PostDeleted 이벤트 발행
+        outbox.publish(
+                AGGREGATE_TYPE, post.getId(),
+                EventType.POST_DELETED, postDeletedTopic,
+                new PostDeletedEvent(post.getId(), cmd.requesterId(), post.getDeletedAt())
+        );
     }
 
     @Transactional
     public PostResult getDetail(UUID postId) {
         Post post = loadAlive(postId);
-        // BLOCKED 게시글도 200으로 응답한다 (PostResponse에서 마스킹 처리).
+        // BLINDED 게시글도 200으로 응답한다 (PostResponse에서 마스킹 처리).
         // 단, 조회수는 증가시키지 않음 — 차단된 게시글에 어뷰징성 조회수 발생 방지.
-        if (post.isBlocked()) {
+        if (post.isBlinded()) {
             return PostResult.from(post);
         }
         int affected = postRepository.incrementViewCount(postId);
@@ -109,13 +120,13 @@ public class PostService {
         Page<Post> posts;
         if (query.categoryId() != null) {
             posts = postRepository.findByCategoryIdAndDeletedAtIsNullAndStatusNot(
-                    query.categoryId(), PostStatus.BLOCKED, query.pageable());
+                    query.categoryId(), PostStatus.BLINDED, query.pageable());
         } else if (query.userId() != null) {
             posts = postRepository.findByUserIdAndDeletedAtIsNullAndStatusNot(
-                    query.userId(), PostStatus.BLOCKED, query.pageable());
+                    query.userId(), PostStatus.BLINDED, query.pageable());
         } else {
             posts = postRepository.findByDeletedAtIsNullAndStatusNot(
-                    PostStatus.BLOCKED, query.pageable());
+                    PostStatus.BLINDED, query.pageable());
         }
         return posts.map(PostResult::from);
     }
