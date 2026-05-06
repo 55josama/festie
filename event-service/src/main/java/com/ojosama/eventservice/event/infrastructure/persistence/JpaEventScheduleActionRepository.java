@@ -14,7 +14,7 @@ public interface JpaEventScheduleActionRepository extends JpaRepository<EventSch
     @Query("SELECT a FROM EventScheduleAction a " +
            "WHERE a.status = :status AND a.scheduledAt <= :now " +
            "ORDER BY a.scheduledAt ASC, a.id ASC")
-    List<EventScheduleAction> findPendingWithLock(
+    List<EventScheduleAction> findPendingByScheduledAt(
             @Param("status") ScheduleActionStatus status,
             @Param("now") LocalDateTime now,
             Pageable pageable);

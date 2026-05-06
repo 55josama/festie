@@ -28,17 +28,20 @@ public class EventScheduleActionExecutor {
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
             executeAction(event, action);
-
             action.markExecuted(LocalDateTime.now());
-            scheduleActionRepo.save(action);
 
             log.info("[Event Schedule] 실행 성공. eventId={}, action={}",
                 action.getEventId(), action.getAction());
 
+        } catch (EventException e) {
+            log.error("[Event Schedule] 실행 실패. actionId={}, error={}",
+                action.getId(), e.getErrorCode(), e);
+            action.markFailed(e.getErrorCode().name());
         } catch (Exception e) {
             log.error("[Event Schedule] 실행 실패. actionId={}, error={}",
-                action.getId(), e.getMessage(), e);
-            action.markFailed(e.getMessage());
+                action.getId(), e.getClass().getSimpleName(), e);
+            action.markFailed(e.getClass().getSimpleName());
+        } finally {
             scheduleActionRepo.save(action);
         }
     }

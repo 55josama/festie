@@ -22,6 +22,6 @@ public class EventScheduleActionRepositoryImpl implements EventScheduleActionRep
 
     @Override
     public List<EventScheduleAction> findPendingByScheduledAtBefore(LocalDateTime now, Pageable pageable) {
-        return jpaRepo.findPendingWithLock(ScheduleActionStatus.PENDING, now, pageable);
+        return jpaRepo.findPendingByScheduledAt(ScheduleActionStatus.PENDING, now, pageable);
     }
 }

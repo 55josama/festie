@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
-@EnableSchedulerLock(defaultLockAtMostFor = "PT30M")
+@EnableSchedulerLock(defaultLockAtMostFor = "PT1M")
 public class ShedLockConfig {
 
     @Bean

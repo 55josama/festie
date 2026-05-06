@@ -42,5 +42,7 @@ public class EventScheduleActionPoller {
         for (EventScheduleAction action : actions) {
             executor.processOne(action);
         }
+
+        log.info("[Event Schedule] 처리 완료");
     }
 }
