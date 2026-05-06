@@ -3,17 +3,19 @@ package com.ojosama.calendarservice.calendar.infrastructure.persistence;
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
 import com.ojosama.calendarservice.calendar.domain.model.QCalendar;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-@Repository
+@Repository("calendarRepositoryCustomImpl")
 @RequiredArgsConstructor
 public class CalendarRepositoryCustomImpl implements CalendarRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
+    private final EntityManager entityManager;
     private final QCalendar qCalendar = QCalendar.calendar;
 
     @Override
