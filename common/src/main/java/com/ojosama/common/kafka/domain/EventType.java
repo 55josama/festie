@@ -18,7 +18,7 @@ public enum EventType {
     COMMENT_UPDATED("CommentUpdated"),
     POST_REPORTED("PostReported"),
     COMMENT_REPORTED("CommentReported"),
-    
+
     // event
     EVENT_CREATED("EventCreated"),
     EVENT_DELETED("EventDeleted"),
@@ -27,6 +27,9 @@ public enum EventType {
 
     EVENT_REQUEST_CREATED("EventRequestCreated"),
     EVENT_REQUEST_RESULT("EventRequestResultCreated"),
+
+    // scheduled events (internal)
+    SCHEDULED_EVENT_ACTION("ScheduledEventAction"),
 
     // calendar
     TICKETING_SCHEDULE_REMINDER("EventTicketingSchedule"),

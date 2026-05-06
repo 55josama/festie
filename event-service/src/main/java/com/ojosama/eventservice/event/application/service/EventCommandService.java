@@ -18,6 +18,11 @@ import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import com.ojosama.eventservice.event.domain.support.EventChanges;
 import com.ojosama.eventservice.event.domain.support.EventSnapshot;
+import com.ojosama.common.kafka.domain.OutboxEventPublisher;
+import com.ojosama.common.kafka.domain.EventType;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventCommandService {
     private final EventRepository eventRepository;
     private final EventCategoryRepository eventCategoryRepository;
+    private final OutboxEventPublisher outboxEventPublisher;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public EventResult createEvent(CreateEventCommand command) {
@@ -46,6 +52,8 @@ public class EventCommandService {
                 event.addSchedule(scheduleCommand.toEntity(event)));
 
         Event saved = eventRepository.save(event);
+
+        registerScheduleActions(saved);
 
         applicationEventPublisher.publishEvent(new EventCreatedMessage(
                 saved.getId(), saved.getName(),
@@ -140,5 +148,29 @@ public class EventCommandService {
         event.deleted(userId);
 
         applicationEventPublisher.publishEvent(new EventDeletedMessage(event.getId(), event.getName()));
+    }
+
+    private void registerScheduleActions(Event event) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (event.getEventTime().getStartAt() != null &&
+            event.getEventTime().getStartAt().isAfter(now)) {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("eventId", event.getId().toString());
+            payload.put("action", "MARK_IN_PROGRESS");
+            payload.put("scheduledAt", event.getEventTime().getStartAt().toString());
+            outboxEventPublisher.publish("Event", event.getId(),
+                EventType.SCHEDULED_EVENT_ACTION, "event.schedule.action", payload);
+        }
+
+        if (event.getEventTime().getEndAt() != null &&
+            event.getEventTime().getEndAt().isAfter(now)) {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("eventId", event.getId().toString());
+            payload.put("action", "MARK_COMPLETED");
+            payload.put("scheduledAt", event.getEventTime().getEndAt().toString());
+            outboxEventPublisher.publish("Event", event.getId(),
+                EventType.SCHEDULED_EVENT_ACTION, "event.schedule.action", payload);
+        }
     }
 }
