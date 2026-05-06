@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,6 +21,11 @@ public class EventScheduleActionPoller {
     private final EventScheduleActionExecutor executor;
 
     @Scheduled(fixedDelayString = "${festie.event.schedule-action.poll-delay-ms:60000}")
+    @SchedulerLock(
+            name = "EventScheduleActionPoller",
+            lockAtMostFor = "PT55S",
+            lockAtLeastFor = "PT5S"
+    )
     public void poll() {
         LocalDateTime now = LocalDateTime.now();
         Pageable pageable = PageRequest.of(0, 100);
