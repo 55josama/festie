@@ -1,3 +1,5 @@
 package com.ojosama.report.application.dto.command;
 
-public record UpdateReportCommand(Boolean isResolved, String operatorMemo) { }
+import com.ojosama.report.domain.model.enums.ReportStatus;
+
+public record UpdateReportCommand(ReportStatus status, String operatorMemo) { }
