@@ -2,10 +2,10 @@ package com.ojosama.comment.infrastructure.messaging.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ojosama.comment.domain.event.payload.PostDeletedEvent;
 import com.ojosama.comment.domain.repository.CommentRepository;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
+import com.ojosama.community.domain.event.payload.PostDeletedEvent;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

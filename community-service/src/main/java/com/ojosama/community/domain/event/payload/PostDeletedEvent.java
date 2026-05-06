@@ -1,4 +1,4 @@
-package com.ojosama.comment.domain.event.payload;
+package com.ojosama.community.domain.event.payload;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
