@@ -104,7 +104,7 @@ public class PostService {
     @Transactional
     public PostResult getDetail(UUID postId) {
         Post post = loadAlive(postId);
-        // BLOCKED 게시글도 200으로 응답한다 (PostResponse에서 마스킹 처리).
+        // BLINDED 게시글도 200으로 응답한다 (PostResponse에서 마스킹 처리).
         // 단, 조회수는 증가시키지 않음 — 차단된 게시글에 어뷰징성 조회수 발생 방지.
         if (post.isBlinded()) {
             return PostResult.from(post);

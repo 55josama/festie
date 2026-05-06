@@ -66,7 +66,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     @Query("UPDATE Post p SET p.status = com.ojosama.post.domain.model.PostStatus.BLINDED "
             + "WHERE p.userId = :userId AND p.deletedAt IS NULL "
             + "AND p.status <> com.ojosama.post.domain.model.PostStatus.BLINDED")
-    int blockAllByUserId(@Param("userId") UUID userId);
+    int blindAllByUserId(@Param("userId") UUID userId);
 
     @Query("SELECT p.userId FROM Post p WHERE p.id = :id")
     Optional<UUID> findWriterIdById(@Param("id") UUID id);

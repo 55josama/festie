@@ -79,7 +79,7 @@ public class TargetBlindedConsumer {
             return;
         }
         if (comment.getStatus() == CommentStatus.BLINDED) {
-            log.debug("이미 BLOCKED 상태. 추가 처리 없이 종료. commentId={}", commentId);
+            log.debug("이미 BLINDED 상태. 추가 처리 없이 종료. commentId={}", commentId);
             return;
         }
         comment.blind();
@@ -93,7 +93,7 @@ public class TargetBlindedConsumer {
             return;
         }
         if (post.isBlinded()) {
-            log.debug("이미 BLOCKED 상태. 추가 처리 없이 종료. postId={}", postId);
+            log.debug("이미 BLINDED 상태. 추가 처리 없이 종료. postId={}", postId);
             return;
         }
         post.blind();

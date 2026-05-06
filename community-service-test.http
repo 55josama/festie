@@ -106,15 +106,16 @@ X-User-Id: 11111111-1111-1111-1111-111111111111
 
 
 ###수정
-PATCH http://localhost:9001/v1/](http://localhost:9001/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments)comments/{commentId}
+PATCH http://localhost:9001/v1/comments/{commentId}
 X-User-Id: 11111111-1111-1111-1111-111111111111
+Content-Type: application/json
 
 {
 "content":"댓글 수정합니다."
 }
 
 ###삭제
-DELETE http://localhost:9001/v1/](http://localhost:9001/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments)comments/{commentId}
+DELETE http://localhost:9001/v1/comments/{commentId}
 X-User-Id: 11111111-1111-1111-1111-111111111111
 X-User-Role: ADMIN
 
@@ -122,7 +123,7 @@ X-User-Role: ADMIN
 GET http://localhost:9001/v1/posts/af4b4c71-8bfb-4709-a9d3-3e4ac05eabe7/comments
 
 ###댓글 상세조회(internal)
-internal/v1/comments/{commentId}
+GET http://localhost:9001/internal/v1/comments/{commentId}
 
 ###게시글 좋아요
 POST http://localhost:9001/v1/posts/d72ee555-858a-4735-8298-73810ed0f048/likes

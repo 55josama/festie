@@ -35,7 +35,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     @Query("UPDATE Comment c SET c.status = com.ojosama.comment.domain.model.CommentStatus.BLINDED "
             + "WHERE c.userId = :userId AND c.deletedAt IS NULL "
             + "AND c.status <> com.ojosama.comment.domain.model.CommentStatus.BLINDED")
-    int blockAllByUserId(@Param("userId") UUID userId);
+    int blindAllByUserId(@Param("userId") UUID userId);
 
     @Query("SELECT c.userId FROM Comment c WHERE c.id = :id")
     Optional<UUID> findWriterIdById(@Param("id") UUID id);
