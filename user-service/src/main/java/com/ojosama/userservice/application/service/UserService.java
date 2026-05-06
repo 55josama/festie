@@ -35,7 +35,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    //유저 생성
+    //회원가입
     @Transactional
     public CreateUserResult createUser(CreateUserCommand command) {
         if (userRepository.existsByEmailAndDeletedAtIsNull(command.email())) {
