@@ -444,6 +444,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: local
+      SERVER_PORT: 8081
       CONFIG_SERVER_URL: http://config-server:8888
       CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
