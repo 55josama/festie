@@ -15,18 +15,19 @@ public interface JpaCalendarRepository extends JpaRepository<Calendar, UUID>, Ca
 
     List<Calendar> findByEventInfo_EventIdAndDeletedAtIsNull(UUID eventId);
 
-    @Query("select c from Calendar c where c.eventInfo.eventDate >= :start AND c.eventInfo.eventDate < :end AND c.deletedAt is null")
-    List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(@Param("start") LocalDateTime start,
-                                                                      @Param("end") LocalDateTime end);
+    @Query("select c from Calendar c where c.eventInfo.eventTicketingDate >= :now AND c.eventInfo.eventTicketingDate < :oneHourLater AND c.deletedAt is null And c.eventStatus = true")
+    List<Calendar> findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNullAndEventStatusTrue(
+            @Param("now") LocalDateTime now,
+            @Param("oneHourLater") LocalDateTime oneHourLater);
 
-    @Query("select c from Calendar c where c.eventInfo.eventTicketingDate >= :now AND c.eventInfo.eventTicketingDate < :oneHourLater AND c.deletedAt is null ")
-    List<Calendar> findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(@Param("now") LocalDateTime now,
-                                                                               @Param("oneHourLater") LocalDateTime oneHourLater);
+    Optional<Calendar> findFirstByEventInfo_EventId(UUID eventId);
 
     Optional<Calendar> findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(UUID eventId,
                                                                                                 LocalDateTime eventDate,
                                                                                                 UUID userId);
 
-    Optional<Calendar> findFirstByEventInfo_EventId(UUID eventId);
+    @Query("select c from Calendar c where c.eventInfo.eventDate >= :start AND c.eventInfo.eventDate < :end AND c.deletedAt is null AND c.eventStatus = true")
+    List<Calendar> findByEventInfo_EventDateAndDeletedAtIsNullAndEventStatusTrue(LocalDateTime start,
+                                                                                 LocalDateTime end);
 
 }
