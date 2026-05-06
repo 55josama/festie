@@ -5,7 +5,7 @@ import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.report.application.dto.command.CreateReportCommand;
 import com.ojosama.report.application.service.ReportService;
-import com.ojosama.report.domain.event.payload.AiReportEvent;
+import com.ojosama.report.domain.event.payload.AiReportedEvent;
 import com.ojosama.report.domain.model.enums.ReportCategory;
 import com.ojosama.report.domain.model.enums.TargetType;
 import com.ojosama.report.domain.model.enums.ReporterType;
@@ -34,11 +34,11 @@ public class AiReportEventConsumer {
     @KafkaListener(topics = "${spring.kafka.topic.ai-moderation-reported}", groupId = "operation-service-group")
     public void consumeAiReport(ConsumerRecord<String, String> record) {
         UUID messageKey;
-        AiReportEvent event;
+        AiReportedEvent event;
 
         try {
             messageKey = UUID.fromString(record.key());
-            event = objectMapper.readValue(record.value(), AiReportEvent.class);
+            event = objectMapper.readValue(record.value(), AiReportedEvent.class);
         } catch (Exception e) {
             log.error("AI Report 메시지 파싱 실패. key={}, value={}", record.key(), record.value(), e);
             return;
@@ -54,7 +54,7 @@ public class AiReportEventConsumer {
         );
     }
 
-    private void dispatch(AiReportEvent event){
+    private void dispatch(AiReportedEvent event){
         try {
             if (event == null || event.targetType() == null || event.category() == null) {
                 log.error("AI 신고 이벤트 필수 필드 누락. 처리를 스킵합니다. event: {}", event);

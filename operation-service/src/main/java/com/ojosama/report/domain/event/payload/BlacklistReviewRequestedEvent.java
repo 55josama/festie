@@ -2,7 +2,7 @@ package com.ojosama.report.domain.event.payload;
 
 import java.util.UUID;
 
-public record BlacklistReviewRequestEvent(
+public record BlacklistReviewRequestedEvent(
         UUID targetUserId,
         String reason,
         long blindCount
