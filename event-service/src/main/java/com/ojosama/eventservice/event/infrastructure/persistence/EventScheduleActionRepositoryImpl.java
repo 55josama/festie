@@ -25,15 +25,6 @@ public class EventScheduleActionRepositoryImpl implements EventScheduleActionRep
 
     @Override
     public List<EventScheduleAction> findPendingByScheduledAtBefore(LocalDateTime now, Pageable pageable) {
-        return queryFactory
-            .selectFrom(QEventScheduleAction.eventScheduleAction)
-            .where(
-                QEventScheduleAction.eventScheduleAction.status.eq(ScheduleActionStatus.PENDING),
-                QEventScheduleAction.eventScheduleAction.scheduledAt.loe(now)
-            )
-            .orderBy(QEventScheduleAction.eventScheduleAction.scheduledAt.asc())
-            .limit(pageable.getPageSize())
-            .offset(pageable.getOffset())
-            .fetch();
+        return jpaRepo.findPendingWithLock(ScheduleActionStatus.PENDING, now, pageable);
     }
 }

@@ -16,14 +16,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(
-    name = "p_event_schedule_actions",
-    indexes = {
-        @Index(name = "idx_schedule_status_scheduled_at", columnList = "status, scheduled_at"),
-        @Index(name = "idx_schedule_event_id", columnList = "event_id")
-    }
+        name = "p_event_schedule_actions",
+        indexes = {
+                @Index(name = "idx_schedule_status_scheduled_at", columnList = "status, scheduled_at"),
+                @Index(name = "idx_schedule_event_id", columnList = "event_id")
+        }
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -49,6 +50,7 @@ public class EventScheduleAction {
     @Column(nullable = false)
     private ScheduleActionStatus status;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -65,6 +67,14 @@ public class EventScheduleAction {
 
     public void markFailed(String errorMessage) {
         this.status = ScheduleActionStatus.FAILED;
-        this.errorMessage = errorMessage;
+
+        if (errorMessage == null) {
+            this.errorMessage = null;
+            return;
+        }
+        this.errorMessage = errorMessage.length() > 500
+                ? errorMessage.substring(0, 500)
+                : errorMessage;
     }
+
 }
