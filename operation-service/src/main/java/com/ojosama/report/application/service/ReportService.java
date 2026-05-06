@@ -9,6 +9,7 @@ import com.ojosama.report.application.dto.result.ReportInfoResult;
 import com.ojosama.report.application.dto.result.ReportResult;
 import com.ojosama.report.domain.event.payload.BlacklistReviewRequestedEvent;
 import com.ojosama.report.domain.event.payload.TargetBlindedEvent;
+import com.ojosama.report.domain.event.payload.TargetUnblindedEvent;
 import com.ojosama.report.domain.exception.ReportErrorCode;
 import com.ojosama.report.domain.exception.ReportException;
 import com.ojosama.report.domain.model.entity.Report;
@@ -34,6 +35,9 @@ public class ReportService {
 
     @Value("${spring.kafka.topic.report-blinded}")
     private String targetBlindedTopic;
+
+    @Value("${spring.kafka.topic.report-unblinded}")
+    private String targetUnblindedTopic;
 
     @Value("${spring.kafka.topic.blacklist-requested}")
     private String blacklistReviewRequestedTopic;
@@ -66,12 +70,17 @@ public class ReportService {
     @Transactional
     public ReportInfoResult updateReport(UUID reportId, UpdateReportCommand command) {
         Report report = findReportById(reportId);
-        validateReportIsPending(report);
+        validateReportIsAutoBlinded(report);
+        validateStatusIsValid(command.status());
 
-        if (command.isResolved()) {
+        if (command.status() == ReportStatus.RESOLVED) {
             report.resolve(command.operatorMemo());
-        } else {
+            // RESOLVED된 경우 블랙리스트 검토
+            checkAndPublishBlacklistReviewForResolved(report.getTargetUserId());
+        } else if (command.status() == ReportStatus.REJECTED) {
             report.reject(command.operatorMemo());
+            // 블라인드 해제 이벤트 발행
+            publishUnblindEvent(report);
         }
 
         return ReportInfoResult.from(report);
@@ -97,9 +106,15 @@ public class ReportService {
                 .orElseThrow(() -> new ReportException(ReportErrorCode.REPORT_NOT_FOUND));
     }
 
-    private void validateReportIsPending(Report report) {
+    private void validateReportIsAutoBlinded(Report report) {
         if (report.getStatus() != ReportStatus.AUTO_BLINDED) {
             throw new ReportException(ReportErrorCode.REPORT_ALREADY_PROCESSED);
+        }
+    }
+
+    private void validateStatusIsValid(ReportStatus status) {
+        if (status != ReportStatus.RESOLVED && status != ReportStatus.REJECTED) {
+            throw new ReportException(ReportErrorCode.INVALID_STATUS);
         }
     }
 
@@ -113,10 +128,9 @@ public class ReportService {
     private void checkAndProcessAutomaticBlind(CreateReportCommand command) {
         long reportCount = reportRepository.countByTargetId(command.targetId());
 
-        // 신고가 3회 이상이면 신고 대상 블라인드 처리 및 유저 블랙리스트 조건 검사
+        // 신고가 3회 이상이면 신고 대상 블라인드 처리
         if (reportCount >= 3) {
             publishBlindEvent(command);
-            publishBlacklistReviewRequestEvent(command.targetUserId());
         }
     }
 
@@ -142,14 +156,31 @@ public class ReportService {
         );
     }
 
-    private void publishBlacklistReviewRequestEvent(UUID targetUserId) {
-        long userBlindCount = reportRepository.countBlindedTargetByUserId(targetUserId);
+    // 블라인드 해제 이벤트 발행 (REJECTED 시)
+    private void publishUnblindEvent(Report report) {
+        outbox.publish(
+                "REPORT",
+                report.getTargetId(),
+                EventType.REPORT_UNBLINDED,
+                targetUnblindedTopic,
+                new TargetUnblindedEvent(
+                        report.getTargetId(),
+                        report.getTargetType(),
+                        report.getTargetUserId(),
+                        "매니저 검토 결과 오인 신고로 판단되어 블라인드가 해제되었습니다."
+                )
+        );
+    }
 
-        if (userBlindCount >= 5) {
+    // 블랙리스트 검토 로직 (RESOLVED된 게시글만 카운트)
+    private void checkAndPublishBlacklistReviewForResolved(UUID targetUserId) {
+        long userResolvedCount = reportRepository.countResolvedTargetByUserId(targetUserId);
+
+        if (userResolvedCount >= 5) {
             BlacklistReviewRequestedEvent event = new BlacklistReviewRequestedEvent(
                     targetUserId,
-                    "블라인드 처리가 5회 누적되어 블랙리스트 등록 검토가 필요합니다.",
-                    userBlindCount
+                    "매니저에 의해 확정된 블라인드 처리가 5회 누적되어 블랙리스트 등록 검토가 필요합니다.",
+                    userResolvedCount
             );
 
             outbox.publish(

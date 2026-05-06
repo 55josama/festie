@@ -20,5 +20,5 @@ public interface ReportRepository {
 
     long countByTargetId(UUID targetId);
 
-    long countBlindedTargetByUserId(UUID targetUserId);
+    long countResolvedTargetByUserId(UUID targetUserId);
 }

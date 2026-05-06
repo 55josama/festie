@@ -9,7 +9,8 @@ public enum ReportErrorCode implements ErrorCode {
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "신고 요청을 찾을 수 없습니다."),
     REPORT_EXISTS(HttpStatus.BAD_REQUEST, "이미 존재하는 신고 요청입니다."),
     REPORT_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 신고 요청입니다."),
-    DUPLICATE_REPORT(HttpStatus.BAD_REQUEST, "중복된 신고 요청입니다.");
+    DUPLICATE_REPORT(HttpStatus.BAD_REQUEST, "중복된 신고 요청입니다."),
+    INVALID_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 상태입니다. RESOLVED 또는 REJECTED만 입력 가능합니다.");
 
     private final HttpStatus status;
     private final String message;

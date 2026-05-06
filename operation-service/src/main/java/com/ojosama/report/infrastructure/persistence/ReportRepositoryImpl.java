@@ -46,7 +46,7 @@ public class ReportRepositoryImpl implements ReportRepository {
     };
 
     @Override
-    public long countBlindedTargetByUserId(UUID targetUserId){
-        return reportJpaRepository.countBlindedTargetByUserId(targetUserId);
+    public long countResolvedTargetByUserId(UUID targetUserId){
+        return reportJpaRepository.countResolvedTargetByUserId(targetUserId);
     };
 }
