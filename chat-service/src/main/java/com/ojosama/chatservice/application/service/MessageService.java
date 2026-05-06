@@ -166,6 +166,13 @@ public class MessageService {
         changeMessageStatus(new ChangeMessageStatusCommand(messageId, SYSTEM_BLINDER_ID, MessageStatus.BLINDED));
     }
 
+    public void unblindMessageBySystem(UUID messageId) {
+        if (messageId == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        changeMessageStatus(new ChangeMessageStatusCommand(messageId, SYSTEM_BLINDER_ID, MessageStatus.ACTIVE));
+    }
+
     @Transactional(readOnly = true)
     public ReportedMessageResult getReportedMessage(UUID messageId) {
         if (messageId == null) {
