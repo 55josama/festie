@@ -49,7 +49,7 @@ public class AdminMessageController {
         return ResponseEntity.ok(ApiResponse.success(MessageSliceResponse.from(result, false)));
     }
 
-    @GetMapping("/messages/{messageId}")
+    @GetMapping("/{messageId}")
     public ResponseEntity<ApiResponse<MessageResponse>> getMessage(@PathVariable UUID messageId) {
         MessageResult result = messageService.getMessage(new FindMessageQuery(messageId));
         return ResponseEntity.ok(ApiResponse.success(MessageResponse.from(result)));

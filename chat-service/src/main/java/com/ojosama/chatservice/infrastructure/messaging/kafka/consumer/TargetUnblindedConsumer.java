@@ -51,8 +51,11 @@ public class TargetUnblindedConsumer {
             log.info("블라인드 해제 이벤트 처리를 완료했습니다. key={}, topic={}, targetType={}, targetId={}, reason={}",
                     record.key(), record.topic(), event.targetType(), event.targetId(), event.reason());
         } catch (RuntimeException e) {
-            log.error("블라인드 해제 이벤트 처리에 실패했습니다. key={}, payload={}",
-                    record.key(), record.value(), e);
+            log.error("블라인드 해제 이벤트 처리에 실패했습니다. key={}, topic={}, payloadLength={}",
+                    record.key(),
+                    record.topic(),
+                    record.value() == null ? 0 : record.value().length(),
+                    e);
             throw e;
         }
     }
