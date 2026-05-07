@@ -25,10 +25,10 @@ public class SseEmitterManager {
                         .data(data));
             } catch (IOException e) {
                 log.error("SseEmitter send error: {}, userId: {}", e.getMessage(), userId);
-                emitters.remove(userId);
+                emitters.remove(userId, emitter);
             }
         } else {
-            log.error("SseEmitter not found: {}", userId);
+            log.debug("접속 중이 아닌 유저: {}", userId);
         }
     }
 
@@ -53,7 +53,7 @@ public class SseEmitterManager {
                     .name("connect")
                     .data("connected"));
         } catch (IOException e) {
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
         }
 
         return emitter;
