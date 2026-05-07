@@ -17,6 +17,8 @@ public enum UserErrorCode implements ErrorCode {
     INVALID_LOGIN_INFO(HttpStatus.BAD_REQUEST, "이메일 혹은 비밀번호가 올바르지 않습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token입니다."),
     REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "Refresh Token이 일치하지 않습니다."),
+    REFRESH_TOKEN_HASH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Refresh Token 해시 생성에 실패했습니다."),
+
 
     BLOCKED_USER(HttpStatus.FORBIDDEN, "차단된 사용자는 로그인할 수 없습니다."),
     INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "존재하지 않는 카테고리입니다.");
