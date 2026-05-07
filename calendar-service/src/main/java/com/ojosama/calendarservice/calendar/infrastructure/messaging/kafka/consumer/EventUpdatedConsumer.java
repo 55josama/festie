@@ -55,24 +55,27 @@ public class EventUpdatedConsumer {
 
                         // 컨슈머 DTO -> 프로듀서 DTO 변환
                         List<CalendarEventUpdatedMessage.FieldChange> changedFields = event.changedFields().stream()
-                                .map(f -> new CalendarEventUpdatedMessage.FieldChange(f.fieldName(), f.before(),
-                                        f.after()))
+                                .map(f -> new CalendarEventUpdatedMessage.FieldChange(f.fieldName(),
+                                        f.before().toString(),
+                                        f.after().toString()))
                                 .toList();
 
                         publisher.publishCalendarEventUpdated(new CalendarEventUpdatedMessage(event.eventId(),
                                 event.eventName(), userIds, changedFields));
                     });
-            log.info("Event deleted: {}", record.key());
+            log.info("행사 수정 이벤트 성공 : {}", record.key());
         } catch (RuntimeException e) {
-            log.error("삭제 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            log.error("행사 수정 이벤트 실패 : {}, {}", record.key(), e.getMessage());
             throw e;
         }
     }
 
     private EventUpdatedMessage parse(String payload) {
+        log.error("수신 페이로드: {}", payload);
         try {
             return objectMapper.readValue(payload, EventUpdatedMessage.class);
         } catch (JsonProcessingException e) {
+            log.error("파싱 에러 : {}", e.getMessage());
             throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
     }

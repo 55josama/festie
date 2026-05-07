@@ -25,16 +25,15 @@ public class CalendarSchedule {
     private final KafkaCalendarSchedulerPublisher publisher;
 
     // 행사 스케줄 -> 전날 오후 1시
-    //@Scheduled(cron = "0 0 13 * * *")
-    // 테스트 -> 1분마다
-    @Scheduled(fixedRate = 300000)
+    @Scheduled(cron = "0 0 13 * * *")
     public void eventImminent() {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         LocalDateTime start = tomorrow.atStartOfDay(); // 내일 00시
         LocalDateTime end = tomorrow.plusDays(1).atStartOfDay(); // 모레 00시
 
         // 전날 행사 목록
-        List<Calendar> calendars = calendarRepository.findByEventInfo_EventDateAndDeletedAtIsNull(start, end);
+        List<Calendar> calendars = calendarRepository.findByEventInfo_EventDateAndDeletedAtIsNullAndEventStatusTrue(
+                start, end);
 
         Map<UUID, List<Calendar>> groupedCalendars = groupCalendars(calendars);
 
@@ -52,13 +51,14 @@ public class CalendarSchedule {
         });
     }
 
-    // 티켓팅 일정 1시간 마다 (테스트 30분마다)
-    @Scheduled(fixedRate = 300000)
+    // 티켓팅 일정 1시간 마다
+    @Scheduled(fixedRate = 3600000)
     public void ticketingImminent() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oneHourLater = now.plusHours(1);
 
-        List<Calendar> calendars = calendarRepository.findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(now,
+        List<Calendar> calendars = calendarRepository.findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNullAndEventStatusTrue(
+                now,
                 oneHourLater);
 
         Map<UUID, List<Calendar>> groupedCalendars = groupCalendars(calendars);
