@@ -80,7 +80,7 @@ public class EventHandler {
     }
 
     public void handleEventRequestResult(EventRequestCreatedResultMessage message) {
-        String content = "요청하신" + message.eventName() + " 결과가 " + message.status() + "되었습니다.";
+        String content = "요청하신 " + message.eventName() + " 결과가 " + message.status() + "되었습니다.";
 
         Notification notification = notificationRepository.save(
                 Notification.of(message.receiverId(), "행사 요청 결과", content,

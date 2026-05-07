@@ -33,17 +33,24 @@ public class SseEmitterManager {
     }
 
     public SseEmitter subscribe(UUID userId) {
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
-        emitters.put(userId, emitter);
+        // 30분 타임아웃
+        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
 
         // 연결 끊기면 제거
-        emitter.onCompletion(() -> emitters.remove(userId));
-        emitter.onTimeout(() -> emitters.remove(userId));
-        emitter.onError(t -> emitters.remove(userId));
+        emitter.onCompletion(() -> emitters.remove(userId, emitter));
+        emitter.onTimeout(() -> emitters.remove(userId, emitter));
+        emitter.onError(t -> emitters.remove(userId, emitter));
+
+        SseEmitter oldEmitter = emitters.put(userId, emitter);
+
+        if (oldEmitter != null) {
+            // 기존 emitter 닫기
+            oldEmitter.complete();
+        }
 
         try {
             emitter.send(SseEmitter.event()
-                    .name("notification")
+                    .name("connect")
                     .data("connected"));
         } catch (IOException e) {
             emitters.remove(userId);
