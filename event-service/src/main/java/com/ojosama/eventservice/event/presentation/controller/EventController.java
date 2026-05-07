@@ -6,6 +6,7 @@ import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand;
 import com.ojosama.eventservice.event.application.dto.command.EventListCommand;
 import com.ojosama.eventservice.event.application.dto.command.UpdateEventCommand;
+import com.ojosama.eventservice.event.application.dto.result.EventListResult;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.application.service.EventCommandService;
 import com.ojosama.eventservice.event.application.service.EventQueryService;
@@ -13,6 +14,7 @@ import com.ojosama.eventservice.event.domain.model.EventStatus;
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventRequest;
 import com.ojosama.eventservice.event.presentation.dto.request.UpdateEventRequest;
 import com.ojosama.eventservice.event.presentation.dto.response.EventDetailResponse;
+import com.ojosama.eventservice.event.presentation.dto.response.EventListResponse;
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -59,7 +61,7 @@ public class EventController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<EventResponse>>> getEvents(
+    public ResponseEntity<ApiResponse<Page<EventListResponse>>> getEvents(
             @RequestHeader(value = "X-User-Id", required = false) UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @RequestParam(required = false) String category,
@@ -72,8 +74,8 @@ public class EventController {
 
         validateAuthHeaders(userId, userRole);
         EventListCommand command = new EventListCommand(category, status, startAt, endAt, year, month);
-        Page<EventResult> result = eventQueryService.getEvents(command, pageable);
-        return ResponseEntity.ok(ApiResponse.success(result.map(EventResponse::from)));
+        Page<EventListResult> result = eventQueryService.getEvents(command, pageable);
+        return ResponseEntity.ok(ApiResponse.success(result.map(EventListResponse::from)));
     }
 
     @GetMapping("/{eventId}")

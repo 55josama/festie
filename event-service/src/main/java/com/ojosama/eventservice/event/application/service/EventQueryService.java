@@ -1,6 +1,7 @@
 package com.ojosama.eventservice.event.application.service;
 
 import com.ojosama.eventservice.event.application.dto.command.EventListCommand;
+import com.ojosama.eventservice.event.application.dto.result.EventListResult;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
@@ -22,7 +23,7 @@ public class EventQueryService {
     private final EventRepository eventRepository;
 
     @Transactional(readOnly = true)
-    public Page<EventResult> getEvents(EventListCommand command, Pageable pageable) {
+    public Page<EventListResult> getEvents(EventListCommand command, Pageable pageable) {
         EventFilter filter = new EventFilter(
                 command.category(),
                 command.status(),
@@ -31,7 +32,7 @@ public class EventQueryService {
                 command.year(),
                 command.month()
         );
-        return eventRepository.findAll(filter, pageable).map(EventResult::from);
+        return eventRepository.findAll(filter, pageable).map(EventListResult::from);
     }
 
     @Transactional(readOnly = true)
