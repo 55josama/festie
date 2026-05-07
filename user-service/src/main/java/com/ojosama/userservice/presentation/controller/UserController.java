@@ -1,5 +1,6 @@
 package com.ojosama.userservice.presentation.controller;
 
+import com.ojosama.common.response.ApiResponse;
 import com.ojosama.userservice.application.dto.command.DeleteUserCommand;
 import com.ojosama.userservice.application.dto.query.GetUserQuery;
 import com.ojosama.userservice.application.dto.result.CreateUserResult;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +24,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -34,42 +35,49 @@ public class UserController {
 
     // 회원가입
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public CreateUserResponseDto createUser(@Valid @RequestBody CreateUserRequestDto request) {
+    public ResponseEntity<ApiResponse<CreateUserResponseDto>> createUser(
+            @Valid @RequestBody CreateUserRequestDto request
+    ) {
         CreateUserResult result = userService.createUser(request.toCommand());
+        CreateUserResponseDto response = CreateUserResponseDto.from(result);
 
-        return CreateUserResponseDto.from(result);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.created(response));
     }
 
     // 내 정보 조회
     @GetMapping("/me")
-    public GetUserResponseDto getMyInfo(Authentication authentication) {
+    public ResponseEntity<ApiResponse<GetUserResponseDto>> getMyInfo(Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
         GetUserResult result = userService.getUser(new GetUserQuery(userId));
+        GetUserResponseDto response = GetUserResponseDto.from(result);
 
-        return GetUserResponseDto.from(result);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 내 정보 수정
     @PatchMapping("/me")
-    public UpdateUserResponseDto updateMyInfo(
+    public ResponseEntity<ApiResponse<UpdateUserResponseDto>> updateMyInfo(
             Authentication authentication,
             @Valid @RequestBody UpdateUserRequestDto request
     ) {
         UUID userId = UUID.fromString(authentication.getName());
 
         UpdateUserResult result = userService.updateUser(request.toCommand(userId));
+        UpdateUserResponseDto response = UpdateUserResponseDto.from(result);
 
-        return UpdateUserResponseDto.from(result);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 회원 탈퇴
     @DeleteMapping("/me")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteMyInfo(Authentication authentication) {
+    public ResponseEntity<ApiResponse<Void>> deleteMyInfo(Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
         userService.deleteUser(new DeleteUserCommand(userId));
+
+        return ResponseEntity.ok(ApiResponse.deleted());
     }
 }
