@@ -32,8 +32,12 @@ public class DevUserController {
     public ResponseEntity<ApiResponse<CreateUserResponseDto>> createAdminUser(
             @Valid @RequestBody CreateUserRequestDto request
     ) {
-        if (userRepository.existsByEmail(request.email())) {
+        if (userRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
             throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
+        }
+
+        if (userRepository.existsByNicknameAndDeletedAtIsNull(request.nickname())) {
+            throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
         }
 
         User adminUser = User.create(
