@@ -6,6 +6,8 @@ import com.ojosama.userservice.application.dto.query.AdminUserListQuery;
 import com.ojosama.userservice.application.dto.result.AdminChangeUserRoleResult;
 import com.ojosama.userservice.application.dto.result.AdminUserDetailResult;
 import com.ojosama.userservice.application.dto.result.AdminUserListResult;
+import com.ojosama.userservice.domain.exception.UserErrorCode;
+import com.ojosama.userservice.domain.exception.UserException;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +33,7 @@ public class UserAdminService {
     @Transactional(readOnly = true)
     public AdminUserDetailResult getDetailUser(AdminDetailUserQuery query) {
         User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         return new AdminUserDetailResult(
                 user.getId(),
@@ -48,7 +50,7 @@ public class UserAdminService {
     @Transactional
     public AdminChangeUserRoleResult changeUserRole(AdminChangeUserRoleCommand command) {
         User user = userRepository.findByIdAndDeletedAtIsNull(command.userId())
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         user.changeRole(command.role());
 
