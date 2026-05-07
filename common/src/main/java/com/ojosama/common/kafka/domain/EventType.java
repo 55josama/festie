@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum EventType {
-    
+
     // event
     EVENT_CREATED("EventCreated"),
     EVENT_DELETED("EventDeleted"),
