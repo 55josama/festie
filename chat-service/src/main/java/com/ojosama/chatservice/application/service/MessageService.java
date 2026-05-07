@@ -105,7 +105,6 @@ public class MessageService {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
 
-        findChatRoom(query.chatRoomId());
         return getMessageSlice(
                 messageRepository.findByChatRoomIdAndStatuses(
                         query.chatRoomId(),
