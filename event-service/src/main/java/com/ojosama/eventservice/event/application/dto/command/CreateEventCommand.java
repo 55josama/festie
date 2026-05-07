@@ -22,6 +22,7 @@ public record CreateEventCommand(
     String place,
     BigDecimal latitude,
     BigDecimal longitude,
+    Integer radius,
     Integer minFee,
     Integer maxFee,
     Boolean hasTicketing,
@@ -43,7 +44,7 @@ public record CreateEventCommand(
                 userId,
                 request.name(), request.categoryId(),
                 request.startAt(), request.endAt(),
-                request.place(), request.latitude(), request.longitude(),
+                request.place(), request.latitude(), request.longitude(), request.radius(),
                 request.minFee(), request.maxFee(),
                 request.hasTicketing(),
                 request.ticketingOpenAt(), request.ticketingCloseAt(), request.ticketingLink(),
@@ -58,7 +59,7 @@ public record CreateEventCommand(
             .name(name)
             .category(category)
             .eventTime(new EventTime(startAt, endAt))
-            .eventLocation(new EventLocation(place, latitude, longitude))
+            .eventLocation(new EventLocation(place, latitude, longitude, radius))
             .eventFee(new EventFee(minFee, maxFee))
             .eventTicketing(new EventTicketing(hasTicketing, ticketingOpenAt, ticketingCloseAt, ticketingLink))
             .officialLink(officialLink)

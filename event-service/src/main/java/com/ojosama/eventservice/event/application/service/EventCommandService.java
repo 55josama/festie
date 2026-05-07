@@ -93,7 +93,7 @@ public class EventCommandService {
                 command.name(),
                 category,
                 new EventTime(command.startAt(), command.endAt()),
-                new EventLocation(command.place(), command.latitude(), command.longitude()),
+                new EventLocation(command.place(), command.latitude(), command.longitude(), command.radius()),
                 new EventFee(command.minFee(), command.maxFee()),
                 new EventTicketing(command.hasTicketing(), command.ticketingOpenAt(),
                         command.ticketingCloseAt(), command.ticketingLink()),

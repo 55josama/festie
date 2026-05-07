@@ -28,7 +28,10 @@ public class EventLocation {
     @Column(precision = 10, scale = 6, nullable = false)
     private BigDecimal longitude;
 
-    public EventLocation(String place, BigDecimal latitude, BigDecimal longitude) {
+    @Column
+    private Integer radius;
+
+    public EventLocation(String place, BigDecimal latitude, BigDecimal longitude, Integer radius) {
         validatePlace(place);
         validateLatitude(latitude);
         validateLongitude(longitude);
@@ -36,6 +39,7 @@ public class EventLocation {
         this.place = place.trim();
         this.latitude = latitude;
         this.longitude = longitude;
+        this.radius = radius;
     }
 
     private void validatePlace(String place) {
