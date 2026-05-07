@@ -29,8 +29,8 @@ public class NotificationRepositoryImpl implements NotificationRepository {
     }
 
     @Override
-    public void save(Notification notification) {
-        jpaNotificationRepository.save(notification);
+    public Notification save(Notification notification) {
+        return jpaNotificationRepository.save(notification);
     }
 
     @Override

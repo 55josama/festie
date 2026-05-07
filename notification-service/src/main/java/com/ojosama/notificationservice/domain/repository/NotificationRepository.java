@@ -14,7 +14,7 @@ public interface NotificationRepository {
 
     List<Notification> findByReceiverIdAndDeletedAtIsNull(UUID receiverId);
 
-    void save(Notification notification);
+    Notification save(Notification notification);
 
     void saveAll(List<Notification> notifications);
 

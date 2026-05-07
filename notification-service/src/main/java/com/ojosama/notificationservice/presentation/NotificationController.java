@@ -3,11 +3,13 @@ package com.ojosama.notificationservice.presentation;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.notificationservice.application.NotificationService;
 import com.ojosama.notificationservice.domain.model.notification.Notification;
+import com.ojosama.notificationservice.infrastructure.sse.SseEmitterManager;
 import com.ojosama.notificationservice.presentation.dto.NotificationResponse;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,6 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final SseEmitterManager sseEmitterManager;
+
+    // SSE 프론트 연결
+    @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribe(@RequestHeader("X-User-Id") UUID receiverId) {
+        return sseEmitterManager.subscribe(receiverId);
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<NotificationResponse>>> getNotification(

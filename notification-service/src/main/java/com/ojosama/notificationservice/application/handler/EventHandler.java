@@ -12,6 +12,7 @@ import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventD
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventRequestCreatedMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventRequestCreatedResultMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventUpdatedMessage;
+import com.ojosama.notificationservice.infrastructure.sse.SseEmitterManager;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -28,6 +29,8 @@ public class EventHandler {
     private final CalendarClient calendarClient;
     private final UserClient userClient;
 
+    private final SseEmitterManager sseEmitterManager;
+
     public void handleEventChanged(EventUpdatedMessage message) {
         // 캘린더서비스를 동기 호출해서 알림
         CalendarUserInfo userInfo = calendarClient.getCalendarUserInfo(message.eventId());
@@ -43,6 +46,10 @@ public class EventHandler {
                 .toList();
 
         notificationRepository.saveAll(notifications);
+
+        notifications.forEach(n ->
+                sseEmitterManager.sendToUser(n.getReceiverId(), n)
+        );
     }
 
     public void handleEventCanceled(EventDeletedMessage message) {
@@ -56,20 +63,31 @@ public class EventHandler {
                 .toList();
 
         notificationRepository.saveAll(notifications);
+
+        notifications.forEach(n ->
+                sseEmitterManager.sendToUser(n.getReceiverId(), n)
+        );
     }
 
     public void handleEventRequest(EventRequestCreatedMessage message) {
         UUID managerId = userClient.getManagerInfo(message.categoryName());
 
-        notificationRepository.save(Notification.of(managerId, "행사 요청", "승인을 기다리는 요청이 있습니다.",
-                TargetInfo.of(message.targetId(), Target.EVENT, TargetType.EVENT_REQUEST)));
+        Notification notification = notificationRepository.save(
+                Notification.of(managerId, "행사 요청", "승인을 기다리는 요청이 있습니다.",
+                        TargetInfo.of(message.targetId(), Target.EVENT, TargetType.EVENT_REQUEST)));
+
+        sseEmitterManager.sendToUser(managerId, notification);
     }
 
     public void handleEventRequestResult(EventRequestCreatedResultMessage message) {
         String content = "요청하신" + message.eventName() + " 결과가 " + message.status() + "되었습니다.";
 
-        notificationRepository.save(Notification.of(message.receiverId(), "행사 요청 결과", content,
-                TargetInfo.of(message.targetId(), Target.EVENT, TargetType.EVENT_REQUEST_RESULT)));
+        Notification notification = notificationRepository.save(
+                Notification.of(message.receiverId(), "행사 요청 결과", content,
+                        TargetInfo.of(message.targetId(), Target.EVENT, TargetType.EVENT_REQUEST_RESULT)));
+
+        sseEmitterManager.sendToUser(message.receiverId(), notification);
     }
+
 
 }
