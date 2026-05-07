@@ -2,12 +2,16 @@ package com.ojosama.notificationservice.presentation;
 
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.notificationservice.application.NotificationService;
-import com.ojosama.notificationservice.domain.model.notification.Notification;
+import com.ojosama.notificationservice.application.dto.result.NotificationResult;
 import com.ojosama.notificationservice.infrastructure.sse.SseEmitterManager;
-import com.ojosama.notificationservice.presentation.dto.NotificationResponse;
+import com.ojosama.notificationservice.presentation.dto.NotificationResponseDto;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -35,28 +39,30 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<NotificationResponse>>> getNotification(
-            @RequestHeader("X-User-Id") UUID receiverId) {
-        List<NotificationResponse> notificationResponseList = notificationService.selectAll(receiverId);
+    public ResponseEntity<ApiResponse<Page<NotificationResponseDto>>> getNotification(
+            @RequestHeader("X-User-Id") UUID receiverId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Direction.DESC) Pageable pageable) {
+
+        Page<NotificationResult> notificationList = notificationService.selectAll(receiverId, pageable);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success(notificationResponseList));
+                .body(ApiResponse.success(notificationList.map(NotificationResponseDto::of)));
     }
 
     @PatchMapping
-    public ResponseEntity<ApiResponse<List<NotificationResponse>>> markAllAsRead(
+    public ResponseEntity<ApiResponse<List<NotificationResponseDto>>> markAllAsRead(
             @RequestHeader("X-User-Id") UUID receiverId) {
-        List<NotificationResponse> notificationList = notificationService.markAllAsRead(receiverId);
+        List<NotificationResult> notificationList = notificationService.markAllAsRead(receiverId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success(notificationList));
+                .body(ApiResponse.success(NotificationResponseDto.of(notificationList)));
     }
 
     @DeleteMapping("/{notificationId}")
-    public ResponseEntity<ApiResponse<Notification>> deleteNotification(@PathVariable UUID notificationId,
-                                                                        @RequestHeader("X-User-Id") UUID receiverId) {
+    public ResponseEntity<ApiResponse<Void>> deleteNotification(@PathVariable UUID notificationId,
+                                                                @RequestHeader("X-User-Id") UUID receiverId) {
         notificationService.deleteNotification(receiverId, notificationId);
         return ResponseEntity
                 .status(HttpStatus.OK)
