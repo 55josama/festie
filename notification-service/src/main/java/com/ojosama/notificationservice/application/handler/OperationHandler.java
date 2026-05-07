@@ -1,6 +1,6 @@
 package com.ojosama.notificationservice.application.handler;
 
-import com.ojosama.notificationservice.domain.exception.NotificationException;
+import com.ojosama.notificationservice.application.dto.result.NotificationResult;
 import com.ojosama.notificationservice.domain.model.notification.Notification;
 import com.ojosama.notificationservice.domain.model.notification.Target;
 import com.ojosama.notificationservice.domain.model.notification.TargetInfo;
@@ -37,7 +37,7 @@ public class OperationHandler {
                 Notification.of(adminId, "운영알림", message.reason() + "로 블랙리스트 추가되었습니다.",
                         TargetInfo.of(message.targetUserId(), Target.OPERATION, TargetType.BLACKLIST_REGISTERED)));
 
-        sseEmitterManager.sendToUser(adminId, notification);
+        sseEmitterManager.sendToUser(adminId, NotificationResult.of(notification));
     }
 
     // 블라인드 처리(각각의 카테고리 관리자에게 알림) -> 일단 ... 매니저가 한명인걸로 ,,
@@ -48,20 +48,15 @@ public class OperationHandler {
                 Notification.of(managerId, "운영알림", message.targetType() + " 에서 블라인드 처리되었습니다.",
                         TargetInfo.of(message.targetId(), Target.OPERATION, TargetType.BLIND_REGISTERED)));
 
-        sseEmitterManager.sendToUser(managerId, notification);
+        sseEmitterManager.sendToUser(managerId, NotificationResult.of(notification));
     }
 
     // 블랙리스트 사용자 이메일 전송
-    public void handelSendBlackListEmail(BlackListSendEmailMessage message) {
+    public void handleSendBlackListEmail(BlackListSendEmailMessage message) {
         String email = userClient.getUserEmail(message.userId());
-        try {
-            MailSendDto mailSendDto = MailSendDto.of(email, "festie 알림", message.reason());
-            mailService.sendEmail(mailSendDto);
-            log.info("이메일 전송 성공 : {}", message.userId());
-        } catch (NotificationException e) {
-            log.error("이메일 전송 실패 : {}", message.userId());
-            throw e;
-        }
+        MailSendDto mailSendDto = MailSendDto.of(email, "festie 알림", message.reason());
+        mailService.sendEmail(mailSendDto);
+        log.info("이메일 전송 성공 : {}", message.userId());
     }
 
     // 운영요청 알림 관리자,,
@@ -72,7 +67,7 @@ public class OperationHandler {
                 Notification.of(adminId, "운영알림", message.title() + " 요청이 들어왔습니다.",
                         TargetInfo.operation(message.requestId())));
 
-        sseEmitterManager.sendToUser(adminId, notification);
+        sseEmitterManager.sendToUser(adminId, NotificationResult.of(notification));
     }
 
 

@@ -1,5 +1,6 @@
 package com.ojosama.notificationservice.application.handler;
 
+import com.ojosama.notificationservice.application.dto.result.NotificationResult;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
 import com.ojosama.notificationservice.domain.model.emailLog.EmailLog;
 import com.ojosama.notificationservice.domain.model.notification.Notification;
@@ -45,7 +46,7 @@ public class ScheduleHandler {
 
         try {
             UserInfo userInfo = userClient.getUserInfo(message.userIds());
-            log.error("유저 feign 호출 실패");
+
             Map<UUID, String> emailMap = userInfo.userInfo();
             notifications.forEach(notification -> {
                 String email = emailMap.get(notification.getReceiverId());
@@ -60,7 +61,7 @@ public class ScheduleHandler {
         }
 
         notifications.forEach(n -> {
-            sseEmitterManager.sendToUser(n.getReceiverId(), n);
+            sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(notifications));
         });
     }
 
@@ -91,7 +92,7 @@ public class ScheduleHandler {
         }
 
         notifications.forEach(n -> {
-            sseEmitterManager.sendToUser(n.getReceiverId(), n);
+            sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(notifications));
         });
     }
 

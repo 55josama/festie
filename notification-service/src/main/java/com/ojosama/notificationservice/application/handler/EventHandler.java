@@ -1,5 +1,6 @@
 package com.ojosama.notificationservice.application.handler;
 
+import com.ojosama.notificationservice.application.dto.result.NotificationResult;
 import com.ojosama.notificationservice.domain.model.notification.Notification;
 import com.ojosama.notificationservice.domain.model.notification.Target;
 import com.ojosama.notificationservice.domain.model.notification.TargetInfo;
@@ -48,13 +49,13 @@ public class EventHandler {
         notificationRepository.saveAll(notifications);
 
         notifications.forEach(n ->
-                sseEmitterManager.sendToUser(n.getReceiverId(), n)
+                sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(n))
         );
     }
 
     public void handleEventCanceled(EventDeletedMessage message) {
         if (message.userIds() == null || message.userIds().isEmpty()) {
-            log.warn("행사 취소 알림 대상이 비어 있습니다: {}", message.eventId());
+            log.info("행사 취소 알림 대상이 비어 있습니다: {}", message.eventId());
             return;
         }
         List<Notification> notifications = message.userIds().stream()
@@ -65,7 +66,7 @@ public class EventHandler {
         notificationRepository.saveAll(notifications);
 
         notifications.forEach(n ->
-                sseEmitterManager.sendToUser(n.getReceiverId(), n)
+                sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(n))
         );
     }
 
@@ -76,7 +77,7 @@ public class EventHandler {
                 Notification.of(managerId, "행사 요청", "승인을 기다리는 요청이 있습니다.",
                         TargetInfo.of(message.targetId(), Target.EVENT, TargetType.EVENT_REQUEST)));
 
-        sseEmitterManager.sendToUser(managerId, notification);
+        sseEmitterManager.sendToUser(managerId, NotificationResult.of(notification));
     }
 
     public void handleEventRequestResult(EventRequestCreatedResultMessage message) {
@@ -86,7 +87,8 @@ public class EventHandler {
                 Notification.of(message.receiverId(), "행사 요청 결과", content,
                         TargetInfo.of(message.targetId(), Target.EVENT, TargetType.EVENT_REQUEST_RESULT)));
 
-        sseEmitterManager.sendToUser(message.receiverId(), notification);
+        sseEmitterManager.sendToUser(message.receiverId(),
+                NotificationResult.of(notification));
     }
 
 
