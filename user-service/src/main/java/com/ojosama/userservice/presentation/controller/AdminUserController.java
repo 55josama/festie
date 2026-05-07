@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -32,36 +33,36 @@ public class AdminUserController {
 
     // 회원 목록 조회
     @GetMapping
-    public ApiResponse<Page<AdminUserListResponseDto>> getUsers(
+    public ResponseEntity<ApiResponse<Page<AdminUserListResponseDto>>> getUsers(
             @ModelAttribute AdminUserListRequestDto request
     ) {
         Page<AdminUserListResponseDto> response = adminUserService.getUsers(request.toQuery())
                 .map(AdminUserListResponseDto::from);
 
-        return ApiResponse.success(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 회원 상세 조회
     @GetMapping("/{userId}")
-    public ApiResponse<AdminDetailUserResponseDto> getDetailUser(
+    public ResponseEntity<ApiResponse<AdminDetailUserResponseDto>> getDetailUser(
             @PathVariable UUID userId
     ) {
         AdminDetailUserQuery query = new AdminDetailUserQuery(userId);
         AdminUserDetailResult result = adminUserService.getDetailUser(query);
 
-        return ApiResponse.success(AdminDetailUserResponseDto.from(result));
+        return ResponseEntity.ok(ApiResponse.success(AdminDetailUserResponseDto.from(result)));
     }
 
     // 유저 권한 수정
     @PatchMapping("/{userId}/role")
-    public ApiResponse<AdminChangeUserRoleResponseDto> changeUserRole(
+    public ResponseEntity<ApiResponse<AdminChangeUserRoleResponseDto>> changeUserRole(
             @PathVariable UUID userId,
             @Valid @RequestBody AdminChangeUserRoleRequestDto request
     ) {
-        return ApiResponse.success(
-                AdminChangeUserRoleResponseDto.from(
-                        adminUserService.changeUserRole(request.toCommand(userId))
-                )
+        AdminChangeUserRoleResponseDto response = AdminChangeUserRoleResponseDto.from(
+                adminUserService.changeUserRole(request.toCommand(userId))
         );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
