@@ -27,6 +27,7 @@ public enum EventType {
 
     // operation
     REPORT_BLINDED("ReportBlinded"),
+    REPORT_UNBLINDED("ReportUnblinded"),
     BLACKLIST_REGISTERED("BlacklistRegistered"),
     BLACKLIST_UPDATED("BlacklistUpdated"),
     BLACKLIST_REVIEW_REQUESTED("BlacklistReviewRequested"),
