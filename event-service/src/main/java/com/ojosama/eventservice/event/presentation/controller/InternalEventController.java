@@ -1,6 +1,7 @@
 package com.ojosama.eventservice.event.presentation.controller;
 
 import com.ojosama.eventservice.event.application.service.EventQueryService;
+import com.ojosama.eventservice.event.presentation.dto.response.EventLocationResponse;
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
 import java.util.List;
 import java.util.UUID;
@@ -36,5 +37,13 @@ public class InternalEventController {
                 : eventQueryService.getAllEvents())
                 .stream().map(EventResponse::from).toList();
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/{eventId}/location")
+    public ResponseEntity<EventLocationResponse> getEventLocation(
+            @PathVariable UUID eventId) {
+
+        EventLocationResponse response = EventLocationResponse.from(eventQueryService.getEventById(eventId));
+        return ResponseEntity.ok(response);
     }
 }
