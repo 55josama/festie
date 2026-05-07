@@ -78,6 +78,7 @@ public class CommentController {
         return ApiResponse.success(page.map(CommentResponse::from));
     }
 
+    //애그리거트
     @PostMapping("/v1/comments/{commentId}/likes")
     public ApiResponse<Integer> like(
             @PathVariable UUID commentId,

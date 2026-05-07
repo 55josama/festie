@@ -20,7 +20,7 @@ public record CommentResponse(
         List<CommentResponse> replies
 ) {
     public static CommentResponse from(CommentResult r) {
-        boolean blocked = r.status() == CommentStatus.BLOCKED;
+        boolean blocked = r.status() == CommentStatus.BLINDED;
         List<CommentResponse> mappedReplies = r.replies() != null
                 ? r.replies().stream().map(CommentResponse::from).toList()
                 : List.of();

@@ -111,12 +111,12 @@ public class Post extends BaseUserEntity {
     /**
      * 게시글 차단. AI 부적절 판정 또는 관리자 차단 또는 작성자 블랙리스트 처리 시 호출.
      */
-    public void block() {
-        this.status = PostStatus.BLOCKED;
+    public void blind() {
+        this.status = PostStatus.BLINDED;
     }
 
-    public boolean isBlocked() {
-        return this.status == PostStatus.BLOCKED;
+    public boolean isBlinded() {
+        return this.status == PostStatus.BLINDED;
     }
 
     // ── 인가 헬퍼 ─────────────────────────────────────────────
