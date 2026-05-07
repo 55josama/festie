@@ -42,7 +42,7 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // 회원 상세 조회
+    // 회원 상세 조회 1
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<AdminDetailUserResponseDto>> getDetailUser(
             @PathVariable UUID userId
