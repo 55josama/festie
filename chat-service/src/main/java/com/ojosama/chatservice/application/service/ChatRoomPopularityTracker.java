@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -25,11 +26,23 @@ public class ChatRoomPopularityTracker {
     private static final String SESSION_SUBSCRIPTIONS_KEY_PREFIX = "chat:popular:sessions:%s:subs";
     // 이 세션이 방마다 몇 번 붙어있는지 적어두는 칸
     private static final String SESSION_ROOM_COUNTS_KEY_PREFIX = "chat:popular:sessions:%s:rooms";
+    // 같은 세션 이벤트가 한 번에 두 개 들어오면 꼬일 수 있어서 잠깐 잠금
+    private static final String SESSION_LOCK_KEY_PREFIX = "chat:popular:sessions:%s:lock";
+    // 세션 기록은 한동안 안 움직이면 자동으로 지움
+    private static final long SESSION_TTL_MINUTES = 30L;
+    // 잠금은 금방 풀리게 짧게만 잡음
+    private static final long SESSION_LOCK_TTL_SECONDS = 5L;
 
     private final StringRedisTemplate redisTemplate;
 
     // 이벤트 리스너에서 호출 됨 (파라미터 값 전달되어서 옴)
     public void markSubscribed(String sessionId, String subscriptionId, String destination) {
+        if (!withSessionLock(sessionId, () -> markSubscribedInternal(sessionId, subscriptionId, destination))) {
+            return;
+        }
+    }
+
+    private void markSubscribedInternal(String sessionId, String subscriptionId, String destination) {
         if (isBlank(sessionId) || isBlank(subscriptionId)) {
             return;
         }
@@ -61,9 +74,18 @@ public class ChatRoomPopularityTracker {
         if (sessionRoomCount == 1L) {
             incrementGlobal(roomId);
         }
+
+        // 이 세션 기록은 잠깐씩 살아 있어야 하니까 TTL을 계속 연장
+        touchSession(sessionSubscriptionsKey, sessionRoomCountsKey);
     }
 
     public void markUnsubscribed(String sessionId, String subscriptionId) {
+        if (!withSessionLock(sessionId, () -> markUnsubscribedInternal(sessionId, subscriptionId))) {
+            return;
+        }
+    }
+
+    private void markUnsubscribedInternal(String sessionId, String subscriptionId) {
         if (isBlank(sessionId) || isBlank(subscriptionId)) {
             return;
         }
@@ -92,9 +114,16 @@ public class ChatRoomPopularityTracker {
 
         // 세션에 남은 게 없으면 Redis 값도 지움
         cleanupSessionState(sessionSubscriptionsKey, sessionRoomCountsKey);
+        touchSession(sessionSubscriptionsKey, sessionRoomCountsKey);
     }
 
     public void clearSession(String sessionId) {
+        if (!withSessionLock(sessionId, () -> clearSessionInternal(sessionId))) {
+            return;
+        }
+    }
+
+    private void clearSessionInternal(String sessionId) {
         if (isBlank(sessionId)) {
             return;
         }
@@ -116,6 +145,7 @@ public class ChatRoomPopularityTracker {
 
         redisTemplate.delete(sessionSubscriptionsKey);
         redisTemplate.delete(sessionRoomCountsKey);
+        redisTemplate.delete(sessionLockKey(sessionId));
     }
 
     public int getViewerCount(UUID roomId) {
@@ -210,6 +240,45 @@ public class ChatRoomPopularityTracker {
 
     private String sessionRoomCountsKey(String sessionId) {
         return SESSION_ROOM_COUNTS_KEY_PREFIX.formatted(sessionId);
+    }
+
+    private String sessionLockKey(String sessionId) {
+        return SESSION_LOCK_KEY_PREFIX.formatted(sessionId);
+    }
+
+    private void touchSession(String sessionSubscriptionsKey, String sessionRoomCountsKey) {
+        // 세션이 계속 움직이면 TTL도 계속 연장
+        redisTemplate.expire(sessionSubscriptionsKey, SESSION_TTL_MINUTES, TimeUnit.MINUTES);
+        redisTemplate.expire(sessionRoomCountsKey, SESSION_TTL_MINUTES, TimeUnit.MINUTES);
+    }
+
+    private boolean withSessionLock(String sessionId, Runnable action) {
+        if (isBlank(sessionId)) {
+            return false;
+        }
+
+        String lockKey = sessionLockKey(sessionId);
+        String token = UUID.randomUUID().toString();
+        Boolean locked = redisTemplate.opsForValue()
+                .setIfAbsent(lockKey, token, SESSION_LOCK_TTL_SECONDS, TimeUnit.SECONDS);
+
+        if (!Boolean.TRUE.equals(locked)) {
+            return false;
+        }
+
+        try {
+            action.run();
+            return true;
+        } finally {
+            releaseSessionLock(lockKey, token);
+        }
+    }
+
+    private void releaseSessionLock(String lockKey, String token) {
+        String currentToken = redisTemplate.opsForValue().get(lockKey);
+        if (token.equals(currentToken)) {
+            redisTemplate.delete(lockKey);
+        }
     }
 
     private boolean isBlank(String value) {
