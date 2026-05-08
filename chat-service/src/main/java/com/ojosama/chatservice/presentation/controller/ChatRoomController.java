@@ -3,9 +3,13 @@ package com.ojosama.chatservice.presentation.controller;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomByEventIdQuery;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomQuery;
 import com.ojosama.chatservice.application.dto.result.ChatRoomResult;
+import com.ojosama.chatservice.application.dto.result.PopularChatRoomResult;
 import com.ojosama.chatservice.application.service.ChatRoomService;
+import com.ojosama.chatservice.application.service.PopularChatRoomService;
 import com.ojosama.chatservice.presentation.dto.response.ChatRoomResponse;
+import com.ojosama.chatservice.presentation.dto.response.PopularChatRoomResponse;
 import com.ojosama.common.response.ApiResponse;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
+    private final PopularChatRoomService popularChatRoomService;
 
     @GetMapping("/{chatRoomId}")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoom(
@@ -36,5 +41,17 @@ public class ChatRoomController {
     ) {
         ChatRoomResult result = chatRoomService.getChatRoomByEventId(new FindChatRoomByEventIdQuery(eventId));
         return ResponseEntity.ok(ApiResponse.success(ChatRoomResponse.from(result)));
+    }
+
+    @GetMapping("/popular")
+    public ResponseEntity<ApiResponse<List<PopularChatRoomResponse>>> getPopularChatRooms(
+            @RequestParam(defaultValue = "3") int limit
+    ) {
+        List<PopularChatRoomResult> results = popularChatRoomService.getPopularChatRooms(limit);
+        return ResponseEntity.ok(ApiResponse.success(
+                results.stream()
+                        .map(PopularChatRoomResponse::from)
+                        .toList()
+        ));
     }
 }
