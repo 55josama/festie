@@ -5,6 +5,7 @@ import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import com.ojosama.eventservice.event.domain.event.payload.EventCreatedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventDeletedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventScheduleChangedMessage;
+import com.ojosama.eventservice.event.domain.event.payload.EventStatusChangedMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,9 @@ public class KafkaEventMessagePublisher {
     @Value("${spring.kafka.topic.event-changed:event.schedule.changed.v1}")
     private String eventChangedTopic;
 
+    @Value("${spring.kafka.topic.event-status-changed:event.status.changed.v1}")
+    private String eventStatusChangedTopic;
+
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void publishEventCreated(EventCreatedMessage message) {
         outboxEventPublisher.publish("Event", message.eventId(), EventType.EVENT_CREATED, eventCreatedTopic, message);
@@ -40,5 +44,10 @@ public class KafkaEventMessagePublisher {
     public void publishScheduleChanged(EventScheduleChangedMessage message) {
         outboxEventPublisher.publish("Event", message.eventId(), EventType.EVENT_SCHEDULE_CHANGED, eventChangedTopic,
                 message);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    public void publishStatusChanged(EventStatusChangedMessage message) {
+        outboxEventPublisher.publish("Event", message.eventId(), EventType.EVENT_STATUS_CHANGED, eventStatusChangedTopic, message);
     }
 }
