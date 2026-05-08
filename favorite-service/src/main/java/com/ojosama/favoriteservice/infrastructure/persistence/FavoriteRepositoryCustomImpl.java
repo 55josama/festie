@@ -1,5 +1,6 @@
 package com.ojosama.favoriteservice.infrastructure.persistence;
 
+import com.ojosama.favoriteservice.domain.model.EventStatus;
 import com.ojosama.favoriteservice.domain.model.QFavorite;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -15,6 +16,8 @@ public class FavoriteRepositoryCustomImpl implements FavoriteRepositoryCustom {
     private final JPAQueryFactory jpaQueryFactory;
     private final EntityManager entityManager;
     private final QFavorite qFavorite = QFavorite.favorite;
+
+    private final static String SYSTEM_ID = "00000000-0000-0000-0000-000000000000";
 
     @Override
     public void updateEventInfoBulk(UUID eventId, String field, String after) {
@@ -33,10 +36,24 @@ public class FavoriteRepositoryCustomImpl implements FavoriteRepositoryCustom {
 
         if (isChanged) {
             update.set(qFavorite.updatedAt, LocalDateTime.now())
-                    .set(qFavorite.updatedBy, UUID.fromString("00000000-0000-0000-0000-000000000000"))
+                    .set(qFavorite.updatedBy, UUID.fromString(SYSTEM_ID))
                     .where(qFavorite.eventInfo.eventId.eq(eventId))
                     .execute();
         }
+
+        entityManager.flush();
+        entityManager.clear();
+    }
+
+    @Override
+    public void updateEventInfoEventStatusBulk(UUID eventId, EventStatus eventStatus) {
+        var update = jpaQueryFactory.update(qFavorite);
+
+        update.set(qFavorite.eventInfo.eventStatus, eventStatus)
+                .set(qFavorite.updatedAt, LocalDateTime.now())
+                .set(qFavorite.updatedBy, UUID.fromString(SYSTEM_ID))
+                .where(qFavorite.eventInfo.eventId.eq(eventId))
+                .execute();
 
         entityManager.flush();
         entityManager.clear();

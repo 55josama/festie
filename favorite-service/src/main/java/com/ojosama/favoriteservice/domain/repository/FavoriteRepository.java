@@ -1,5 +1,6 @@
 package com.ojosama.favoriteservice.domain.repository;
 
+import com.ojosama.favoriteservice.domain.model.EventStatus;
 import com.ojosama.favoriteservice.domain.model.Favorite;
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +21,6 @@ public interface FavoriteRepository {
     List<Favorite> findByEventInfo_EventIdAndDeletedAtIsNull(UUID eventId);
 
     void updateEventInfoBulk(UUID eventId, String field, String after);
+
+    void updateEventInfoEventStatusBulk(UUID eventId, EventStatus eventStatus);
 }
