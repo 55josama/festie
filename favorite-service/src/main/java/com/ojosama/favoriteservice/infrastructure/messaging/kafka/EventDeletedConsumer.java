@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
+import com.ojosama.favoriteservice.application.dto.command.DeleteFavoriteEventCommand;
 import com.ojosama.favoriteservice.application.service.FavoriteService;
 import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
 import com.ojosama.favoriteservice.domain.exception.FavoriteException;
@@ -45,7 +46,7 @@ public class EventDeletedConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> favoriteService.deleteAllByEventId(event.eventId())
+                    () -> dispatch(event)
             );
             log.info("Event deleted: {}", record.key());
         } catch (RuntimeException e) {
@@ -60,5 +61,10 @@ public class EventDeletedConsumer {
         } catch (JsonProcessingException e) {
             throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
+    }
+
+    public void dispatch(EventDeletedMessage message) {
+        DeleteFavoriteEventCommand command = new DeleteFavoriteEventCommand(message.eventId());
+        favoriteService.deleteAllByEventId(command);
     }
 }
