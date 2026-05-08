@@ -34,7 +34,12 @@ public enum ChatErrorCode implements ErrorCode {
     INVALID_ADMIN_ID(HttpStatus.BAD_REQUEST, "adminId는 필수입니다."),
     MESSAGE_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 메시지만 삭제할 수 있습니다."),
     MESSAGE_BLIND_FORBIDDEN(HttpStatus.FORBIDDEN, "메시지 블라인드 권한이 없습니다."),
-    CHAT_ROOM_CLOSE_FORBIDDEN(HttpStatus.FORBIDDEN, "채팅방 종료 권한이 없습니다.");
+    CHAT_ROOM_CLOSE_FORBIDDEN(HttpStatus.FORBIDDEN, "채팅방 종료 권한이 없습니다."),
+
+    // Location
+    EVENT_LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "행사 위치 정보를 찾을 수 없습니다."),
+    EVENT_LOCATION_LOOKUP_FAILED(HttpStatus.BAD_GATEWAY, "행사 위치 정보를 가져오는 데 실패했습니다."),
+    INVALID_LOCATION_REQUEST(HttpStatus.BAD_REQUEST, "현재 위치 정보는 필수입니다.");
 
     private final HttpStatus status;
     private final String message;
