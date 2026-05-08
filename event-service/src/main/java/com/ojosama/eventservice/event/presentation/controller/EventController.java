@@ -114,6 +114,18 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{eventId}/cancel")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
+    public ResponseEntity<ApiResponse<EventResponse>> cancelEvent(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @PathVariable UUID eventId) {
+
+//        if (userId == null || userRole == null) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
+        EventResult result = eventCommandService.cancelEvent(eventId, userId);
+        return ResponseEntity.ok(ApiResponse.success(EventResponse.from(result)));
+    }
+
     private void validateAuthHeaders(UUID userId, String userRole) {
 //        if (userId == null || !StringUtils.hasText(userRole)) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
     }

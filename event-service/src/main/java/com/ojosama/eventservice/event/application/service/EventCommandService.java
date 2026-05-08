@@ -6,23 +6,26 @@ import com.ojosama.eventservice.event.application.dto.result.EventResult;
 import com.ojosama.eventservice.event.domain.event.payload.EventCreatedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventDeletedMessage;
 import com.ojosama.eventservice.event.domain.event.payload.EventScheduleChangedMessage;
+import com.ojosama.eventservice.event.domain.event.payload.EventStatusChangedMessage;
 import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.Event;
+import com.ojosama.eventservice.event.domain.model.EventAction;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
+import com.ojosama.eventservice.event.domain.model.EventSchedule;
+import com.ojosama.eventservice.event.domain.model.EventScheduleAction;
+import com.ojosama.eventservice.event.domain.model.ScheduleActionStatus;
 import com.ojosama.eventservice.event.domain.model.vo.EventFee;
 import com.ojosama.eventservice.event.domain.model.vo.EventLocation;
 import com.ojosama.eventservice.event.domain.model.vo.EventTicketing;
 import com.ojosama.eventservice.event.domain.model.vo.EventTime;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
+import com.ojosama.eventservice.event.domain.repository.EventScheduleActionRepository;
 import com.ojosama.eventservice.event.domain.support.EventChanges;
 import com.ojosama.eventservice.event.domain.support.EventSnapshot;
-import com.ojosama.eventservice.event.domain.model.EventScheduleAction;
-import com.ojosama.eventservice.event.domain.model.EventAction;
-import com.ojosama.eventservice.event.domain.model.ScheduleActionStatus;
-import com.ojosama.eventservice.event.domain.repository.EventScheduleActionRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -150,30 +153,58 @@ public class EventCommandService {
         applicationEventPublisher.publishEvent(new EventDeletedMessage(event.getId(), event.getName()));
     }
 
+    public EventResult cancelEvent(UUID eventId, UUID userId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
+
+        String beforeStatus = event.getStatus().name();
+        event.markCancelled();
+
+        scheduleActionRepository.findPendingByEventId(eventId).forEach(EventScheduleAction::markCancelled);
+
+        List<UUID> deletedScheduleIds = event.getSchedules().stream()
+                .filter(schedule -> !schedule.getScheduleTime().isScheduleEnded())
+                .peek(schedule -> schedule.deleted(userId))
+                .map(EventSchedule::getId)
+                .toList();
+
+        eventRepository.save(event);
+
+        applicationEventPublisher.publishEvent(new EventStatusChangedMessage(
+                event.getId(),
+                event.getName(),
+                beforeStatus,
+                event.getStatus().name(),
+                deletedScheduleIds
+        ));
+
+        return EventResult.from(event);
+    }
+
     private void registerScheduleActions(Event event) {
         LocalDateTime now = LocalDateTime.now();
 
         if (event.getEventTime().getStartAt() != null &&
-            event.getEventTime().getStartAt().isAfter(now)) {
+                event.getEventTime().getStartAt().isAfter(now)) {
             EventScheduleAction startAction = EventScheduleAction.builder()
-                .eventId(event.getId())
-                .action(EventAction.MARK_IN_PROGRESS)
-                .scheduledAt(event.getEventTime().getStartAt())
-                .status(ScheduleActionStatus.PENDING)
-                .createdAt(LocalDateTime.now())
-                .build();
+                    .eventId(event.getId())
+                    .action(EventAction.MARK_IN_PROGRESS)
+                    .scheduledAt(event.getEventTime().getStartAt())
+                    .status(ScheduleActionStatus.PENDING)
+                    .createdAt(LocalDateTime.now())
+                    .build();
             scheduleActionRepository.save(startAction);
         }
 
         if (event.getEventTime().getEndAt() != null &&
-            event.getEventTime().getEndAt().isAfter(now)) {
+                event.getEventTime().getEndAt().isAfter(now)) {
             EventScheduleAction endAction = EventScheduleAction.builder()
-                .eventId(event.getId())
-                .action(EventAction.MARK_COMPLETED)
-                .scheduledAt(event.getEventTime().getEndAt())
-                .status(ScheduleActionStatus.PENDING)
-                .createdAt(LocalDateTime.now())
-                .build();
+                    .eventId(event.getId())
+                    .action(EventAction.MARK_COMPLETED)
+                    .scheduledAt(event.getEventTime().getEndAt())
+                    .status(ScheduleActionStatus.PENDING)
+                    .createdAt(LocalDateTime.now())
+                    .build();
             scheduleActionRepository.save(endAction);
         }
     }

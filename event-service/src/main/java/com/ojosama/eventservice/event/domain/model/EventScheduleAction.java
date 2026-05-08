@@ -77,4 +77,8 @@ public class EventScheduleAction {
                 : errorMessage;
     }
 
+    public void markCancelled() {
+        this.status = ScheduleActionStatus.CANCELLED;
+    }
+
 }

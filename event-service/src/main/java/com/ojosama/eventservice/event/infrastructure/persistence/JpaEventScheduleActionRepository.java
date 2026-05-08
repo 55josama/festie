@@ -18,4 +18,6 @@ public interface JpaEventScheduleActionRepository extends JpaRepository<EventSch
             @Param("status") ScheduleActionStatus status,
             @Param("now") LocalDateTime now,
             Pageable pageable);
+
+    List<EventScheduleAction> findByEventIdAndStatus(UUID eventId, ScheduleActionStatus status);
 }

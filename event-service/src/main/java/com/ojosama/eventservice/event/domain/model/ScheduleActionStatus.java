@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum ScheduleActionStatus {
     PENDING("대기"),
     EXECUTED("실행됨"),
-    FAILED("실패");
+    FAILED("실패"),
+    CANCELLED("취소됨");
 
     private final String description;
 }

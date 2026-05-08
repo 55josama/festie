@@ -57,7 +57,8 @@ public class EventScheduleActionExecutor {
                     event.getId(),
                     event.getName(),
                     beforeStatus,
-                    event.getStatus().name()
+                    event.getStatus().name(),
+                    java.util.Collections.emptyList()
                 ));
                 break;
 
@@ -68,7 +69,8 @@ public class EventScheduleActionExecutor {
                     event.getId(),
                     event.getName(),
                     beforeStatus,
-                    event.getStatus().name()
+                    event.getStatus().name(),
+                    java.util.Collections.emptyList()
                 ));
                 break;
         }
