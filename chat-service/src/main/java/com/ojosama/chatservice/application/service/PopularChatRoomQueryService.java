@@ -5,10 +5,10 @@ import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.chatservice.domain.model.ChatRoom;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.common.exception.CommonErrorCode;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class PopularChatRoomService {
+public class PopularChatRoomQueryService {
 
     private static final int DEFAULT_LIMIT = 3;
     private static final int MAX_LIMIT = 10;
@@ -31,22 +31,22 @@ public class PopularChatRoomService {
             return List.of();
         }
 
-        List<ChatRoom> chatRooms = chatRoomRepository.findAllByIds(viewerCounts.keySet());
+        // ChatRoomId 로 ChatRoom 맵으로 변환 <채팅방id,채팅방정보> 형태
+        Map<UUID, ChatRoom> chatRoomsById = chatRoomRepository.findAllByIds(viewerCounts.keySet()).stream()
+                .collect(Collectors.toMap(ChatRoom::getId, chatRoom -> chatRoom));
 
-        return chatRooms.stream()
-                .filter(ChatRoom::isOpen) // 열린 채팅방만
-                .map(chatRoom -> PopularChatRoomResult.from(
-                        chatRoom,
-                        viewerCounts.getOrDefault(chatRoom.getId(), 0)
-                ))
-                .filter(result -> result.currentViewerCount() > 0)
-                .sorted(Comparator
-                        .comparingInt(PopularChatRoomResult::currentViewerCount).reversed()
-                        .thenComparing(result -> result.chatRoom().openedAt(),
-                                Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(result -> result.chatRoom().chatRoomId()))
+        return viewerCounts.entrySet().stream()
+                .map(entry -> buildPopularRoom(chatRoomsById.get(entry.getKey()), entry.getValue()))
+                .filter(result -> result != null && result.currentViewerCount() > 0)
                 .limit(resolvedLimit)
                 .toList();
+    }
+
+    private PopularChatRoomResult buildPopularRoom(ChatRoom chatRoom, Integer viewerCount) {
+        if (chatRoom == null || !chatRoom.isOpen() || viewerCount == null || viewerCount <= 0) {
+            return null;
+        }
+        return PopularChatRoomResult.from(chatRoom, viewerCount);
     }
 
     private int resolveLimit(Integer limit) {

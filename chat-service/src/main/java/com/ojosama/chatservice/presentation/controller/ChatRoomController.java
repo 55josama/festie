@@ -5,7 +5,7 @@ import com.ojosama.chatservice.application.dto.query.FindChatRoomQuery;
 import com.ojosama.chatservice.application.dto.result.ChatRoomResult;
 import com.ojosama.chatservice.application.dto.result.PopularChatRoomResult;
 import com.ojosama.chatservice.application.service.ChatRoomService;
-import com.ojosama.chatservice.application.service.PopularChatRoomService;
+import com.ojosama.chatservice.application.service.PopularChatRoomQueryService;
 import com.ojosama.chatservice.presentation.dto.response.ChatRoomResponse;
 import com.ojosama.chatservice.presentation.dto.response.PopularChatRoomResponse;
 import com.ojosama.common.response.ApiResponse;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
-    private final PopularChatRoomService popularChatRoomService;
+    private final PopularChatRoomQueryService popularChatRoomQueryService;
 
     @GetMapping("/{chatRoomId}")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoom(
@@ -47,7 +47,7 @@ public class ChatRoomController {
     public ResponseEntity<ApiResponse<List<PopularChatRoomResponse>>> getPopularChatRooms(
             @RequestParam(defaultValue = "3") int limit
     ) {
-        List<PopularChatRoomResult> results = popularChatRoomService.getPopularChatRooms(limit);
+        List<PopularChatRoomResult> results = popularChatRoomQueryService.getPopularChatRooms(limit);
         return ResponseEntity.ok(ApiResponse.success(
                 results.stream()
                         .map(PopularChatRoomResponse::from)
