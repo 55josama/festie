@@ -18,6 +18,7 @@ public class EventLocation {
     private static final BigDecimal LATITUDE_MAX = new BigDecimal("90");
     private static final BigDecimal LONGITUDE_MIN = new BigDecimal("-180");
     private static final BigDecimal LONGITUDE_MAX = new BigDecimal("180");
+    private static final int RADIUS_MIN = 0;
 
     @Column(length = 500, nullable = false)
     private String place;
@@ -28,14 +29,19 @@ public class EventLocation {
     @Column(precision = 10, scale = 6, nullable = false)
     private BigDecimal longitude;
 
-    public EventLocation(String place, BigDecimal latitude, BigDecimal longitude) {
+    @Column
+    private Integer radius;
+
+    public EventLocation(String place, BigDecimal latitude, BigDecimal longitude, Integer radius) {
         validatePlace(place);
         validateLatitude(latitude);
         validateLongitude(longitude);
+        validateRadius(radius);
 
         this.place = place.trim();
         this.latitude = latitude;
         this.longitude = longitude;
+        this.radius = radius;
     }
 
     private void validatePlace(String place) {
@@ -62,6 +68,12 @@ public class EventLocation {
         }
         if (longitude.compareTo(LONGITUDE_MIN) < 0 || longitude.compareTo(LONGITUDE_MAX) > 0) {
             throw new EventException(EventErrorCode.INVALID_LONGITUDE);
+        }
+    }
+
+    private void validateRadius(Integer radius) {
+        if (radius != null && radius < RADIUS_MIN) {
+            throw new EventException(EventErrorCode.EVENT_INVALID_LOCATION);
         }
     }
 }

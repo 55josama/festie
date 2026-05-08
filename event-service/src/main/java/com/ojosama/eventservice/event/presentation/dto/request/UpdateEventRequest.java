@@ -23,6 +23,7 @@ public record UpdateEventRequest(
         BigDecimal latitude,
         @NotNull(message = "경도는 필수입니다.")
         BigDecimal longitude,
+        Integer radius,
         @NotNull(message = "최소 금액은 필수입니다.")
         Integer minFee,
         @NotNull(message = "최대 금액은 필수입니다.")
