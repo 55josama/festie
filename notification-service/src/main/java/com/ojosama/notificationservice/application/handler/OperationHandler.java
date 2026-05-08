@@ -40,7 +40,10 @@ public class OperationHandler {
     // 블라인드 처리(각각의 카테고리 관리자에게 알림) -> 일단 ... 매니저가 한명인걸로 ,,
     public void handleBlindRegister(TargetBlindEventMessage message) {
         log.info("매니저 정보 : {}", message.category());
-        UUID managerId = userClient.getManagerInfo(message.category());
+
+        String category = message.category() != null ? message.category() : "COMMUNITY";
+
+        UUID managerId = userClient.getManagerInfo(category);
         notificationRepository.save(Notification.of(managerId, "운영알림", message.targetType() + " 에서 블라인드 처리되었습니다.",
                 TargetInfo.of(message.targetId(), Target.OPERATION, TargetType.BLIND_REGISTERED)));
     }
