@@ -1,11 +1,10 @@
 package com.ojosama.notificationservice.application.handler;
 
-import com.ojosama.notificationservice.domain.exception.NotificationException;
+import com.ojosama.notificationservice.application.dto.result.NotificationResult;
 import com.ojosama.notificationservice.domain.model.notification.Notification;
 import com.ojosama.notificationservice.domain.model.notification.Target;
 import com.ojosama.notificationservice.domain.model.notification.TargetInfo;
 import com.ojosama.notificationservice.domain.model.notification.TargetType;
-import com.ojosama.notificationservice.domain.repository.EmailLogRepository;
 import com.ojosama.notificationservice.domain.repository.NotificationRepository;
 import com.ojosama.notificationservice.infrastructure.client.UserClient;
 import com.ojosama.notificationservice.infrastructure.mail.MailService;
@@ -14,6 +13,7 @@ import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.BlackL
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.BlackListSendEmailMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.OperationRequestMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TargetBlindEventMessage;
+import com.ojosama.notificationservice.infrastructure.sse.SseEmitterManager;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,47 +26,52 @@ public class OperationHandler {
 
     private final NotificationRepository notificationRepository;
     private final UserClient userClient;
-    private final EmailLogRepository emailLogRepository;
-
     private final MailService mailService;
+
+    private final SseEmitterManager sseEmitterManager;
 
     //  블랙리스트 관리자 검토(관리자 알림)
     public void handleBlackListRequest(BlackListRegisterEventMessage message) {
         UUID adminId = userClient.getAdminInfo();
-        notificationRepository.save(Notification.of(adminId, "운영알림", message.reason() + "로 블랙리스트 추가되었습니다.",
-                TargetInfo.of(message.targetUserId(), Target.OPERATION, TargetType.BLACKLIST_REGISTERED)));
+        Notification notification = notificationRepository.save(
+                Notification.of(adminId, "운영알림", message.reason() + "로 블랙리스트 추가되었습니다.",
+                        TargetInfo.of(message.targetUserId(), Target.OPERATION, TargetType.BLACKLIST_REGISTERED)));
+
+        sseEmitterManager.sendToUser(adminId, NotificationResult.of(notification));
     }
 
     // 블라인드 처리(각각의 카테고리 관리자에게 알림) -> 일단 ... 매니저가 한명인걸로 ,,
     public void handleBlindRegister(TargetBlindEventMessage message) {
         log.info("매니저 정보 : {}", message.category());
-
+      
         String category = message.category() != null ? message.category() : "COMMUNITY";
 
-        UUID managerId = userClient.getManagerInfo(category);
-        notificationRepository.save(Notification.of(managerId, "운영알림", message.targetType() + " 에서 블라인드 처리되었습니다.",
-                TargetInfo.of(message.targetId(), Target.OPERATION, TargetType.BLIND_REGISTERED)));
+        UUID managerId = userClient.getManagerInfo(message.category());
+        Notification notification = notificationRepository.save(
+                Notification.of(managerId, "운영알림", message.targetType() + " 에서 블라인드 처리되었습니다.",
+                        TargetInfo.of(message.targetId(), Target.OPERATION, TargetType.BLIND_REGISTERED)));
+
+        sseEmitterManager.sendToUser(managerId, NotificationResult.of(notification));
+
     }
 
     // 블랙리스트 사용자 이메일 전송
-    public void handelSendBlackListEmail(BlackListSendEmailMessage message) {
+    public void handleSendBlackListEmail(BlackListSendEmailMessage message) {
         String email = userClient.getUserEmail(message.userId());
-        try {
-            MailSendDto mailSendDto = MailSendDto.of(email, "festie 알림", message.reason());
-            mailService.sendEmail(mailSendDto);
-            log.info("이메일 전송 성공 : {}", message.userId());
-        } catch (NotificationException e) {
-            log.error("이메일 전송 실패 : {}", message.userId());
-            throw e;
-        }
+        MailSendDto mailSendDto = MailSendDto.of(email, "festie 알림", message.reason());
+        mailService.sendEmail(mailSendDto);
+        log.info("이메일 전송 성공 : {}", message.userId());
     }
 
     // 운영요청 알림 관리자,,
     public void handleOperationRequest(OperationRequestMessage message) {
         log.info("요청자 정보 : {}", message.requesterId());
         UUID adminId = userClient.getAdminInfo();
-        notificationRepository.save(Notification.of(adminId, "운영알림", message.title() + " 요청이 들어왔습니다.",
-                TargetInfo.operation(message.requestId())));
+        Notification notification = notificationRepository.save(
+                Notification.of(adminId, "운영알림", message.title() + " 요청이 들어왔습니다.",
+                        TargetInfo.operation(message.requestId())));
+
+        sseEmitterManager.sendToUser(adminId, NotificationResult.of(notification));
     }
 
 
