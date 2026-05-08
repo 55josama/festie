@@ -3,6 +3,7 @@ package com.ojosama.chatservice.domain.repository;
 import com.ojosama.chatservice.domain.model.ChatRoom;
 import com.ojosama.chatservice.domain.model.ChatRoomStatus;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,8 @@ public interface ChatRoomRepository {
     Optional<ChatRoom> findById(UUID id);
 
     Optional<ChatRoom> findByEventId(UUID eventId);
+
+    List<ChatRoom> findAllByIds(Collection<UUID> ids);
 
     List<ChatRoom> findAllByStatus(ChatRoomStatus status);
 
