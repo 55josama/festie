@@ -31,7 +31,15 @@ public class EventRepositoryImpl implements EventRepository {
 
     @Override
     public Optional<Event> findById(UUID id) {
-        return jpaEventRepository.findByIdAndDeletedAtIsNull(id);
+        QEvent event = QEvent.event;
+        Event result = queryFactory
+            .selectFrom(event)
+            .leftJoin(event.category).fetchJoin()
+            .leftJoin(event.schedules).fetchJoin()
+            .where(event.id.eq(id).and(event.deletedAt.isNull()))
+            .distinct()
+            .fetchOne();
+        return Optional.ofNullable(result);
     }
 
     @Override
@@ -60,12 +68,28 @@ public class EventRepositoryImpl implements EventRepository {
 
     @Override
     public List<Event> findAllActive() {
-        return jpaEventRepository.findAllByDeletedAtIsNull();
+        QEvent event = QEvent.event;
+        return queryFactory
+            .selectFrom(event)
+            .leftJoin(event.category).fetchJoin()
+            .leftJoin(event.schedules).fetchJoin()
+            .where(event.deletedAt.isNull())
+            .orderBy(event.eventTime.startAt.asc())
+            .distinct()
+            .fetch();
     }
 
     @Override
     public List<Event> findAllByIds(List<UUID> ids) {
-        return jpaEventRepository.findAllByIdInAndDeletedAtIsNull(ids);
+        QEvent event = QEvent.event;
+        return queryFactory
+            .selectFrom(event)
+            .leftJoin(event.category).fetchJoin()
+            .leftJoin(event.schedules).fetchJoin()
+            .where(event.id.in(ids).and(event.deletedAt.isNull()))
+            .orderBy(event.eventTime.startAt.asc())
+            .distinct()
+            .fetch();
     }
 
     @Override

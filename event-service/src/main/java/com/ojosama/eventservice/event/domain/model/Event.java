@@ -22,6 +22,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
+import org.hibernate.annotations.BatchSize;
 import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -73,6 +74,7 @@ public class Event extends BaseUserEntity {
     @Column(name = "img", length = 500, nullable = false)
     private String img;
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventSchedule> schedules = new ArrayList<>();
 
