@@ -4,6 +4,7 @@ import com.ojosama.chatservice.domain.model.ChatRoom;
 import com.ojosama.chatservice.domain.model.ChatRoomStatus;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,11 @@ public class ChatRoomRepositoryImpl implements ChatRoomRepository {
     @Override
     public Optional<ChatRoom> findByEventId(UUID eventId) {
         return ChatRoomJpaRepository.findByEventId(eventId);
+    }
+
+    @Override
+    public List<ChatRoom> findAllByIds(Collection<UUID> ids) {
+        return ChatRoomJpaRepository.findAllById(ids);
     }
 
     @Override
