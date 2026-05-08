@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 public enum PostErrorCode implements ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."),
     POST_ACCESS_DENIED(HttpStatus.FORBIDDEN, "게시글에 대한 권한이 없습니다."),
-    POST_BLOCKED(HttpStatus.FORBIDDEN, "차단된 게시글입니다."),
+    POST_BLINDED(HttpStatus.FORBIDDEN, "차단된 게시글입니다."),
 
     INVALID_POST_TITLE(HttpStatus.BAD_REQUEST, "게시글 제목이 올바르지 않습니다."),
     INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "카테고리 이름이 올바르지 않습니다."),

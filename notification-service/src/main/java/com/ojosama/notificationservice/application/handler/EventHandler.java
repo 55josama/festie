@@ -6,9 +6,7 @@ import com.ojosama.notificationservice.domain.model.notification.Target;
 import com.ojosama.notificationservice.domain.model.notification.TargetInfo;
 import com.ojosama.notificationservice.domain.model.notification.TargetType;
 import com.ojosama.notificationservice.domain.repository.NotificationRepository;
-import com.ojosama.notificationservice.infrastructure.client.CalendarClient;
 import com.ojosama.notificationservice.infrastructure.client.UserClient;
-import com.ojosama.notificationservice.infrastructure.client.dto.CalendarUserInfo;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventDeletedMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventRequestCreatedMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventRequestCreatedResultMessage;
@@ -27,20 +25,16 @@ import org.springframework.stereotype.Component;
 public class EventHandler {
 
     private final NotificationRepository notificationRepository;
-    private final CalendarClient calendarClient;
     private final UserClient userClient;
 
     private final SseEmitterManager sseEmitterManager;
 
     public void handleEventChanged(EventUpdatedMessage message) {
-        // 캘린더서비스를 동기 호출해서 알림
-        CalendarUserInfo userInfo = calendarClient.getCalendarUserInfo(message.eventId());
-
         String content = message.changedFields().stream()
                 .map(f -> f.fieldName() + f.before() + " -> " + f.after() + " 로 변경되었습니다.")
                 .collect(Collectors.joining("\n"));
 
-        List<Notification> notifications = userInfo.userIds().stream()
+        List<Notification> notifications = message.userIds().stream()
                 .map(receiverId -> Notification.of(receiverId, message.eventName(), content,
                         TargetInfo.of(message.eventId(), Target.EVENT,
                                 TargetType.EVENT_CHANGED)))

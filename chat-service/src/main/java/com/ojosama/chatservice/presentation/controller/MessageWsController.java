@@ -9,6 +9,8 @@ import com.ojosama.chatservice.presentation.dto.response.MessageWsResponse;
 import com.ojosama.chatservice.presentation.dto.response.WebSocketErrorResponse;
 import com.ojosama.common.exception.CommonErrorCode;
 import jakarta.validation.Valid;
+import java.security.Principal;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -30,11 +32,15 @@ public class MessageWsController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/chat.send")
-    public void sendMessage(@Valid SendMessageWsRequest request) {
+    public void sendMessage(@Valid SendMessageWsRequest request, Principal principal) {
+        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        UUID userId = UUID.fromString(principal.getName());
         MessageResult result = messageService.createMessage(
                 new CreateMessageCommand(
                         request.chatRoomId(),
-                        request.userId(),
+                        userId,
                         request.content()
                 )
         );

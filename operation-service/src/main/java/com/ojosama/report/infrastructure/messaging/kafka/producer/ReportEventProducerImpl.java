@@ -2,9 +2,8 @@ package com.ojosama.report.infrastructure.messaging.kafka.producer;
 
 import com.ojosama.common.exception.CommonErrorCode;
 import com.ojosama.report.domain.event.ReportEventProducer;
-import com.ojosama.blacklist.domain.event.payload.BlacklistRegisterEvent;
-import com.ojosama.report.domain.event.payload.BlacklistReviewRequestEvent;
-import com.ojosama.report.domain.event.payload.TargetBlindEvent;
+import com.ojosama.report.domain.event.payload.BlacklistReviewRequestedEvent;
+import com.ojosama.report.domain.event.payload.TargetBlindedEvent;
 import com.ojosama.report.domain.exception.ReportException;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,7 @@ public class ReportEventProducerImpl implements ReportEventProducer {
     private String blacklistReviewRequestedTopic;
 
     @Override
-    public void publishTargetBlindEvent(TargetBlindEvent event) {
+    public void publishTargetBlindEvent(TargetBlindedEvent event) {
         try {
             kafkaTemplate.send(targetBlindedTopic, event.targetId().toString(), event).get(3, TimeUnit.SECONDS);
             log.info("블라인드 처리 이벤트 발행 성공: targetId={}", event.targetId());
@@ -38,7 +37,7 @@ public class ReportEventProducerImpl implements ReportEventProducer {
 
     // 특정 유저의 게시글이 5번 블라인드 처리되는 순간, 시스템이 자동으로 블랙리스트 등록 검토 알림
     @Override
-    public void publishBlacklistReviewRequestEvent(BlacklistReviewRequestEvent event) {
+    public void publishBlacklistReviewRequestEvent(BlacklistReviewRequestedEvent event) {
         try {
             kafkaTemplate.send(blacklistReviewRequestedTopic, event.targetUserId().toString(), event).get(3, TimeUnit.SECONDS);
             log.info("블랙리스트 검토 요청 이벤트 발행 성공: userId={}", event.targetUserId());

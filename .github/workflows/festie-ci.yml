@@ -1,7 +1,7 @@
 name: festie-ci.yml
 on:
   pull_request:
-    branches: [ "dev" ]
+    branches: [ "dev-v1", "dev-v2" ]
 jobs:
   build:
     runs-on: ubuntu-latest

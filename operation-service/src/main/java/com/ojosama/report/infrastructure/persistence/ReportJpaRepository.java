@@ -23,6 +23,6 @@ public interface ReportJpaRepository extends JpaRepository<Report, UUID> {
 
     @Query("SELECT COUNT(DISTINCT r.targetId) FROM Report r " +
             "WHERE r.targetUserId = :targetUserId " +
-            "AND (SELECT COUNT(r2) FROM Report r2 WHERE r2.targetId = r.targetId) >= 3")
-    Long countBlindedTargetByUserId(@Param("targetUserId") UUID targetUserId);
+            "AND r.status = 'RESOLVED'")
+    Long countResolvedTargetByUserId(@Param("targetUserId") UUID targetUserId);
 }

@@ -1,5 +1,7 @@
 package com.ojosama.calendarservice.calendar.presentaion.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ojosama.calendarservice.calendar.application.dto.command.CreateCalendarCommand;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -12,19 +14,16 @@ public record CreateCalendarRequestDto(
         @NotNull
         UUID eventId,
         @NotNull
-        LocalDateTime eventDate,
-        LocalDateTime ticketingDate,
-        @NotNull
-        String eventName
+        @JsonProperty("startTime")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+        LocalDateTime eventStart
 ) {
     public CreateCalendarCommand toCommand(UUID userId) {
         return CreateCalendarCommand.builder()
-                .eventDate(this.eventDate)
-                .ticketingDate(this.ticketingDate)
                 .memo(this.memo)
                 .eventId(this.eventId)
                 .userId(userId)
-                .eventName(this.eventName)
+                .eventDate(this.eventStart)
                 .build();
     }
 }

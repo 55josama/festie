@@ -208,4 +208,18 @@ public class Event extends BaseUserEntity {
             this.schedules.remove(schedule);
         }
     }
+
+    public void markInProgress() {
+        if (this.status != EventStatus.SCHEDULED) {
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
+        }
+        this.status = EventStatus.IN_PROGRESS;
+    }
+
+    public void markCompleted() {
+        if (this.status != EventStatus.IN_PROGRESS && this.status != EventStatus.SCHEDULED) {
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
+        }
+        this.status = EventStatus.COMPLETED;
+    }
 }

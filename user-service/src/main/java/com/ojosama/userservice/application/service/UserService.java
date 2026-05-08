@@ -12,6 +12,8 @@ import com.ojosama.userservice.application.dto.result.GetCategoryManagerIdResult
 import com.ojosama.userservice.application.dto.result.GetUserResult;
 import com.ojosama.userservice.application.dto.result.InternalUserEmailResult;
 import com.ojosama.userservice.application.dto.result.UpdateUserResult;
+import com.ojosama.userservice.domain.exception.UserErrorCode;
+import com.ojosama.userservice.domain.exception.UserException;
 import com.ojosama.userservice.domain.model.Category;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.model.UserRole;
@@ -39,11 +41,11 @@ public class UserService {
     @Transactional
     public CreateUserResult createUser(CreateUserCommand command) {
         if (userRepository.existsByEmailAndDeletedAtIsNull(command.email())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
         }
 
         if (userRepository.existsByNicknameAndDeletedAtIsNull(command.nickname())) {
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+            throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
         }
 
         String encodedPassword = passwordEncoder.encode(command.password());
@@ -68,11 +70,11 @@ public class UserService {
             );
         } catch (DataIntegrityViolationException e) {
             if (isEmailUniqueViolation(e)) {
-                throw new IllegalArgumentException("중복 이메일입니다.", e);
+                throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
             }
 
             if (isNicknameUniqueViolation(e)) {
-                throw new IllegalArgumentException("중복 닉네임입니다.", e);
+                throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
             }
 
             throw e;
@@ -84,7 +86,7 @@ public class UserService {
     public GetUserResult getUser(GetUserQuery query) {
         User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
                 //todo 임시 오류 처리
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다"));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         return new GetUserResult(
                 user.getId(),
@@ -102,10 +104,10 @@ public class UserService {
     @Transactional
     public UpdateUserResult updateUser(UpdateUserCommand command) {
         User savedUser = userRepository.findByIdAndDeletedAtIsNull(command.userId())
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         if (userRepository.existsByNicknameAndIdNotAndDeletedAtIsNull(command.nickname(), command.userId())) {
-            throw new IllegalArgumentException("중복 닉네임입니다.");
+            throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
         }
 
         savedUser.update(
@@ -128,7 +130,7 @@ public class UserService {
     @Transactional
     public void deleteUser(DeleteUserCommand command) {
         User user = userRepository.findByIdAndDeletedAtIsNull(command.userId())
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         user.deleted(user.getId());
     }
@@ -157,7 +159,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public InternalUserEmailResult getInternalUserEmail(GetInternalUserEmailQuery query) {
         User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         return new InternalUserEmailResult(
                 user.getId(),
@@ -179,7 +181,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public GetAdminIdResult getInternalAdminId() {
         User admin = userRepository.findFirstByRoleAndDeletedAtIsNull(UserRole.ADMIN)
-                .orElseThrow(() -> new IllegalArgumentException("시스템 관리자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.ADMIN_NOT_FOUND));
 
         return new GetAdminIdResult(admin.getId());
     }
@@ -189,7 +191,7 @@ public class UserService {
         UserRole managerRole = Category.from(query.category()).getManagerRole();
 
         User manager = userRepository.findFirstByRoleAndDeletedAtIsNull(managerRole)
-                .orElseThrow(() -> new IllegalArgumentException("해당 카테고리 담당자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.CATEGORY_MANAGER_NOT_FOUND));
 
         return new GetCategoryManagerIdResult(manager.getId());
     }
@@ -198,7 +200,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public String getInternalUserNickname(UUID userId) {
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         return user.getNickname();
     }
