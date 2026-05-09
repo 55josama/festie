@@ -28,6 +28,9 @@ public enum EventErrorCode implements ErrorCode {
     EVENT_SCHEDULE_INVALID_NAME(HttpStatus.BAD_REQUEST, "스케줄 이름이 유효하지 않습니다. (비어있거나 100자 초과)"),
     EVENT_SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "해당 시간에 다른 스케줄이 존재합니다."),
 
+    // EventScheduleAction 관련 에러
+    EVENT_SCHEDULE_ACTION_INVALID_STATE(HttpStatus.CONFLICT, "시작 전인 행사 일정만 취소할 수 있습니다."),
+
     // Ticketing 관련 에러
     TICKETING_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "현재 티켓팅이 불가능합니다."),
     TICKETING_CLOSED(HttpStatus.BAD_REQUEST, "티켓팅 기간이 종료되었습니다."),

@@ -9,4 +9,5 @@ public record EventStatusChangedMessage(
         String beforeStatus,
         String afterStatus,
         List<UUID> deletedScheduleIds
-) {}
+) {
+}
