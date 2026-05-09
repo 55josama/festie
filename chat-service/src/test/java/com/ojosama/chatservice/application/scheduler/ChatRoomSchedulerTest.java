@@ -3,6 +3,7 @@ package com.ojosama.chatservice.application.scheduler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -22,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,10 +66,16 @@ class ChatRoomSchedulerTest {
             String key = invocation.getArgument(0, String.class);
             return values.get(key);
         });
-        when(redisTemplate.delete(anyString())).thenAnswer(invocation -> {
-            String key = invocation.getArgument(0, String.class);
-            return values.remove(key) != null;
-        });
+        when(redisTemplate.execute(any(DefaultRedisScript.class), anyList(), anyString()))
+                .thenAnswer(invocation -> {
+                    String key = invocation.getArgument(1, java.util.List.class).get(0).toString();
+                    String token = invocation.getArgument(2, String.class);
+                    if (token != null && token.equals(values.get(key))) {
+                        values.remove(key);
+                        return 1L;
+                    }
+                    return 0L;
+                });
     }
 
     @Test

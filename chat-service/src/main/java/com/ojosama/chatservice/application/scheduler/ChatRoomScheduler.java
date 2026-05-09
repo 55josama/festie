@@ -2,11 +2,13 @@ package com.ojosama.chatservice.application.scheduler;
 
 import com.ojosama.chatservice.application.service.ChatRoomService;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,12 @@ public class ChatRoomScheduler {
 
     private static final String LOCK_KEY = "chat:scheduler:chat-room-status";
     private static final long LOCK_TTL_SECONDS = 90L;
+    private static final DefaultRedisScript<Long> UNLOCK_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then "
+                    + "return redis.call('del', KEYS[1]) "
+                    + "else return 0 end",
+            Long.class
+    );
 
     private final ChatRoomService chatRoomService;
     private final StringRedisTemplate redisTemplate;
@@ -64,9 +72,9 @@ public class ChatRoomScheduler {
     }
 
     private void releaseLock(String token) {
-        String currentToken = redisTemplate.opsForValue().get(LOCK_KEY);
-        if (token != null && token.equals(currentToken)) {
-            redisTemplate.delete(LOCK_KEY);
+        if (token == null) {
+            return;
         }
+        redisTemplate.execute(UNLOCK_SCRIPT, Collections.singletonList(LOCK_KEY), token);
     }
 }
