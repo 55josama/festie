@@ -42,9 +42,6 @@ public class Calendar extends BaseUserEntity {
     @Column(name = "memo", length = 1000)
     private String memo;
 
-    @Column(name = "event_status", nullable = false)
-    private boolean eventStatus = true;
-
     @Builder(access = AccessLevel.PRIVATE)
     private Calendar(UUID userId, EventInfo eventInfo, String memo) {
         validateUserId(userId);
@@ -79,7 +76,4 @@ public class Calendar extends BaseUserEntity {
         }
     }
 
-    public void updateEventStatus(boolean eventStatus) {
-        this.eventStatus = eventStatus;
-    }
 }

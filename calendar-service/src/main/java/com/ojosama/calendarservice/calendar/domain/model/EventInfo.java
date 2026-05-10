@@ -27,8 +27,11 @@ public class EventInfo {
     @Column(name = "event_ticketing_date")
     private LocalDateTime eventTicketingDate;
 
+    @Column(name = "event_status")
+    private EventStatus eventStatus;
+
     public EventInfo(UUID eventId, String eventName, LocalDateTime eventDate,
-                     LocalDateTime eventTicketingDate) {
+                     LocalDateTime eventTicketingDate, EventStatus eventStatus) {
         validateEventId(eventId);
         validateEventName(eventName);
         validateEventDate(eventDate);
@@ -36,6 +39,7 @@ public class EventInfo {
         this.eventName = eventName;
         this.eventDate = eventDate;
         this.eventTicketingDate = eventTicketingDate;
+        this.eventStatus = eventStatus;
     }
 
     public void updateEventDate(LocalDateTime eventDate) {
