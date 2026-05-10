@@ -1,6 +1,6 @@
 apiVersion: 1
 
-datasource's:
+datasource:
   - name: Prometheus
     type: prometheus
     access: proxy
