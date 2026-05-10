@@ -14,17 +14,25 @@ scrape_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
     relabel_configs:
-      - source_labels: ["__meta_docker_container_name"]
+      - source_labels: [ "__meta_docker_container_name" ]
         regex: "/(.*)"
         target_label: container
-      - source_labels: ["__meta_docker_container_label_com_docker_compose_service"]
+      - source_labels: [ "__meta_docker_container_label_com_docker_compose_service" ]
         target_label: service
-      - source_labels: ["__meta_docker_container_label_com_docker_compose_project"]
+      - source_labels: [ "__meta_docker_container_label_com_docker_compose_project" ]
         target_label: compose_project
-      - source_labels: ["__meta_docker_container_log_stream"]
+      - source_labels: [ "__meta_docker_container_log_stream" ]
         target_label: stream
-      - source_labels: ["__meta_docker_container_id"]
+      - source_labels: [ "__meta_docker_container_id" ]
         target_label: __path__
         replacement: /var/lib/docker/containers/$1/*-json.log
     pipeline_stages:
-      - docker: {}
+      - docker: { }
+      - regex:
+          expression: '(?P<email>\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b)'
+          action: replace
+          replace: '[REDACTED_EMAIL]'
+      - regex:
+          expression: '(?P<token>(?:Bearer|token|password|authorization)[\s:=]+\S+)'
+          action: replace
+          replace: '[REDACTED_TOKEN]'
