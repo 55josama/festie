@@ -92,6 +92,39 @@ services:
     networks:
       - festie-network
 
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: festie-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command:
+      - -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    networks:
+      festie-network:
+        aliases:
+          - loki
+          - festie-loki
+
+  promtail:
+    image: grafana/promtail:3.3.2
+    container_name: festie-promtail
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - festie-network
+    depends_on:
+      loki:
+        condition: service_started
+
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: festie-prometheus
@@ -127,6 +160,8 @@ services:
     depends_on:
       prometheus:
         condition: service_started
+      loki:
+        condition: service_started
 
   # ============ config-server ============
   config-server:
@@ -148,7 +183,7 @@ services:
       CONFIG_PASSWORD: ${CONFIG_PASSWORD}
       GIT_USERNAME: ${GIT_USERNAME}
       GIT_TOKEN: ${GIT_TOKEN}
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
     healthcheck:
       test: [ "CMD-SHELL", "wget --spider -q http://localhost:8888/actuator/health || exit 1" ]
       interval: 10s
@@ -193,11 +228,12 @@ services:
       CONFIG_SERVER_URL: http://config-server:8888
       CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://festie-eureka:8761/eureka/
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-ojosamaojosamaoojosamaojosamaojosamaojosama}
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
   # 개발시 각자 복붙해서 추가 (경로 수정 후)
   # ============ chat-service ============
@@ -531,7 +567,7 @@ services:
 
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
 
       JWT_SECRET: ${JWT_SECRET}
       JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
@@ -543,6 +579,7 @@ services:
 volumes:
   postgres_data:
   grafana_data:
+  loki_data:
 
 networks:
   festie-network:
