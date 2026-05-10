@@ -2,19 +2,23 @@ package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.cons
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ojosama.calendarservice.calendar.application.CalendarRedisService;
 import com.ojosama.calendarservice.calendar.application.CalendarService;
+import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventUpdatedMessage;
+import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventUpdatedMessage.FieldChange;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventUpdatedMessage;
-import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.KafkaCalendarPublisher;
-import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto.CalendarEventUpdatedMessage;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +33,8 @@ public class EventUpdatedConsumer {
     private final ObjectMapper objectMapper;
     private final IdempotentEventHandler idempotentEventHandler;
     private final CalendarService calendarService;
-    private final KafkaCalendarPublisher publisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final CalendarRedisService notificationService;
 
     @KafkaListener(
             topics = "${spring.kafka.topic.event-changed}",
@@ -49,33 +54,57 @@ public class EventUpdatedConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> {
-                        // 유저 정보
-                        List<UUID> userIds = calendarService.updateAllByEventId(event.eventId(), event.changedFields());
+                    () -> dispatch(event));
 
-                        // 컨슈머 DTO -> 프로듀서 DTO 변환
-                        List<CalendarEventUpdatedMessage.FieldChange> changedFields = event.changedFields().stream()
-                                .map(f -> new CalendarEventUpdatedMessage.FieldChange(f.fieldName(),
-                                        f.before().toString(),
-                                        f.after().toString()))
-                                .toList();
-
-                        publisher.publishCalendarEventUpdated(new CalendarEventUpdatedMessage(event.eventId(),
-                                event.eventName(), userIds, changedFields));
-                    });
-            log.info("행사 수정 이벤트 성공 : {}", record.key());
+            log.info("수정 이벤트 성공: {}", record.key());
         } catch (RuntimeException e) {
-            log.error("행사 수정 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            log.error("수정 이벤트 실패 : {}, {}", record.key(), e.getMessage());
             throw e;
         }
     }
 
+    private void dispatch(EventUpdatedMessage event) {
+        List<UUID> userIds = calendarService.updateAllByEventId(event.eventId(), event.changedFields());
+
+        // 당일 티켓팅 날짜 변경되었을 경우 redis 삭제
+        event.changedFields().forEach(field -> {
+            if (field.fieldName().equals("ticketingOpenAt")) {
+                notificationService.deleteAlarms(event.eventId());
+                if (field.after() != null) {
+                    // 오늘 날짜인 경우 다시 등록
+                    LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
+                    if (after.toLocalDate().equals(LocalDate.now())) {
+                        notificationService.registerTicketingAlarm(event.eventId(), after);
+                    }
+                }
+            }
+
+            // 다음 날 행사 날짜 변경되었을 경우 redis 삭제
+            if (field.fieldName().equals("startAt")) {
+                notificationService.deleteAlarms(event.eventId());
+                if (field.after() != null) {
+                    // 바뀐 날짜가 내일인 경우
+                    LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
+                    if (after.toLocalDate().equals(LocalDate.now().plusDays(1))) {
+                        notificationService.registerEventAlarm(event.eventId(), after);
+                    }
+                }
+            }
+        });
+
+        // Kafka 발행
+        List<FieldChange> changedFields = event.changedFields().stream()
+                .map(f -> new CalendarEventUpdatedMessage.FieldChange(f.fieldName(), f.before(), f.after()))
+                .toList();
+
+        applicationEventPublisher.publishEvent(
+                new CalendarEventUpdatedMessage(event.eventId(), event.eventName(), userIds, changedFields));
+    }
+
     private EventUpdatedMessage parse(String payload) {
-        log.error("수신 페이로드: {}", payload);
         try {
             return objectMapper.readValue(payload, EventUpdatedMessage.class);
         } catch (JsonProcessingException e) {
-            log.error("파싱 에러 : {}", e.getMessage());
             throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
     }
