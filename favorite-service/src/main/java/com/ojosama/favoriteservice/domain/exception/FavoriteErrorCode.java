@@ -14,8 +14,7 @@ public enum FavoriteErrorCode implements ErrorCode {
 
     INVALID_EVENT_ID(HttpStatus.BAD_REQUEST, "행사 ID는 필수입니다."),
     INVALID_EVENT_NAME(HttpStatus.BAD_REQUEST, "행사 이름은 필수입니다."),
-    INVALID_EVENT_DATE(HttpStatus.BAD_REQUEST, " 행사 일정은 필수입니다."),
-    INVALID_EVENT_STATUS(HttpStatus.BAD_REQUEST, "취소되거나 완료된 행사는 찜할 수 없습니다."),
+    INVALID_EVENT_STATUS(HttpStatus.BAD_REQUEST, "행사 상태는 필수입니다."),
     INVALID_MESSAGE_PAYLOAD(HttpStatus.BAD_REQUEST, "메시지 응답이 잘못되었습니다.");
 
 
