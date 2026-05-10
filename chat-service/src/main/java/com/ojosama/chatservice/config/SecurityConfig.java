@@ -37,6 +37,8 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
                         .requestMatchers("/ws", "/ws/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/info").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/prometheus").permitAll()
                         .requestMatchers("/v1/chat/admin/**").authenticated()
                         .requestMatchers("/v1/chat/**").permitAll()
                         .requestMatchers("/internal/v1/chat/**").permitAll()
