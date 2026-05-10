@@ -43,16 +43,11 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public List<Calendar> findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNullAndEventStatusTrue(
+    public List<Calendar> findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(
             LocalDateTime now,
             LocalDateTime oneHourLater) {
-        return jpaCalendarRepository.findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNullAndEventStatusTrue(now,
+        return jpaCalendarRepository.findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(now,
                 oneHourLater);
-    }
-
-    @Override
-    public Optional<Calendar> findFirstByEventInfo_EventId(UUID eventId) {
-        return jpaCalendarRepository.findFirstByEventInfo_EventId(eventId);
     }
 
     @Override
@@ -64,9 +59,9 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public List<Calendar> findByEventInfo_EventDateAndDeletedAtIsNullAndEventStatusTrue(LocalDateTime start,
-                                                                                        LocalDateTime end) {
-        return jpaCalendarRepository.findByEventInfo_EventDateAndDeletedAtIsNullAndEventStatusTrue(start, end);
+    public List<Calendar> findByEventInfo_EventDateAndDeletedAtIsNull(LocalDateTime start,
+                                                                      LocalDateTime end) {
+        return jpaCalendarRepository.findByEventInfo_EventDateAndDeletedAtIsNull(start, end);
     }
 
 }
