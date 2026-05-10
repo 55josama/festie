@@ -230,7 +230,7 @@ services:
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://festie-eureka:8761/eureka/
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-ojosamaojosamaoojosamaojosamaojosamaojosama}
+      JWT_SECRET: ${JWT_SECRET}
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
