@@ -66,28 +66,20 @@ public class EventUpdatedConsumer {
     private void dispatch(EventUpdatedMessage event) {
         List<UUID> userIds = calendarService.updateAllByEventId(event.eventId(), event.changedFields());
 
+        notificationService.deleteAlarms(event.eventId());
+
         // 당일 티켓팅 날짜 변경되었을 경우 redis 삭제
         event.changedFields().forEach(field -> {
-            if (field.fieldName().equals("ticketingOpenAt")) {
-                notificationService.deleteAlarms(event.eventId());
-                if (field.after() != null) {
-                    // 오늘 날짜인 경우 다시 등록
-                    LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
-                    if (after.toLocalDate().equals(LocalDate.now())) {
-                        notificationService.registerTicketingAlarm(event.eventId(), after);
-                    }
+            if (field.fieldName().equals("ticketingOpenAt") && field.after() != null) {
+                LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
+                if (after.toLocalDate().equals(LocalDate.now())) {
+                    notificationService.registerTicketingAlarm(event.eventId(), after);
                 }
             }
-
-            // 다음 날 행사 날짜 변경되었을 경우 redis 삭제
-            if (field.fieldName().equals("startAt")) {
-                notificationService.deleteAlarms(event.eventId());
-                if (field.after() != null) {
-                    // 바뀐 날짜가 내일인 경우
-                    LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
-                    if (after.toLocalDate().equals(LocalDate.now().plusDays(1))) {
-                        notificationService.registerEventAlarm(event.eventId(), after);
-                    }
+            if (field.fieldName().equals("startAt") && field.after() != null) {
+                LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
+                if (after.toLocalDate().equals(LocalDate.now().plusDays(1))) {
+                    notificationService.registerEventAlarm(event.eventId(), after);
                 }
             }
         });

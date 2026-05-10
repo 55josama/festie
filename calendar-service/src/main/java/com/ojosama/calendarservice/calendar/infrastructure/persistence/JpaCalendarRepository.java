@@ -25,7 +25,7 @@ public interface JpaCalendarRepository extends JpaRepository<Calendar, UUID>, Ca
                                                                                                 UUID userId);
 
     @Query("select c from Calendar c where c.eventInfo.eventDate >= :start AND c.eventInfo.eventDate < :end AND c.deletedAt is null")
-    List<Calendar> findByEventInfo_EventDateAndDeletedAtIsNull(@Param("start") LocalDateTime start,
-                                                               @Param("end") LocalDateTime end);
+    List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(@Param("start") LocalDateTime start,
+                                                                      @Param("end") LocalDateTime end);
 
 }

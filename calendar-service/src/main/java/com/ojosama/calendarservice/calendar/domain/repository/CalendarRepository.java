@@ -23,8 +23,8 @@ public interface CalendarRepository {
                                                                                                 LocalDateTime eventDate,
                                                                                                 UUID userId);
 
-    List<Calendar> findByEventInfo_EventDateAndDeletedAtIsNull(LocalDateTime start,
-                                                               LocalDateTime end);
+    List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(LocalDateTime start,
+                                                                      LocalDateTime end);
 
 }
 

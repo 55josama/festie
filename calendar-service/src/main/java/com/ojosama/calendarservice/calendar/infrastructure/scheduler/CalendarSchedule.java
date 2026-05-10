@@ -42,7 +42,7 @@ public class CalendarSchedule {
 
         // 내일 행사
         List<Calendar> eventCalendars = calendarRepository
-                .findByEventInfo_EventDateAndDeletedAtIsNull(
+                .findByEventInfo_EventDateBetweenAndDeletedAtIsNull(
                         tomorrow.atStartOfDay(),
                         tomorrow.plusDays(1).atStartOfDay()
                 );

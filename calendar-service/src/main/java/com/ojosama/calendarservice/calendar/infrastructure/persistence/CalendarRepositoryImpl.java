@@ -59,9 +59,9 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public List<Calendar> findByEventInfo_EventDateAndDeletedAtIsNull(LocalDateTime start,
-                                                                      LocalDateTime end) {
-        return jpaCalendarRepository.findByEventInfo_EventDateAndDeletedAtIsNull(start, end);
+    public List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(LocalDateTime start,
+                                                                             LocalDateTime end) {
+        return jpaCalendarRepository.findByEventInfo_EventDateBetweenAndDeletedAtIsNull(start, end);
     }
 
 }

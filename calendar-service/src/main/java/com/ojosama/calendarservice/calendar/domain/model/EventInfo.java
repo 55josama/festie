@@ -4,6 +4,8 @@ import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -27,6 +29,7 @@ public class EventInfo {
     @Column(name = "event_ticketing_date")
     private LocalDateTime eventTicketingDate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "event_status")
     private EventStatus eventStatus;
 
@@ -35,6 +38,7 @@ public class EventInfo {
         validateEventId(eventId);
         validateEventName(eventName);
         validateEventDate(eventDate);
+        validateEventStatus(eventStatus);
         this.eventId = eventId;
         this.eventName = eventName;
         this.eventDate = eventDate;
@@ -71,6 +75,12 @@ public class EventInfo {
 
     private void validateEventDate(LocalDateTime eventDate) {
         if (eventDate == null) {
+            throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
+        }
+    }
+
+    private void validateEventStatus(EventStatus status) {
+        if (status == null) {
             throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
         }
     }

@@ -101,10 +101,13 @@ public class CalendarService {
 
         calendarList.forEach(calendar -> {
             changedFields.forEach(field -> {
+
+                String valueBefore = field.before() != null ? String.valueOf(field.before()) : null;
                 String valueAfter = field.after() != null ? String.valueOf(field.after()) : null;
                 switch (field.fieldName()) {
                     case "startAt" -> {
-                        if (calendar.getEventInfo().getEventDate().equals(field.before())) {
+                        if (valueBefore != null && calendar.getEventInfo().getEventDate()
+                                .equals(LocalDateTime.parse(valueBefore))) {
                             calendar.getEventInfo().updateEventDate(LocalDateTime.parse(valueAfter));
                         }
                     }

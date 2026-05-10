@@ -29,6 +29,7 @@ public class KafkaCalendarProducer {
         outboxEventPublisher.publish("Calendar", message.eventId(), EventType.CALENDAR_DELETED, deletedTopic, message);
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void publishCalendarEventUpdated(CalendarEventUpdatedMessage message) {
         outboxEventPublisher.publish("Calendar", message.eventId(), EventType.CALENDAR_UPDATED, updatedTopic, message);
     }

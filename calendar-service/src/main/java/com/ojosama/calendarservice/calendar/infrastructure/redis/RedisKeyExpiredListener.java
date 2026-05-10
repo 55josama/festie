@@ -40,12 +40,18 @@ public class RedisKeyExpiredListener implements MessageListener {
         List<Calendar> calendars = calendarRepository
                 .findByEventInfo_EventIdAndDeletedAtIsNull(eventId);
 
-        List<UUID> userIds = calendars.stream().map(Calendar::getUserId).toList();
+        if (calendars.isEmpty()) {
+            log.info("티켓팅 알림 대상 캘린더가 없습니다: {}", eventId);
+            return;
+        }
+
+        List<UUID> userIds = calendars.stream().map(Calendar::getUserId).distinct().toList();
+        Calendar first = calendars.get(0);
 
         publisher.publishTicketingEventImminent(new TicketingImminentMessage(
                 eventId,
-                calendars.getFirst().getEventInfo().getEventName(),
-                calendars.getFirst().getEventInfo().getEventTicketingDate(),
+                first.getEventInfo().getEventName(),
+                first.getEventInfo().getEventTicketingDate(),
                 userIds
         ));
     }
@@ -54,12 +60,18 @@ public class RedisKeyExpiredListener implements MessageListener {
         List<Calendar> calendars = calendarRepository
                 .findByEventInfo_EventIdAndDeletedAtIsNull(eventId);
 
-        List<UUID> userIds = calendars.stream().map(Calendar::getUserId).toList();
+        if (calendars.isEmpty()) {
+            log.info("행사 알림 대상 캘린더가 없습니다: {}", eventId);
+            return;
+        }
+
+        List<UUID> userIds = calendars.stream().map(Calendar::getUserId).distinct().toList();
+        Calendar first = calendars.get(0);
 
         publisher.publishEventImminent(new EventImminentMessage(
                 eventId,
-                calendars.getFirst().getEventInfo().getEventName(),
-                calendars.getFirst().getEventInfo().getEventDate(),
+                first.getEventInfo().getEventName(),
+                first.getEventInfo().getEventDate(),
                 userIds
         ));
     }
