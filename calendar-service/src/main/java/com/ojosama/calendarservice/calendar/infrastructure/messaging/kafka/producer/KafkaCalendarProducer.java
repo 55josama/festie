@@ -1,7 +1,7 @@
 package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer;
 
-import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto.CalendarEventDeletedMessage;
-import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto.CalendarEventUpdatedMessage;
+import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventDeletedMessage;
+import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventUpdatedMessage;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class KafkaCalendarPublisher {
+public class KafkaCalendarProducer {
 
     private final OutboxEventPublisher outboxEventPublisher;
 

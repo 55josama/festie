@@ -1,7 +1,7 @@
 package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer;
 
-import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto.EventImminentMessage;
-import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto.TicketingImminentMessage;
+import com.ojosama.calendarservice.calendar.domain.event.payload.EventImminentMessage;
+import com.ojosama.calendarservice.calendar.domain.event.payload.TicketingImminentMessage;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class KafkaCalendarSchedulerPublisher {
+public class KafkaCalendarSchedulerProducer {
 
     private final OutboxEventPublisher outboxEventPublisher;
 
