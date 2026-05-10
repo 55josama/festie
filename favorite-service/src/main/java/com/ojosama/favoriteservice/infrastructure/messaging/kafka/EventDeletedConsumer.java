@@ -48,7 +48,7 @@ public class EventDeletedConsumer {
                     EVENT_TYPE,
                     () -> dispatch(event)
             );
-            log.info("Event deleted: {}", record.key());
+            log.info("삭제 이벤트 성공: {}", record.key());
         } catch (RuntimeException e) {
             log.error("삭제 이벤트 실패 : {}, {}", record.key(), e.getMessage());
             throw e;
@@ -63,8 +63,12 @@ public class EventDeletedConsumer {
         }
     }
 
-    public void dispatch(EventDeletedMessage message) {
-        DeleteFavoriteEventCommand command = new DeleteFavoriteEventCommand(message.eventId());
-        favoriteService.deleteAllByEventId(command);
+    private void dispatch(EventDeletedMessage message) {
+        if (message.eventId() == null) {
+            throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_ID);
+        }
+        favoriteService.deleteAllByEventId(new DeleteFavoriteEventCommand(message.eventId()));
     }
+
+
 }

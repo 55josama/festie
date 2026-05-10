@@ -7,7 +7,4 @@ public record UpdateStatusEventCommand(
         UUID eventId,
         EventStatus status
 ) {
-    public static UpdateStatusEventCommand from(UUID eventId, String status) {
-        return new UpdateStatusEventCommand(eventId, EventStatus.valueOf(status));
-    }
 }

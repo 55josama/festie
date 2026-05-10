@@ -63,13 +63,10 @@ public class EventUpdatedConsumer {
         }
     }
 
-    private void dispatch(EventUpdatedMessage event) {
-        UpdateFavoriteEventCommand command = new UpdateFavoriteEventCommand(
-                event.eventId(),
-                event.changedFields().stream()
-                        .map(f -> new UpdateFavoriteEventCommand.FieldChange(f.fieldName(), f.after()))
-                        .toList()
-        );
-        favoriteService.updateAllByEventId(command);
+    private void dispatch(EventUpdatedMessage message) {
+        if (message.eventId() == null || message.changedFields() == null) {
+            throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_ID);
+        }
+        favoriteService.updateAllByEventId(UpdateFavoriteEventCommand.from(message));
     }
 }
