@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
-import com.ojosama.favoriteservice.application.dto.command.DeleteFavoriteEventCommand;
 import com.ojosama.favoriteservice.application.dto.command.UpdateStatusEventCommand;
 import com.ojosama.favoriteservice.application.service.FavoriteService;
 import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
@@ -31,7 +30,7 @@ public class EventStatusUpdateConsumer {
     private final FavoriteService favoriteService;
 
     @KafkaListener(
-            topics = "${spring.kafka.topic.event-updated}", // 토픽이름 변경
+            topics = "${spring.kafka.topic.event-changed}", // 토픽이름 변경
             groupId = CONSUMER_GROUP,
             containerFactory = "kafkaListenerContainerFactory"
     )
@@ -66,12 +65,10 @@ public class EventStatusUpdateConsumer {
     }
 
     private void dispatch(EventStatusUpdatedMessage event) {
-        if (event.status().equals("CANCELLED")) {
-            favoriteService.deleteAllByEventId(new DeleteFavoriteEventCommand(event.eventId()));
+        if (event.status() == null || event.eventId() == null) {
+            throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
-        if (event.status().equals("COMPLETED")) {
-            favoriteService.updateByEventStatus(
-                    new UpdateStatusEventCommand(event.eventId(), EventStatus.valueOf(event.status())));
-        }
+        favoriteService.updateStatusEventId(
+                new UpdateStatusEventCommand(event.eventId(), EventStatus.valueOf(event.status())));
     }
 }
