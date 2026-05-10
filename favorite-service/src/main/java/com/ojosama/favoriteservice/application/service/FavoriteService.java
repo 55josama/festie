@@ -8,11 +8,11 @@ import com.ojosama.favoriteservice.application.dto.result.FavoriteResult;
 import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
 import com.ojosama.favoriteservice.domain.exception.FavoriteException;
 import com.ojosama.favoriteservice.domain.model.EventInfo;
+import com.ojosama.favoriteservice.domain.model.EventStatus;
 import com.ojosama.favoriteservice.domain.model.Favorite;
 import com.ojosama.favoriteservice.domain.repository.FavoriteRepository;
 import com.ojosama.favoriteservice.infrastructure.client.EventClient;
 import com.ojosama.favoriteservice.infrastructure.client.dto.EventInfoResponseDto;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -45,19 +45,14 @@ public class FavoriteService {
 
         // feign을 통해서 event 정보 가져옴.
         EventInfoResponseDto dto = eventClient.getEvents(command.eventId());
-
-        dto.validate();
-
         if (favoriteOpt.isPresent()) {
             favorite = favoriteOpt.get();
-            favorite.restore(
-                    new EventInfo(command.eventId(), dto.name(), dto.img(), dto.startAt(), dto.endAt(), dto.status()),
+            favorite.restore(new EventInfo(command.eventId(), dto.name(), dto.img(), EventStatus.valueOf(dto.status())),
                     command.categoryId());
         } else {
             favorite = favoriteRepository.save(
                     Favorite.of(userId,
-                            new EventInfo(command.eventId(), dto.name(), dto.img(), dto.startAt(), dto.endAt(),
-                                    dto.status()),
+                            new EventInfo(command.eventId(), dto.name(), dto.img(), EventStatus.valueOf(dto.status())),
                             command.categoryId()));
         }
         return FavoriteResult.from(favorite);
@@ -78,25 +73,16 @@ public class FavoriteService {
 
     // 이벤트를 통한 행사 삭제
     public void deleteAllByEventId(DeleteFavoriteEventCommand command) {
-        List<Favorite> favorites = favoriteRepository.findByEventInfo_EventIdAndDeletedAtIsNull(command.eventId());
-        favorites.forEach(favorite -> favorite.deleted(system));
+        favoriteRepository.deleteAllByEventId(command.eventId());
     }
 
     // 이벤트를 통한 행사 변경
     public void updateAllByEventId(UpdateFavoriteEventCommand command) {
-        if (command == null || command.changedFields() == null || command.changedFields().isEmpty()) {
-            throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
-        }
-
-        for (var field : command.changedFields()) {
-            String fieldName = field.fieldName();
-            String after = field.after();
-            favoriteRepository.updateEventInfoBulk(command.eventId(), fieldName, after);
-        }
+        favoriteRepository.updateEventInfoBulk(command.eventId(), command.changedFields());
     }
 
-    // 이벤트를 통한 행사 상태 변경
-    public void updateByEventStatus(UpdateStatusEventCommand command) {
-        favoriteRepository.updateEventInfoEventStatusBulk(command.eventId(), command.status());
+    // 행사 상태 변경
+    public void updateStatusEventId(UpdateStatusEventCommand command) {
+        favoriteRepository.updateStatusAllByEventId(command.eventId(), command.status());
     }
 }
