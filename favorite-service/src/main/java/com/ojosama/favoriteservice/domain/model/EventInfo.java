@@ -4,7 +4,6 @@ import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
 import com.ojosama.favoriteservice.domain.exception.FavoriteException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,43 +20,29 @@ public class EventInfo {
     @Column(name = "event_name")
     private String eventName;
 
-    @Column(name = "event_start")
-    private LocalDateTime eventStart;
-
-    @Column(name = "event_end")
-    private LocalDateTime eventEnd;
-
     @Column(name = "event_img")
     private String eventImg;
 
     @Column(name = "event_status")
     private EventStatus eventStatus;
 
-    public EventInfo(UUID eventId, String eventName, String eventImg, LocalDateTime eventStart,
-                     LocalDateTime eventEnd, String eventStatus) {
-        validate(eventId, eventName);
-        validateTime(eventStart, eventEnd);
+    public EventInfo(UUID eventId, String eventName, String eventImg, EventStatus eventStatus) {
+        validate(eventId, eventName, eventStatus);
         this.eventId = eventId;
         this.eventName = eventName;
         this.eventImg = eventImg;
-        this.eventStart = eventStart;
-        this.eventEnd = eventEnd;
-        this.eventStatus = EventStatus.valueOf(eventStatus);
-        ;
+        this.eventStatus = eventStatus;
     }
 
-    private void validate(UUID eventId, String eventName) {
+    private void validate(UUID eventId, String eventName, EventStatus eventStatus) {
         if (eventId == null) {
             throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_ID);
         }
         if (eventName == null || eventName.isBlank()) {
             throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_NAME);
         }
-    }
-
-    private void validateTime(LocalDateTime eventStart, LocalDateTime eventEnd) {
-        if (eventStart == null || eventEnd == null) {
-            throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_DATE);
+        if (eventStatus == null) {
+            throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_STATUS);
         }
     }
 }
