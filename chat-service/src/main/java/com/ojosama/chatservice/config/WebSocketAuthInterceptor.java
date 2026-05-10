@@ -15,12 +15,10 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_ROLE_HEADER = "X-User-Role";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
-    private static final String USER_NICKNAME_HEADER = "X-User-Nickname";
 
     public static final String ATTR_USER_ID = "wsUserId";
     public static final String ATTR_USER_ROLE = "wsUserRole";
     public static final String ATTR_USER_EMAIL = "wsUserEmail";
-    public static final String ATTR_USER_NICKNAME = "wsUserNickname";
 
     @Override
     public boolean beforeHandshake(
@@ -29,11 +27,18 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler,
             Map<String, Object> attributes
     ) {
-        // handshake 시점에 X-User-Id, X-User-Role 읽기
-        String userId = request.getHeaders().getFirst(USER_ID_HEADER);
-        String role = request.getHeaders().getFirst(USER_ROLE_HEADER);
-        String email = request.getHeaders().getFirst(USER_EMAIL_HEADER);
-        String nickname = request.getHeaders().getFirst(USER_NICKNAME_HEADER);
+        String userId = firstNonBlank(
+                request.getHeaders().getFirst(USER_ID_HEADER),
+                queryParam(request, "userId")
+        );
+        String role = firstNonBlank(
+                request.getHeaders().getFirst(USER_ROLE_HEADER),
+                queryParam(request, "role")
+        );
+        String email = firstNonBlank(
+                request.getHeaders().getFirst(USER_EMAIL_HEADER),
+                queryParam(request, "email")
+        );
 
         if (userId == null || userId.isBlank() || role == null || role.isBlank()) {
             log.warn("웹소켓 인증 헤더가 누락되어 연결을 거절합니다. userId={}, role={}", userId, role);
@@ -45,9 +50,6 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
         attributes.put(ATTR_USER_ROLE, role.trim());
         if (email != null && !email.isBlank()) {
             attributes.put(ATTR_USER_EMAIL, email.trim());
-        }
-        if (nickname != null && !nickname.isBlank()) {
-            attributes.put(ATTR_USER_NICKNAME, nickname.trim());
         }
 
         return true;
@@ -61,5 +63,22 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
             Exception exception
     ) {
         // noop
+    }
+
+    private String queryParam(ServerHttpRequest request, String name) {
+        return org.springframework.web.util.UriComponentsBuilder.fromUri(request.getURI())
+                .build()
+                .getQueryParams()
+                .getFirst(name);
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first.trim();
+        }
+        if (second != null && !second.isBlank()) {
+            return second.trim();
+        }
+        return null;
     }
 }

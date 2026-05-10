@@ -10,24 +10,46 @@
 <h3>WebSocket Chat Test</h3>
 
 <div>
+    <label>Gateway Base URL</label>
+    <input id="gatewayUrl" size="50" value="http://localhost:8085"/>
+</div>
+<div>
+    <label>Email</label>
+    <input id="email" size="40" placeholder="email@example.com"/>
+</div>
+<div>
+    <label>Password</label>
+    <input id="password" type="password" size="40" placeholder="password"/>
+</div>
+<div>
+    <button onclick="login()">Login</button>
+    <button onclick="logout()">Logout</button>
+    <button onclick="connect()">Connect</button>
+    <button onclick="sendMsg()">Send</button>
+</div>
+<div style="margin: 6px 0 12px; font-size: 13px; color: #666;">
+    로그인하면 access token을 쿠키에 저장하고, WebSocket 연결 시 게이트웨이가 그 토큰을 읽습니다.
+    로그인은 /user-service, WebSocket은 /chat-service 경로로 붙습니다.
+</div>
+<div>
     <label>Room ID</label>
     <input id="roomId" size="40" value="f0111249-116f-4527-afde-b543b2ec8e3a"/>
 </div>
 <div>
-    <label>User ID</label>
-    <input id="userId" size="40" value="11111111-2222-3333-4444-555555555555"/>
-</div>
-<div>
-    <button onclick="connect()">Connect</button>
-    <button onclick="sendMsg()">Send</button>
-</div>
-<div>
     <input id="content" size="60" placeholder="메시지 입력"/>
+</div>
+<div style="margin-top: 8px;">
+    <label>Burst Count</label>
+    <input id="burstCount" type="number" min="1" value="20" style="width: 80px;"/>
+    <label style="margin-left: 12px;">Burst Interval(ms)</label>
+    <input id="burstInterval" type="number" min="0" value="100" style="width: 100px;"/>
+    <button onclick="sendBurst()">Send Burst</button>
 </div>
 
 <pre id="log" style="background:#f5f5f5; padding:12px; height:260px; overflow:auto;"></pre>
 
 <script>
+    const TOKEN_COOKIE_NAME = "accessToken";
     let stompClient = null;
 
     function log(msg) {
@@ -36,9 +58,69 @@
         el.scrollTop = el.scrollHeight;
     }
 
+    function getCookie(name) {
+        return document.cookie
+                .split("; ")
+                .find((row) => row.startsWith(name + "="))
+                ?.split("=")[1] || "";
+    }
+
+    function setCookie(name, value) {
+        document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`;
+    }
+
+    function clearCookie(name) {
+        document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
+    }
+
+    async function login() {
+        const gatewayUrl = document.getElementById("gatewayUrl").value.replace(/\/$/, "");
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        if (!email || !password) {
+            log("이메일과 비밀번호를 입력하세요.");
+            return;
+        }
+
+        const response = await fetch(`${gatewayUrl}/user-service/v1/auth/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({email, password})
+        });
+
+        if (!response.ok) {
+            log(`[LOGIN-ERROR] ${response.status}`);
+            return;
+        }
+
+        const data = await response.json();
+        if (!data.accessToken) {
+            log("[LOGIN-ERROR] accessToken이 응답에 없습니다.");
+            return;
+        }
+
+        setCookie(TOKEN_COOKIE_NAME, data.accessToken);
+        log("[LOGIN] access token 저장 완료");
+    }
+
+    function logout() {
+        clearCookie(TOKEN_COOKIE_NAME);
+        log("[LOGOUT] access token 삭제 완료");
+    }
+
     function connect() {
         const roomId = document.getElementById("roomId").value;
-        const socket = new SockJS("/ws");
+        const gatewayUrl = document.getElementById("gatewayUrl").value.replace(/\/$/, "");
+        const accessToken = decodeURIComponent(getCookie(TOKEN_COOKIE_NAME));
+        if (!accessToken) {
+            log("먼저 로그인해서 access token을 쿠키에 저장하세요.");
+            return;
+        }
+
+        const socket = new SockJS(`${gatewayUrl}/chat-service/ws`);
         stompClient = Stomp.over(socket);
 
         stompClient.connect({}, () => {
@@ -65,12 +147,38 @@
         }
         const payload = {
             chatRoomId: document.getElementById("roomId").value,
-            userId: document.getElementById("userId").value,
             content: document.getElementById("content").value
         };
         stompClient.send("/app/chat.send", {}, JSON.stringify(payload));
         log("[SEND] " + JSON.stringify(payload));
         document.getElementById("content").value = "";
+    }
+
+    async function sendBurst() {
+        if (!stompClient || !stompClient.connected) {
+            log("먼저 Connect 하세요.");
+            return;
+        }
+
+        const roomId = document.getElementById("roomId").value;
+        const baseContent = document.getElementById("content").value.trim() || "burst-message";
+        const count = Math.max(1, Number(document.getElementById("burstCount").value || 1));
+        const interval = Math.max(0, Number(document.getElementById("burstInterval").value || 0));
+
+        log(`[BURST] start count=${count}, interval=${interval}ms`);
+        for (let i = 1; i <= count; i += 1) {
+            const payload = {
+                chatRoomId: roomId,
+                content: `${baseContent} #${i}`
+            };
+            stompClient.send("/app/chat.send", {}, JSON.stringify(payload));
+            log("[SEND] " + JSON.stringify(payload));
+
+            if (interval > 0 && i < count) {
+                await new Promise((resolve) => setTimeout(resolve, interval));
+            }
+        }
+        log("[BURST] done");
     }
 </script>
 </body>
