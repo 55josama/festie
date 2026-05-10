@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -18,18 +19,19 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String ACCESS_TOKEN_COOKIE = "accessToken";
 
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
     private static final String USER_ROLE_HEADER = "X-User-Role";
-    private static final String USER_NICKNAME_HEADER = "X-User-Nickname";
 
     private final JwtTokenProvider jwtTokenProvider;
 
     private static final List<PublicEndpoint> PUBLIC_ENDPOINTS = List.of(
             new PublicEndpoint(HttpMethod.POST, "/user-service/v1/auth/login"),
             new PublicEndpoint(HttpMethod.POST, "/user-service/v1/auth/reissue"),
-            new PublicEndpoint(HttpMethod.POST, "/user-service/v1/users")
+            new PublicEndpoint(HttpMethod.POST, "/user-service/v1/users"),
+            new PublicEndpoint(HttpMethod.GET, "/chat-service/ws-test.html")
     );
 
     @Override
@@ -45,12 +47,11 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
         String authorizationHeader = exchange.getRequest()
                 .getHeaders()
                 .getFirst(AUTHORIZATION_HEADER);
+        String token = resolveToken(exchange, authorizationHeader);
 
-        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+        if (token == null || token.isBlank()) {
             return unauthorized(exchange);
         }
-
-        String token = authorizationHeader.substring(BEARER_PREFIX.length());
 
         if (!jwtTokenProvider.validateAccessToken(token)) {
             return unauthorized(exchange);
@@ -62,15 +63,34 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
                     headers.remove(USER_ID_HEADER);
                     headers.remove(USER_EMAIL_HEADER);
                     headers.remove(USER_ROLE_HEADER);
-                    headers.remove(USER_NICKNAME_HEADER);
                 })
                 .header(USER_ID_HEADER, jwtTokenProvider.getUserId(token))
                 .header(USER_EMAIL_HEADER, jwtTokenProvider.getEmail(token))
                 .header(USER_ROLE_HEADER, jwtTokenProvider.getRole(token))
-                .header(USER_NICKNAME_HEADER, jwtTokenProvider.getNickname(token))
                 .build();
 
         return chain.filter(exchange.mutate().request(mutatedRequest).build());
+    }
+
+    private String resolveToken(ServerWebExchange exchange, String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
+            return normalizeToken(authorizationHeader.substring(BEARER_PREFIX.length()));
+        }
+
+        HttpCookie cookie = exchange.getRequest().getCookies().getFirst(ACCESS_TOKEN_COOKIE);
+        if (cookie != null && !cookie.getValue().isBlank()) {
+            return normalizeToken(cookie.getValue());
+        }
+
+        return null;
+    }
+
+    private String normalizeToken(String token) {
+        String normalized = token == null ? null : token.trim();
+        if (normalized != null && normalized.startsWith(BEARER_PREFIX)) {
+            return normalized.substring(BEARER_PREFIX.length()).trim();
+        }
+        return normalized;
     }
 
     private boolean isPublicEndpoint(HttpMethod method, String path) {
