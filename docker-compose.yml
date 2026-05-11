@@ -117,6 +117,7 @@ services:
       - -config.file=/etc/promtail/config.yml
     volumes:
       - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - promtail_positions:/var/lib/promtail
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
     networks:
@@ -580,6 +581,7 @@ volumes:
   postgres_data:
   grafana_data:
   loki_data:
+  promtail_positions:
 
 networks:
   festie-network:
