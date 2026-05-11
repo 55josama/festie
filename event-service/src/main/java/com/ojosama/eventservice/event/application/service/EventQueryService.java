@@ -11,6 +11,7 @@ import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventQueryService {
 
     private final EventRepository eventRepository;
@@ -39,8 +41,10 @@ public class EventQueryService {
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = "event", key = "#id")
     public EventResult getEventById(UUID id) {
+        log.info("행사 단건 조회 - id: {}", id);
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
+        log.info("DB에서 행사 조회 완료, 결과 반환");
         return EventResult.from(event);
     }
 
