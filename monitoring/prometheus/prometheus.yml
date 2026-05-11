@@ -17,4 +17,7 @@ scrape_configs:
     metrics_path: "/actuator/prometheus"
     static_configs:
       - targets: [ "user-service:8081" ]
-
+  - job_name: "event-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: [ "mon-event:8082" ]
