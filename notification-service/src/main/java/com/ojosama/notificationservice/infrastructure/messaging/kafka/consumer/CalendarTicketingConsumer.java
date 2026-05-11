@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.notificationservice.application.NotificationService;
+import com.ojosama.notificationservice.application.command.TicketingScheduleCommand;
 import com.ojosama.notificationservice.domain.exception.NotificationErrorCode;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TicketingScheduleMessage;
@@ -44,7 +45,7 @@ public class CalendarTicketingConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> notificationService.createNotificationTicketing(event)
+                    () -> dispatch(event)
             );
             log.info("Event request created: {}", record.key());
         } catch (RuntimeException e) {
@@ -59,5 +60,13 @@ public class CalendarTicketingConsumer {
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
+    }
+
+    private void dispatch(TicketingScheduleMessage event) {
+        if (event == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+        notificationService.createNotificationTicketing(new TicketingScheduleCommand(event.userIds(), event.eventId(),
+                event.eventName(), event.ticketingStartAt()));
     }
 }

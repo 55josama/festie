@@ -31,7 +31,7 @@ public class EventDeletedConsumer {
     private final IdempotentEventHandler idempotentEventHandler;
     private final CalendarService calendarService;
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final CalendarRedisService notificationService;
+    private final CalendarRedisService redisService;
 
     @KafkaListener(
             topics = "${spring.kafka.topic.event-deleted}",
@@ -69,7 +69,7 @@ public class EventDeletedConsumer {
 
     private void dispatch(EventDeletedMessage event) {
         List<UUID> userIds = calendarService.deleteAllByEventId(event.eventId());
-        notificationService.deleteAlarms(event.eventId());
+        redisService.deleteAlarms(event.eventId());
         // 알림으로 kafka 전송
         applicationEventPublisher.publishEvent(
                 new CalendarEventDeletedMessage(event.eventId(), event.eventName(), userIds));

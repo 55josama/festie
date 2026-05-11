@@ -24,7 +24,7 @@ public class CalendarRedisService {
         long ttl = Duration.between(LocalDateTime.now(), ticketingDate.minusHours(1)).getSeconds();
         // TTL이 0 이하(이미 지난 경우)면 등록 x
         if (ttl > 0) {
-            redisTemplate.opsForValue().set(
+            redisTemplate.opsForValue().setIfAbsent( // 없을때만 저장
                     TICKETING_ALARM_KEY + eventId,
                     eventId.toString(),
                     ttl,
@@ -40,7 +40,7 @@ public class CalendarRedisService {
         // TTL이 0 이하(이미 지난 경우)면 등록 x
         long ttl = Duration.between(LocalDateTime.now(), alarmTime).getSeconds();
         if (ttl > 0) {
-            redisTemplate.opsForValue().set(
+            redisTemplate.opsForValue().setIfAbsent( // 없을때만 저장
                     EVENT_ALARM_KEY + eventId,
                     eventId.toString(),
                     ttl,
