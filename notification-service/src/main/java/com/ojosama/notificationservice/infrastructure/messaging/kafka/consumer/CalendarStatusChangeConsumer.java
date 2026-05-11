@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.notificationservice.application.NotificationService;
-import com.ojosama.notificationservice.application.command.TicketingScheduleCommand;
+import com.ojosama.notificationservice.application.command.CalendarStatusChangeCommand;
 import com.ojosama.notificationservice.domain.exception.NotificationErrorCode;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
-import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TicketingScheduleMessage;
+import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.CalendarStatusChangeMessage;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,27 +19,27 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CalendarTicketingConsumer {
-
+public class CalendarStatusChangeConsumer {
     private static final String CONSUMER_GROUP = "notification-service-group";
-    private static final String EVENT_TYPE = EventType.TICKETING_SCHEDULE_REMINDER.getValue();
+    private static final String EVENT_TYPE = EventType.CALENDAR_STATUS_UPDATED.getValue();
 
+    private final ObjectMapper objectMapper;
     private final IdempotentEventHandler idempotentEventHandler;
     private final NotificationService notificationService;
-    private final ObjectMapper objectMapper;
 
     @KafkaListener(
-            topics = "${spring.kafka.topic.calendar-ticketing-imminent}",
+            topics = "${spring.kafka.topic.calendar-status-changed}",
             groupId = CONSUMER_GROUP,
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void onMessage(ConsumerRecord<String, String> record) {
         UUID messageKey;
-        TicketingScheduleMessage event;
+        CalendarStatusChangeMessage event;
 
         try {
             messageKey = UUID.fromString(record.key());
             event = parse(record.value());
+
             idempotentEventHandler.handle(
                     messageKey,
                     CONSUMER_GROUP,
@@ -47,26 +47,26 @@ public class CalendarTicketingConsumer {
                     EVENT_TYPE,
                     () -> dispatch(event)
             );
-            log.info("Event request created: {}", record.key());
+            log.info("행사 취소 이벤트 성공 : {}", record.key());
         } catch (RuntimeException e) {
-            log.error("티켓팅 리마인드 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            log.error("행사 취소 이벤트 실패 : {}, {}", record.key(), e.getMessage());
             throw e;
         }
     }
 
-    private TicketingScheduleMessage parse(String value) {
+    private CalendarStatusChangeMessage parse(String payload) {
         try {
-            return objectMapper.readValue(value, TicketingScheduleMessage.class);
+            return objectMapper.readValue(payload, CalendarStatusChangeMessage.class);
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
     }
 
-    private void dispatch(TicketingScheduleMessage event) {
-        if (event == null) {
+    private void dispatch(CalendarStatusChangeMessage event) {
+        if (event == null || event.eventId() == null) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
-        notificationService.createNotificationTicketing(new TicketingScheduleCommand(event.userIds(), event.eventId(),
-                event.eventName(), event.ticketingStartAt()));
+        notificationService.updateEventStatusNotification(
+                new CalendarStatusChangeCommand(event.eventId(), event.eventName(), event.status(), event.userIds()));
     }
 }

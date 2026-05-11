@@ -42,7 +42,9 @@ public class MessageService {
     private static final int MAX_MESSAGE_CONTENT_LENGTH = 1000;
     private static final int MAX_WRITER_NICKNAME_LENGTH = 50;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final UUID SYSTEM_BLINDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID SYSTEM_BLINDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    private static final UUID SYSTEM_NOTICE_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    private static final String SYSTEM_WRITER_NICKNAME = "시스템";
     private static final String AGGREGATE_TYPE = "CHAT";
 
     private final MessageRepository messageRepository;
@@ -84,6 +86,24 @@ public class MessageService {
         );
 
         return MessageResult.from(savedMessage);
+    }
+
+    public MessageResult createSystemNotice(UUID chatRoomId, String content) {
+        if (chatRoomId == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        validateContent(content);
+
+        findChatRoom(chatRoomId);
+
+        Message message = Message.builder()
+                .chatRoomId(chatRoomId)
+                .userId(SYSTEM_NOTICE_USER_ID)
+                .writerNickname(SYSTEM_WRITER_NICKNAME)
+                .content(content.trim())
+                .build();
+
+        return MessageResult.from(messageRepository.save(message));
     }
 
     @Transactional(readOnly = true)

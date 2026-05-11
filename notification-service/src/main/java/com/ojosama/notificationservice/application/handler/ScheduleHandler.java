@@ -1,5 +1,7 @@
 package com.ojosama.notificationservice.application.handler;
 
+import com.ojosama.notificationservice.application.command.CalendarScheduleCommand;
+import com.ojosama.notificationservice.application.command.TicketingScheduleCommand;
 import com.ojosama.notificationservice.application.dto.result.NotificationResult;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
 import com.ojosama.notificationservice.domain.model.emailLog.EmailLog;
@@ -11,8 +13,6 @@ import com.ojosama.notificationservice.infrastructure.client.UserClient;
 import com.ojosama.notificationservice.infrastructure.client.dto.UserInfo;
 import com.ojosama.notificationservice.infrastructure.mail.MailService;
 import com.ojosama.notificationservice.infrastructure.mail.dto.MailSendDto;
-import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.CalendarScheduleMessage;
-import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TicketingScheduleMessage;
 import com.ojosama.notificationservice.infrastructure.sse.SseEmitterManager;
 import java.util.List;
 import java.util.Map;
@@ -35,17 +35,17 @@ public class ScheduleHandler {
     private final SseEmitterManager sseEmitterManager;
 
     // 행사 일정 임박
-    public void handleEventScheduled(CalendarScheduleMessage message) {
-        List<Notification> notifications = message.userIds().stream()
+    public void handleEventScheduled(CalendarScheduleCommand command) {
+        List<Notification> notifications = command.userIds().stream()
                 .map(receiverId -> Notification.of(
-                        receiverId, message.eventName() + " 행사 알림",
-                        message.eventStartAt() + "에 시작됩니다.",
-                        TargetInfo.event(message.eventId())))
+                        receiverId, command.eventName() + " 행사 알림",
+                        command.eventStartAt() + "에 시작됩니다.",
+                        TargetInfo.event(command.eventId())))
                 .toList();
         notificationRepository.saveAll(notifications);
 
         try {
-            UserInfo userInfo = userClient.getUserInfo(message.userIds());
+            UserInfo userInfo = userClient.getUserInfo(command.userIds());
 
             Map<UUID, String> emailMap = userInfo.userInfo();
             notifications.forEach(notification -> {
@@ -66,18 +66,18 @@ public class ScheduleHandler {
     }
 
     // 티켓팅 일정 임박
-    public void handleTicketingScheduled(TicketingScheduleMessage message) {
-        List<Notification> notifications = message.userIds().stream()
+    public void handleTicketingScheduled(TicketingScheduleCommand command) {
+        List<Notification> notifications = command.userIds().stream()
                 .map(receiverId -> Notification.of(
-                        receiverId, message.eventName() + " 티켓팅 알림",
-                        message.ticketingStartAt() + "에 시작됩니다.",
-                        TargetInfo.ticketing(message.eventId())))
+                        receiverId, command.eventName() + " 티켓팅 알림",
+                        command.ticketingStartAt() + "에 시작됩니다.",
+                        TargetInfo.ticketing(command.eventId())))
                 .toList();
 
         notificationRepository.saveAll(notifications);
 
         try {
-            UserInfo userInfo = userClient.getUserInfo(message.userIds());
+            UserInfo userInfo = userClient.getUserInfo(command.userIds());
             Map<UUID, String> emailMap = userInfo.userInfo();
             notifications.forEach(notification -> {
                 String email = emailMap.get(notification.getReceiverId());
