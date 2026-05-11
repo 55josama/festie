@@ -1,6 +1,6 @@
 package com.ojosama.favoriteservice.infrastructure.persistence;
 
-import com.ojosama.favoriteservice.application.dto.command.UpdateFavoriteEventCommand.FieldChange;
+import com.ojosama.favoriteservice.domain.model.EventFieldChange;
 import com.ojosama.favoriteservice.domain.model.EventStatus;
 import com.ojosama.favoriteservice.domain.model.QFavorite;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -9,10 +9,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
+@Slf4j
 public class FavoriteRepositoryCustomImpl implements FavoriteRepositoryCustom {
 
     private final JPAQueryFactory jpaQueryFactory;
@@ -22,7 +24,7 @@ public class FavoriteRepositoryCustomImpl implements FavoriteRepositoryCustom {
     private final static UUID system = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     @Override
-    public void updateEventInfoBulk(UUID eventId, List<FieldChange> changedFields) {
+    public void updateEventInfoBulk(UUID eventId, List<EventFieldChange> changedFields) {
 
         var update = jpaQueryFactory.update(qFavorite);
         boolean isChanged = false;
@@ -40,8 +42,11 @@ public class FavoriteRepositoryCustomImpl implements FavoriteRepositoryCustom {
         if (isChanged) {
             update.set(qFavorite.updatedAt, LocalDateTime.now())
                     .set(qFavorite.updatedBy, system)
-                    .where(qFavorite.eventInfo.eventId.eq(eventId))
+                    .where(qFavorite.eventInfo.eventId.eq(eventId)
+                            .and(qFavorite.deletedAt.isNull()))
                     .execute();
+        } else {
+            log.info("수정 필드 없음: {}", eventId);
         }
 
         entityManager.flush();
@@ -53,7 +58,8 @@ public class FavoriteRepositoryCustomImpl implements FavoriteRepositoryCustom {
         jpaQueryFactory.update(qFavorite)
                 .set(qFavorite.deletedAt, LocalDateTime.now())
                 .set(qFavorite.deletedBy, system)
-                .where(qFavorite.eventInfo.eventId.eq(eventId))
+                .where(qFavorite.eventInfo.eventId.eq(eventId)
+                        .and(qFavorite.deletedAt.isNull()))
                 .execute();
 
         entityManager.flush();
@@ -66,7 +72,8 @@ public class FavoriteRepositoryCustomImpl implements FavoriteRepositoryCustom {
                 .set(qFavorite.updatedAt, LocalDateTime.now())
                 .set(qFavorite.updatedBy, system)
                 .set(qFavorite.eventInfo.eventStatus, status)
-                .where(qFavorite.eventInfo.eventId.eq(eventId))
+                .where(qFavorite.eventInfo.eventId.eq(eventId)
+                        .and(qFavorite.deletedAt.isNull()))
                 .execute();
 
         entityManager.flush();

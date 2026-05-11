@@ -69,6 +69,6 @@ public class EventStatusUpdateConsumer {
             throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
         favoriteService.updateStatusEventId(
-                new UpdateStatusEventCommand(event.eventId(), EventStatus.valueOf(event.status())));
+                new UpdateStatusEventCommand(event.eventId(), EventStatus.from(event.status())));
     }
 }

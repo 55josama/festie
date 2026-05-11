@@ -1,5 +1,7 @@
 package com.ojosama.favoriteservice.domain.model;
 
+import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
+import com.ojosama.favoriteservice.domain.exception.FavoriteException;
 import lombok.Getter;
 
 @Getter
@@ -15,4 +17,11 @@ public enum EventStatus {
         this.value = value;
     }
 
+    public static EventStatus from(String status) {
+        try {
+            return EventStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+    }
 }

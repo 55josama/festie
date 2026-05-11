@@ -4,6 +4,8 @@ import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
 import com.ojosama.favoriteservice.domain.exception.FavoriteException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,6 +26,7 @@ public class EventInfo {
     private String eventImg;
 
     @Column(name = "event_status")
+    @Enumerated(EnumType.STRING)
     private EventStatus eventStatus;
 
     public EventInfo(UUID eventId, String eventName, String eventImg, EventStatus eventStatus) {

@@ -7,12 +7,14 @@ import com.ojosama.favoriteservice.application.dto.command.UpdateStatusEventComm
 import com.ojosama.favoriteservice.application.dto.result.FavoriteResult;
 import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
 import com.ojosama.favoriteservice.domain.exception.FavoriteException;
+import com.ojosama.favoriteservice.domain.model.EventFieldChange;
 import com.ojosama.favoriteservice.domain.model.EventInfo;
 import com.ojosama.favoriteservice.domain.model.EventStatus;
 import com.ojosama.favoriteservice.domain.model.Favorite;
 import com.ojosama.favoriteservice.domain.repository.FavoriteRepository;
 import com.ojosama.favoriteservice.infrastructure.client.EventClient;
 import com.ojosama.favoriteservice.infrastructure.client.dto.EventInfoResponseDto;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +80,12 @@ public class FavoriteService {
 
     // 이벤트를 통한 행사 변경
     public void updateAllByEventId(UpdateFavoriteEventCommand command) {
-        favoriteRepository.updateEventInfoBulk(command.eventId(), command.changedFields());
+        List<EventFieldChange> domainFields = command.changedFields()
+                .stream()
+                .map(f -> new EventFieldChange(f.fieldName(), f.after()))
+                .toList();
+
+        favoriteRepository.updateEventInfoBulk(command.eventId(), domainFields);
     }
 
     // 행사 상태 변경

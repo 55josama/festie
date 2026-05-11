@@ -1,6 +1,6 @@
 package com.ojosama.favoriteservice.infrastructure.persistence;
 
-import com.ojosama.favoriteservice.application.dto.command.UpdateFavoriteEventCommand;
+import com.ojosama.favoriteservice.domain.model.EventFieldChange;
 import com.ojosama.favoriteservice.domain.model.EventStatus;
 import com.ojosama.favoriteservice.domain.model.Favorite;
 import com.ojosama.favoriteservice.domain.repository.FavoriteRepository;
@@ -51,7 +51,7 @@ public class FavoriteRepositoryImpl implements FavoriteRepository {
     }
 
     @Override
-    public void updateEventInfoBulk(UUID eventId, List<UpdateFavoriteEventCommand.FieldChange> changedFields) {
+    public void updateEventInfoBulk(UUID eventId, List<EventFieldChange> changedFields) {
         favoriteRepositoryCustom.updateEventInfoBulk(eventId, changedFields);
     }
 
