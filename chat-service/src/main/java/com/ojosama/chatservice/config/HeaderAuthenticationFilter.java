@@ -23,6 +23,11 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
     private static final String USER_ROLE_HEADER = "X-User-Role";
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/actuator/");
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,

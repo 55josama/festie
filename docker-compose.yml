@@ -1,13 +1,14 @@
 services:
   # ============ infra ============
+  # ============ data ============
   postgres:
     image: pgvector/pgvector:pg16
     container_name: festie-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-festie}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-1234}
-      POSTGRES_DB: ${POSTGRES_DB:-festie}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -16,7 +17,7 @@ services:
     networks:
       - festie-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-festie} -d ${POSTGRES_DB:-festie}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,7 +83,7 @@ services:
     networks:
       - festie-network
 
-  # ============ zipkin ============
+  # ============ monitoring ============
   zipkin:
     image: openzipkin/zipkin:3
     container_name: festie-zipkin
@@ -91,6 +92,78 @@ services:
       - "9411:9411"
     networks:
       - festie-network
+
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: festie-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command:
+      - -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    networks:
+      festie-network:
+        aliases:
+          - loki
+          - festie-loki
+
+  promtail:
+    image: grafana/promtail:3.3.2
+    container_name: festie-promtail
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - promtail_positions:/var/lib/promtail
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - festie-network
+    depends_on:
+      loki:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: festie-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    networks:
+      - festie-network
+    depends_on:
+      chat-service:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana-oss:11.4.0
+    container_name: festie-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - festie-network
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
 
   # ============ config-server ============
   config-server:
@@ -108,11 +181,11 @@ services:
         condition: service_healthy
     environment:
       CONFIG_URL: ${CONFIG_URL}
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
       GIT_USERNAME: ${GIT_USERNAME}
       GIT_TOKEN: ${GIT_TOKEN}
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
     healthcheck:
       test: [ "CMD-SHELL", "wget --spider -q http://localhost:8888/actuator/health || exit 1" ]
       interval: 10s
@@ -155,13 +228,14 @@ services:
     environment:
       SERVER_PORT: 8085
       CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-ojosamaojosamaoojosamaojosamaojosamaojosama}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://festie-eureka:8761/eureka/
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
+      JWT_SECRET: ${JWT_SECRET}
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
+      ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
   # 개발시 각자 복붙해서 추가 (경로 수정 후)
   # ============ chat-service ============
@@ -187,14 +261,14 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
@@ -223,13 +297,13 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
@@ -258,12 +332,12 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
@@ -292,13 +366,13 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
@@ -333,18 +407,18 @@ services:
       SERVER_PORT: 8082
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
-      DB_USER: ${POSTGRES_USER:-festie}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-festie}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-festiepw}
-      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
 
   # ============ community-service ============
   community-service:
@@ -370,12 +444,12 @@ services:
         condition: service_healthy
     environment:
       SERVER_PORT: 9001  # 테스트 시 사용
-      CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
@@ -404,13 +478,13 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
@@ -439,13 +513,13 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
@@ -474,38 +548,41 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
       SERVER_PORT: 8081
-      CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
 
-      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
 
-      DB_USER: ${POSTGRES_USER:-festie}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_TOPIC_USER_BLACKLIST_STATUS: operation.blacklist.updated.v1
 
-      USER_DB_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
-      USER_DB_USERNAME: ${POSTGRES_USER:-festie}
-      USER_DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      USER_DB_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
+      USER_DB_USERNAME: ${POSTGRES_USER}
+      USER_DB_PASSWORD: ${POSTGRES_PASSWORD}
 
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka/
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
 
-      JWT_SECRET: ${JWT_SECRET:-ojosamaojosamaoojosamaojosamaojosamaojosama}
-      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-3600000}
-      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION:-1296000000}
-      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-local-internal-token}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
 
 volumes:
   postgres_data:
+  grafana_data:
+  loki_data:
+  promtail_positions:
 
 networks:
   festie-network:
