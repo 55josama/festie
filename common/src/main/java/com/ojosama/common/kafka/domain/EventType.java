@@ -25,6 +25,7 @@ public enum EventType {
     SCHEDULE_REMINDER("EventSchedule"),
     CALENDAR_UPDATED("CalendarUpdated"),
     CALENDAR_DELETED("CalendarDeleted"),
+    CALENDAR_STATUS_UPDATED("CalendarStatusUpdated"),
 
     // operation
     REPORT_BLINDED("ReportBlinded"),
