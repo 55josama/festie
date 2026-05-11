@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -18,6 +19,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String ACCESS_TOKEN_QUERY_PARAM = "accessToken";
 
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
@@ -74,6 +76,17 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
         if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
             return normalizeToken(authorizationHeader.substring(BEARER_PREFIX.length()));
         }
+
+        if (isWebSocketEndpoint(exchange.getRequest().getURI().getPath())) {
+            String queryToken = UriComponentsBuilder.fromUri(exchange.getRequest().getURI())
+                    .build()
+                    .getQueryParams()
+                    .getFirst(ACCESS_TOKEN_QUERY_PARAM);
+            if (queryToken != null && !queryToken.isBlank()) {
+                return normalizeToken(queryToken);
+            }
+        }
+
         return null;
     }
 
@@ -88,6 +101,10 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
     private boolean isPublicEndpoint(HttpMethod method, String path) {
         return PUBLIC_ENDPOINTS.stream()
                 .anyMatch(endpoint -> endpoint.matches(method, path));
+    }
+
+    private boolean isWebSocketEndpoint(String path) {
+        return path != null && path.startsWith("/chat-service/ws");
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange) {

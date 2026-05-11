@@ -28,8 +28,8 @@
     <button onclick="sendMsg()">Send</button>
 </div>
 <div style="margin: 6px 0 12px; font-size: 13px; color: #666;">
-    로그인 응답의 access token을 브라우저 메모리에만 보관하고, WebSocket 연결 시 Authorization 헤더로 전달합니다.
-    로그인은 /user-service, WebSocket은 /chat-service 경로로 붙습니다.
+    로그인 응답의 access token을 브라우저 메모리에만 보관하고, WebSocket 연결 시 테스트용 query param으로 전달합니다.
+    브라우저 SockJS에서는 커스텀 HTTP 헤더를 넣을 수 없어 이 방식으로 연결합니다.
 </div>
 <div>
     <label>Room ID</label>
@@ -104,11 +104,20 @@
             log(`[LOGOUT-ERROR] ${response.status}`);
             return;
         }
+        if (stompClient) {
+            stompClient.disconnect(() => log("[DISCONNECTED]"));
+            stompClient = null;
+        }
         accessToken = "";
         log("[LOGOUT] access token 삭제 완료");
     }
 
     function connect() {
+        if (stompClient) {
+            stompClient.disconnect(() => log("[DISCONNECTED] 기존 연결 정리"));
+            stompClient = null;
+        }
+
         const roomId = document.getElementById("roomId").value;
         const gatewayUrl = document.getElementById("gatewayUrl").value.replace(/\/$/, "");
         if (!accessToken) {
@@ -116,16 +125,7 @@
             return;
         }
 
-        const socket = new SockJS(`${gatewayUrl}/chat-service/ws`, null, {
-            transports: ["xhr-streaming", "xhr-polling"],
-            transportOptions: {
-                xhr: {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`
-                    }
-                }
-            }
-        });
+        const socket = new SockJS(`${gatewayUrl}/chat-service/ws?accessToken=${encodeURIComponent(accessToken)}`);
         stompClient = Stomp.over(socket);
 
         stompClient.connect({}, () => {
