@@ -87,7 +87,7 @@ public class EventStatusUpdatedConsumer {
 
             // 카프카 이벤트 발행
             applicationEventPublisher.publishEvent(
-                    new CalendarEventStatusUpdatedMessage(event.eventId(), event.status(), userIds)
+                    new CalendarEventStatusUpdatedMessage(event.eventId(), event.eventName(), event.status(), userIds)
             );
         }
     }

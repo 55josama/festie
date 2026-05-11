@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record EventStatusUpdatedMessage(
         UUID eventId,
+        String eventName,
         String status
 ) {
 }
