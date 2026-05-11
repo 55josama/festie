@@ -2,10 +2,9 @@ package com.ojosama.notificationservice.infrastructure.messaging.kafka.dto;
 
 import java.util.UUID;
 
-public record EventRequestCreatedResultMessage(
+public record EventRequestMessage(
         UUID targetId,
-        UUID receiverId,
-        String status,
+        String categoryName,
         String eventName
 ) {
 }
