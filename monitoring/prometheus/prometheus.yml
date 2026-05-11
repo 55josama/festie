@@ -1,0 +1,53 @@
+# Prometheus 설정 — festie 모니터링 스택
+# 모든 Spring Boot 서비스에서 /actuator/prometheus 를 scrape 한다.
+global:
+  scrape_interval: 15s         # 메트릭 수집 주기
+  evaluation_interval: 15s     # 알림 규칙 평가 주기
+  external_labels:
+    cluster: festie-local
+
+# 알림 규칙 파일 — 같은 디렉토리에 마운트됨
+rule_files:
+  - "/etc/prometheus/alert.rules.yml"
+
+# AlertManager 연결
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - festie-alertmanager:9093
+
+# 스크랩 대상
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ── Spring Boot 서비스들 ─────────────────────────────────
+  # 모든 서비스의 actuator/prometheus 를 한 번에 등록
+  - job_name: 'festie-services'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['festie-eureka:8761']
+        labels: { service: 'eureka-server' }
+      - targets: ['festie-config:8888']
+        labels: { service: 'config-server' }
+      - targets: ['festie-community:9001']
+        labels: { service: 'community-service' }
+#      - targets: ['festie-user:8081']
+#        labels: { service: 'user-service' }
+#      - targets: ['festie-event:8082']
+#        labels: { service: 'event-service' }
+#      - targets: ['festie-ai:8083']
+#        labels: { service: 'ai-service' }
+#      - targets: ['festie-operation:8084']
+#        labels: { service: 'operation-service' }
+#      - targets: ['festie-notification:8085']
+#        labels: { service: 'notification-service' }
+#      - targets: ['festie-favorite:8086']
+#        labels: { service: 'favorite-service' }
+#      - targets: ['festie-calendar:8087']
+#        labels: { service: 'calendar-service' }
+#      - targets: ['festie-chat:8088']
+#        labels: { service: 'chat-service' }

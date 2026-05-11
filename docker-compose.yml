@@ -502,9 +502,85 @@ services:
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-local-internal-token}
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
+  # ============ monitoring ============
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: festie-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'   # POST /-/reload 로 hot reload
+    networks:
+      - festie-network
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: festie-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks:
+      - festie-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: festie-alertmanager
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      # 원본 설정은 템플릿(.tpl)으로 마운트, 컨테이너 안에서 sed 로 치환 후 사용
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml.tpl:ro
+      - alertmanager_data:/alertmanager
+    # alertmanager 0.27 은 config 파일 내 env var expansion 을 지원하지 않으므로
+    # entrypoint 에서 __DISCORD_WEBHOOK_URL__ placeholder 를 환경변수로 치환한 뒤 실행
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        if [ -z "$$DISCORD_WEBHOOK_URL" ]; then
+          echo "[alertmanager] ERROR: DISCORD_WEBHOOK_URL 가 비어 있습니다. .env 를 확인하세요." >&2
+          exit 1
+        fi
+        sed "s|__DISCORD_WEBHOOK_URL__|$$DISCORD_WEBHOOK_URL|g" \
+          /etc/alertmanager/alertmanager.yml.tpl > /etc/alertmanager/alertmanager.yml
+        exec /bin/alertmanager \
+          --config.file=/etc/alertmanager/alertmanager.yml \
+          --storage.path=/alertmanager
+    networks:
+      - festie-network
 
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
 
 networks:
   festie-network:

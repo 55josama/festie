@@ -23,11 +23,25 @@ spring:
 server:
   port: 8888
 
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://festie-eureka:8761/eureka/}
+
 management:
   endpoints:
     web:
       exposure:
-        include: health, refresh
+        include: "*"
   endpoint:
     health:
-      show-details: when_authorized
+      show-details: always
+    prometheus:
+      access: read_only
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name:unknown}
