@@ -5,7 +5,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -19,7 +18,6 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String ACCESS_TOKEN_COOKIE = "accessToken";
 
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
@@ -76,12 +74,6 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
         if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
             return normalizeToken(authorizationHeader.substring(BEARER_PREFIX.length()));
         }
-
-        HttpCookie cookie = exchange.getRequest().getCookies().getFirst(ACCESS_TOKEN_COOKIE);
-        if (cookie != null && !cookie.getValue().isBlank()) {
-            return normalizeToken(cookie.getValue());
-        }
-
         return null;
     }
 
