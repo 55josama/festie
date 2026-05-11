@@ -11,6 +11,7 @@ import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class EventQueryService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "event", key = "#id")
     public EventResult getEventById(UUID id) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
@@ -43,6 +45,7 @@ public class EventQueryService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "event-all")
     public List<EventResult> getAllEvents() {
         return eventRepository.findAllActive().stream()
                 .map(EventResult::from)

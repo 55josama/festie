@@ -28,6 +28,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,7 @@ public class EventCommandService {
     private final EventScheduleActionRepository scheduleActionRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    @CacheEvict(cacheNames = "event-all", allEntries = true)
     public EventResult createEvent(CreateEventCommand command) {
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND));
@@ -81,6 +84,10 @@ public class EventCommandService {
         return EventResult.from(saved);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "event", key = "#command.eventId"),
+            @CacheEvict(cacheNames = "event-all", allEntries = true)
+    })
     public EventResult updateEvent(UpdateEventCommand command) {
         Event event = eventRepository.findById(command.eventId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
@@ -144,6 +151,10 @@ public class EventCommandService {
         return EventResult.from(event);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "event", key = "#eventId"),
+            @CacheEvict(cacheNames = "event-all", allEntries = true)
+    })
     public void deleteEvent(UUID userId, UUID eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
