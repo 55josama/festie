@@ -21,7 +21,7 @@ management:
         include: "*"
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
     prometheus:
       access: read_only
   prometheus:
