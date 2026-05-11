@@ -3,6 +3,8 @@ package com.ojosama.userservice.infrastructure.messaging.kafka.consumer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
+import com.ojosama.userservice.domain.exception.UserErrorCode;
+import com.ojosama.userservice.domain.exception.UserException;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.model.UserStatus;
 import com.ojosama.userservice.domain.repository.UserRepository;
@@ -57,18 +59,20 @@ public class UserBlacklistStatusEventConsumer {
 
     private void changeUserStatus(UserBlacklistStatusEvent event) {
         User user = userRepository.findByIdAndDeletedAtIsNull(event.userId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "블랙리스트 상태 변경 대상 사용자를 찾을 수 없습니다. userId=" + event.userId()
-                ));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         user.changeStatus(toUserStatus(event.status()));
     }
 
     private UserStatus toUserStatus(String blacklistStatus) {
+        if (blacklistStatus == null || blacklistStatus.isBlank()) {
+            throw new UserException(UserErrorCode.INVALID_BLACKLIST_STATUS);
+        }
+
         return switch (blacklistStatus) {
             case "ACTIVE" -> UserStatus.BLOCKED;
             case "INACTIVE" -> UserStatus.ACTIVE;
-            default -> throw new IllegalArgumentException("알 수 없는 블랙리스트 상태입니다: " + blacklistStatus);
+            default -> throw new UserException(UserErrorCode.INVALID_BLACKLIST_STATUS);
         };
     }
 }

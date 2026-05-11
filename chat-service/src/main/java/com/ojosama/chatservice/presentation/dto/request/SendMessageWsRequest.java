@@ -6,7 +6,6 @@ import java.util.UUID;
 
 public record SendMessageWsRequest(
         @NotNull UUID chatRoomId,
-        @NotNull UUID userId,
         @NotBlank String content
 ) {
 }

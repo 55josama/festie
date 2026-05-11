@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface NotificationRepository {
 
@@ -12,9 +14,9 @@ public interface NotificationRepository {
 
     List<Notification> findByReceiverIdAndReadAtIsNullAndDeletedAtIsNull(UUID receiverId);
 
-    List<Notification> findByReceiverIdAndDeletedAtIsNull(UUID receiverId);
+    Page<Notification> findByReceiverIdAndDeletedAtIsNull(UUID receiverId, Pageable pageable);
 
-    void save(Notification notification);
+    Notification save(Notification notification);
 
     void saveAll(List<Notification> notifications);
 

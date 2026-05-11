@@ -41,6 +41,7 @@ public class JwtTokenProvider {
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole().name())
+                .claim("nickname", user.getNickname())
                 .claim(TOKEN_TYPE_CLAIM, tokenType.name())
                 .issuedAt(now)
                 .expiration(expiredAt)
@@ -63,6 +64,10 @@ public class JwtTokenProvider {
 
     public String getRole(String token) {
         return parseClaims(token).get("role", String.class);
+    }
+
+    public String getNickname(String token) {
+        return parseClaims(token).get("nickname", String.class);
     }
 
     public TokenType getTokenType(String token) {

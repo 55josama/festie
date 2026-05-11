@@ -1,5 +1,7 @@
 package com.ojosama.userservice.domain.model;
 
+import com.ojosama.userservice.domain.exception.UserErrorCode;
+import com.ojosama.userservice.domain.exception.UserException;
 import java.util.Locale;
 
 public enum Category {
@@ -20,13 +22,13 @@ public enum Category {
 
     public static Category from(String value) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("존재하지 않는 카테고리입니다.");
+            throw new UserException(UserErrorCode.INVALID_CATEGORY);
         }
 
         try {
             return Category.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("존재하지 않는 카테고리입니다.");
+            throw new UserException(UserErrorCode.INVALID_CATEGORY);
         }
     }
 }
