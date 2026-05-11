@@ -30,6 +30,7 @@ services:
       - "127.0.0.1:6379:6379"
     networks:
       - festie-network
+    command: redis-server --notify-keyspace-events Ex # keyspace notification 활성화
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s

@@ -15,6 +15,7 @@ public enum EventType {
     EVENT_DELETED("EventDeleted"),
     EVENT_UPDATED("EventUpdated"),
     EVENT_SCHEDULE_CHANGED("EventScheduleChanged"),
+    EVENT_STATUS_CHANGED("EventStatusChanged"),
 
     EVENT_REQUEST_CREATED("EventRequestCreated"),
     EVENT_REQUEST_RESULT("EventRequestResultCreated"),

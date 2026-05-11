@@ -6,11 +6,9 @@ import lombok.Builder;
 
 @Builder
 public record CreateCalendarCommand(
-        LocalDateTime eventDate,
-        LocalDateTime ticketingDate,
         String memo,
         UUID userId,
         UUID eventId,
-        String eventName
+        LocalDateTime eventDate
 ) {
 }

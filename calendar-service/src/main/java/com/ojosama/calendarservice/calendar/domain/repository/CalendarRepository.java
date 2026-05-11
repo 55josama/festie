@@ -16,15 +16,15 @@ public interface CalendarRepository {
 
     List<Calendar> findByEventInfo_EventIdAndDeletedAtIsNull(UUID eventId);
 
-    List<Calendar> findByEventInfo_EventDateAndDeletedAtIsNull(LocalDateTime start, LocalDateTime end);
-
     List<Calendar> findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(LocalDateTime now,
                                                                                LocalDateTime oneHourLater);
 
-    Optional<Calendar> findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(
-            UUID eventId, LocalDateTime localDateTime, UUID userId);
+    Optional<Calendar> findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(UUID eventId,
+                                                                                                LocalDateTime eventDate,
+                                                                                                UUID userId);
 
-    Optional<Calendar> findFirstByEventInfo_EventId(UUID eventId);
+    List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(LocalDateTime start,
+                                                                      LocalDateTime end);
 
 }
 

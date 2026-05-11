@@ -1,9 +1,11 @@
-package com.ojosama.calendarservice.calendar.presentaion;
+package com.ojosama.calendarservice.calendar.presentation.controller;
 
 import com.ojosama.calendarservice.calendar.application.CalendarService;
-import com.ojosama.calendarservice.calendar.presentaion.dto.CalendarResponseDto;
-import com.ojosama.calendarservice.calendar.presentaion.dto.CreateCalendarRequestDto;
-import com.ojosama.calendarservice.calendar.presentaion.dto.UpdateMemoCalendarRequestDto;
+import com.ojosama.calendarservice.calendar.application.dto.command.DeleteCalendarCommand;
+import com.ojosama.calendarservice.calendar.application.dto.query.ListCalendarQuery;
+import com.ojosama.calendarservice.calendar.presentation.dto.request.CreateCalendarRequestDto;
+import com.ojosama.calendarservice.calendar.presentation.dto.request.UpdateMemoCalendarRequestDto;
+import com.ojosama.calendarservice.calendar.presentation.dto.response.CalendarResponseDto;
 import com.ojosama.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -57,17 +59,17 @@ public class CalendarController {
             @RequestParam("month") @Min(1) @Max(12) int month,
             @RequestHeader("X-User-Id") UUID userId) {
 
-        List<CalendarResponseDto> list = calendarService.getCalendars(userId, year, month);
+        List<CalendarResponseDto> list = calendarService.getCalendars(ListCalendarQuery.of(userId, year, month));
 
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
-    // TODO : 일정을 바꾸는 ...
     @PatchMapping("/{calendarId}")
     public ResponseEntity<ApiResponse<CalendarResponseDto>> updateMemoCalendars(@PathVariable UUID calendarId,
-                                                                                @RequestBody UpdateMemoCalendarRequestDto dto,
+                                                                                @RequestBody @Valid UpdateMemoCalendarRequestDto dto,
                                                                                 @RequestHeader("X-User-Id") UUID userId) {
-        CalendarResponseDto responseDto = calendarService.updateCalendarMemo(calendarId, dto.memo(), userId);
+        CalendarResponseDto responseDto = calendarService.updateCalendarMemo(
+                dto.toCommand(userId, calendarId));
 
         return ResponseEntity.ok(ApiResponse.success(responseDto));
     }
@@ -75,7 +77,7 @@ public class CalendarController {
     @DeleteMapping("/{calendarId}")
     public ResponseEntity<ApiResponse<Void>> deleteCalendar(@PathVariable UUID calendarId,
                                                             @RequestHeader("X-User-Id") UUID userId) {
-        calendarService.deleteCalendar(calendarId, userId);
+        calendarService.deleteCalendar(new DeleteCalendarCommand(calendarId, userId));
         return ResponseEntity.ok(ApiResponse.deleted());
     }
 

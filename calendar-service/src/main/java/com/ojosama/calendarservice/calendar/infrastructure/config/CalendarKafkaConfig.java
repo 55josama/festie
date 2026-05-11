@@ -1,4 +1,4 @@
-package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.config;
+package com.ojosama.calendarservice.calendar.infrastructure.config;
 
 import com.ojosama.common.config.kafka.KafkaConfig;
 import org.springframework.context.annotation.Configuration;

@@ -1,5 +1,6 @@
 package com.ojosama.notificationservice.application.handler;
 
+import com.ojosama.notificationservice.application.dto.result.NotificationResult;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
 import com.ojosama.notificationservice.domain.model.emailLog.EmailLog;
 import com.ojosama.notificationservice.domain.model.notification.Notification;
@@ -12,6 +13,7 @@ import com.ojosama.notificationservice.infrastructure.mail.MailService;
 import com.ojosama.notificationservice.infrastructure.mail.dto.MailSendDto;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.CalendarScheduleMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TicketingScheduleMessage;
+import com.ojosama.notificationservice.infrastructure.sse.SseEmitterManager;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +32,8 @@ public class ScheduleHandler {
     private final MailService mailService;
     private final UserClient userClient;
 
+    private final SseEmitterManager sseEmitterManager;
+
     // 행사 일정 임박
     public void handleEventScheduled(CalendarScheduleMessage message) {
         List<Notification> notifications = message.userIds().stream()
@@ -42,7 +46,7 @@ public class ScheduleHandler {
 
         try {
             UserInfo userInfo = userClient.getUserInfo(message.userIds());
-            log.error("유저 feign 호출 실패");
+
             Map<UUID, String> emailMap = userInfo.userInfo();
             notifications.forEach(notification -> {
                 String email = emailMap.get(notification.getReceiverId());
@@ -55,6 +59,10 @@ public class ScheduleHandler {
         } catch (Exception e) {
             log.error("이메일 발송 실패 - user-service 호출 오류: {}", e.getMessage());
         }
+
+        notifications.forEach(n -> {
+            sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(notifications));
+        });
     }
 
     // 티켓팅 일정 임박
@@ -82,6 +90,10 @@ public class ScheduleHandler {
         } catch (Exception e) {
             log.error("이메일 발송 실패 - user-service 호출 오류: {}", e.getMessage());
         }
+
+        notifications.forEach(n -> {
+            sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(notifications));
+        });
     }
 
     private void send(Notification notification, String email) {

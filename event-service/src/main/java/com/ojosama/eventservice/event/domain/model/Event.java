@@ -224,4 +224,11 @@ public class Event extends BaseUserEntity {
         }
         this.status = EventStatus.COMPLETED;
     }
+
+    public void markCancelled() {
+        if (this.status == EventStatus.COMPLETED || this.status == EventStatus.CANCELLED) {
+            throw new EventException(EventErrorCode.VALIDATION_ERROR);
+        }
+        this.status = EventStatus.CANCELLED;
+    }
 }

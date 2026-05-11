@@ -1,5 +1,7 @@
 package com.ojosama.eventservice.event.domain.model;
 
+import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
+import com.ojosama.eventservice.event.domain.exception.EventException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -75,6 +77,14 @@ public class EventScheduleAction {
         this.errorMessage = errorMessage.length() > 500
                 ? errorMessage.substring(0, 500)
                 : errorMessage;
+    }
+
+    public void markCancelled() {
+        if (this.status != ScheduleActionStatus.PENDING) {
+            throw new EventException(EventErrorCode.EVENT_SCHEDULE_ACTION_INVALID_STATE);
+        }
+        this.status = ScheduleActionStatus.CANCELLED;
+        this.errorMessage = null;
     }
 
 }

@@ -1,4 +1,4 @@
-package com.ojosama.calendarservice.calendar.presentaion.dto;
+package com.ojosama.calendarservice.calendar.presentation.dto.request;
 
 import com.ojosama.calendarservice.calendar.application.dto.command.CreateCalendarCommand;
 import jakarta.validation.constraints.NotNull;
@@ -12,19 +12,14 @@ public record CreateCalendarRequestDto(
         @NotNull
         UUID eventId,
         @NotNull
-        LocalDateTime eventDate,
-        LocalDateTime ticketingDate,
-        @NotNull
-        String eventName
+        LocalDateTime eventDate
 ) {
     public CreateCalendarCommand toCommand(UUID userId) {
         return CreateCalendarCommand.builder()
                 .eventDate(this.eventDate)
-                .ticketingDate(this.ticketingDate)
                 .memo(this.memo)
                 .eventId(this.eventId)
                 .userId(userId)
-                .eventName(this.eventName)
                 .build();
     }
 }

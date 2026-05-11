@@ -1,4 +1,4 @@
-package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto;
+package com.ojosama.calendarservice.calendar.domain.event.payload;
 
 import java.time.LocalDateTime;
 import java.util.List;
