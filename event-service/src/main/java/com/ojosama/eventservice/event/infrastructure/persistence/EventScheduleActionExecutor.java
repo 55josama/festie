@@ -6,9 +6,11 @@ import com.ojosama.eventservice.event.domain.model.Event;
 import com.ojosama.eventservice.event.domain.model.EventScheduleAction;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import com.ojosama.eventservice.event.domain.repository.EventScheduleActionRepository;
+import com.ojosama.eventservice.event.domain.event.payload.EventStatusChangedMessage;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ public class EventScheduleActionExecutor {
 
     private final EventScheduleActionRepository scheduleActionRepo;
     private final EventRepository eventRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processOne(EventScheduleAction action) {
@@ -44,15 +47,31 @@ public class EventScheduleActionExecutor {
     }
 
     private void executeAction(Event event, EventScheduleAction action) {
+        String beforeStatus = event.getStatus().name();
+
         switch (action.getAction()) {
             case MARK_IN_PROGRESS:
                 event.markInProgress();
                 eventRepository.save(event);
+                applicationEventPublisher.publishEvent(new EventStatusChangedMessage(
+                    event.getId(),
+                    event.getName(),
+                    beforeStatus,
+                    event.getStatus().name(),
+                    java.util.Collections.emptyList()
+                ));
                 break;
 
             case MARK_COMPLETED:
                 event.markCompleted();
                 eventRepository.save(event);
+                applicationEventPublisher.publishEvent(new EventStatusChangedMessage(
+                    event.getId(),
+                    event.getName(),
+                    beforeStatus,
+                    event.getStatus().name(),
+                    java.util.Collections.emptyList()
+                ));
                 break;
         }
     }
