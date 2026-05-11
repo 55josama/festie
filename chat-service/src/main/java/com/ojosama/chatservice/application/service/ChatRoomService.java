@@ -1,7 +1,7 @@
 package com.ojosama.chatservice.application.service;
 
-import com.ojosama.chatservice.application.dto.command.ChangeChatRoomStatusCommand;
 import com.ojosama.chatservice.application.dto.command.ChangeChatRoomScheduleCommand;
+import com.ojosama.chatservice.application.dto.command.ChangeChatRoomStatusCommand;
 import com.ojosama.chatservice.application.dto.command.CreateChatRoomCommand;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomByEventIdQuery;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomQuery;
@@ -15,6 +15,7 @@ import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.common.exception.CommonErrorCode;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -104,6 +105,28 @@ public class ChatRoomService {
                 )
         );
 
+        return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
+    }
+
+    public ChatRoomResult changeChatRoomScheduleForCancellation(UUID eventId, LocalDateTime cancelledAt) {
+        if (eventId == null || cancelledAt == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+
+        ChatRoom chatRoom = chatRoomRepository.findByEventId(eventId)
+                .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+
+        LocalDateTime candidateCloseAt = cancelledAt.plusMinutes(10).truncatedTo(ChronoUnit.MINUTES);
+        LocalDateTime currentCloseAt = chatRoom.getSchedule().getScheduledCloseAt();
+        LocalDateTime scheduledCloseAt = currentCloseAt != null && currentCloseAt.isBefore(candidateCloseAt)
+                ? currentCloseAt
+                : candidateCloseAt;
+        LocalDateTime scheduledOpenAt = chatRoom.getSchedule().getScheduledOpenAt();
+        if (!scheduledCloseAt.isAfter(scheduledOpenAt)) {
+            scheduledOpenAt = cancelledAt.truncatedTo(ChronoUnit.MINUTES);
+        }
+
+        chatRoom.reschedule(new ChatRoomSchedule(scheduledOpenAt, scheduledCloseAt));
         return ChatRoomResult.from(chatRoomRepository.save(chatRoom));
     }
 
