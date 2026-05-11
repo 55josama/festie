@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/favicon.ico", "/error").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
                         .requestMatchers("/ws", "/ws/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/v1/chat/admin/**").authenticated()
                         .requestMatchers("/v1/chat/**").permitAll()
                         .requestMatchers("/internal/v1/chat/**").permitAll()

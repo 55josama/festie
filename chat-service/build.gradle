@@ -18,9 +18,11 @@ dependencies {
 
     // 웹소켓
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    
-    // zipkin 테스트용 추가
+
+    // 모니터링 추가
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     runtimeOnly 'org.postgresql:postgresql'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'

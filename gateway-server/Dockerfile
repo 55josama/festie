@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY build.gradle settings.gradle ./
 COPY gradle ./gradle
+COPY common ./common
 COPY gateway-server ./gateway-server
 
 RUN gradle :gateway-server:bootJar -x test --no-daemon
