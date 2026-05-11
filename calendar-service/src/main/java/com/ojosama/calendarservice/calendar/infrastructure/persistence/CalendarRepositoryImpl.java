@@ -1,6 +1,7 @@
 package com.ojosama.calendarservice.calendar.infrastructure.persistence;
 
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
+import com.ojosama.calendarservice.calendar.domain.model.EventStatus;
 import com.ojosama.calendarservice.calendar.domain.repository.CalendarRepository;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +34,12 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
+    public List<Calendar> findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(
+            LocalDateTime now, LocalDateTime oneHourLater) {
+        return jpaCalendarRepository.findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(now, oneHourLater);
+    }
+
+    @Override
     public Optional<Calendar> findByIdAndUserIdAndDeletedAtIsNull(UUID id, UUID userId) {
         return jpaCalendarRepository.findByIdAndUserIdAndDeletedAtIsNull(id, userId);
     }
@@ -42,13 +49,6 @@ public class CalendarRepositoryImpl implements CalendarRepository {
         return calendarRepositoryCustom.findByUserIdAndYearMonthAndDeletedAtIsNull(userId, year, month);
     }
 
-    @Override
-    public List<Calendar> findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(
-            LocalDateTime now,
-            LocalDateTime oneHourLater) {
-        return jpaCalendarRepository.findByEventInfo_EventTicketingDateBetweenAndDeletedAtIsNull(now,
-                oneHourLater);
-    }
 
     @Override
     public Optional<Calendar> findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(UUID eventId,
@@ -56,6 +56,16 @@ public class CalendarRepositoryImpl implements CalendarRepository {
                                                                                                        UUID userId) {
         return jpaCalendarRepository.findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(eventId,
                 eventDate, userId);
+    }
+
+    @Override
+    public void deleteAllByEventId(UUID eventId) {
+        calendarRepositoryCustom.deleteAllByEventId(eventId);
+    }
+
+    @Override
+    public void bulkUpdateStatusByEventId(UUID eventId, EventStatus status) {
+        calendarRepositoryCustom.bulkUpdateStatusByEventId(eventId, status);
     }
 
     @Override

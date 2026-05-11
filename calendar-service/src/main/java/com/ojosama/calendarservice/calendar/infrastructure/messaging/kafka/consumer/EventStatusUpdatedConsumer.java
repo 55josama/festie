@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.calendarservice.calendar.application.CalendarRedisService;
 import com.ojosama.calendarservice.calendar.application.CalendarService;
-import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventDeletedMessage;
+import com.ojosama.calendarservice.calendar.application.dto.command.UpdateStatusEventCommand;
+import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventStatusUpdatedMessage;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
-import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventDeletedMessage;
+import com.ojosama.calendarservice.calendar.domain.model.EventStatus;
+import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventStatusUpdatedMessage;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import java.util.List;
@@ -22,10 +24,10 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class EventDeletedConsumer {
+public class EventStatusUpdatedConsumer {
 
     private static final String CONSUMER_GROUP = "calendar-service-group";
-    private static final String EVENT_TYPE = EventType.EVENT_DELETED.getValue();
+    private static final String EVENT_TYPE = EventType.EVENT_UPDATED.getValue();
 
     private final ObjectMapper objectMapper;
     private final IdempotentEventHandler idempotentEventHandler;
@@ -34,13 +36,13 @@ public class EventDeletedConsumer {
     private final CalendarRedisService redisService;
 
     @KafkaListener(
-            topics = "${spring.kafka.topic.event-deleted}",
+            topics = "${spring.kafka.topic.event-status-changed}",
             groupId = CONSUMER_GROUP,
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void onMessage(ConsumerRecord<String, String> record) {
         UUID messageKey;
-        EventDeletedMessage event;
+        EventStatusUpdatedMessage event;
 
         try {
             messageKey = UUID.fromString(record.key());
@@ -51,27 +53,42 @@ public class EventDeletedConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> dispatch(event));
-            log.info("삭제 이밴트 성공: {}", record.key());
+                    () -> dispatch(event)
+            );
+            log.info("행사 상태 변경 이벤트 성공: {}", record.key());
         } catch (RuntimeException e) {
-            log.error("삭제 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            log.error("행사 상태 변경 이벤트 실패 : {}, {}", record.key(), e.getMessage());
             throw e;
         }
     }
 
-    private EventDeletedMessage parse(String payload) {
+    private EventStatusUpdatedMessage parse(String payload) {
         try {
-            return objectMapper.readValue(payload, EventDeletedMessage.class);
+            return objectMapper.readValue(payload, EventStatusUpdatedMessage.class);
         } catch (JsonProcessingException e) {
             throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
     }
 
-    private void dispatch(EventDeletedMessage event) {
-        List<UUID> userIds = calendarService.deleteAllByEventId(event.eventId());
-        redisService.deleteAlarms(event.eventId());
-        // 알림으로 kafka 전송
-        applicationEventPublisher.publishEvent(
-                new CalendarEventDeletedMessage(event.eventId(), event.eventName(), userIds));
+    private void dispatch(EventStatusUpdatedMessage event) {
+        if (event.status() == null || event.eventId() == null) {
+            throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+
+        EventStatus status = EventStatus.from(event.status());
+
+        List<UUID> userIds = calendarService.bulkUpdateStatusByEventId(
+                new UpdateStatusEventCommand(event.eventId(), status));
+
+        // 행사 상태 -> 취소
+        if (status == EventStatus.CANCELLED) {
+            // eventId로 redis 등록되어있는게 있으면 삭제
+            redisService.deleteAlarms(event.eventId());
+
+            // 카프카 이벤트 발행
+            applicationEventPublisher.publishEvent(
+                    new CalendarEventStatusUpdatedMessage(event.eventId(), event.eventName(), event.status(), userIds)
+            );
+        }
     }
 }

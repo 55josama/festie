@@ -1,7 +1,7 @@
-package com.ojosama.calendarservice.calendar.domain.model;
+package com.ojosama.favoriteservice.domain.model;
 
-import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
-import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
+import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
+import com.ojosama.favoriteservice.domain.exception.FavoriteException;
 import lombok.Getter;
 
 @Getter
@@ -21,7 +21,7 @@ public enum EventStatus {
         try {
             return EventStatus.valueOf(status);
         } catch (IllegalArgumentException e) {
-            throw new CalendarException(CalendarErrorCode.INVALID_EVENT_STATUS);
+            throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_STATUS);
         }
     }
 }

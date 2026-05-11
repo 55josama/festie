@@ -3,6 +3,7 @@ package com.ojosama.calendarservice.calendar.application;
 import com.ojosama.calendarservice.calendar.application.dto.command.CreateCalendarCommand;
 import com.ojosama.calendarservice.calendar.application.dto.command.DeleteCalendarCommand;
 import com.ojosama.calendarservice.calendar.application.dto.command.UpdateCalendarCommand;
+import com.ojosama.calendarservice.calendar.application.dto.command.UpdateStatusEventCommand;
 import com.ojosama.calendarservice.calendar.application.dto.query.ListCalendarQuery;
 import com.ojosama.calendarservice.calendar.application.dto.result.CalendarResult;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
@@ -10,10 +11,10 @@ import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
 import com.ojosama.calendarservice.calendar.domain.model.EventInfo;
 import com.ojosama.calendarservice.calendar.domain.model.EventStatus;
+import com.ojosama.calendarservice.calendar.domain.model.FieldChange;
 import com.ojosama.calendarservice.calendar.domain.repository.CalendarRepository;
 import com.ojosama.calendarservice.calendar.infrastructure.client.EventClient;
 import com.ojosama.calendarservice.calendar.infrastructure.client.dto.EventInfoResponseDto;
-import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventUpdatedMessage.FieldChange;
 import com.ojosama.calendarservice.calendar.presentation.dto.response.CalendarResponseDto;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,8 +33,6 @@ public class CalendarService {
 
     private final CalendarRepository calendarRepository;
     private final EventClient eventClient;
-
-    private static final UUID system = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     public CalendarResponseDto createCalendar(CreateCalendarCommand command) {
 
@@ -88,7 +87,7 @@ public class CalendarService {
     public List<UUID> deleteAllByEventId(UUID eventId) {
         List<Calendar> calendarList = validateCalendarAlive(eventId);
         List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
-        calendarList.forEach(calendar -> calendar.deleted(system));
+        calendarRepository.deleteAllByEventId(eventId);
         return userIds;
     }
 
@@ -102,8 +101,8 @@ public class CalendarService {
         calendarList.forEach(calendar -> {
             changedFields.forEach(field -> {
 
-                String valueBefore = field.before() != null ? String.valueOf(field.before()) : null;
-                String valueAfter = field.after() != null ? String.valueOf(field.after()) : null;
+                String valueBefore = field.before() != null ? field.before() : null;
+                String valueAfter = field.after() != null ? field.after() : null;
                 switch (field.fieldName()) {
                     case "startAt" -> {
                         if (valueBefore != null && calendar.getEventInfo().getEventDate()
@@ -123,6 +122,14 @@ public class CalendarService {
                 }
             });
         });
+
+        return userIds;
+    }
+
+    public List<UUID> bulkUpdateStatusByEventId(UpdateStatusEventCommand command) {
+        List<Calendar> calendarList = validateCalendarAlive(command.eventId());
+        List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
+        calendarRepository.bulkUpdateStatusByEventId(command.eventId(), command.status());
 
         return userIds;
     }
