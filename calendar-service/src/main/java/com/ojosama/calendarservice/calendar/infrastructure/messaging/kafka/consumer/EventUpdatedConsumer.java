@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.calendarservice.calendar.application.CalendarRedisService;
 import com.ojosama.calendarservice.calendar.application.CalendarService;
 import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventUpdatedMessage;
-import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventUpdatedMessage.FieldChange;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
+import com.ojosama.calendarservice.calendar.domain.model.FieldChange;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventUpdatedMessage;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
@@ -34,7 +34,7 @@ public class EventUpdatedConsumer {
     private final IdempotentEventHandler idempotentEventHandler;
     private final CalendarService calendarService;
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final CalendarRedisService notificationService;
+    private final CalendarRedisService redisService;
 
     @KafkaListener(
             topics = "${spring.kafka.topic.event-changed}",
@@ -64,31 +64,37 @@ public class EventUpdatedConsumer {
     }
 
     private void dispatch(EventUpdatedMessage event) {
-        List<UUID> userIds = calendarService.updateAllByEventId(event.eventId(), event.changedFields());
 
-        notificationService.deleteAlarms(event.eventId());
+        List<FieldChange> changedFields = event.changedFields().stream()
+                .map(f -> new FieldChange(
+                        f.fieldName(),
+                        f.before() != null ? String.valueOf(f.before()) : null,
+                        f.after() != null ? String.valueOf(f.after()) : null
+                ))
+                .toList();
 
-        // 당일 티켓팅 날짜 변경되었을 경우 redis 삭제
+        List<UUID> userIds = calendarService.updateAllByEventId(event.eventId(), changedFields);
+
+        // 당일 변경이면 redis 삭제
+        redisService.deleteAlarms(event.eventId());
+
+        // 당일 취소 -> 당일 행사인 경우 redis 다시 등록
         event.changedFields().forEach(field -> {
             if (field.fieldName().equals("ticketingOpenAt") && field.after() != null) {
                 LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
                 if (after.toLocalDate().equals(LocalDate.now())) {
-                    notificationService.registerTicketingAlarm(event.eventId(), after);
+                    redisService.registerTicketingAlarm(event.eventId(), after);
                 }
             }
             if (field.fieldName().equals("startAt") && field.after() != null) {
                 LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
                 if (after.toLocalDate().equals(LocalDate.now().plusDays(1))) {
-                    notificationService.registerEventAlarm(event.eventId(), after);
+                    redisService.registerEventAlarm(event.eventId(), after);
                 }
             }
         });
 
         // Kafka 발행
-        List<FieldChange> changedFields = event.changedFields().stream()
-                .map(f -> new CalendarEventUpdatedMessage.FieldChange(f.fieldName(), f.before(), f.after()))
-                .toList();
-
         applicationEventPublisher.publishEvent(
                 new CalendarEventUpdatedMessage(event.eventId(), event.eventName(), userIds, changedFields));
     }
