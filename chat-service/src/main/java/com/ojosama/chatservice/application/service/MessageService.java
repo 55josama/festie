@@ -42,8 +42,8 @@ public class MessageService {
     private static final int MAX_MESSAGE_CONTENT_LENGTH = 1000;
     private static final int MAX_WRITER_NICKNAME_LENGTH = 50;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final UUID SYSTEM_BLINDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-    private static final UUID SYSTEM_NOTICE_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID SYSTEM_BLINDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    private static final UUID SYSTEM_NOTICE_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
     private static final String SYSTEM_WRITER_NICKNAME = "시스템";
     private static final String AGGREGATE_TYPE = "CHAT";
 

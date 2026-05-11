@@ -16,6 +16,8 @@ public record MessageResult(
         MessageStatus status,
         LocalDateTime createdAt
 ) {
+    private static final UUID SYSTEM_NOTICE_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
     public static MessageResult from(Message message) {
         return new MessageResult(
                 message.getId(),
@@ -30,7 +32,7 @@ public record MessageResult(
     }
 
     private static MessageType resolveMessageType(Message message) {
-        if (message != null && "시스템".equals(message.getWriterNickname())) {
+        if (message != null && SYSTEM_NOTICE_USER_ID.equals(message.getUserId())) {
             return MessageType.SYSTEM;
         }
         return MessageType.USER;
