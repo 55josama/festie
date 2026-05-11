@@ -75,4 +75,5 @@ public class Calendar extends BaseUserEntity {
             throw new CalendarException(CalendarErrorCode.INVALID_INPUT);
         }
     }
+
 }

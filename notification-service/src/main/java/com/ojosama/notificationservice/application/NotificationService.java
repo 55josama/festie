@@ -1,5 +1,6 @@
 package com.ojosama.notificationservice.application;
 
+import com.ojosama.notificationservice.application.dto.result.NotificationResult;
 import com.ojosama.notificationservice.application.handler.EventHandler;
 import com.ojosama.notificationservice.application.handler.OperationHandler;
 import com.ojosama.notificationservice.application.handler.ScheduleHandler;
@@ -17,11 +18,12 @@ import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventU
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.OperationRequestMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TargetBlindEventMessage;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TicketingScheduleMessage;
-import com.ojosama.notificationservice.presentation.dto.NotificationResponse;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,7 +68,7 @@ public class NotificationService {
     }
 
     public void blackListSendEmail(BlackListSendEmailMessage message) {
-        operationHandler.handelSendBlackListEmail(message);
+        operationHandler.handleSendBlackListEmail(message);
     }
 
     public void operationRequest(OperationRequestMessage message) {
@@ -77,7 +79,7 @@ public class NotificationService {
         operationHandler.handleBlindRegister(message);
     }
 
-    public List<NotificationResponse> markAllAsRead(UUID receiverId) {
+    public List<NotificationResult> markAllAsRead(UUID receiverId) {
 
         List<Notification> list = notificationRepository.findByReceiverIdAndReadAtIsNullAndDeletedAtIsNull(receiverId);
 
@@ -86,7 +88,7 @@ public class NotificationService {
         }
 
         return list.stream()
-                .map(NotificationResponse::of)
+                .map(NotificationResult::of)
                 .toList();
     }
 
@@ -100,13 +102,11 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public List<NotificationResponse> selectAll(UUID receiverId) {
+    public Page<NotificationResult> selectAll(UUID receiverId, Pageable pageable) {
 
-        List<Notification> list = notificationRepository.findByReceiverIdAndDeletedAtIsNull(receiverId);
+        Page<Notification> list = notificationRepository.findByReceiverIdAndDeletedAtIsNull(receiverId, pageable);
 
-        return list.stream()
-                .map(NotificationResponse::of)
-                .toList();
+        return list.map(NotificationResult::of);
     }
 
 }

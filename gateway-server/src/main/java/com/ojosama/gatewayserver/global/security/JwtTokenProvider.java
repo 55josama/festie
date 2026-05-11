@@ -42,10 +42,6 @@ public class JwtTokenProvider {
         return parseClaims(token).get("role", String.class);
     }
 
-    public String getNickname(String token) {
-        return parseClaims(token).get("nickname", String.class);
-    }
-
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)

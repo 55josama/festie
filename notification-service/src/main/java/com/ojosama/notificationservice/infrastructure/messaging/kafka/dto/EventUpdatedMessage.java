@@ -6,7 +6,8 @@ import java.util.UUID;
 public record EventUpdatedMessage(
         UUID eventId,
         String eventName,
-        List<ChangedField> changedFields
+        List<ChangedField> changedFields,
+        List<UUID> userIds
 ) {
     public record ChangedField(
             String fieldName,

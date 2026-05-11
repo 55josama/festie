@@ -12,7 +12,8 @@ public record CalendarResult(
         LocalDateTime ticketingDate,
         String memo,
         String eventName,
-        UUID eventId
+        UUID eventId,
+        String eventStatus
 ) {
     public static CalendarResult from(Calendar calendar) {
         return CalendarResult.builder()
@@ -22,6 +23,7 @@ public record CalendarResult(
                 .memo(calendar.getMemo())
                 .eventName(calendar.getEventInfo().getEventName())
                 .eventId(calendar.getEventInfo().getEventId())
+                .eventStatus(calendar.getEventInfo().getEventStatus().name())
                 .build();
     }
 }
