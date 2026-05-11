@@ -1,7 +1,6 @@
 ### Operation Service Demo
 ### IntelliJ HTTP Client용
 
-
 ### 회원가입
 ### 기본 role은 USER로 생성
 POST {{userUrl}}/v1/users
@@ -14,7 +13,6 @@ Content-Type: application/json
   "name": "오죠사마유저",
   "phoneNumber": "010-1111-1111"
 }
-
 
 ### 로그인
 POST {{userUrl}}/v1/auth/login
@@ -56,8 +54,8 @@ Content-Type: application/json
 
 ### 중복 신고 요청 (이미 신고한 동일 target에 다시 신고 → REPORT_EXISTS)
 POST {{operationUrl}}/v1/reports
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-X-User-Id: 11111111-1111-1111-1111-111111111111
 
 {
   "targetId": "a56ed960-2ec5-406f-bdcb-d17ea950c716",
@@ -69,8 +67,8 @@ X-User-Id: 11111111-1111-1111-1111-111111111111
 
 ### 첫 번째 신고 - 사용자 A
 POST {{operationUrl}}/v1/reports
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-X-User-Id: 11111111-1111-1111-1111-111111111111
 
 {
   "targetId": "adad0301-618d-476c-98e1-6f873bf752db",
@@ -82,8 +80,8 @@ X-User-Id: 11111111-1111-1111-1111-111111111111
 
 ### 두 번째 신고 - 사용자 B
 POST {{operationUrl}}/v1/reports
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-X-User-Id: 22222222-2222-2222-2222-222222222222
 
 {
   "targetId": "adad0301-618d-476c-98e1-6f873bf752db",
@@ -153,8 +151,8 @@ Content-Type: application/json
 
 ### 운영 요청
 POST {{operationUrl}}/v1/operation-requests
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-X-User-Id: 11111111-1111-1111-1111-111111111111
 
 {
     "title": "다크 모드 추가해주세요",
@@ -169,8 +167,8 @@ GET {{operationUrl}}/v1/operation-requests/{requestId}
 
 ### 운영 요청 수정(작성자 본인)
 PATCH {{operationUrl}}/v1/operation-requests/{requestId}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-X-User-Id: 11111111-1111-1111-1111-111111111111
 
 {
   "title": "다크 모드 추가해주세요",
@@ -188,7 +186,7 @@ Content-Type: application/json
 
 ### 운영 요청 삭제
 DELETE {{operationUrl}}/v1/operation-requests/{requestId}
-X-User-Id: 11111111-1111-1111-1111-111111111111
+Authorization: Bearer {{accessToken}}
 
 ### ============================================================
 ### 공지사항(Notice) API - /v1/notices
@@ -196,8 +194,8 @@ X-User-Id: 11111111-1111-1111-1111-111111111111
 
 ### 공지사항 작성
 POST {{operationUrl}}/v1/notices
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-X-User-Id: 11111111-1111-1111-1111-111111111111
 
 {
   "title": "서버 점검 안내",
