@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -30,9 +31,11 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
         String role = request.getHeader(USER_ROLE_HEADER);
 
         if (userId != null && role != null) {
+            UUID userIdUuid = UUID.fromString(userId.trim());
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            userId.trim(),
+                            userIdUuid,
                             null,
                             List.of(new SimpleGrantedAuthority("ROLE_" + role.trim()))
                     );
