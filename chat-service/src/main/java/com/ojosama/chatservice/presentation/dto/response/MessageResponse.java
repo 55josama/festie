@@ -1,6 +1,7 @@
 package com.ojosama.chatservice.presentation.dto.response;
 
 import com.ojosama.chatservice.application.dto.result.MessageResult;
+import com.ojosama.chatservice.domain.model.MessageType;
 import com.ojosama.chatservice.domain.model.MessageStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -10,6 +11,7 @@ public record MessageResponse(
         UUID chatRoomId,
         UUID userId,
         String writerNickname,
+        MessageType messageType,
         String content,
         MessageStatus status,
         LocalDateTime createdAt
@@ -29,6 +31,7 @@ public record MessageResponse(
                 result.chatRoomId(),
                 result.userId(),
                 result.writerNickname(),
+                result.messageType(),
                 content,
                 result.status(),
                 result.createdAt()
