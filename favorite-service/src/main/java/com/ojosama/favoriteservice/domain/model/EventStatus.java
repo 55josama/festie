@@ -21,7 +21,7 @@ public enum EventStatus {
         try {
             return EventStatus.valueOf(status);
         } catch (IllegalArgumentException e) {
-            throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
+            throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_STATUS);
         }
     }
 }
