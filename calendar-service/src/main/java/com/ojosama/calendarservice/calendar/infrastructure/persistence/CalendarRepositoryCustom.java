@@ -9,7 +9,7 @@ public interface CalendarRepositoryCustom {
 
     List<Calendar> findByUserIdAndYearMonthAndDeletedAtIsNull(UUID userId, int year, int month);
 
-    void deletedAllByEventId(UUID eventId);
+    void deleteAllByEventId(UUID eventId);
 
     void bulkUpdateStatusByEventId(UUID eventId, EventStatus status);
 }

@@ -30,8 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class FavoriteService {
 
-    private static final UUID system = UUID.fromString("00000000-0000-0000-0000-000000000000");
-
     private final FavoriteRepository favoriteRepository;
     private final EventClient eventClient;
 
@@ -49,12 +47,12 @@ public class FavoriteService {
         EventInfoResponseDto dto = eventClient.getEvents(command.eventId());
         if (favoriteOpt.isPresent()) {
             favorite = favoriteOpt.get();
-            favorite.restore(new EventInfo(command.eventId(), dto.name(), dto.img(), EventStatus.valueOf(dto.status())),
+            favorite.restore(new EventInfo(command.eventId(), dto.name(), dto.img(), EventStatus.from(dto.status())),
                     command.categoryId());
         } else {
             favorite = favoriteRepository.save(
                     Favorite.of(userId,
-                            new EventInfo(command.eventId(), dto.name(), dto.img(), EventStatus.valueOf(dto.status())),
+                            new EventInfo(command.eventId(), dto.name(), dto.img(), EventStatus.from(dto.status())),
                             command.categoryId()));
         }
         return FavoriteResult.from(favorite);

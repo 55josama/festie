@@ -39,7 +39,7 @@ public class CalendarRepositoryCustomImpl implements CalendarRepositoryCustom {
     }
 
     @Override
-    public void deletedAllByEventId(UUID eventId) {
+    public void deleteAllByEventId(UUID eventId) {
         queryFactory.update(qCalendar)
                 .set(qCalendar.deletedAt, LocalDateTime.now())
                 .set(qCalendar.deletedBy, system)

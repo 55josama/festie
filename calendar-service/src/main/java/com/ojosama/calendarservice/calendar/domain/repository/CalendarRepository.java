@@ -26,7 +26,7 @@ public interface CalendarRepository {
 
     List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(LocalDateTime start, LocalDateTime end);
 
-    void deletedAllByEventId(UUID eventId);
+    void deleteAllByEventId(UUID eventId);
 
     void bulkUpdateStatusByEventId(UUID eventId, EventStatus status);
 }

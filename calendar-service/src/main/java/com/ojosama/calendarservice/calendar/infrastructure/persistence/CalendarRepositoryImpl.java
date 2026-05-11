@@ -59,8 +59,8 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
-    public void deletedAllByEventId(UUID eventId) {
-        calendarRepositoryCustom.deletedAllByEventId(eventId);
+    public void deleteAllByEventId(UUID eventId) {
+        calendarRepositoryCustom.deleteAllByEventId(eventId);
     }
 
     @Override

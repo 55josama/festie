@@ -65,6 +65,10 @@ public class EventUpdatedConsumer {
 
     private void dispatch(EventUpdatedMessage event) {
 
+        if (event.eventId() == null || event.changedFields() == null || event.changedFields().isEmpty()) {
+            throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+
         List<FieldChange> changedFields = event.changedFields().stream()
                 .map(f -> new FieldChange(
                         f.fieldName(),
@@ -76,7 +80,11 @@ public class EventUpdatedConsumer {
         List<UUID> userIds = calendarService.updateAllByEventId(event.eventId(), changedFields);
 
         // 당일 변경이면 redis 삭제
-        redisService.deleteAlarms(event.eventId());
+        boolean hasTimeFieldChange = event.changedFields().stream()
+                .anyMatch(field -> "ticketingOpenAt".equals(field.fieldName()) || "startAt".equals(field.fieldName()));
+        if (hasTimeFieldChange) {
+            redisService.deleteAlarms(event.eventId());
+        }
 
         // 당일 취소 -> 당일 행사인 경우 redis 다시 등록
         event.changedFields().forEach(field -> {

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 public class EventStatusUpdateConsumer {
 
     private static final String CONSUMER_GROUP = "favorite-service-group";
-    private static final String EVENT_TYPE = EventType.EVENT_SCHEDULE_CHANGED.getValue();
+    private static final String EVENT_TYPE = EventType.EVENT_STATUS_CHANGED.getValue();
 
     private final ObjectMapper objectMapper;
     private final IdempotentEventHandler idempotentEventHandler;

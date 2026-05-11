@@ -87,7 +87,7 @@ public class CalendarService {
     public List<UUID> deleteAllByEventId(UUID eventId) {
         List<Calendar> calendarList = validateCalendarAlive(eventId);
         List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
-        calendarRepository.deletedAllByEventId(eventId);
+        calendarRepository.deleteAllByEventId(eventId);
         return userIds;
     }
 
@@ -101,8 +101,8 @@ public class CalendarService {
         calendarList.forEach(calendar -> {
             changedFields.forEach(field -> {
 
-                String valueBefore = field.before() != null ? String.valueOf(field.before()) : null;
-                String valueAfter = field.after() != null ? String.valueOf(field.after()) : null;
+                String valueBefore = field.before() != null ? field.before() : null;
+                String valueAfter = field.after() != null ? field.after() : null;
                 switch (field.fieldName()) {
                     case "startAt" -> {
                         if (valueBefore != null && calendar.getEventInfo().getEventDate()
