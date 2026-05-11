@@ -1,16 +1,18 @@
 package com.ojosama.eventservice.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -24,14 +26,8 @@ public class RedisCacheConfig {
         log.debug("RedisCacheConfig 빈 생성됨");
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
-    public LettuceConnectionFactory redisConnectionFactory() {
-        log.info("Redis용 LettuceConnectionFactory 생성 중");
-        LettuceConnectionFactory factory = new LettuceConnectionFactory();
-        log.info("LettuceConnectionFactory 생성 완료");
-        return factory;
-    }
+    // LettuceConnectionFactory는 Spring Boot RedisAutoConfiguration이 생성
+    // (SPRING_DATA_REDIS_HOST 환경변수 적용됨)
 
     @Bean
     @org.springframework.context.annotation.Primary
@@ -39,10 +35,20 @@ public class RedisCacheConfig {
         log.info("RedisCacheManager 생성 시작 - RedisConnectionFactory: {}",
                  connectionFactory.getClass().getSimpleName());
 
-        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer();
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .activateDefaultTypingAsProperty(
+                        BasicPolymorphicTypeValidator.builder()
+                                .allowIfSubType(Object.class)
+                                .build(),
+                        ObjectMapper.DefaultTyping.EVERYTHING,
+                        "@class"
+                );
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
-        log.info("Redis 캐시 설정 - GenericJackson2JsonRedisSerializer 사용");
+        log.info("Redis 캐시 설정 - GenericJackson2JsonRedisSerializer + JavaTimeModule 사용");
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))
