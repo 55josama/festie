@@ -41,6 +41,7 @@ subprojects {
         testAnnotationProcessor 'org.projectlombok:lombok'
         implementation 'io.micrometer:micrometer-tracing-bridge-brave'
         implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+        runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     }
 
     tasks.named('test') {
