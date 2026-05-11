@@ -1,14 +1,50 @@
 ### Operation Service Demo
 ### IntelliJ HTTP Client용
 
+
+### 회원가입
+### 기본 role은 USER로 생성
+POST {{userUrl}}/v1/users
+Content-Type: application/json
+
+{
+  "email": "oojosama55@gmail.com",
+  "password": "1234!",
+  "nickname": "oojosamaUser",
+  "name": "오죠사마유저",
+  "phoneNumber": "010-1111-1111"
+}
+
+
+### 로그인
+POST {{userUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "oojosama55@gmail.com",
+  "password": "1234!"
+}
+
+> {%
+
+
+
+    client.global.set("accessToken", response.body.data.accessToken);
+    client.global.set("refreshToken", response.body.data.refreshToken);
+
+
+
+%}
+
+
 ### ============================================================
 ### 신고(Report) API - /v1/reports
 ### ============================================================
 
 ### 신고 요청 - 채팅 신고
 POST {{operationUrl}}/v1/reports
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-X-User-Id: 11111111-1111-1111-1111-111111111111
 
 {
   "targetId": "a56ed960-2ec5-406f-bdcb-d17ea950c716",
