@@ -29,6 +29,7 @@ services:
       - "127.0.0.1:6379:6379"
     networks:
       - festie-network
+    command: redis-server --notify-keyspace-events Ex # keyspace notification 활성화
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
@@ -136,6 +137,31 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+    # ============ gateway-server ============
+  gateway-server:
+    build:
+      context: .
+      dockerfile: gateway-server/Dockerfile
+    container_name: festie-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8085"
+    networks:
+      - festie-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8085
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      JWT_SECRET: ${JWT_SECRET:-ojosamaojosamaoojosamaojosamaojosamaojosama}
+      TZ: Asia/Seoul
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
 
   # 개발시 각자 복붙해서 추가 (경로 수정 후)
   # ============ chat-service ============
@@ -269,6 +295,7 @@ services:
       CONFIG_SERVER_URL: http://config-server:8888
       CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
@@ -354,7 +381,7 @@ services:
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
-    # ============ favorite-service ============
+  # ============ favorite-service ============
   favorite-service:
     build:
       context: .
@@ -380,6 +407,7 @@ services:
       CONFIG_SERVER_URL: http://config-server:8888
       CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
@@ -388,7 +416,7 @@ services:
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
-    # ============ calendar-service ============
+  # ============ calendar-service ============
   calendar-service:
     build:
       context: .
@@ -414,6 +442,7 @@ services:
       CONFIG_SERVER_URL: http://config-server:8888
       CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
       CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Seoul
       SPRING_DATASOURCE_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB:-festie}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-festie}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
@@ -422,7 +451,7 @@ services:
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
-    # ============ user-service ============
+  # ============ user-service ============
   user-service:
     build:
       context: .

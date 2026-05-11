@@ -1,4 +1,4 @@
-package com.ojosama.calendarservice.calendar.presentaion.dto;
+package com.ojosama.calendarservice.calendar.presentation.dto.response;
 
 import com.ojosama.calendarservice.calendar.application.dto.result.CalendarResult;
 import java.time.LocalDateTime;
@@ -12,7 +12,8 @@ public record CalendarResponseDto(
         LocalDateTime ticketingDate,
         String memo,
         String eventName,
-        UUID eventId
+        UUID eventId,
+        String eventStatus
 ) {
     public static CalendarResponseDto from(CalendarResult result) {
         return CalendarResponseDto.builder()
@@ -22,6 +23,7 @@ public record CalendarResponseDto(
                 .memo(result.memo())
                 .eventName(result.eventName())
                 .eventId(result.eventId())
+                .eventStatus(result.eventStatus())
                 .build();
     }
 }

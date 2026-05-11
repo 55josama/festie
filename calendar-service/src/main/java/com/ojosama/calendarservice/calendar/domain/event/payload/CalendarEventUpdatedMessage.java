@@ -1,4 +1,4 @@
-package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.producer.dto;
+package com.ojosama.calendarservice.calendar.domain.event.payload;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,8 +11,8 @@ public record CalendarEventUpdatedMessage(
 ) {
     public record FieldChange(
             String fieldName,
-            String before,
-            String after
+            Object before,
+            Object after
     ) {
     }
 }
