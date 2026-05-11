@@ -1,0 +1,91 @@
+# Prometheus 알림 규칙
+# severity: critical / warning
+groups:
+  - name: festie-availability
+    interval: 30s
+    rules:
+      # 서비스 다운
+      - alert: ServiceDown
+        expr: up{job="festie-services"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🚨 {{ $labels.service }} 서비스 다운"
+          description: "{{ $labels.service }} ({{ $labels.instance }}) 가 1분 이상 응답 없음."
+
+  - name: festie-http
+    interval: 30s
+    rules:
+      # 5xx 에러율
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum by (service) (rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+            /
+            sum by (service) (rate(http_server_requests_seconds_count[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ {{ $labels.service }} 5xx 에러율 5% 초과"
+          description: "{{ $labels.service }} 의 최근 5분 5xx 비율: {{ $value | humanizePercentage }}"
+
+      # p99 응답 지연
+      - alert: SlowResponse
+        expr: |
+          histogram_quantile(0.99,
+            sum by (service, le) (rate(http_server_requests_seconds_bucket[5m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ {{ $labels.service }} p99 응답 지연 2초 초과"
+          description: "{{ $labels.service }} p99 latency: {{ $value }}s"
+
+  - name: festie-jvm
+    interval: 30s
+    rules:
+      # JVM 힙 사용률
+      - alert: HighHeapUsage
+        expr: |
+          (
+            sum by (service) (jvm_memory_used_bytes{area="heap"})
+            /
+            sum by (service) (jvm_memory_max_bytes{area="heap"})
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ {{ $labels.service }} JVM 힙 사용률 85% 초과"
+          description: "{{ $labels.service }} 힙 사용률: {{ $value | humanizePercentage }}"
+
+  - name: festie-kafka
+    interval: 30s
+    rules:
+      # Kafka consumer lag
+      - alert: KafkaConsumerLag
+        expr: kafka_consumer_fetch_manager_records_lag > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ Kafka consumer lag 1000건 초과"
+          description: "topic={{ $labels.topic }}, partition={{ $labels.partition }}, lag={{ $value }}"
+
+  - name: festie-db
+    interval: 30s
+    rules:
+      # HikariCP 커넥션 풀 고갈
+      - alert: DbConnectionPoolNearLimit
+        expr: |
+          (hikaricp_connections_active / hikaricp_connections_max) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ {{ $labels.service }} DB 커넥션 풀 80% 초과"
+          description: "active/max 비율: {{ $value | humanizePercentage }}"

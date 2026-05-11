@@ -1,0 +1,32 @@
+global:
+  resolve_timeout: 5m
+
+# 알람 라우팅 설정
+route:
+  receiver: 'discord-notifications'
+  group_by: ['alertname', 'service']
+  group_wait: 30s           # 첫 알림이 오고 30초 동안 다른 알람이 더 오는지 기다림
+  group_interval: 3m        # 429 에러 방지를 위해 같은 그룹 알림은 3분 간격으로 발송
+  repeat_interval: 3h       # 해결 안 된 알람은 3시간마다 다시 알림
+
+receivers:
+  - name: 'discord-notifications'
+    discord_configs:
+      - webhook_url: '__DISCORD_WEBHOOK_URL__'
+        send_resolved: true # 장애 해결 시에도 알림 발송
+        title: '{{ if eq .Status "firing" }}🚨 [장애 발생]{{ else }}✅ [장애 해제]{{ end }}'
+        message: |-
+          {{ range .Alerts -}}
+          **알람명**: {{ .Labels.alertname }}
+          **서비스**: {{ .Labels.service }}
+          **심각도**: {{ .Labels.severity }}
+          **설명**: {{ .Annotations.description }}
+          **발생시각**: {{ .StartsAt.Local.Format "2006-01-02 15:04:05" }}
+          ---------------------------------
+          {{ end }}
+
+# 같은 서비스의 Critical 알람이 있으면 Warning은 조용히 시킴
+inhibit_rules:
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: ['service']
