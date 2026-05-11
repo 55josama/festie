@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.notificationservice.application.NotificationService;
+import com.ojosama.notificationservice.application.command.EventRequestResultCommand;
 import com.ojosama.notificationservice.domain.exception.NotificationErrorCode;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
-import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventRequestCreatedResultMessage;
+import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventRequestResultMessage;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class EventRequestResultConsumer {
     )
     public void onMessage(ConsumerRecord<String, String> record) {
         UUID messageKey;
-        EventRequestCreatedResultMessage event;
+        EventRequestResultMessage event;
 
         try {
             messageKey = UUID.fromString(record.key());
@@ -44,7 +45,7 @@ public class EventRequestResultConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> notificationService.createEventRequestResultNotification(event)
+                    () -> dispatch(event)
             );
             log.info("Event request created: {}", record.key());
         } catch (RuntimeException e) {
@@ -53,11 +54,20 @@ public class EventRequestResultConsumer {
         }
     }
 
-    private EventRequestCreatedResultMessage parse(String value) {
+    private EventRequestResultMessage parse(String value) {
         try {
-            return objectMapper.readValue(value, EventRequestCreatedResultMessage.class);
+            return objectMapper.readValue(value, EventRequestResultMessage.class);
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
+    }
+
+    private void dispatch(EventRequestResultMessage event) {
+        if (event == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+        notificationService.createEventRequestResultNotification(
+                new EventRequestResultCommand(event.targetId(), event.receiverId(),
+                        event.eventName(), event.status()));
     }
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.notificationservice.application.NotificationService;
+import com.ojosama.notificationservice.application.command.CalendarScheduleCommand;
 import com.ojosama.notificationservice.domain.exception.NotificationErrorCode;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.CalendarScheduleMessage;
@@ -44,7 +45,7 @@ public class CalendarScheduledConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> notificationService.createNotificationEvent(event)
+                    () -> dispatch(event)
             );
             log.info("Event request created: {}", record.key());
         } catch (RuntimeException e) {
@@ -59,5 +60,14 @@ public class CalendarScheduledConsumer {
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
+    }
+
+    private void dispatch(CalendarScheduleMessage message) {
+        if (message == null || message.eventId() == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+        notificationService.createNotificationEvent(
+                new CalendarScheduleCommand(message.userIds(), message.eventId(), message.eventName(),
+                        message.eventStartAt()));
     }
 }
