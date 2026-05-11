@@ -11,8 +11,20 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        http
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        // 모니터링 (prometheus scrape)
+                        .requestMatchers("/actuator/**").permitAll()
+                        // 서비스 간 내부 호출
+                        .requestMatchers("/internal/**").permitAll()
+                        // 공개 API (인증은 게이트웨이/상위 서비스에서 처리)
+                        .requestMatchers("/v1/**").permitAll()
+                        // Swagger
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .anyRequest().authenticated()
+                );
+
         return http.build();
     }
 }

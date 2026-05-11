@@ -31,6 +31,7 @@ public class SecurityConfig {
                         //.requestMatchers("/v1/chat/admin/**").authenticated()
                         .requestMatchers("/v1/chat/**").permitAll()
                         .requestMatchers("/internal/v1/chat/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .build();

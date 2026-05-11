@@ -1,4 +1,4 @@
-package com.ojosama.configserver.config;
+package com.ojosama.eurekaserver.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
