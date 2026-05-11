@@ -226,8 +226,8 @@ services:
     environment:
       SERVER_PORT: 8085
       CONFIG_SERVER_URL: http://config-server:8888
-      CONFIG_USERNAME: ${CONFIG_USERNAME:-test}
-      CONFIG_PASSWORD: ${CONFIG_PASSWORD:-test}
+      CONFIG_USERNAME: ${CONFIG_USERNAME}
+      CONFIG_PASSWORD: ${CONFIG_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://festie-eureka:8761/eureka/
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       JWT_SECRET: ${JWT_SECRET}
