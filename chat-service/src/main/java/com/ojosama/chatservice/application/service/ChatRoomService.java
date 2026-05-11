@@ -1,7 +1,7 @@
 package com.ojosama.chatservice.application.service;
 
-import com.ojosama.chatservice.application.dto.command.ChangeChatRoomStatusCommand;
 import com.ojosama.chatservice.application.dto.command.ChangeChatRoomScheduleCommand;
+import com.ojosama.chatservice.application.dto.command.ChangeChatRoomStatusCommand;
 import com.ojosama.chatservice.application.dto.command.CreateChatRoomCommand;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomByEventIdQuery;
 import com.ojosama.chatservice.application.dto.query.FindChatRoomQuery;
@@ -116,7 +116,11 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findByEventId(eventId)
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
 
-        LocalDateTime scheduledCloseAt = cancelledAt.plusMinutes(10).truncatedTo(ChronoUnit.MINUTES);
+        LocalDateTime candidateCloseAt = cancelledAt.plusMinutes(10).truncatedTo(ChronoUnit.MINUTES);
+        LocalDateTime currentCloseAt = chatRoom.getSchedule().getScheduledCloseAt();
+        LocalDateTime scheduledCloseAt = currentCloseAt != null && currentCloseAt.isBefore(candidateCloseAt)
+                ? currentCloseAt
+                : candidateCloseAt;
         LocalDateTime scheduledOpenAt = chatRoom.getSchedule().getScheduledOpenAt();
         if (!scheduledCloseAt.isAfter(scheduledOpenAt)) {
             scheduledOpenAt = cancelledAt.truncatedTo(ChronoUnit.MINUTES);

@@ -18,7 +18,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.http.HttpStatus;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -106,8 +105,7 @@ public class EventStatusChangedConsumer {
             log.info("행사 취소를 반영해 채팅방 종료시간을 갱신하고 안내 메시지를 전송했습니다. eventId={}, chatRoomId={}, closeAt={}",
                     event.eventId(), updatedRoom.chatRoomId(), closingAt);
         } catch (ChatException e) {
-            if (HttpStatus.NOT_FOUND.equals(e.getStatus())
-                    || ChatErrorCode.CHAT_ROOM_NOT_FOUND.getStatus().equals(e.getStatus())) {
+            if (ChatErrorCode.CHAT_ROOM_NOT_FOUND.getStatus().equals(e.getStatus())) {
                 log.warn("채팅방이 없어 행사 취소 반영을 건너뜁니다. eventId={}", event.eventId());
                 return;
             }
