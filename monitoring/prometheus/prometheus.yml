@@ -18,3 +18,12 @@ scrape_configs:
     static_configs:
       - targets: [ "user-service:8081" ]
 
+  - job_name: "operation-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: [ "operation-service:8084" ]
+
+  - job_name: "ai-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: [ "ai-service:8083" ]
