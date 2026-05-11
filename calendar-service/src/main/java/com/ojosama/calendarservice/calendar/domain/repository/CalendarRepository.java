@@ -1,6 +1,7 @@
 package com.ojosama.calendarservice.calendar.domain.repository;
 
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
+import com.ojosama.calendarservice.calendar.domain.model.EventStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +24,10 @@ public interface CalendarRepository {
                                                                                                 LocalDateTime eventDate,
                                                                                                 UUID userId);
 
-    List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(LocalDateTime start,
-                                                                      LocalDateTime end);
+    List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(LocalDateTime start, LocalDateTime end);
 
+    void deletedAllByEventId(UUID eventId);
+
+    void bulkUpdateStatusByEventId(UUID eventId, EventStatus status);
 }
 

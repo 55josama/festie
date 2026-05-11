@@ -1,6 +1,7 @@
 package com.ojosama.calendarservice.calendar.infrastructure.persistence;
 
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
+import com.ojosama.calendarservice.calendar.domain.model.EventStatus;
 import com.ojosama.calendarservice.calendar.domain.model.QCalendar;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -17,6 +18,7 @@ public class CalendarRepositoryCustomImpl implements CalendarRepositoryCustom {
     private final JPAQueryFactory queryFactory;
     private final EntityManager entityManager;
     private final QCalendar qCalendar = QCalendar.calendar;
+    private final static UUID system = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     @Override
     public List<Calendar> findByUserIdAndYearMonthAndDeletedAtIsNull(UUID userId, int year, int month) {
@@ -33,5 +35,31 @@ public class CalendarRepositoryCustomImpl implements CalendarRepositoryCustom {
                         qCalendar.eventInfo.eventDate.lt(end), // event_date < end
                         qCalendar.deletedAt.isNull()
                 ).fetch();
+
+    }
+
+    @Override
+    public void deletedAllByEventId(UUID eventId) {
+        queryFactory.update(qCalendar)
+                .set(qCalendar.deletedAt, LocalDateTime.now())
+                .set(qCalendar.deletedBy, system)
+                .where(qCalendar.eventInfo.eventId.eq(eventId)
+                        .and(qCalendar.deletedAt.isNull()))
+                .execute();
+
+        entityManager.flush();
+        entityManager.clear();
+    }
+
+    @Override
+    public void bulkUpdateStatusByEventId(UUID eventId, EventStatus status) {
+        queryFactory.update(qCalendar)
+                .set(qCalendar.eventInfo.eventStatus, status)
+                .where(qCalendar.eventInfo.eventId.eq(eventId)
+                        .and(qCalendar.deletedAt.isNull()))
+                .execute();
+
+        entityManager.flush();
+        entityManager.clear();
     }
 }
