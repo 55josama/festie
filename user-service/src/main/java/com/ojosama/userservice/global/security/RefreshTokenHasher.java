@@ -1,5 +1,7 @@
 package com.ojosama.userservice.global.security;
 
+import com.ojosama.userservice.domain.exception.UserErrorCode;
+import com.ojosama.userservice.domain.exception.UserException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -21,7 +23,8 @@ public class RefreshTokenHasher {
 
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Refresh Token 해시 생성에 실패했습니다.", e);
+            throw new UserException(UserErrorCode.REFRESH_TOKEN_HASH_FAILED);
+
         }
     }
 }

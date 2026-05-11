@@ -1,5 +1,6 @@
 package com.ojosama.userservice.presentation.controller;
 
+import com.ojosama.common.response.ApiResponse;
 import com.ojosama.userservice.application.dto.result.LoginResult;
 import com.ojosama.userservice.application.dto.result.LogoutResult;
 import com.ojosama.userservice.application.service.AuthService;
@@ -10,12 +11,11 @@ import com.ojosama.userservice.presentation.dto.response.LogoutResponseDto;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -27,30 +27,34 @@ public class AuthController {
 
     // 로그인
     @PostMapping("/login")
-    @ResponseStatus(HttpStatus.OK)
-    public LoginResponseDto login(@Valid @RequestBody LoginRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<LoginResponseDto>> login(
+            @Valid @RequestBody LoginRequestDto requestDto
+    ) {
         LoginResult result = authService.login(requestDto.toCommand());
+        LoginResponseDto response = LoginResponseDto.from(result);
 
-        return LoginResponseDto.from(result);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 토큰 재발급
     @PostMapping("/reissue")
-    @ResponseStatus(HttpStatus.OK)
-    public LoginResponseDto reissue(@Valid @RequestBody ReissueTokenRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<LoginResponseDto>> reissue(
+            @Valid @RequestBody ReissueTokenRequestDto requestDto
+    ) {
         LoginResult result = authService.reissue(requestDto.toCommand());
+        LoginResponseDto response = LoginResponseDto.from(result);
 
-        return LoginResponseDto.from(result);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 로그아웃
     @PostMapping("/logout")
-    @ResponseStatus(HttpStatus.OK)
-    public LogoutResponseDto logout(Authentication authentication) {
+    public ResponseEntity<ApiResponse<LogoutResponseDto>> logout(Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
         LogoutResult result = authService.logout(userId);
+        LogoutResponseDto response = LogoutResponseDto.from(result);
 
-        return LogoutResponseDto.from(result);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

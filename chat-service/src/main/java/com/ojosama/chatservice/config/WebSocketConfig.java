@@ -12,19 +12,29 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final String[] allowedOriginPatterns;
+    private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+    private final CustomHandshakeHandler customHandshakeHandler;
 
     public WebSocketConfig(
-            @Value("${app.websocket.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*}") String[] allowedOriginPatterns
+            @Value("${app.websocket.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*}") String[] allowedOriginPatterns,
+            WebSocketAuthInterceptor webSocketAuthInterceptor,
+            CustomHandshakeHandler customHandshakeHandler
     ) {
         this.allowedOriginPatterns = allowedOriginPatterns;
+        this.webSocketAuthInterceptor = webSocketAuthInterceptor;
+        this.customHandshakeHandler = customHandshakeHandler;
     }
 
     /* 클라이언트가 웹 소켓 서버에 연결하는데 사용할 웹 소켓 엔드포인트 등록
      * /ws: 클라이언트가 최초 연결하는 주소
+     * WebSocket handshake interceptor : X-User-Id, X-User-Role 읽고 session attributes 에 저장
+     * custom handshake handler : 핸드셰이크가 성공할 때 Principal 을 만들어서 연결에 붙여줌
      * */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
+                .addInterceptors(webSocketAuthInterceptor)
+                .setHandshakeHandler(customHandshakeHandler)
                 .setAllowedOriginPatterns(allowedOriginPatterns)
                 .withSockJS();
     }
@@ -41,4 +51,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
     }
+
 }

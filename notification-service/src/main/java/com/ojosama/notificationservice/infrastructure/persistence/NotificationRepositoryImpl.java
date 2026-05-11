@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -24,13 +26,13 @@ public class NotificationRepositoryImpl implements NotificationRepository {
     }
 
     @Override
-    public List<Notification> findByReceiverIdAndDeletedAtIsNull(UUID receiverId) {
-        return jpaNotificationRepository.findByReceiverIdAndDeletedAtIsNull(receiverId);
+    public Page<Notification> findByReceiverIdAndDeletedAtIsNull(UUID receiverId, Pageable pageable) {
+        return jpaNotificationRepository.findByReceiverIdAndDeletedAtIsNull(receiverId, pageable);
     }
 
     @Override
-    public void save(Notification notification) {
-        jpaNotificationRepository.save(notification);
+    public Notification save(Notification notification) {
+        return jpaNotificationRepository.save(notification);
     }
 
     @Override

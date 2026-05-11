@@ -1,5 +1,6 @@
 package com.ojosama.userservice.presentation.controller;
 
+import com.ojosama.common.response.ApiResponse;
 import com.ojosama.userservice.application.dto.query.AdminDetailUserQuery;
 import com.ojosama.userservice.application.dto.result.AdminUserDetailResult;
 import com.ojosama.userservice.application.service.UserAdminService;
@@ -8,9 +9,11 @@ import com.ojosama.userservice.presentation.dto.request.AdminUserListRequestDto;
 import com.ojosama.userservice.presentation.dto.response.AdminChangeUserRoleResponseDto;
 import com.ojosama.userservice.presentation.dto.response.AdminDetailUserResponseDto;
 import com.ojosama.userservice.presentation.dto.response.AdminUserListResponseDto;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -30,32 +33,36 @@ public class AdminUserController {
 
     // 회원 목록 조회
     @GetMapping
-    public Page<AdminUserListResponseDto> getUsers(
+    public ResponseEntity<ApiResponse<Page<AdminUserListResponseDto>>> getUsers(
             @ModelAttribute AdminUserListRequestDto request
     ) {
-        return adminUserService.getUsers(request.toQuery())
+        Page<AdminUserListResponseDto> response = adminUserService.getUsers(request.toQuery())
                 .map(AdminUserListResponseDto::from);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // 회원 상세 조회
+    // 회원 상세 조회 1
     @GetMapping("/{userId}")
-    public AdminDetailUserResponseDto getDetailUser(
+    public ResponseEntity<ApiResponse<AdminDetailUserResponseDto>> getDetailUser(
             @PathVariable UUID userId
     ) {
         AdminDetailUserQuery query = new AdminDetailUserQuery(userId);
         AdminUserDetailResult result = adminUserService.getDetailUser(query);
 
-        return AdminDetailUserResponseDto.from(result);
+        return ResponseEntity.ok(ApiResponse.success(AdminDetailUserResponseDto.from(result)));
     }
 
     // 유저 권한 수정
     @PatchMapping("/{userId}/role")
-    public AdminChangeUserRoleResponseDto changeUserRole(
+    public ResponseEntity<ApiResponse<AdminChangeUserRoleResponseDto>> changeUserRole(
             @PathVariable UUID userId,
-            @RequestBody AdminChangeUserRoleRequestDto request
+            @Valid @RequestBody AdminChangeUserRoleRequestDto request
     ) {
-        return AdminChangeUserRoleResponseDto.from(
+        AdminChangeUserRoleResponseDto response = AdminChangeUserRoleResponseDto.from(
                 adminUserService.changeUserRole(request.toCommand(userId))
         );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
