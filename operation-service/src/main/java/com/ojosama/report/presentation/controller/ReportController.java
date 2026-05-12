@@ -25,6 +25,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,10 +46,11 @@ public class ReportController {
     private final ChatClient chatClient;
 
     // 신고 생성
+    @PreAuthorize("hasRole('USER')")
     @PostMapping
     public ResponseEntity<ApiResponse<FindReportResponse>> createReport(
             @Valid @RequestBody CreateReportRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "11111111-1111-1111-1111-111111111111") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         UUID targetUserId = fetchTargetUserId(request.targetType(), request.targetId());
 
@@ -59,6 +62,7 @@ public class ReportController {
     }
 
     // 신고 목록 조회
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ListReportResponse>>> getReportList(
             @RequestParam(required = false) ReportStatus status,
@@ -73,6 +77,7 @@ public class ReportController {
     }
 
     // 신고 상세 조회
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @GetMapping("/{reportId}")
     public ResponseEntity<ApiResponse<FindReportResponse>> getReportInfo(
             @PathVariable UUID reportId) {
@@ -82,6 +87,7 @@ public class ReportController {
     }
 
     // 신고 처리
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{reportId}/status")
     public ResponseEntity<ApiResponse<FindReportResponse>> updateReportStatus(
             @PathVariable UUID reportId,
