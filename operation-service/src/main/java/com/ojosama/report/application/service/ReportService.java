@@ -49,7 +49,7 @@ public class ReportService {
 
         Report savedReport = saveReportSafely(command.toEntity(reporterType));
 
-        checkAndProcessAutomaticBlind(command);
+        checkAndProcessAutomaticBlind(command, savedReport);
 
         return ReportInfoResult.from(savedReport);
     }
@@ -125,11 +125,12 @@ public class ReportService {
         return reportRepository.findAll(pageable);
     }
 
-    private void checkAndProcessAutomaticBlind(CreateReportCommand command) {
+    private void checkAndProcessAutomaticBlind(CreateReportCommand command, Report report) {
         long reportCount = reportRepository.countByTargetId(command.targetId());
 
         // 신고가 3회 이상이면 신고 대상 블라인드 처리
         if (reportCount >= 3) {
+            report.blind();
             publishBlindEvent(command);
         }
     }
