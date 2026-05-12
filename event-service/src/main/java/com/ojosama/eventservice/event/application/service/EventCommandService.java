@@ -161,7 +161,7 @@ public class EventCommandService {
             @CacheEvict(cacheNames = "event-ids", allEntries = true)
     })
     public void deleteEvent(UUID userId, UUID eventId) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
         event.deleted(userId);
@@ -170,13 +170,13 @@ public class EventCommandService {
     }
 
     public EventResult cancelEvent(UUID eventId, UUID userId) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdateWithSchedules(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
         String beforeStatus = event.getStatus().name();
         event.markCancelled();
 
-        scheduleActionRepository.findPendingByEventId(eventId).forEach(EventScheduleAction::markCancelled);
+        scheduleActionRepository.findPendingByEventIdForUpdate(eventId).forEach(EventScheduleAction::markCancelled);
 
         List<UUID> deletedScheduleIds = event.getSchedules().stream()
                 .filter(schedule -> !schedule.getScheduleTime().isScheduleEnded())
