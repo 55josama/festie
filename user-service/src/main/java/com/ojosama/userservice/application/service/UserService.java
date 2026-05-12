@@ -18,6 +18,7 @@ import com.ojosama.userservice.domain.model.Category;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.model.UserRole;
 import com.ojosama.userservice.domain.repository.UserRepository;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,6 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private static final String NICKNAME_CACHE_KEY_PREFIX = "chat:nickname:";
+    private static final String USER_EMAIL_CACHE_KEY_PREFIX = "user:email:";
+    private static final Duration USER_CACHE_TTL = Duration.ofMinutes(10);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -165,13 +168,19 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public InternalUserEmailResult getInternalUserEmail(GetInternalUserEmailQuery query) {
+        String cacheKey = emailCacheKey(query.userId());
+        String cachedEmail = redisTemplate.opsForValue().get(cacheKey);
+
+        if (cachedEmail != null) {
+            return new InternalUserEmailResult(query.userId(), cachedEmail);
+        }
+
         User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        return new InternalUserEmailResult(
-                user.getId(),
-                user.getEmail()
-        );
+        redisTemplate.opsForValue().set(cacheKey, user.getEmail(), USER_CACHE_TTL);
+
+        return new InternalUserEmailResult(user.getId(), user.getEmail());
     }
 
     @Transactional(readOnly = true)
@@ -223,6 +232,10 @@ public class UserService {
 
     private String nicknameCacheKey(UUID userId) {
         return NICKNAME_CACHE_KEY_PREFIX + userId;
+    }
+
+    private String emailCacheKey(UUID userId) {
+        return USER_EMAIL_CACHE_KEY_PREFIX + userId;
     }
 }
 
