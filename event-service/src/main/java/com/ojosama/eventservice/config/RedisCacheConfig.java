@@ -40,7 +40,8 @@ public class RedisCacheConfig {
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .activateDefaultTypingAsProperty(
                         BasicPolymorphicTypeValidator.builder()
-                                .allowIfSubType(Object.class)
+                                .allowIfSubType("com.ojosama.")
+                                .allowIfSubType("java.util.")
                                 .build(),
                         ObjectMapper.DefaultTyping.EVERYTHING,
                         "@class"

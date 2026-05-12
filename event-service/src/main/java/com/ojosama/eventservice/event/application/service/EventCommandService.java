@@ -43,7 +43,10 @@ public class EventCommandService {
     private final EventScheduleActionRepository scheduleActionRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    @CacheEvict(cacheNames = "event-all", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "event-all", allEntries = true),
+            @CacheEvict(cacheNames = "event-ids", allEntries = true)
+    })
     public EventResult createEvent(CreateEventCommand command) {
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND));
@@ -86,7 +89,8 @@ public class EventCommandService {
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "event", key = "#command.eventId"),
-            @CacheEvict(cacheNames = "event-all", allEntries = true)
+            @CacheEvict(cacheNames = "event-all", allEntries = true),
+            @CacheEvict(cacheNames = "event-ids", allEntries = true)
     })
     public EventResult updateEvent(UpdateEventCommand command) {
         Event event = eventRepository.findById(command.eventId())
@@ -153,7 +157,8 @@ public class EventCommandService {
 
     @Caching(evict = {
             @CacheEvict(cacheNames = "event", key = "#eventId"),
-            @CacheEvict(cacheNames = "event-all", allEntries = true)
+            @CacheEvict(cacheNames = "event-all", allEntries = true),
+            @CacheEvict(cacheNames = "event-ids", allEntries = true)
     })
     public void deleteEvent(UUID userId, UUID eventId) {
         Event event = eventRepository.findById(eventId)

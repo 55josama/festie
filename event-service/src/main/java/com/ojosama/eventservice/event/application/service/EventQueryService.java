@@ -57,7 +57,7 @@ public class EventQueryService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "event-ids", key = "#ids.toString()")
+    @Cacheable(cacheNames = "event-ids", key = "#ids.stream().sorted().toList().toString()")
     public List<EventResult> getEventsByIds(List<UUID> ids) {
         log.info("행사 목록 조회 (ID 기반) - count: {}", ids.size());
         return eventRepository.findAllByIds(ids).stream()

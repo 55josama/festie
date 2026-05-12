@@ -150,8 +150,6 @@ services:
     image: influxdb:1.8-alpine
     container_name: festie-influxdb
     restart: unless-stopped
-    ports:
-      - "8086:8086"
     environment:
       INFLUXDB_DB: jmeter
       INFLUXDB_ADMIN_USER: admin
