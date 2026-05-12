@@ -166,6 +166,7 @@ public class UserService {
         return message != null && message.contains("nickname");
     }
 
+    //userId로 email 조회
     @Transactional(readOnly = true)
     public InternalUserEmailResult getInternalUserEmail(GetInternalUserEmailQuery query) {
         String cacheKey = emailCacheKey(query.userId());
@@ -215,8 +216,17 @@ public class UserService {
     //userId로 nickname 조회
     @Transactional(readOnly = true)
     public String getInternalUserNickname(UUID userId) {
+        String cacheKey = nicknameCacheKey(userId);
+        String cachedNickname = redisTemplate.opsForValue().get(cacheKey);
+
+        if (cachedNickname != null) {
+            return cachedNickname;
+        }
+
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+        redisTemplate.opsForValue().set(cacheKey, user.getNickname(), USER_CACHE_TTL);
 
         return user.getNickname();
     }
