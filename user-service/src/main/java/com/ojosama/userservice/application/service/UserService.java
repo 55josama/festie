@@ -29,13 +29,17 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String NICKNAME_CACHE_KEY_PREFIX = "chat:nickname:";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final StringRedisTemplate redisTemplate;
 
     //유저 생성
     @Transactional
@@ -115,6 +119,8 @@ public class UserService {
                 command.nickname(),
                 command.phoneNumber()
         );
+
+        evictNicknameCache(savedUser.getId());
 
         return new UpdateUserResult(
                 savedUser.getId(),
@@ -204,6 +210,17 @@ public class UserService {
 
         return user.getNickname();
     }
-}
 
+    private void evictNicknameCache(UUID userId) {
+        try {
+            redisTemplate.delete(nicknameCacheKey(userId));
+        } catch (Exception ignored) {
+            // 캐시 삭제 실패는 닉네임 수정 자체를 막지 않는다.
+        }
+    }
+
+    private String nicknameCacheKey(UUID userId) {
+        return NICKNAME_CACHE_KEY_PREFIX + userId;
+    }
+}
 

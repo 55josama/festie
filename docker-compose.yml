@@ -562,6 +562,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_TOPIC_USER_BLACKLIST_STATUS: operation.blacklist.updated.v1
+      SPRING_DATA_REDIS_HOST: festie-redis
 
       USER_DB_URL: jdbc:postgresql://festie-postgres:5432/${POSTGRES_DB}
       USER_DB_USERNAME: ${POSTGRES_USER}
