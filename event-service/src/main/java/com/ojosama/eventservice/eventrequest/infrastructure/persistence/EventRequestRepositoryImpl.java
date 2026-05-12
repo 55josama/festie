@@ -36,6 +36,11 @@ public class EventRequestRepositoryImpl implements EventRequestRepository {
     }
 
     @Override
+    public Optional<EventRequest> findByIdForUpdate(UUID id) {
+        return jpaEventRequestRepository.findByIdAndDeletedAtIsNullForUpdate(id);
+    }
+
+    @Override
     public Page<EventRequest> findAll(EventRequestFilter filter, Pageable pageable) {
         QEventRequest er = QEventRequest.eventRequest;
         BooleanBuilder where = buildWhere(er, filter);

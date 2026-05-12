@@ -2,15 +2,20 @@ package com.ojosama.eventservice.event.infrastructure.persistence;
 
 import com.ojosama.eventservice.event.domain.model.EventScheduleAction;
 import com.ojosama.eventservice.event.domain.model.ScheduleActionStatus;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 public interface JpaEventScheduleActionRepository extends JpaRepository<EventScheduleAction, UUID> {
+
     @Query("SELECT a FROM EventScheduleAction a " +
            "WHERE a.status = :status AND a.scheduledAt <= :now " +
            "ORDER BY a.scheduledAt ASC, a.id ASC")
@@ -20,4 +25,11 @@ public interface JpaEventScheduleActionRepository extends JpaRepository<EventSch
             Pageable pageable);
 
     List<EventScheduleAction> findByEventIdAndStatus(UUID eventId, ScheduleActionStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
+    @Query("SELECT a FROM EventScheduleAction a WHERE a.eventId = :eventId AND a.status = :status")
+    List<EventScheduleAction> findByEventIdAndStatusForUpdate(
+            @Param("eventId") UUID eventId,
+            @Param("status") ScheduleActionStatus status);
 }

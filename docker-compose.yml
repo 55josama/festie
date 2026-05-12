@@ -139,10 +139,28 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
     networks:
-      - festie-network
+      festie-network:
+        aliases:
+          - prometheus
     depends_on:
       chat-service:
         condition: service_started
+
+  influxdb:
+    image: influxdb:1.8-alpine
+    container_name: festie-influxdb
+    restart: unless-stopped
+    environment:
+      INFLUXDB_DB: jmeter
+      INFLUXDB_ADMIN_USER: admin
+      INFLUXDB_ADMIN_PASSWORD: admin
+      INFLUXDB_HTTP_AUTH_ENABLED: "false"
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    networks:
+      festie-network:
+        aliases:
+          - influxdb
 
   grafana:
     image: grafana/grafana-oss:11.4.0
@@ -281,8 +299,10 @@ services:
       dockerfile: ai-service/Dockerfile
     container_name: festie-ai
     restart: unless-stopped
-    ports:
-      - "8083:8083"
+    # ports:
+    #  - "8083:8083"
+    expose:
+      - "8083"
     networks:
       - festie-network
     depends_on:
@@ -316,8 +336,10 @@ services:
       dockerfile: operation-service/Dockerfile
     container_name: festie-operation
     restart: unless-stopped
-    ports:
-      - "8084:8084"
+    # ports:
+    #  - "8084:8084"
+    expose:
+      - "8084"
     networks:
       - festie-network
     depends_on:
@@ -584,6 +606,7 @@ volumes:
   grafana_data:
   loki_data:
   promtail_positions:
+  influxdb_data:
 
 networks:
   festie-network:

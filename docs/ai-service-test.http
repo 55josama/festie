@@ -1,6 +1,33 @@
 ### Ai Service Demo
 ### IntelliJ HTTP Client용
 
+### 테스트용 ADMIN 회원 생성
+POST {{userUrl}}/v1/dev/users/admin
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "1234",
+  "nickname": "adminUser",
+  "name": "관리자",
+  "phoneNumber": "010-0000-0000"
+}
+
+### ADMIN 로그인
+POST {{userUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "1234"
+}
+
+> {%
+
+    client.global.set("adminAccessToken", response.body.data.accessToken);
+
+%}
+
 ### 챗봇
 POST {{aiUrl}}/v1/chatbot
 Content-Type: application/json
@@ -11,6 +38,7 @@ Content-Type: application/json
 
 ### 운영 문서 등록
 POST {{aiUrl}}/v1/chatbot/index
+Authorization: Bearer {{adminAccessToken}}
 Content-Type: application/json
 
 {
