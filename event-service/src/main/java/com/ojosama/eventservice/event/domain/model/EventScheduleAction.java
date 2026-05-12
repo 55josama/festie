@@ -63,11 +63,17 @@ public class EventScheduleAction {
     private String errorMessage;
 
     public void markExecuted(LocalDateTime executedAt) {
+        if (this.status != ScheduleActionStatus.PENDING) {
+            return;
+        }
         this.status = ScheduleActionStatus.EXECUTED;
         this.executedAt = executedAt;
     }
 
     public void markFailed(String errorMessage) {
+        if (this.status != ScheduleActionStatus.PENDING) {
+            return;
+        }
         this.status = ScheduleActionStatus.FAILED;
 
         if (errorMessage == null) {

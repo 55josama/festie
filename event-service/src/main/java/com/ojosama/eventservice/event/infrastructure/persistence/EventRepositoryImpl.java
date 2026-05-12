@@ -30,6 +30,16 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     @Override
+    public Optional<Event> findByIdForUpdate(UUID id) {
+        return jpaEventRepository.findByIdAndDeletedAtIsNullForUpdate(id);
+    }
+
+    @Override
+    public Optional<Event> findByIdForUpdateWithSchedules(UUID id) {
+        return jpaEventRepository.findByIdAndDeletedAtIsNullForUpdateWithSchedules(id);
+    }
+
+    @Override
     public Optional<Event> findById(UUID id) {
         QEvent event = QEvent.event;
         Event result = queryFactory

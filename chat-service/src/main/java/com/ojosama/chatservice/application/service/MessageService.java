@@ -26,11 +26,13 @@ import feign.FeignException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,11 +48,14 @@ public class MessageService {
     private static final UUID SYSTEM_NOTICE_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
     private static final String SYSTEM_WRITER_NICKNAME = "시스템";
     private static final String AGGREGATE_TYPE = "CHAT";
+    private static final String NICKNAME_CACHE_KEY_PREFIX = "chat:nickname:";
+    private static final long NICKNAME_CACHE_TTL_MINUTES = 10L; // 10분으로 설정
 
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final UserClient userClient;
     private final OutboxEventPublisher outboxEventPublisher;
+    private final StringRedisTemplate redisTemplate;
 
     @Value("${spring.kafka.topic.chat-moderation-requested}")
     private String chatModerationRequestedTopic;
@@ -223,15 +228,36 @@ public class MessageService {
     }
 
     private String resolveWriterNickname(UUID userId) {
+        String cacheKey = nicknameCacheKey(userId);
+
+        try {
+            String cachedNickname = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedNickname != null && !cachedNickname.isBlank()) {
+                return cachedNickname;
+            }
+        } catch (Exception ignored) {
+            // Redis 캐시 실패는 메시지 전송을 막지 않는다.
+        }
+
         try {
             var response = userClient.getInternalUserNickname(userId);
             if (response == null || response.nickname() == null || response.nickname().isBlank()) {
                 throw new ChatException(ChatErrorCode.MESSAGE_USER_NICKNAME_EMPTY);
             }
-            return response.nickname();
+            String nickname = response.nickname().trim();
+            try {
+                redisTemplate.opsForValue().set(cacheKey, nickname, NICKNAME_CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+            } catch (Exception ignored) {
+                // Redis 저장 실패는 무시하고 nickname 자체는 반환한다.
+            }
+            return nickname;
         } catch (FeignException e) {
             throw new ChatException(ChatErrorCode.MESSAGE_USER_NICKNAME_FETCH_FAILED);
         }
+    }
+
+    private String nicknameCacheKey(UUID userId) {
+        return NICKNAME_CACHE_KEY_PREFIX + userId;
     }
 
     private Message findMessage(UUID messageId) {

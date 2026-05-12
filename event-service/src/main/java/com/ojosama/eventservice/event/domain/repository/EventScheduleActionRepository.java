@@ -10,4 +10,5 @@ public interface EventScheduleActionRepository {
     EventScheduleAction save(EventScheduleAction action);
     List<EventScheduleAction> findPendingByScheduledAtBefore(LocalDateTime now, Pageable pageable);
     List<EventScheduleAction> findPendingByEventId(UUID eventId);
+    List<EventScheduleAction> findPendingByEventIdForUpdate(UUID eventId);
 }

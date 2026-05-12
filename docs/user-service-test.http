@@ -46,11 +46,11 @@ POST {{userUrl}}/v1/users
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}",
-  "nickname": "oojosamaUser",
-  "name": "오죠사마유저",
-  "phoneNumber": "010-1111-1111"
+  "email": "hello@gmail.com",
+  "password": "12341234",
+  "nickname": "hoho",
+  "name": "hoho",
+  "phoneNumber": "010-9891-1111"
 }
 
 ### ============================================================
@@ -69,12 +69,8 @@ Content-Type: application/json
 
 > {%
 
-
-
     client.global.set("accessToken", response.body.accessToken);
     client.global.set("refreshToken", response.body.refreshToken);
-
-
 
 %}
 
@@ -89,12 +85,8 @@ Content-Type: application/json
 
 > {%
 
-
-
     client.global.set("accessToken", response.body.accessToken);
     client.global.set("refreshToken", response.body.refreshToken);
-
-
 
 %}
 
