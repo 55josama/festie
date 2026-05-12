@@ -28,6 +28,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,10 @@ public class EventCommandService {
     private final EventScheduleActionRepository scheduleActionRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "event-all", allEntries = true),
+            @CacheEvict(cacheNames = "event-ids", allEntries = true)
+    })
     public EventResult createEvent(CreateEventCommand command) {
         EventCategory category = eventCategoryRepository.findById(command.categoryId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND));
@@ -81,6 +87,11 @@ public class EventCommandService {
         return EventResult.from(saved);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "event", key = "#command.eventId"),
+            @CacheEvict(cacheNames = "event-all", allEntries = true),
+            @CacheEvict(cacheNames = "event-ids", allEntries = true)
+    })
     public EventResult updateEvent(UpdateEventCommand command) {
         Event event = eventRepository.findById(command.eventId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
@@ -144,8 +155,13 @@ public class EventCommandService {
         return EventResult.from(event);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "event", key = "#eventId"),
+            @CacheEvict(cacheNames = "event-all", allEntries = true),
+            @CacheEvict(cacheNames = "event-ids", allEntries = true)
+    })
     public void deleteEvent(UUID userId, UUID eventId) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
         event.deleted(userId);
@@ -154,13 +170,13 @@ public class EventCommandService {
     }
 
     public EventResult cancelEvent(UUID eventId, UUID userId) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdateWithSchedules(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
         String beforeStatus = event.getStatus().name();
         event.markCancelled();
 
-        scheduleActionRepository.findPendingByEventId(eventId).forEach(EventScheduleAction::markCancelled);
+        scheduleActionRepository.findPendingByEventIdForUpdate(eventId).forEach(EventScheduleAction::markCancelled);
 
         List<UUID> deletedScheduleIds = event.getSchedules().stream()
                 .filter(schedule -> !schedule.getScheduleTime().isScheduleEnded())

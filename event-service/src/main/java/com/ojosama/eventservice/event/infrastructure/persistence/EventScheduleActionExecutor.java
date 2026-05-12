@@ -27,7 +27,7 @@ public class EventScheduleActionExecutor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processOne(EventScheduleAction action) {
         try {
-            Event event = eventRepository.findById(action.getEventId())
+            Event event = eventRepository.findByIdForUpdate(action.getEventId())
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
             executeAction(event, action);

@@ -11,5 +11,7 @@ public interface EventRequestRepository {
 
     Optional<EventRequest> findById(UUID id);
 
+    Optional<EventRequest> findByIdForUpdate(UUID id);
+
     Page<EventRequest> findAll(EventRequestFilter filter, Pageable pageable);
 }
