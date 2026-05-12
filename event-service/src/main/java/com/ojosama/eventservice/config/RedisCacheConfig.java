@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +32,7 @@ public class RedisCacheConfig {
 
     @Bean
     @org.springframework.context.annotation.Primary
+    @ConditionalOnBean(RedisConnectionFactory.class)
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         log.info("RedisCacheManager 생성 시작 - RedisConnectionFactory: {}",
                  connectionFactory.getClass().getSimpleName());
