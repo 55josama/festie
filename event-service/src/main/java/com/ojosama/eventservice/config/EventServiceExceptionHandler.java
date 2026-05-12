@@ -2,6 +2,7 @@ package com.ojosama.eventservice.config;
 
 import com.ojosama.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.persistence.LockTimeoutException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +13,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class EventServiceExceptionHandler {
 
-    @ExceptionHandler(PessimisticLockingFailureException.class)
-    public ResponseEntity<ApiResponse<Void>> handlePessimisticLockingFailure(PessimisticLockingFailureException e) {
+    @ExceptionHandler({PessimisticLockingFailureException.class, LockTimeoutException.class})
+    public ResponseEntity<ApiResponse<Void>> handlePessimisticLockingFailure(Exception e) {
         log.warn("락 획득 실패 (동시 요청): {}", e.getMessage());
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
