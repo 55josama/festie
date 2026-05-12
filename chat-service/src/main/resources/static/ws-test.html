@@ -76,14 +76,22 @@
             body: JSON.stringify({email, password})
         });
 
+        const payload = await response.json().catch(() => null);
+
         if (!response.ok) {
             log(`[LOGIN-ERROR] ${response.status}`);
+            if (payload) {
+                log(`[LOGIN-ERROR] ${JSON.stringify(payload)}`);
+            }
             return;
         }
 
-        const data = await response.json();
-        if (!data.accessToken) {
+        const data = payload?.data;
+        if (!data?.accessToken) {
             log("[LOGIN-ERROR] accessToken이 응답에 없습니다.");
+            if (payload) {
+                log(`[LOGIN-ERROR] ${JSON.stringify(payload)}`);
+            }
             return;
         }
 

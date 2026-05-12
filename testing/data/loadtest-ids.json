@@ -1,0 +1,1186 @@
+{
+  "generatedAt": "2026-05-11T17:39:07.223Z",
+  "userUrl": "http://localhost:8081",
+  "eventUrl": "http://localhost:8082",
+  "chatUrl": "http://localhost:8088",
+  "adminUserId": "00000000-0000-0000-0000-000000000001",
+  "adminUserRole": "ADMIN",
+  "categories": [
+    {
+      "name": "FESTIVAL",
+      "id": "2d62f28b-86c6-4a4f-b6a7-6d789614c6d2",
+      "reused": true
+    },
+    {
+      "name": "CONCERT",
+      "id": "c21fc4f8-505b-46e5-bfd7-b40e6ddefcd1",
+      "reused": true
+    },
+    {
+      "name": "POPUPSTORE",
+      "id": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "reused": true
+    },
+    {
+      "name": "FANMEETING",
+      "id": "1114f7f5-e25a-491b-bde3-f103414332f4",
+      "reused": true
+    }
+  ],
+  "users": [
+    {
+      "index": 3,
+      "email": "test3@test.com",
+      "password": "1234",
+      "nickname": "test3",
+      "name": "User3",
+      "phoneNumber": "010-0000-0003",
+      "userId": "b6137489-2e8a-4166-87aa-7651f61c219c",
+      "role": "USER"
+    },
+    {
+      "index": 4,
+      "email": "test4@test.com",
+      "password": "1234",
+      "nickname": "test4",
+      "name": "User4",
+      "phoneNumber": "010-0000-0004",
+      "userId": "4ee050e8-44e6-4764-8860-691322e23e59",
+      "role": "USER"
+    },
+    {
+      "index": 5,
+      "email": "test5@test.com",
+      "password": "1234",
+      "nickname": "test5",
+      "name": "User5",
+      "phoneNumber": "010-0000-0005",
+      "userId": "36eacd6d-72a8-47a7-af89-699bd1c1ecf6",
+      "role": "USER"
+    },
+    {
+      "index": 6,
+      "email": "test6@test.com",
+      "password": "1234",
+      "nickname": "test6",
+      "name": "User6",
+      "phoneNumber": "010-0000-0006",
+      "userId": "bb06888d-1ef5-4534-b130-7210390f986d",
+      "role": "USER"
+    },
+    {
+      "index": 7,
+      "email": "test7@test.com",
+      "password": "1234",
+      "nickname": "test7",
+      "name": "User7",
+      "phoneNumber": "010-0000-0007",
+      "userId": "f93a3ec1-9bd2-4b1a-9d8f-9f95a877f27c",
+      "role": "USER"
+    },
+    {
+      "index": 8,
+      "email": "test8@test.com",
+      "password": "1234",
+      "nickname": "test8",
+      "name": "User8",
+      "phoneNumber": "010-0000-0008",
+      "userId": "2b323d13-db4f-4069-84dc-377029692f1f",
+      "role": "USER"
+    },
+    {
+      "index": 9,
+      "email": "test9@test.com",
+      "password": "1234",
+      "nickname": "test9",
+      "name": "User9",
+      "phoneNumber": "010-0000-0009",
+      "userId": "9755b824-96b1-44e8-a08a-e0296db23a16",
+      "role": "USER"
+    },
+    {
+      "index": 10,
+      "email": "test10@test.com",
+      "password": "1234",
+      "nickname": "test10",
+      "name": "User10",
+      "phoneNumber": "010-0000-0010",
+      "userId": "b7bf7b8d-ab9c-4bf2-be2d-05a821db2c3a",
+      "role": "USER"
+    },
+    {
+      "index": 11,
+      "email": "test11@test.com",
+      "password": "1234",
+      "nickname": "test11",
+      "name": "User11",
+      "phoneNumber": "010-0000-0011",
+      "userId": "b4f09dbc-ef44-417d-97c6-93c984af6d6f",
+      "role": "USER"
+    },
+    {
+      "index": 12,
+      "email": "test12@test.com",
+      "password": "1234",
+      "nickname": "test12",
+      "name": "User12",
+      "phoneNumber": "010-0000-0012",
+      "userId": "ad0361c6-a717-4183-bd03-db47a36d4a29",
+      "role": "USER"
+    },
+    {
+      "index": 13,
+      "email": "test13@test.com",
+      "password": "1234",
+      "nickname": "test13",
+      "name": "User13",
+      "phoneNumber": "010-0000-0013",
+      "userId": "82bdfbd9-60ad-4765-a275-add61b82acec",
+      "role": "USER"
+    },
+    {
+      "index": 14,
+      "email": "test14@test.com",
+      "password": "1234",
+      "nickname": "test14",
+      "name": "User14",
+      "phoneNumber": "010-0000-0014",
+      "userId": "eadc6961-2818-4bcb-8ff9-e9278a17e9d9",
+      "role": "USER"
+    },
+    {
+      "index": 15,
+      "email": "test15@test.com",
+      "password": "1234",
+      "nickname": "test15",
+      "name": "User15",
+      "phoneNumber": "010-0000-0015",
+      "userId": "53de8bfd-c46c-45d1-84f6-5ad9194d0951",
+      "role": "USER"
+    },
+    {
+      "index": 16,
+      "email": "test16@test.com",
+      "password": "1234",
+      "nickname": "test16",
+      "name": "User16",
+      "phoneNumber": "010-0000-0016",
+      "userId": "c91d33f5-ecf5-46cd-ba06-84c8be47b2e3",
+      "role": "USER"
+    },
+    {
+      "index": 17,
+      "email": "test17@test.com",
+      "password": "1234",
+      "nickname": "test17",
+      "name": "User17",
+      "phoneNumber": "010-0000-0017",
+      "userId": "c43f08aa-85bc-40fe-a115-580f6fbebb4b",
+      "role": "USER"
+    },
+    {
+      "index": 18,
+      "email": "test18@test.com",
+      "password": "1234",
+      "nickname": "test18",
+      "name": "User18",
+      "phoneNumber": "010-0000-0018",
+      "userId": "898e9f81-a5a3-4c03-a774-eb36cb5148aa",
+      "role": "USER"
+    },
+    {
+      "index": 19,
+      "email": "test19@test.com",
+      "password": "1234",
+      "nickname": "test19",
+      "name": "User19",
+      "phoneNumber": "010-0000-0019",
+      "userId": "e0eacab8-9867-4b39-8085-b736ddb64c46",
+      "role": "USER"
+    },
+    {
+      "index": 20,
+      "email": "test20@test.com",
+      "password": "1234",
+      "nickname": "test20",
+      "name": "User20",
+      "phoneNumber": "010-0000-0020",
+      "userId": "b2b37316-9934-4818-8a0e-98d23c75d322",
+      "role": "USER"
+    },
+    {
+      "index": 21,
+      "email": "test21@test.com",
+      "password": "1234",
+      "nickname": "test21",
+      "name": "User21",
+      "phoneNumber": "010-0000-0021",
+      "userId": "ae878fdf-b322-4912-84a9-b9dd0068d844",
+      "role": "USER"
+    },
+    {
+      "index": 22,
+      "email": "test22@test.com",
+      "password": "1234",
+      "nickname": "test22",
+      "name": "User22",
+      "phoneNumber": "010-0000-0022",
+      "userId": "f8809728-9204-42b9-b7ed-aff8ca2c0106",
+      "role": "USER"
+    },
+    {
+      "index": 23,
+      "email": "test23@test.com",
+      "password": "1234",
+      "nickname": "test23",
+      "name": "User23",
+      "phoneNumber": "010-0000-0023",
+      "userId": "c124e446-54be-4688-ba4a-63b80c037e96",
+      "role": "USER"
+    },
+    {
+      "index": 24,
+      "email": "test24@test.com",
+      "password": "1234",
+      "nickname": "test24",
+      "name": "User24",
+      "phoneNumber": "010-0000-0024",
+      "userId": "dcc23bea-cefa-4f8e-8cb9-32dc7e6dc846",
+      "role": "USER"
+    },
+    {
+      "index": 25,
+      "email": "test25@test.com",
+      "password": "1234",
+      "nickname": "test25",
+      "name": "User25",
+      "phoneNumber": "010-0000-0025",
+      "userId": "864d1ee4-2e6c-45d3-a372-cecb80632cf0",
+      "role": "USER"
+    },
+    {
+      "index": 26,
+      "email": "test26@test.com",
+      "password": "1234",
+      "nickname": "test26",
+      "name": "User26",
+      "phoneNumber": "010-0000-0026",
+      "userId": "ea3ac648-f0f8-4421-bcf3-fa13c5f650d4",
+      "role": "USER"
+    },
+    {
+      "index": 27,
+      "email": "test27@test.com",
+      "password": "1234",
+      "nickname": "test27",
+      "name": "User27",
+      "phoneNumber": "010-0000-0027",
+      "userId": "13240fba-c6f0-4b37-b654-531d8f9d1049",
+      "role": "USER"
+    },
+    {
+      "index": 28,
+      "email": "test28@test.com",
+      "password": "1234",
+      "nickname": "test28",
+      "name": "User28",
+      "phoneNumber": "010-0000-0028",
+      "userId": "f09bab19-bb51-4a18-a531-2890deff2383",
+      "role": "USER"
+    },
+    {
+      "index": 29,
+      "email": "test29@test.com",
+      "password": "1234",
+      "nickname": "test29",
+      "name": "User29",
+      "phoneNumber": "010-0000-0029",
+      "userId": "192b8149-05c0-4ece-b724-be6c566ffd3f",
+      "role": "USER"
+    },
+    {
+      "index": 30,
+      "email": "test30@test.com",
+      "password": "1234",
+      "nickname": "test30",
+      "name": "User30",
+      "phoneNumber": "010-0000-0030",
+      "userId": "ca682dea-f491-423e-bd8f-e0608fdba90d",
+      "role": "USER"
+    },
+    {
+      "index": 31,
+      "email": "test31@test.com",
+      "password": "1234",
+      "nickname": "test31",
+      "name": "User31",
+      "phoneNumber": "010-0000-0031",
+      "userId": "edecbdd0-dd71-43b0-8497-6d6c0a7dfdcb",
+      "role": "USER"
+    },
+    {
+      "index": 32,
+      "email": "test32@test.com",
+      "password": "1234",
+      "nickname": "test32",
+      "name": "User32",
+      "phoneNumber": "010-0000-0032",
+      "userId": "e879b84c-f1bd-459b-bf48-ee935189ca19",
+      "role": "USER"
+    },
+    {
+      "index": 33,
+      "email": "test33@test.com",
+      "password": "1234",
+      "nickname": "test33",
+      "name": "User33",
+      "phoneNumber": "010-0000-0033",
+      "userId": "b952823e-606c-4b3a-8aea-4e2b8a91e488",
+      "role": "USER"
+    },
+    {
+      "index": 34,
+      "email": "test34@test.com",
+      "password": "1234",
+      "nickname": "test34",
+      "name": "User34",
+      "phoneNumber": "010-0000-0034",
+      "userId": "fb2a0822-cd59-4391-8510-b832d5b77100",
+      "role": "USER"
+    },
+    {
+      "index": 35,
+      "email": "test35@test.com",
+      "password": "1234",
+      "nickname": "test35",
+      "name": "User35",
+      "phoneNumber": "010-0000-0035",
+      "userId": "64396d38-fbde-4a92-935c-da0277a338f6",
+      "role": "USER"
+    },
+    {
+      "index": 36,
+      "email": "test36@test.com",
+      "password": "1234",
+      "nickname": "test36",
+      "name": "User36",
+      "phoneNumber": "010-0000-0036",
+      "userId": "821ac1e6-8328-461c-a76d-7ba6e9f83e18",
+      "role": "USER"
+    },
+    {
+      "index": 37,
+      "email": "test37@test.com",
+      "password": "1234",
+      "nickname": "test37",
+      "name": "User37",
+      "phoneNumber": "010-0000-0037",
+      "userId": "7e1e0f7c-8afe-4088-a63c-1c4577e10aec",
+      "role": "USER"
+    },
+    {
+      "index": 38,
+      "email": "test38@test.com",
+      "password": "1234",
+      "nickname": "test38",
+      "name": "User38",
+      "phoneNumber": "010-0000-0038",
+      "userId": "0ae3cb73-a5d7-4710-8e08-e2e1c7427743",
+      "role": "USER"
+    },
+    {
+      "index": 39,
+      "email": "test39@test.com",
+      "password": "1234",
+      "nickname": "test39",
+      "name": "User39",
+      "phoneNumber": "010-0000-0039",
+      "userId": "f7d156a6-db81-4872-9563-2667fe5bd9a0",
+      "role": "USER"
+    },
+    {
+      "index": 40,
+      "email": "test40@test.com",
+      "password": "1234",
+      "nickname": "test40",
+      "name": "User40",
+      "phoneNumber": "010-0000-0040",
+      "userId": "04da3d1e-36e8-41f4-8248-d95ae07fecd8",
+      "role": "USER"
+    },
+    {
+      "index": 41,
+      "email": "test41@test.com",
+      "password": "1234",
+      "nickname": "test41",
+      "name": "User41",
+      "phoneNumber": "010-0000-0041",
+      "userId": "7c40846c-0d94-4f92-827e-dac766c5f987",
+      "role": "USER"
+    },
+    {
+      "index": 42,
+      "email": "test42@test.com",
+      "password": "1234",
+      "nickname": "test42",
+      "name": "User42",
+      "phoneNumber": "010-0000-0042",
+      "userId": "337277f8-26f0-47de-97b0-1b4e410e31fb",
+      "role": "USER"
+    },
+    {
+      "index": 43,
+      "email": "test43@test.com",
+      "password": "1234",
+      "nickname": "test43",
+      "name": "User43",
+      "phoneNumber": "010-0000-0043",
+      "userId": "5a9f0690-8d84-4e53-8916-9a1f4ab7e9fb",
+      "role": "USER"
+    },
+    {
+      "index": 44,
+      "email": "test44@test.com",
+      "password": "1234",
+      "nickname": "test44",
+      "name": "User44",
+      "phoneNumber": "010-0000-0044",
+      "userId": "e83decb1-2a82-4ba4-ba54-75fcce300798",
+      "role": "USER"
+    },
+    {
+      "index": 45,
+      "email": "test45@test.com",
+      "password": "1234",
+      "nickname": "test45",
+      "name": "User45",
+      "phoneNumber": "010-0000-0045",
+      "userId": "2ad2f30e-7aa1-4bd1-9c45-576cfd160b35",
+      "role": "USER"
+    },
+    {
+      "index": 46,
+      "email": "test46@test.com",
+      "password": "1234",
+      "nickname": "test46",
+      "name": "User46",
+      "phoneNumber": "010-0000-0046",
+      "userId": "2b4078d5-7492-4eaf-86fc-69dbc80d24f0",
+      "role": "USER"
+    },
+    {
+      "index": 47,
+      "email": "test47@test.com",
+      "password": "1234",
+      "nickname": "test47",
+      "name": "User47",
+      "phoneNumber": "010-0000-0047",
+      "userId": "06dab3a9-d233-42a4-a126-612c36ec2433",
+      "role": "USER"
+    },
+    {
+      "index": 48,
+      "email": "test48@test.com",
+      "password": "1234",
+      "nickname": "test48",
+      "name": "User48",
+      "phoneNumber": "010-0000-0048",
+      "userId": "ad2dead2-8b8b-4f89-828e-d48098edb2d1",
+      "role": "USER"
+    },
+    {
+      "index": 49,
+      "email": "test49@test.com",
+      "password": "1234",
+      "nickname": "test49",
+      "name": "User49",
+      "phoneNumber": "010-0000-0049",
+      "userId": "1e535feb-ec07-4cf0-9847-dff737fc9464",
+      "role": "USER"
+    },
+    {
+      "index": 50,
+      "email": "test50@test.com",
+      "password": "1234",
+      "nickname": "test50",
+      "name": "User50",
+      "phoneNumber": "010-0000-0050",
+      "userId": "cfe59ae4-3cf6-4457-848e-b23a600664fd",
+      "role": "USER"
+    },
+    {
+      "index": 51,
+      "email": "test51@test.com",
+      "password": "1234",
+      "nickname": "test51",
+      "name": "User51",
+      "phoneNumber": "010-0000-0051",
+      "userId": "4fc95f1a-b305-4a2e-83b7-386425c46a6c",
+      "role": "USER"
+    },
+    {
+      "index": 52,
+      "email": "test52@test.com",
+      "password": "1234",
+      "nickname": "test52",
+      "name": "User52",
+      "phoneNumber": "010-0000-0052",
+      "userId": "34ec5716-cd68-49a6-bcf1-500df28c5045",
+      "role": "USER"
+    },
+    {
+      "index": 53,
+      "email": "test53@test.com",
+      "password": "1234",
+      "nickname": "test53",
+      "name": "User53",
+      "phoneNumber": "010-0000-0053",
+      "userId": "2c0a2e11-0ac5-4745-8257-232bd1c76f5c",
+      "role": "USER"
+    },
+    {
+      "index": 54,
+      "email": "test54@test.com",
+      "password": "1234",
+      "nickname": "test54",
+      "name": "User54",
+      "phoneNumber": "010-0000-0054",
+      "userId": "347d9fd3-0cf4-4fe6-bdc6-85df9ccbbffc",
+      "role": "USER"
+    },
+    {
+      "index": 55,
+      "email": "test55@test.com",
+      "password": "1234",
+      "nickname": "test55",
+      "name": "User55",
+      "phoneNumber": "010-0000-0055",
+      "userId": "20c97109-fe80-4e8e-8fa6-9f6be364d793",
+      "role": "USER"
+    },
+    {
+      "index": 56,
+      "email": "test56@test.com",
+      "password": "1234",
+      "nickname": "test56",
+      "name": "User56",
+      "phoneNumber": "010-0000-0056",
+      "userId": "43644653-f616-46bb-b726-b7c0a7bd6aac",
+      "role": "USER"
+    },
+    {
+      "index": 57,
+      "email": "test57@test.com",
+      "password": "1234",
+      "nickname": "test57",
+      "name": "User57",
+      "phoneNumber": "010-0000-0057",
+      "userId": "bec66120-1252-4631-8862-eab6d1915976",
+      "role": "USER"
+    },
+    {
+      "index": 58,
+      "email": "test58@test.com",
+      "password": "1234",
+      "nickname": "test58",
+      "name": "User58",
+      "phoneNumber": "010-0000-0058",
+      "userId": "3fe25adf-7ea3-40a9-aac0-916da59849ff",
+      "role": "USER"
+    },
+    {
+      "index": 59,
+      "email": "test59@test.com",
+      "password": "1234",
+      "nickname": "test59",
+      "name": "User59",
+      "phoneNumber": "010-0000-0059",
+      "userId": "6875c180-fc8c-4285-9222-edfa34b1f38c",
+      "role": "USER"
+    },
+    {
+      "index": 60,
+      "email": "test60@test.com",
+      "password": "1234",
+      "nickname": "test60",
+      "name": "User60",
+      "phoneNumber": "010-0000-0060",
+      "userId": "1c5dd2fa-8a0a-485f-8b03-89a0cd6a4738",
+      "role": "USER"
+    },
+    {
+      "index": 61,
+      "email": "test61@test.com",
+      "password": "1234",
+      "nickname": "test61",
+      "name": "User61",
+      "phoneNumber": "010-0000-0061",
+      "userId": "cc65dda9-d7e8-4dfd-8232-5fdbf65848d1",
+      "role": "USER"
+    },
+    {
+      "index": 62,
+      "email": "test62@test.com",
+      "password": "1234",
+      "nickname": "test62",
+      "name": "User62",
+      "phoneNumber": "010-0000-0062",
+      "userId": "f1f30100-42b5-4416-840e-9f435da3f101",
+      "role": "USER"
+    },
+    {
+      "index": 63,
+      "email": "test63@test.com",
+      "password": "1234",
+      "nickname": "test63",
+      "name": "User63",
+      "phoneNumber": "010-0000-0063",
+      "userId": "5b1d5104-9b10-460c-8de4-399e272972df",
+      "role": "USER"
+    },
+    {
+      "index": 64,
+      "email": "test64@test.com",
+      "password": "1234",
+      "nickname": "test64",
+      "name": "User64",
+      "phoneNumber": "010-0000-0064",
+      "userId": "5d144662-e1fe-4ab3-b3af-ca936f277340",
+      "role": "USER"
+    },
+    {
+      "index": 65,
+      "email": "test65@test.com",
+      "password": "1234",
+      "nickname": "test65",
+      "name": "User65",
+      "phoneNumber": "010-0000-0065",
+      "userId": "08c91b71-273f-4625-9fbf-94254310e9fe",
+      "role": "USER"
+    },
+    {
+      "index": 66,
+      "email": "test66@test.com",
+      "password": "1234",
+      "nickname": "test66",
+      "name": "User66",
+      "phoneNumber": "010-0000-0066",
+      "userId": "7aa7f1d9-6bee-4f7c-a9a7-ef928ae0ba9d",
+      "role": "USER"
+    },
+    {
+      "index": 67,
+      "email": "test67@test.com",
+      "password": "1234",
+      "nickname": "test67",
+      "name": "User67",
+      "phoneNumber": "010-0000-0067",
+      "userId": "a1e512e6-df5b-45e1-b22a-641b1b9f08c4",
+      "role": "USER"
+    },
+    {
+      "index": 68,
+      "email": "test68@test.com",
+      "password": "1234",
+      "nickname": "test68",
+      "name": "User68",
+      "phoneNumber": "010-0000-0068",
+      "userId": "e1698afa-f3f1-4672-996c-1e067453c3e1",
+      "role": "USER"
+    },
+    {
+      "index": 69,
+      "email": "test69@test.com",
+      "password": "1234",
+      "nickname": "test69",
+      "name": "User69",
+      "phoneNumber": "010-0000-0069",
+      "userId": "6c2d5b98-856c-420a-aa2b-62ddb514127d",
+      "role": "USER"
+    },
+    {
+      "index": 70,
+      "email": "test70@test.com",
+      "password": "1234",
+      "nickname": "test70",
+      "name": "User70",
+      "phoneNumber": "010-0000-0070",
+      "userId": "98f722dc-a1ab-47d7-a849-6b11b9a9d477",
+      "role": "USER"
+    },
+    {
+      "index": 71,
+      "email": "test71@test.com",
+      "password": "1234",
+      "nickname": "test71",
+      "name": "User71",
+      "phoneNumber": "010-0000-0071",
+      "userId": "88504dc8-af02-4b75-97f9-7a1a44c40955",
+      "role": "USER"
+    },
+    {
+      "index": 72,
+      "email": "test72@test.com",
+      "password": "1234",
+      "nickname": "test72",
+      "name": "User72",
+      "phoneNumber": "010-0000-0072",
+      "userId": "c39cd616-b67d-4900-b686-527711a66979",
+      "role": "USER"
+    },
+    {
+      "index": 73,
+      "email": "test73@test.com",
+      "password": "1234",
+      "nickname": "test73",
+      "name": "User73",
+      "phoneNumber": "010-0000-0073",
+      "userId": "d0f30293-2c7c-4ce0-bb0c-81f9568b2528",
+      "role": "USER"
+    },
+    {
+      "index": 74,
+      "email": "test74@test.com",
+      "password": "1234",
+      "nickname": "test74",
+      "name": "User74",
+      "phoneNumber": "010-0000-0074",
+      "userId": "730e91c5-9c12-4dff-a751-1f484d3cfbb5",
+      "role": "USER"
+    },
+    {
+      "index": 75,
+      "email": "test75@test.com",
+      "password": "1234",
+      "nickname": "test75",
+      "name": "User75",
+      "phoneNumber": "010-0000-0075",
+      "userId": "e238ba1f-8e76-40e5-9e4a-ba3977b197bc",
+      "role": "USER"
+    },
+    {
+      "index": 76,
+      "email": "test76@test.com",
+      "password": "1234",
+      "nickname": "test76",
+      "name": "User76",
+      "phoneNumber": "010-0000-0076",
+      "userId": "dba7f76e-b47f-44fe-8a5a-de16fe3a7eba",
+      "role": "USER"
+    },
+    {
+      "index": 77,
+      "email": "test77@test.com",
+      "password": "1234",
+      "nickname": "test77",
+      "name": "User77",
+      "phoneNumber": "010-0000-0077",
+      "userId": "c140715e-9714-4834-b981-64ca0b54a0d9",
+      "role": "USER"
+    },
+    {
+      "index": 78,
+      "email": "test78@test.com",
+      "password": "1234",
+      "nickname": "test78",
+      "name": "User78",
+      "phoneNumber": "010-0000-0078",
+      "userId": "121c461a-2ebb-422f-90be-ece8468d43cd",
+      "role": "USER"
+    },
+    {
+      "index": 79,
+      "email": "test79@test.com",
+      "password": "1234",
+      "nickname": "test79",
+      "name": "User79",
+      "phoneNumber": "010-0000-0079",
+      "userId": "c75ca9de-6666-49cb-93f0-1390b1e624e2",
+      "role": "USER"
+    },
+    {
+      "index": 80,
+      "email": "test80@test.com",
+      "password": "1234",
+      "nickname": "test80",
+      "name": "User80",
+      "phoneNumber": "010-0000-0080",
+      "userId": "26e6488f-8de2-448b-973d-017a720571ff",
+      "role": "USER"
+    },
+    {
+      "index": 81,
+      "email": "test81@test.com",
+      "password": "1234",
+      "nickname": "test81",
+      "name": "User81",
+      "phoneNumber": "010-0000-0081",
+      "userId": "38fde498-7ddd-4d0e-8589-b7f2539dab33",
+      "role": "USER"
+    },
+    {
+      "index": 82,
+      "email": "test82@test.com",
+      "password": "1234",
+      "nickname": "test82",
+      "name": "User82",
+      "phoneNumber": "010-0000-0082",
+      "userId": "68182355-b09b-4c26-8e11-62ff03f84182",
+      "role": "USER"
+    },
+    {
+      "index": 83,
+      "email": "test83@test.com",
+      "password": "1234",
+      "nickname": "test83",
+      "name": "User83",
+      "phoneNumber": "010-0000-0083",
+      "userId": "a7ca1bed-dfca-4290-8ce5-53d51137d0d7",
+      "role": "USER"
+    },
+    {
+      "index": 84,
+      "email": "test84@test.com",
+      "password": "1234",
+      "nickname": "test84",
+      "name": "User84",
+      "phoneNumber": "010-0000-0084",
+      "userId": "0f7e169a-d03e-44be-86b4-c0fa5f9ed265",
+      "role": "USER"
+    },
+    {
+      "index": 85,
+      "email": "test85@test.com",
+      "password": "1234",
+      "nickname": "test85",
+      "name": "User85",
+      "phoneNumber": "010-0000-0085",
+      "userId": "3d558904-ea46-43f9-977e-b130cc42b53f",
+      "role": "USER"
+    },
+    {
+      "index": 86,
+      "email": "test86@test.com",
+      "password": "1234",
+      "nickname": "test86",
+      "name": "User86",
+      "phoneNumber": "010-0000-0086",
+      "userId": "e67b8a75-b952-4b6a-95d0-8280a7bfb904",
+      "role": "USER"
+    },
+    {
+      "index": 87,
+      "email": "test87@test.com",
+      "password": "1234",
+      "nickname": "test87",
+      "name": "User87",
+      "phoneNumber": "010-0000-0087",
+      "userId": "1b171a85-af7a-4be7-951b-089437eb5523",
+      "role": "USER"
+    },
+    {
+      "index": 88,
+      "email": "test88@test.com",
+      "password": "1234",
+      "nickname": "test88",
+      "name": "User88",
+      "phoneNumber": "010-0000-0088",
+      "userId": "f1651c32-b97e-46b5-92f8-e28f130187d3",
+      "role": "USER"
+    },
+    {
+      "index": 89,
+      "email": "test89@test.com",
+      "password": "1234",
+      "nickname": "test89",
+      "name": "User89",
+      "phoneNumber": "010-0000-0089",
+      "userId": "b76871bd-7573-4e1e-ad9c-c09375f4ea32",
+      "role": "USER"
+    },
+    {
+      "index": 90,
+      "email": "test90@test.com",
+      "password": "1234",
+      "nickname": "test90",
+      "name": "User90",
+      "phoneNumber": "010-0000-0090",
+      "userId": "92ef5944-9b75-446c-b85a-dcbea9814be7",
+      "role": "USER"
+    },
+    {
+      "index": 91,
+      "email": "test91@test.com",
+      "password": "1234",
+      "nickname": "test91",
+      "name": "User91",
+      "phoneNumber": "010-0000-0091",
+      "userId": "3cc7cfb7-8294-484d-b261-0e2a7781bd9d",
+      "role": "USER"
+    },
+    {
+      "index": 92,
+      "email": "test92@test.com",
+      "password": "1234",
+      "nickname": "test92",
+      "name": "User92",
+      "phoneNumber": "010-0000-0092",
+      "userId": "f45ffa8e-083c-40a8-bc9a-ed409731bcf6",
+      "role": "USER"
+    },
+    {
+      "index": 93,
+      "email": "test93@test.com",
+      "password": "1234",
+      "nickname": "test93",
+      "name": "User93",
+      "phoneNumber": "010-0000-0093",
+      "userId": "3c5e8119-3527-42cd-9a16-5b66e06fc0e1",
+      "role": "USER"
+    },
+    {
+      "index": 94,
+      "email": "test94@test.com",
+      "password": "1234",
+      "nickname": "test94",
+      "name": "User94",
+      "phoneNumber": "010-0000-0094",
+      "userId": "bae2d4a4-3f2e-487b-82d5-e69f923670df",
+      "role": "USER"
+    },
+    {
+      "index": 95,
+      "email": "test95@test.com",
+      "password": "1234",
+      "nickname": "test95",
+      "name": "User95",
+      "phoneNumber": "010-0000-0095",
+      "userId": "397b5751-4506-431a-9429-8a26e3db2da9",
+      "role": "USER"
+    },
+    {
+      "index": 96,
+      "email": "test96@test.com",
+      "password": "1234",
+      "nickname": "test96",
+      "name": "User96",
+      "phoneNumber": "010-0000-0096",
+      "userId": "79f7527b-9499-466e-883b-d1c5d5254e2b",
+      "role": "USER"
+    },
+    {
+      "index": 97,
+      "email": "test97@test.com",
+      "password": "1234",
+      "nickname": "test97",
+      "name": "User97",
+      "phoneNumber": "010-0000-0097",
+      "userId": "9b7ce96d-f355-4fc9-b577-401f546a48f2",
+      "role": "USER"
+    },
+    {
+      "index": 98,
+      "email": "test98@test.com",
+      "password": "1234",
+      "nickname": "test98",
+      "name": "User98",
+      "phoneNumber": "010-0000-0098",
+      "userId": "85590b0f-9e55-4143-99b9-cb3891018a43",
+      "role": "USER"
+    },
+    {
+      "index": 99,
+      "email": "test99@test.com",
+      "password": "1234",
+      "nickname": "test99",
+      "name": "User99",
+      "phoneNumber": "010-0000-0099",
+      "userId": "e4c10015-5e53-4c2d-96a2-a8beb998ee26",
+      "role": "USER"
+    },
+    {
+      "index": 100,
+      "email": "test100@test.com",
+      "password": "1234",
+      "nickname": "test100",
+      "name": "User100",
+      "phoneNumber": "010-0000-0100",
+      "userId": "9fd98884-49de-4c37-8f87-9b9cd6f6547d",
+      "role": "USER"
+    },
+    {
+      "index": 101,
+      "email": "test101@test.com",
+      "password": "1234",
+      "nickname": "test101",
+      "name": "User101",
+      "phoneNumber": "010-0000-0101",
+      "userId": "e363e287-2512-4637-838d-0bd1eb33a85b",
+      "role": "USER"
+    },
+    {
+      "index": 102,
+      "email": "test102@test.com",
+      "password": "1234",
+      "nickname": "test102",
+      "name": "User102",
+      "phoneNumber": "010-0000-0102",
+      "userId": "ea5bacba-6be5-4063-8a0f-306238edfafd",
+      "role": "USER"
+    }
+  ],
+  "events": [
+    {
+      "index": 1,
+      "name": "1테스트 팝업 스토어",
+      "eventId": "98397d33-8876-4356-aa22-d27c20b8fbfd",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 2,
+      "name": "2테스트 팝업 스토어",
+      "eventId": "26c45887-e4a1-459a-b4b4-67b3c05082c4",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 3,
+      "name": "3테스트 팝업 스토어",
+      "eventId": "f8dc8ef9-2ab7-4752-a73f-b56a84930ebe",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 4,
+      "name": "4테스트 팝업 스토어",
+      "eventId": "4236a25f-0d5a-4c57-bb8d-ecc10cf151f9",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 5,
+      "name": "5테스트 팝업 스토어",
+      "eventId": "81df8795-1a35-4f60-bc3e-2a8d6b964a02",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 6,
+      "name": "6테스트 팝업 스토어",
+      "eventId": "3ea3de5f-c7c3-4b0f-b6b2-44acec7623ed",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 7,
+      "name": "7테스트 팝업 스토어",
+      "eventId": "ff94ffe2-1270-4eec-a618-f3f293d8ce21",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 8,
+      "name": "8테스트 팝업 스토어",
+      "eventId": "58fa77a0-2263-4e21-bb70-05e3f5b4f590",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 9,
+      "name": "9테스트 팝업 스토어",
+      "eventId": "68d886d3-5e69-49ad-ad1c-89cda92ca454",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 10,
+      "name": "10테스트 팝업 스토어",
+      "eventId": "3da04d27-01c7-429d-976b-e475cbb7c58c",
+      "categoryName": "POPUPSTORE",
+      "categoryId": "95d28c21-89b0-4024-b1c6-e9fba44f3810",
+      "status": "SCHEDULED"
+    }
+  ],
+  "chatRooms": [
+    {
+      "index": 1,
+      "eventId": "98397d33-8876-4356-aa22-d27c20b8fbfd",
+      "chatRoomId": "3a191a8b-417c-4ba3-a5b7-e40e66ed04af",
+      "eventName": "1테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 2,
+      "eventId": "26c45887-e4a1-459a-b4b4-67b3c05082c4",
+      "chatRoomId": "28c5ba06-38aa-4a90-aa17-a32d0ec07684",
+      "eventName": "2테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 3,
+      "eventId": "f8dc8ef9-2ab7-4752-a73f-b56a84930ebe",
+      "chatRoomId": "3794ff61-ce99-49cf-b524-e80fb7c76baa",
+      "eventName": "3테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 4,
+      "eventId": "4236a25f-0d5a-4c57-bb8d-ecc10cf151f9",
+      "chatRoomId": "48f66352-7152-4c64-8459-a2362189e735",
+      "eventName": "4테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 5,
+      "eventId": "81df8795-1a35-4f60-bc3e-2a8d6b964a02",
+      "chatRoomId": "b08fcc54-fe07-4554-8fd0-664441b51b9c",
+      "eventName": "5테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 6,
+      "eventId": "3ea3de5f-c7c3-4b0f-b6b2-44acec7623ed",
+      "chatRoomId": "37ff80ae-7a2f-49cb-9e6c-9a16b221dc7c",
+      "eventName": "6테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 7,
+      "eventId": "ff94ffe2-1270-4eec-a618-f3f293d8ce21",
+      "chatRoomId": "817f0635-7a5c-45b4-8c09-34202af9dc53",
+      "eventName": "7테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 8,
+      "eventId": "58fa77a0-2263-4e21-bb70-05e3f5b4f590",
+      "chatRoomId": "318aadce-7d9c-45ea-ab17-666e718d7fb1",
+      "eventName": "8테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 9,
+      "eventId": "68d886d3-5e69-49ad-ad1c-89cda92ca454",
+      "chatRoomId": "2383b1f1-317f-4dfd-85a5-531782c4228c",
+      "eventName": "9테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    },
+    {
+      "index": 10,
+      "eventId": "3da04d27-01c7-429d-976b-e475cbb7c58c",
+      "chatRoomId": "15a5f54f-6f52-4826-9bb7-0a226909cf58",
+      "eventName": "10테스트 팝업 스토어",
+      "status": "SCHEDULED"
+    }
+  ]
+}
