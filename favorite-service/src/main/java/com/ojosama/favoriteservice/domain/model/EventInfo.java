@@ -4,6 +4,8 @@ import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
 import com.ojosama.favoriteservice.domain.exception.FavoriteException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,19 +25,27 @@ public class EventInfo {
     @Column(name = "event_img")
     private String eventImg;
 
-    public EventInfo(UUID eventId, String eventName, String eventImg) {
-        validate(eventId, eventName);
+    @Column(name = "event_status")
+    @Enumerated(EnumType.STRING)
+    private EventStatus eventStatus;
+
+    public EventInfo(UUID eventId, String eventName, String eventImg, EventStatus eventStatus) {
+        validate(eventId, eventName, eventStatus);
         this.eventId = eventId;
         this.eventName = eventName;
         this.eventImg = eventImg;
+        this.eventStatus = eventStatus;
     }
 
-    private void validate(UUID eventId, String eventName) {
+    private void validate(UUID eventId, String eventName, EventStatus eventStatus) {
         if (eventId == null) {
             throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_ID);
         }
         if (eventName == null || eventName.isBlank()) {
             throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_NAME);
+        }
+        if (eventStatus == null) {
+            throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_STATUS);
         }
     }
 }

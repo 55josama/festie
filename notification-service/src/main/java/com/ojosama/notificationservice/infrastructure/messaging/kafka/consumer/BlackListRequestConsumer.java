@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.notificationservice.application.NotificationService;
+import com.ojosama.notificationservice.application.command.BlackListRequestCommand;
 import com.ojosama.notificationservice.domain.exception.NotificationErrorCode;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
-import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.BlackListRegisterEventMessage;
+import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.BlackListRequestMessage;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,7 @@ public class BlackListRequestConsumer {
     )
     public void onMessage(ConsumerRecord<String, String> record) {
         UUID messageKey;
-        BlackListRegisterEventMessage event;
+        BlackListRequestMessage event;
 
         try {
             messageKey = UUID.fromString(record.key());
@@ -45,20 +46,28 @@ public class BlackListRequestConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> notificationService.createBlacklistRequestNotification(event)
+                    () -> dispatch(event)
             );
-            log.info("Event request created: {}", record.key());
+            log.info("블랙리스트 요청 이벤트 성공: {}", record.key());
         } catch (RuntimeException e) {
-            log.error("블랙리스트 처리 이벤트 실패 : {}, {}", record.key(), e.getMessage());
+            log.error("블랙리스트 요청 이벤트 실패 : {}, {}", record.key(), e.getMessage());
             throw e;
         }
     }
 
-    private BlackListRegisterEventMessage parse(String value) {
+    private BlackListRequestMessage parse(String value) {
         try {
-            return objectMapper.readValue(value, BlackListRegisterEventMessage.class);
+            return objectMapper.readValue(value, BlackListRequestMessage.class);
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
+    }
+
+    private void dispatch(BlackListRequestMessage event) {
+        if (event == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+        notificationService.createBlacklistRequestNotification(new BlackListRequestCommand(event.targetUserId(),
+                event.reason(), event.blindCount()));
     }
 }

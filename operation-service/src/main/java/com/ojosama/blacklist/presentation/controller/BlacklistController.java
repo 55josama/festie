@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -37,6 +38,7 @@ public class BlacklistController {
     private final BlacklistService blacklistService;
 
     // 블랙리스트 수동 등록
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<FindBlacklistResponse>> createBlacklist(
             @Valid @RequestBody CreateBlacklistRequest request) {
@@ -49,6 +51,7 @@ public class BlacklistController {
     }
 
     // 블랙리스트 목록 조회
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ListBlacklistResponse>>> getBlacklists(
             @RequestParam(required = false) BlacklistStatus status,
@@ -62,6 +65,7 @@ public class BlacklistController {
     }
 
     // 블랙리스트 해제
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{blacklistId}/status")
     public ResponseEntity<ApiResponse<FindBlacklistResponse>> releaseBlacklist(
             @PathVariable UUID blacklistId,

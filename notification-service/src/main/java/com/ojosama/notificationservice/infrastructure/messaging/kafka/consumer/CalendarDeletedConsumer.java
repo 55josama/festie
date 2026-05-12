@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.notificationservice.application.NotificationService;
+import com.ojosama.notificationservice.application.command.EventDeletedCommand;
 import com.ojosama.notificationservice.domain.exception.NotificationErrorCode;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
 import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.EventDeletedMessage;
@@ -45,7 +46,7 @@ public class CalendarDeletedConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> notificationService.deleteEventNotification(event)
+                    () -> dispatch(event)
             );
             log.info("Event deleted: {}", record.key());
         } catch (RuntimeException e) {
@@ -60,5 +61,13 @@ public class CalendarDeletedConsumer {
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
+    }
+
+    private void dispatch(EventDeletedMessage event) {
+        if (event == null || event.eventId() == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+        notificationService.deleteEventNotification(
+                new EventDeletedCommand(event.eventId(), event.eventName(), event.userIds()));
     }
 }

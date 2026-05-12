@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import com.ojosama.notificationservice.application.NotificationService;
+import com.ojosama.notificationservice.application.command.TargetBlindEventCommand;
 import com.ojosama.notificationservice.domain.exception.NotificationErrorCode;
 import com.ojosama.notificationservice.domain.exception.NotificationException;
-import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.TargetBlindEventMessage;
+import com.ojosama.notificationservice.infrastructure.messaging.kafka.dto.BlindRegisterMessage;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class BlindRegisterConsumer {
     )
     public void onMessage(ConsumerRecord<String, String> record) {
         UUID messageKey;
-        TargetBlindEventMessage event;
+        BlindRegisterMessage event;
 
         try {
             messageKey = UUID.fromString(record.key());
@@ -44,7 +45,7 @@ public class BlindRegisterConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> notificationService.blindNotification(event)
+                    () -> dispatch(event)
             );
             log.info("Event request created: {}", record.key());
         } catch (RuntimeException e) {
@@ -53,11 +54,19 @@ public class BlindRegisterConsumer {
         }
     }
 
-    private TargetBlindEventMessage parse(String value) {
+    private BlindRegisterMessage parse(String value) {
         try {
-            return objectMapper.readValue(value, TargetBlindEventMessage.class);
+            return objectMapper.readValue(value, BlindRegisterMessage.class);
         } catch (JsonProcessingException e) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
+    }
+
+    private void dispatch(BlindRegisterMessage message) {
+        if (message == null) {
+            throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
+        }
+        notificationService.blindNotification(new TargetBlindEventCommand(message.targetId(), message.targetUserId(),
+                message.targetType(), message.category()));
     }
 }

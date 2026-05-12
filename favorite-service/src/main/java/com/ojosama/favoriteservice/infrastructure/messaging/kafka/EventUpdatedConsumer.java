@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
+import com.ojosama.favoriteservice.application.dto.command.UpdateFavoriteEventCommand;
 import com.ojosama.favoriteservice.application.service.FavoriteService;
 import com.ojosama.favoriteservice.domain.exception.FavoriteErrorCode;
 import com.ojosama.favoriteservice.domain.exception.FavoriteException;
@@ -45,7 +46,7 @@ public class EventUpdatedConsumer {
                     CONSUMER_GROUP,
                     record.topic(),
                     EVENT_TYPE,
-                    () -> favoriteService.updateAllByEventId(event.eventId(), event)
+                    () -> dispatch(event)
             );
             log.info("수정 이벤트 성공: {}", record.key());
         } catch (RuntimeException e) {
@@ -60,5 +61,12 @@ public class EventUpdatedConsumer {
         } catch (JsonProcessingException e) {
             throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
+    }
+
+    private void dispatch(EventUpdatedMessage message) {
+        if (message.eventId() == null || message.changedFields() == null) {
+            throw new FavoriteException(FavoriteErrorCode.INVALID_EVENT_ID);
+        }
+        favoriteService.updateAllByEventId(UpdateFavoriteEventCommand.from(message));
     }
 }

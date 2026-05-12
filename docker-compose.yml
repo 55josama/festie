@@ -299,8 +299,10 @@ services:
       dockerfile: ai-service/Dockerfile
     container_name: festie-ai
     restart: unless-stopped
-    ports:
-      - "8083:8083"
+    # ports:
+    #  - "8083:8083"
+    expose:
+      - "8083"
     networks:
       - festie-network
     depends_on:
@@ -334,8 +336,10 @@ services:
       dockerfile: operation-service/Dockerfile
     container_name: festie-operation
     restart: unless-stopped
-    ports:
-      - "8084:8084"
+    # ports:
+    #  - "8084:8084"
+    expose:
+      - "8084"
     networks:
       - festie-network
     depends_on:
