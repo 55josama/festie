@@ -51,3 +51,17 @@ CLAUDE.md
 **/src/main/generated/
 **/src/test/generated/
 **/build/generated/
+
+### Load Test (k6 / JMeter) outputs ###
+loadtest/results/
+loadtest/**/summary.json
+loadtest/**/*.html
+loadtest/**/*.jtl
+loadtest/seed/seed_data.json
+loadtest/.venv/
+loadtest/**/__pycache__/
+summary.json
+**/summary.json
+# k6 결과 텍스트 (tee 로 저장한 파일)
+*_result.txt
+*_result_*.txt
