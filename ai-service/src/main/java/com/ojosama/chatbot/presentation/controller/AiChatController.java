@@ -11,6 +11,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +31,7 @@ public class AiChatController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/index")
     public ResponseEntity<ApiResponse<Void>> indexManualDocument(@Valid @RequestBody CreateIndexRequest request) {
         documentIndexer.indexGuide(UUID.randomUUID().toString(), request.content());

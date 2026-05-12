@@ -16,6 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,11 +35,11 @@ public class NoticeController {
     private final NoticeService noticeService;
 
     // 공지사항 생성
-    // TODO: 인증/인가 도입 후 @AuthenticationPrincipal로 교체 필요
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @PostMapping
     public ResponseEntity<ApiResponse<FindNoticeResponse>> createNotice(
             @Valid @RequestBody CreateNoticeRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "11111111-1111-1111-1111-111111111111") UUID adminId
+            @AuthenticationPrincipal UUID adminId
     ) {
         NoticeResult result = noticeService.createNotice(request.toCommand(adminId));
 
@@ -66,6 +68,7 @@ public class NoticeController {
     }
 
     // 공지사항 수정
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @PatchMapping("/{noticeId}")
     public ResponseEntity<ApiResponse<FindNoticeResponse>> updateNotice(
             @PathVariable UUID noticeId,
@@ -77,6 +80,7 @@ public class NoticeController {
     }
 
     // 공지사항 삭제
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @DeleteMapping("/{noticeId}")
     public ResponseEntity<ApiResponse<Void>> deleteNotice(
             @PathVariable UUID noticeId
