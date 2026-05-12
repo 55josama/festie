@@ -1,0 +1,305 @@
+### Chat Load Seed
+### 목적
+### - 부하테스트 전 필요한 더미 데이터를 생성한다.
+### - 실행 순서: 카테고리 -> 유저 -> 행사 -> 채팅방 확인
+### - IntelliJ HTTP Client 기준으로 사용한다.
+###
+### 주의
+### - user-service / event-service / chat-service / gateway-server가 실행 중이어야 한다.
+### - 이미 같은 닉네임/이메일/행사가 있으면 중복 에러가 날 수 있다.
+### - 아래는 "패턴" 파일이라서 1~100까지는 복사해서 늘려 사용한다.
+
+@gatewayUrl = http://localhost:8080
+@userUrl = http://localhost:8081
+@eventUrl = http://localhost:8082
+@chatUrl = http://localhost:8088
+@adminUserId = 00000000-0000-0000-0000-000000000001
+@adminUserRole = ADMIN
+
+### ============================================================
+### 1) 카테고리
+### ============================================================
+### 이미 있으면 스킵하고, 없으면 생성한다.
+### 필요하면 FESTIVAL / CONCERT / POPUPSTORE / FANMEETING 를 먼저 만든다.
+
+### 카테고리 조회
+GET {{eventUrl}}/v1/event-categories
+Content-Type: application/json
+X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+
+### 카테고리 생성 - FESTIVAL
+POST {{eventUrl}}/v1/event-categories
+Content-Type: application/json
+X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+
+{
+  "name": "FESTIVAL"
+}
+
+### 카테고리 생성 - CONCERT
+POST {{eventUrl}}/v1/event-categories
+Content-Type: application/json
+X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+
+{
+  "name": "CONCERT"
+}
+
+### 카테고리 생성 - POPUPSTORE
+POST {{eventUrl}}/v1/event-categories
+Content-Type: application/json
+X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+
+{
+  "name": "POPUPSTORE"
+}
+
+### 카테고리 생성 - FANMEETING
+POST {{eventUrl}}/v1/event-categories
+Content-Type: application/json
+X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+
+{
+  "name": "FANMEETING"
+}
+
+### ============================================================
+### 2) 유저
+### ============================================================
+### 패턴:
+### - email: test1@test.com, test2@test.com ...
+### - nickname: test1, test2 ...
+### - name: User1, User2 ...
+### - phoneNumber: 010-0000-0001, 010-0000-0002 ...
+
+### 유저 1
+POST {{userUrl}}/v1/users
+Content-Type: application/json
+
+{
+  "email": "test2@test.com",
+  "password": "1234",
+  "nickname": "test2",
+  "name": "User2",
+  "phoneNumber": "010-0000-0002"
+}
+
+### ============================================================
+### 3) 행사
+### ============================================================
+### 패턴:
+### - name: 테스트행사1, 테스트행사2 ...
+### - categoryId는 위에서 생성한 값으로 교체한다.
+### - 행사 20개를 먼저 만들고, 그 행사별 채팅방이 자동 생성되는지 확인한다.
+
+### 행사 1
+POST {{eventUrl}}/v1/events
+Content-Type: application/json
+X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+
+{
+  "name": "http 테스트행사1",
+  "categoryId": "{{festivalCategoryId}}",
+  "startAt": "2026-05-12T20:00:00",
+  "endAt": "2026-05-22T20:00:00",
+  "place": "테스트장소1",
+  "latitude": 37.5001,
+  "longitude": 127.0001,
+  "minFee": 1000,
+  "maxFee": 5000,
+  "hasTicketing": true,
+  "ticketingOpenAt": "2026-05-12T15:00:00",
+  "ticketingCloseAt": "2026-05-22T10:59:59",
+  "ticketingLink": "https://ticket.example.com/test1",
+  "officialLink": "https://example.com/test1",
+  "description": "부하테스트용 행사 1",
+  "performer": "Test Artist 1",
+  "img": "https://cdn.example.com/test1.jpg",
+  "schedules": [
+    {
+      "name": "Day 1",
+      "startTime": "2026-05-12T20:00:00",
+      "endTime": "2026-05-22T20:00:00"
+    }
+  ]
+}
+
+### 행사 2
+POST {{eventUrl}}/v1/events
+Content-Type: application/json
+X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+
+{
+  "name": "테스트행사2",
+  "categoryId": "{{concertCategoryId}}",
+  "startAt": "2026-08-02T10:00:00",
+  "endAt": "2026-08-02T18:00:00",
+  "place": "테스트장소2",
+  "latitude": 37.5002,
+  "longitude": 127.0002,
+  "minFee": 1000,
+  "maxFee": 5000,
+  "hasTicketing": true,
+  "ticketingOpenAt": "2026-05-01T10:00:00",
+  "ticketingCloseAt": "2026-07-31T23:59:59",
+  "ticketingLink": "https://ticket.example.com/test2",
+  "officialLink": "https://example.com/test2",
+  "description": "부하테스트용 행사 2",
+  "performer": "Test Artist 2",
+  "img": "https://cdn.example.com/test2.jpg",
+  "schedules": [
+    {
+      "name": "Day 1",
+      "startTime": "2026-08-02T10:00:00",
+      "endTime": "2026-08-02T18:00:00"
+    }
+  ]
+}
+
+### 행사 3
+POST {{eventUrl}}/v1/events
+Content-Type: application/json
+X-User-Id: 00000000-0000-0000-0000-000000000001
+
+{
+  "name": "테스트행사3",
+  "categoryId": "{{popupCategoryId}}",
+  "startAt": "2026-08-03T10:00:00",
+  "endAt": "2026-08-03T18:00:00",
+  "place": "테스트장소3",
+  "latitude": 37.5003,
+  "longitude": 127.0003,
+  "minFee": 1000,
+  "maxFee": 5000,
+  "hasTicketing": false,
+  "ticketingOpenAt": "2026-05-01T10:00:00",
+  "ticketingCloseAt": "2026-07-31T23:59:59",
+  "ticketingLink": "https://ticket.example.com/test3",
+  "officialLink": "https://example.com/test3",
+  "description": "부하테스트용 행사 3",
+  "performer": "Test Artist 3",
+  "img": "https://cdn.example.com/test3.jpg",
+  "schedules": [
+    {
+      "name": "Day 1",
+      "startTime": "2026-08-03T10:00:00",
+      "endTime": "2026-08-03T18:00:00"
+    }
+  ]
+}
+
+### ============================================================
+### 4) 채팅방 확인
+### ============================================================
+### 행사 생성 후 chat-service가 자동으로 채팅방을 만든다.
+### 아래는 eventId로 채팅방이 생성됐는지 확인하는 용도다.
+
+GET {{chatUrl}}/v1/chat/rooms/event?eventId={{eventId1}}
+GET {{chatUrl}}/v1/chat/rooms/event?eventId={{eventId2}}
+GET {{chatUrl}}/v1/chat/rooms/event?eventId={{eventId3}}
+
+### ============================================================
+### 4-1) 채팅방 강제 오픈
+### ============================================================
+### 조회 결과로 받은 chatRoomId를 넣으면 강제로 OPEN 상태로 바꾼다.
+### 필요하면 response script로 client.global.set("chatRoomId1", ...) 해서 저장한다.
+
+PATCH {{chatUrl}}/v1/chat/admin/rooms/{{chatRoomId1}}/status
+Content-Type: application/json
+X-User-Id: {{adminUserId}}
+X-User-Role: {{adminUserRole}}
+
+{
+  "action": "FORCE_OPEN"
+}
+
+###
+PATCH {{chatUrl}}/v1/chat/admin/rooms/{{chatRoomId2}}/status
+Content-Type: application/json
+X-User-Id: {{adminUserId}}
+X-User-Role: {{adminUserRole}}
+
+{
+  "action": "FORCE_OPEN"
+}
+
+###
+PATCH {{chatUrl}}/v1/chat/admin/rooms/{{chatRoomId3}}/status
+Content-Type: application/json
+X-User-Id: {{adminUserId}}
+X-User-Role: {{adminUserRole}}
+
+{
+  "action": "FORCE_OPEN"
+}
+
+### ============================================================
+### 메모
+### IntelliJ HTTP Client에서는 각 응답의 data.id / data.eventId 등을
+### response script로 client.global.set(...) 해서 저장할 수 있다.
+### 예:
+###   client.global.set("festivalCategoryId", response.body.data.id);
+###   client.global.set("eventId1", response.body.data.id);
+###   client.global.set("chatRoomId1", response.body.data.chatRoomId);
+### 채팅방 ID도 eventId로 조회해서 따로 저장해두면 k6에서 재사용하기 편하다.
+
+### Chat Message Seed Samples
+### 수동 확인용 예시
+### - 채팅방이 OPEN 상태여야 메시지 생성이 성공한다.
+
+
+@chatUrl = http://localhost:8088
+@adminUserId = 3e9605c7-3d25-4171-9c00-e83a10cccf25
+@adminRole = ADMIN
+@userId1 = b6137489-2e8a-4166-87aa-7651f61c219c
+@userId2 = 4ee050e8-44e6-4764-8860-691322e23e59
+@chatRoomId1=15a5f54f-6f52-4826-9bb7-0a226909cf58
+@chatRoomId2=37ff80ae-7a2f-49cb-9e6c-9a16b221dc7c
+@chatRoomId3=2383b1f1-317f-4dfd-85a5-531782c4228c
+
+
+### 채팅방 조회
+GET {{chatUrl}}/v1/chat/rooms/event?eventId={{eventId}}
+
+### 채팅방 강제 오픈
+PATCH {{chatUrl}}/v1/chat/admin/rooms/{{chatRoomId}}/status
+Content-Type: application/json
+X-User-Id: {{adminUserId}}
+X-User-Role: {{adminRole}}
+
+{
+  "action": "FORCE_OPEN"
+}
+
+### 메시지 1
+POST {{chatUrl}}/v1/chat/rooms/{{chatRoomId1}}/messages
+Content-Type: application/json
+X-User-Id: {{userId1}}
+X-User-Role: USER
+
+{
+  "content": "시드메시지 1"
+}
+
+### 메시지 2
+POST {{chatUrl}}/v1/chat/rooms/{{chatRoomId2}}/messages
+Content-Type: application/json
+X-User-Id: {{userId2}}
+X-User-Role: USER
+
+{
+  "content": "시드메시지 2"
+}
+
+### 메시지 2
+POST {{chatUrl}}/v1/chat/rooms/{{chatRoomId3}}/messages
+Content-Type: application/json
+X-User-Id: {{userId2}}
+X-User-Role: USER
+
+{
+  "content": "시드메시지 3"
+}
+
+### 메시지 목록 확인
+GET {{chatUrl}}/v1/chat/rooms/{{chatRoomId3}}/messages?page=0&size=20
