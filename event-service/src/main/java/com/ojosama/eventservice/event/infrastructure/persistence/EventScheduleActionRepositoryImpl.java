@@ -30,4 +30,9 @@ public class EventScheduleActionRepositoryImpl implements EventScheduleActionRep
     public List<EventScheduleAction> findPendingByEventId(UUID eventId) {
         return jpaRepo.findByEventIdAndStatus(eventId, ScheduleActionStatus.PENDING);
     }
+
+    @Override
+    public List<EventScheduleAction> findPendingByEventIdForUpdate(UUID eventId) {
+        return jpaRepo.findByEventIdAndStatusForUpdate(eventId, ScheduleActionStatus.PENDING);
+    }
 }

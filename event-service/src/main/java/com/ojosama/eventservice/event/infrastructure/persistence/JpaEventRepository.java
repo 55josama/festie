@@ -24,4 +24,9 @@ public interface JpaEventRepository extends JpaRepository<Event, UUID> {
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
     @Query("SELECT e FROM Event e WHERE e.id = :id AND e.deletedAt IS NULL")
     Optional<Event> findByIdAndDeletedAtIsNullForUpdate(UUID id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
+    @Query("SELECT e FROM Event e LEFT JOIN FETCH e.schedules WHERE e.id = :id AND e.deletedAt IS NULL")
+    Optional<Event> findByIdAndDeletedAtIsNullForUpdateWithSchedules(UUID id);
 }

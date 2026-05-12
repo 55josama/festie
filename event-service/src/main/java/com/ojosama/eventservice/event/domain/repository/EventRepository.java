@@ -12,6 +12,7 @@ public interface EventRepository {
     Optional<Event> findById(UUID id);
 
     Optional<Event> findByIdForUpdate(UUID id);
+    Optional<Event> findByIdForUpdateWithSchedules(UUID id);
     List<Event> findAllActive();
     List<Event> findAllByIds(List<UUID> ids);
     Page<Event> findAll(EventFilter filter, Pageable pageable);
