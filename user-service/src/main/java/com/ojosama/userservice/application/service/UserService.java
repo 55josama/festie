@@ -23,14 +23,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -85,11 +87,10 @@ public class UserService {
         }
     }
 
-    //유저 조회 todo: 관리자 전용, 로그인 사용자 기준 본인만 조회 기능 추가
+    //유저 조회
     @Transactional(readOnly = true)
     public GetUserResult getUser(GetUserQuery query) {
         User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
-                //todo 임시 오류 처리
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         return new GetUserResult(
@@ -214,8 +215,9 @@ public class UserService {
     private void evictNicknameCache(UUID userId) {
         try {
             redisTemplate.delete(nicknameCacheKey(userId));
-        } catch (Exception ignored) {
-            // 캐시 삭제 실패는 닉네임 수정 자체를 막지 않는다.
+        } catch (Exception e) {
+            log.warn("닉네임 캐시 삭제 실패. userId={}", userId, e);
+            // 캐시 삭제 실패는 닉네임 수정 자체를 막지 않는다. -> warn 로그 남김
         }
     }
 
