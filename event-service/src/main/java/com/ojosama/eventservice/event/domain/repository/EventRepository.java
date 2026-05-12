@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 public interface EventRepository {
     Event save(Event event);
     Optional<Event> findById(UUID id);
+
+    Optional<Event> findByIdForUpdate(UUID id);
     List<Event> findAllActive();
     List<Event> findAllByIds(List<UUID> ids);
     Page<Event> findAll(EventFilter filter, Pageable pageable);

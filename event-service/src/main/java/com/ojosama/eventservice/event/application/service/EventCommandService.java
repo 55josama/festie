@@ -145,7 +145,7 @@ public class EventCommandService {
     }
 
     public void deleteEvent(UUID userId, UUID eventId) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
         event.deleted(userId);
@@ -154,7 +154,7 @@ public class EventCommandService {
     }
 
     public EventResult cancelEvent(UUID eventId, UUID userId) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
 
         String beforeStatus = event.getStatus().name();
