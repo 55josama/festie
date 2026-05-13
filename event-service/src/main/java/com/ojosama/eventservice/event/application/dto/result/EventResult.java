@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public record EventResult(
     UUID id,
@@ -53,7 +54,7 @@ public record EventResult(
             event.getPerformer(),
             event.getImg(),
             event.getStatus().name(),
-            event.getSchedules().stream().map(ScheduleResult::from).toList()
+            event.getSchedules().stream().map(ScheduleResult::from).collect(Collectors.toList())
         );
     }
 }
