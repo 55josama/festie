@@ -24,6 +24,7 @@ public class RedissonDistributedLock {
 
     private final RedissonClient redissonClient;
     private final LockMetrics lockMetrics;
+    private final ThreadLocal<Long> lockAcquiredTime = new ThreadLocal<>();
 
     /**
      * 분산 락 획득 시도
@@ -38,16 +39,17 @@ public class RedissonDistributedLock {
             throws InterruptedException {
 
         String lockKey = LOCK_PREFIX + targetId;
-        RLock lock = redissonClient.getLock(lockKey);
+        RLock lock = redissonClient.getFairLock(lockKey);
 
         long startTime = System.currentTimeMillis();
 
-        // Redisson Fair Lock 사용 (FIFO 순서 보장)
         boolean acquired = lock.tryLock(waitTime, leaseTime, unit);
 
         long waitDuration = System.currentTimeMillis() - startTime;
 
         if (acquired) {
+            lockAcquiredTime.set(System.currentTimeMillis());
+
             lockMetrics.recordLockWaitTime("redisson", waitDuration);
             lockMetrics.recordLockAcquired("redisson");
 
@@ -74,22 +76,29 @@ public class RedissonDistributedLock {
      */
     public void unlock(UUID targetId) {
         String lockKey = LOCK_PREFIX + targetId;
-        RLock lock = redissonClient.getLock(lockKey);
+        RLock lock = redissonClient.getFairLock(lockKey);
 
         try {
             // 현재 스레드가 락을 보유하고 있는 경우에만 해제
             if (lock.isHeldByCurrentThread()) {
-                long holdTime = System.currentTimeMillis();
-                lock.unlock();
-                holdTime = System.currentTimeMillis() - holdTime;
+                Long acquiredTime = lockAcquiredTime.get();
+                long holdTime = 0;
 
-                lockMetrics.recordLockHoldTime("redisson", holdTime);
+                if (acquiredTime != null) {
+                    holdTime = System.currentTimeMillis() - acquiredTime;
+                    lockMetrics.recordLockHoldTime("redisson", holdTime);
+                }
+
+                lock.unlock();
+                lockAcquiredTime.remove();
+
                 log.info("[Redisson] Lock released: {} (held: {}ms)", lockKey, holdTime);
             } else {
                 log.warn("[Redisson] Lock not held by current thread: {}", lockKey);
             }
         } catch (IllegalMonitorStateException e) {
             log.error("[Redisson] Failed to unlock (not owner or already released): {}", lockKey, e);
+            lockAcquiredTime.remove();
         }
     }
 
@@ -101,7 +110,7 @@ public class RedissonDistributedLock {
      */
     public boolean isLocked(UUID targetId) {
         String lockKey = LOCK_PREFIX + targetId;
-        RLock lock = redissonClient.getLock(lockKey);
+        RLock lock = redissonClient.getFairLock(lockKey);
         return lock.isLocked();
     }
 
@@ -113,7 +122,7 @@ public class RedissonDistributedLock {
      */
     public boolean isHeldByCurrentThread(UUID targetId) {
         String lockKey = LOCK_PREFIX + targetId;
-        RLock lock = redissonClient.getLock(lockKey);
+        RLock lock = redissonClient.getFairLock(lockKey);
         return lock.isHeldByCurrentThread();
     }
 }
