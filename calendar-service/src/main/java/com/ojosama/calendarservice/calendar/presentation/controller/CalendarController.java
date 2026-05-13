@@ -82,5 +82,4 @@ public class CalendarController {
         calendarService.deleteCalendar(new DeleteCalendarCommand(calendarId, userId));
         return ResponseEntity.ok(ApiResponse.deleted());
     }
-
 }
