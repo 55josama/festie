@@ -44,6 +44,8 @@ public class RedisCacheConfig {
                         BasicPolymorphicTypeValidator.builder()
                                 .allowIfSubType("com.ojosama.")
                                 .allowIfSubType("java.util.")
+                                .allowIfSubType("java.time.")
+                                .allowIfSubType("java.math.")
                                 .build(),
                         ObjectMapper.DefaultTyping.EVERYTHING,
                         "@class"

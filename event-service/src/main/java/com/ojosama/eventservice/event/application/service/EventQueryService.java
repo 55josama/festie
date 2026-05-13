@@ -10,6 +10,7 @@ import com.ojosama.eventservice.event.domain.repository.EventFilter;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -53,7 +54,7 @@ public class EventQueryService {
     public List<EventResult> getAllEvents() {
         return eventRepository.findAllActive().stream()
                 .map(EventResult::from)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +63,6 @@ public class EventQueryService {
         log.info("행사 목록 조회 (ID 기반) - count: {}", ids.size());
         return eventRepository.findAllByIds(ids).stream()
                 .map(EventResult::from)
-                .toList();
+                .collect(Collectors.toList());
     }
 }
