@@ -30,7 +30,7 @@ public class EventStatusUpdateConsumer {
     private final FavoriteService favoriteService;
 
     @KafkaListener(
-            topics = "${spring.kafka.topic.event-changed}", // 토픽이름 변경
+            topics = "${spring.kafka.topic.event-status-changed}",
             groupId = CONSUMER_GROUP,
             containerFactory = "kafkaListenerContainerFactory"
     )

@@ -15,11 +15,12 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -27,6 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/notifications")
+@PreAuthorize("isAuthenticated()")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -34,13 +36,13 @@ public class NotificationController {
 
     // SSE 프론트 연결
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@RequestHeader("X-User-Id") UUID receiverId) {
+    public SseEmitter subscribe(@AuthenticationPrincipal UUID receiverId) {
         return sseEmitterManager.subscribe(receiverId);
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<NotificationResponseDto>>> getNotification(
-            @RequestHeader("X-User-Id") UUID receiverId,
+            @AuthenticationPrincipal UUID receiverId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Direction.DESC) Pageable pageable) {
 
         Page<NotificationResult> notificationList = notificationService.selectAll(receiverId, pageable);
@@ -52,7 +54,7 @@ public class NotificationController {
 
     @PatchMapping
     public ResponseEntity<ApiResponse<List<NotificationResponseDto>>> markAllAsRead(
-            @RequestHeader("X-User-Id") UUID receiverId) {
+            @AuthenticationPrincipal UUID receiverId) {
         List<NotificationResult> notificationList = notificationService.markAllAsRead(receiverId);
 
         return ResponseEntity
@@ -62,7 +64,7 @@ public class NotificationController {
 
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<ApiResponse<Void>> deleteNotification(@PathVariable UUID notificationId,
-                                                                @RequestHeader("X-User-Id") UUID receiverId) {
+                                                                @AuthenticationPrincipal UUID receiverId) {
         notificationService.deleteNotification(receiverId, notificationId);
         return ResponseEntity
                 .status(HttpStatus.OK)

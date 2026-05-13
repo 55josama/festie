@@ -6,6 +6,7 @@ import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.Builder;
@@ -15,7 +16,9 @@ import org.hibernate.annotations.UuidGenerator;
 
 @Getter
 @Entity
-@Table(name = "p_favorite")
+@Table(name = "p_favorite", indexes = {
+        @Index(name = "idx_favorite_user_id", columnList = "user_id")
+})
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Favorite extends BaseUserEntity {
 

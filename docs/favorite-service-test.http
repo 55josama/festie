@@ -1,13 +1,12 @@
 ### favorite-service
 @userId = e6ab78d7-74c4-4bcd-8851-afd7b95daa02
-@eventId = b716d8e3-94b7-4592-a4cf-191293526884
-
+@eventId = a25ac0fd-cb7f-48e4-b31c-6f492fd597a5
+@accessToken = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyYTQyNzM0Ni1kNTJjLTQxNTEtYTY4OC04YWUyZTQzNjIzNzkiLCJlbWFpbCI6Im9vam9zYW1hNUBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsIm5pY2tuYW1lIjoiaG9obyIsInRva2VuVHlwZSI6IkFDQ0VTUyIsImlhdCI6MTc3ODY0MjM1NSwiZXhwIjoxNzc4NjQ1OTU1fQ.-quNzgveAEvUTaLk0-Ap4Srb1P603SUL1DDaS1LOErw
 ### **생성**
 
 POST {{favoriteUrl}}/v1/favorites
 Content-Type: application/json
-X-User-Id: {{userId}}
-
+Authorization: Bearer {{accessToken}}
 
 {
   "eventId": "{{eventId}}",
@@ -18,7 +17,7 @@ X-User-Id: {{userId}}
 
 GET {{favoriteUrl}}/v1/favorites
 Content-Type: application/json
-X-User-Id: {{userId}}
+Authorization: Bearer {{accessToken}}
 
 ### **삭제 ( 생성에서 생긴 uuid  )**
 
