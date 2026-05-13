@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -23,6 +23,7 @@ import {
 } from '../api/categories'
 import { useAuthStore } from '../store/authStore'
 import { formatDateTime } from '../lib/format'
+import { searchAddressWithKakao } from '../lib/kakao'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
 const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELED'] as const
@@ -48,9 +49,14 @@ export default function Admin() {
   const [requestDrafts, setRequestDrafts] = useState<Record<string, EventDraft>>({})
   const [generalCreateOpen, setGeneralCreateOpen] = useState(false)
   const [generalDraft, setGeneralDraft] = useState<EventDraft>(createBlankEventDraft())
+  const [addressLookupLoading, setAddressLookupLoading] = useState(false)
   const [eventCategoryDraft, setEventCategoryDraft] = useState('')
   const [communityCategoryDraft, setCommunityCategoryDraft] = useState('')
   const [categoryDrafts, setCategoryDrafts] = useState<Record<string, string>>({})
+  const [categoryErrors, setCategoryErrors] = useState<{ event: string; community: string }>({
+    event: '',
+    community: '',
+  })
 
   const { data: eventCategories = [] } = useQuery({
     queryKey: ['admin', 'event-categories'],
@@ -145,24 +151,27 @@ export default function Admin() {
         startAt: draft.startAt,
         endAt: draft.endAt,
         place: draft.place,
+        region: draft.region || null,
         latitude: toRequiredNumber(draft.latitude),
         longitude: toRequiredNumber(draft.longitude),
         radius: toOptionalNumber(draft.radius),
         minFee: toRequiredNumber(draft.minFee),
         maxFee: toRequiredNumber(draft.maxFee),
         hasTicketing: draft.hasTicketing,
-        ticketingOpenAt: draft.ticketingOpenAt || null,
-        ticketingCloseAt: draft.ticketingCloseAt || null,
+        ticketingOpenAt: normalizeDateTimeInput(draft.ticketingOpenAt),
+        ticketingCloseAt: normalizeDateTimeInput(draft.ticketingCloseAt),
         ticketingLink: draft.ticketingLink || null,
         officialLink: draft.officialLink || null,
         performer: draft.performer || null,
         description: draft.description || null,
         img: draft.img,
-        schedules: [{
-          name: draft.scheduleName || draft.eventName || '메인 일정',
-          startTime: draft.scheduleStartAt || draft.startAt,
-          endTime: draft.scheduleEndAt || draft.endAt,
-        }],
+        schedules: (draft.schedules?.length
+          ? draft.schedules
+          : [{ name: draft.eventName || '메인 일정', startAt: draft.startAt, endAt: draft.endAt }]).map((schedule, index) => ({
+          name: schedule.name || `Day ${index + 1}`,
+          startTime: normalizeDateTimeInput(schedule.startAt) ?? draft.startAt,
+          endTime: normalizeDateTimeInput(schedule.endAt) ?? draft.endAt,
+        })),
         status: 'SCHEDULED',
       }),
     onSuccess: async (createdEvent) => {
@@ -184,21 +193,42 @@ export default function Admin() {
     mutationFn: (name: string) => createEventCategory(name),
     onSuccess: async () => {
       setEventCategoryDraft('')
+      setCategoryErrors((prev) => ({ ...prev, event: '' }))
       await queryClient.invalidateQueries({ queryKey: ['admin', 'event-categories'] })
+    },
+    onError: (error: any) => {
+      setCategoryErrors((prev) => ({
+        ...prev,
+        event: extractErrorMessage(error, '행사 카테고리를 생성하지 못했어요.'),
+      }))
     },
   })
 
   const updateEventCategoryMutation = useMutation({
     mutationFn: ({ categoryId, name }: { categoryId: string; name: string }) => updateEventCategory(categoryId, name),
     onSuccess: async () => {
+      setCategoryErrors((prev) => ({ ...prev, event: '' }))
       await queryClient.invalidateQueries({ queryKey: ['admin', 'event-categories'] })
+    },
+    onError: (error: any) => {
+      setCategoryErrors((prev) => ({
+        ...prev,
+        event: extractErrorMessage(error, '행사 카테고리를 수정하지 못했어요.'),
+      }))
     },
   })
 
   const deleteEventCategoryMutation = useMutation({
     mutationFn: (categoryId: string) => deleteEventCategory(categoryId),
     onSuccess: async () => {
+      setCategoryErrors((prev) => ({ ...prev, event: '' }))
       await queryClient.invalidateQueries({ queryKey: ['admin', 'event-categories'] })
+    },
+    onError: (error: any) => {
+      setCategoryErrors((prev) => ({
+        ...prev,
+        event: extractErrorMessage(error, '행사 카테고리를 삭제하지 못했어요.'),
+      }))
     },
   })
 
@@ -206,21 +236,42 @@ export default function Admin() {
     mutationFn: (name: string) => createCommunityCategory(name),
     onSuccess: async () => {
       setCommunityCategoryDraft('')
+      setCategoryErrors((prev) => ({ ...prev, community: '' }))
       await queryClient.invalidateQueries({ queryKey: ['admin', 'community-categories'] })
+    },
+    onError: (error: any) => {
+      setCategoryErrors((prev) => ({
+        ...prev,
+        community: extractErrorMessage(error, '커뮤니티 카테고리를 생성하지 못했어요.'),
+      }))
     },
   })
 
   const updateCommunityCategoryMutation = useMutation({
     mutationFn: ({ categoryId, name }: { categoryId: string; name: string }) => updateCommunityCategory(categoryId, name),
     onSuccess: async () => {
+      setCategoryErrors((prev) => ({ ...prev, community: '' }))
       await queryClient.invalidateQueries({ queryKey: ['admin', 'community-categories'] })
+    },
+    onError: (error: any) => {
+      setCategoryErrors((prev) => ({
+        ...prev,
+        community: extractErrorMessage(error, '커뮤니티 카테고리를 수정하지 못했어요.'),
+      }))
     },
   })
 
   const deleteCommunityCategoryMutation = useMutation({
     mutationFn: (categoryId: string) => deleteCommunityCategory(categoryId),
     onSuccess: async () => {
+      setCategoryErrors((prev) => ({ ...prev, community: '' }))
       await queryClient.invalidateQueries({ queryKey: ['admin', 'community-categories'] })
+    },
+    onError: (error: any) => {
+      setCategoryErrors((prev) => ({
+        ...prev,
+        community: extractErrorMessage(error, '커뮤니티 카테고리를 삭제하지 못했어요.'),
+      }))
     },
   })
 
@@ -229,6 +280,29 @@ export default function Admin() {
     reports: reports.length,
     rooms: scopedChatRooms.length,
   }), [reports.length, scopedChatRooms.length, scopedEventRequests.length])
+
+  const lookupPlaceForDraft = async (setDraft: (patch: Partial<EventDraft>) => void) => {
+    setAddressLookupLoading(true)
+    try {
+      const result = await searchAddressWithKakao()
+      setDraft({
+        place: result.address,
+        region: result.region,
+        latitude: result.latitude != null ? String(result.latitude) : '',
+        longitude: result.longitude != null ? String(result.longitude) : '',
+      })
+    } finally {
+      setAddressLookupLoading(false)
+    }
+  }
+
+  const attachImageForDraft = async (file: File, setDraft: (patch: Partial<EventDraft>) => void) => {
+    const preview = await readFileAsDataUrl(file)
+    setDraft({
+      img: preview,
+      imgFileName: file.name,
+    })
+  }
 
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
@@ -292,6 +366,13 @@ export default function Admin() {
               onSubmit={() => createEventMutation.mutate({ draft: generalDraftWithCategory })}
               onClose={() => setGeneralCreateOpen(false)}
               loading={createEventMutation.isPending}
+              onLookupPlace={() => {
+                void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({ ...prev, ...patch })))
+              }}
+              placeLookupLoading={addressLookupLoading}
+              onAttachImage={(file) => {
+                void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({ ...prev, ...patch })))
+              }}
             />
           )}
 
@@ -385,6 +466,13 @@ export default function Admin() {
                     })}
                     onClose={() => setRequestPanels((prev) => ({ ...prev, [request.id]: false }))}
                     loading={createEventMutation.isPending}
+                    onLookupPlace={() => {
+                      void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                    }}
+                    placeLookupLoading={addressLookupLoading}
+                    onAttachImage={(file) => {
+                      void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                    }}
                   />
                 )}
               </div>
@@ -476,6 +564,7 @@ export default function Admin() {
           onCreate={() => createEventCategoryMutation.mutate(eventCategoryDraft.trim())}
           onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({ categoryId, name })}
           onDelete={(categoryId) => deleteEventCategoryMutation.mutate(categoryId)}
+          helperMessage={categoryErrors.event}
           loading={createEventCategoryMutation.isPending || updateEventCategoryMutation.isPending || deleteEventCategoryMutation.isPending}
         />
         <CategoryAdminPanel
@@ -489,6 +578,7 @@ export default function Admin() {
           onCreate={() => createCommunityCategoryMutation.mutate(communityCategoryDraft.trim())}
           onUpdate={(categoryId, name) => updateCommunityCategoryMutation.mutate({ categoryId, name })}
           onDelete={(categoryId) => deleteCommunityCategoryMutation.mutate(categoryId)}
+          helperMessage={categoryErrors.community}
           loading={createCommunityCategoryMutation.isPending || updateCommunityCategoryMutation.isPending || deleteCommunityCategoryMutation.isPending}
         />
       </section>
@@ -618,9 +708,12 @@ interface EventDraft {
   performer: string
   description: string
   img: string
-  scheduleName: string
-  scheduleStartAt: string
-  scheduleEndAt: string
+  imgFileName: string
+  schedules: Array<{
+    name: string
+    startAt: string
+    endAt: string
+  }>
 }
 
 function createBlankEventDraft(): EventDraft {
@@ -630,7 +723,7 @@ function createBlankEventDraft(): EventDraft {
     startAt: '',
     endAt: '',
     place: '',
-    region: '서울',
+    region: '',
     latitude: '',
     longitude: '',
     radius: '',
@@ -644,9 +737,8 @@ function createBlankEventDraft(): EventDraft {
     performer: '',
     description: '',
     img: '',
-    scheduleName: '메인 일정',
-    scheduleStartAt: '',
-    scheduleEndAt: '',
+    imgFileName: '',
+    schedules: [],
   }
 }
 
@@ -657,7 +749,7 @@ function buildRequestDraft(request: any, categoryMap: Map<string, string>): Even
     categoryId: categoryMap.get(request.category) ?? categoryMap.values().next().value ?? '',
     ticketingLink: request.link ?? '',
     description: request.description ?? '',
-    scheduleName: request.eventName ? `${request.eventName} 메인 일정` : '메인 일정',
+    schedules: [],
   }
 }
 
@@ -683,6 +775,22 @@ function toOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function normalizeDateTimeInput(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) return `${trimmed}:00`
+  return trimmed
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result ?? ''))
+    reader.onerror = () => reject(reader.error ?? new Error('파일을 읽지 못했습니다.'))
+    reader.readAsDataURL(file)
+  })
+}
+
 function AdminInput({
   label,
   value,
@@ -696,6 +804,11 @@ function AdminInput({
   placeholder?: string
   type?: string
 }) {
+  const inputClassName =
+    type === 'datetime-local'
+      ? 'w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm text-slate-500 outline-none [color-scheme:light]'
+      : 'w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none'
+
   return (
     <label className="block">
       <div className="mb-1 text-[11px] font-semibold text-slate-500">{label}</div>
@@ -704,7 +817,7 @@ function AdminInput({
         type={type}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none"
+        className={inputClassName}
       />
     </label>
   )
@@ -719,6 +832,9 @@ function EventCreatePanel({
   onSubmit,
   onClose,
   loading,
+  onLookupPlace,
+  placeLookupLoading,
+  onAttachImage,
 }: {
   title: string
   subtitle: string
@@ -728,8 +844,12 @@ function EventCreatePanel({
   onSubmit: () => void
   onClose: () => void
   loading?: boolean
+  onLookupPlace: () => void
+  placeLookupLoading?: boolean
+  onAttachImage: (file: File) => void
 }) {
   const categoryValue = draft.categoryId || categoryOptions[0]?.id || ''
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
 
   return (
     <div className="rounded-[22px] border border-[var(--line)] bg-white p-4">
@@ -750,7 +870,7 @@ function EventCreatePanel({
           <select
             value={categoryValue}
             onChange={(e) => setDraft({ categoryId: e.target.value })}
-            className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none"
+            className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2.5 text-sm outline-none"
           >
             <option value="">선택하세요</option>
             {categoryOptions.map((category) => (
@@ -760,15 +880,36 @@ function EventCreatePanel({
             ))}
           </select>
         </label>
-        <AdminInput label="시작일" value={draft.startAt} onChange={(value) => setDraft({ startAt: value })} placeholder="2026-06-15T17:00:00" />
-        <AdminInput label="종료일" value={draft.endAt} onChange={(value) => setDraft({ endAt: value })} placeholder="2026-06-15T23:00:00" />
-        <AdminInput label="장소" value={draft.place} onChange={(value) => setDraft({ place: value })} />
-        <AdminInput label="지역" value={draft.region} onChange={(value) => setDraft({ region: value })} />
+        <AdminInput label="시작일" value={draft.startAt} onChange={(value) => setDraft({ startAt: value })} type="datetime-local" />
+        <AdminInput label="종료일" value={draft.endAt} onChange={(value) => setDraft({ endAt: value })} type="datetime-local" />
+        <label className="md:col-span-2 block">
+          <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
+            <span>장소</span>
+            <button
+              type="button"
+              onClick={onLookupPlace}
+              disabled={placeLookupLoading}
+              className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[10px] font-semibold text-[var(--accent)] disabled:opacity-60"
+            >
+              {placeLookupLoading ? '검색 중...' : '카카오 주소검색'}
+            </button>
+          </div>
+          <input
+            value={draft.place}
+            onChange={(e) => setDraft({ place: e.target.value })}
+            placeholder="주소를 검색하거나 직접 입력하세요"
+            className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none"
+          />
+          <div className="mt-1 text-[11px] leading-5 text-slate-400">선택한 주소로 지역, 위도, 경도가 자동 입력돼요.</div>
+        </label>
+        <AdminInput label="지역" value={draft.region} onChange={(value) => setDraft({ region: value })} placeholder="자동 입력" />
         <AdminInput label="위도" value={draft.latitude} onChange={(value) => setDraft({ latitude: value })} placeholder="37.5665" type="number" />
         <AdminInput label="경도" value={draft.longitude} onChange={(value) => setDraft({ longitude: value })} placeholder="126.9780" type="number" />
         <AdminInput label="반경" value={draft.radius} onChange={(value) => setDraft({ radius: value })} placeholder="500" type="number" />
         <AdminInput label="최소 금액" value={draft.minFee} onChange={(value) => setDraft({ minFee: value })} placeholder="0" type="number" />
         <AdminInput label="최대 금액" value={draft.maxFee} onChange={(value) => setDraft({ maxFee: value })} placeholder="150000" type="number" />
+        <AdminInput label="공식 링크" value={draft.officialLink} onChange={(value) => setDraft({ officialLink: value })} />
+        <AdminInput label="출연" value={draft.performer} onChange={(value) => setDraft({ performer: value })} />
         <div className="md:col-span-2">
           <div className="mb-1 text-[11px] font-semibold text-slate-500">티켓팅 여부</div>
           <div className="flex flex-wrap gap-2">
@@ -777,18 +918,117 @@ function EventCreatePanel({
           </div>
         </div>
         {draft.hasTicketing && (
-          <>
-            <AdminInput label="티켓팅 오픈" value={draft.ticketingOpenAt} onChange={(value) => setDraft({ ticketingOpenAt: value })} placeholder="2026-05-16T20:00:00" />
-            <AdminInput label="티켓팅 종료" value={draft.ticketingCloseAt} onChange={(value) => setDraft({ ticketingCloseAt: value })} placeholder="2026-05-16T21:00:00" />
-            <AdminInput label="티켓팅 링크" value={draft.ticketingLink} onChange={(value) => setDraft({ ticketingLink: value })} />
-          </>
+          <div className="md:col-span-2 space-y-3 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+            <div className="text-[11px] font-semibold text-slate-500">티켓팅 정보</div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <AdminInput label="티켓팅 오픈" value={draft.ticketingOpenAt} onChange={(value) => setDraft({ ticketingOpenAt: value })} type="datetime-local" />
+              <AdminInput label="티켓팅 종료" value={draft.ticketingCloseAt} onChange={(value) => setDraft({ ticketingCloseAt: value })} type="datetime-local" />
+              <div className="md:col-span-2">
+                <AdminInput label="티켓팅 링크" value={draft.ticketingLink} onChange={(value) => setDraft({ ticketingLink: value })} />
+              </div>
+            </div>
+          </div>
         )}
-        <AdminInput label="공식 링크" value={draft.officialLink} onChange={(value) => setDraft({ officialLink: value })} />
-        <AdminInput label="출연" value={draft.performer} onChange={(value) => setDraft({ performer: value })} />
-        <AdminInput label="대표 이미지 URL" value={draft.img} onChange={(value) => setDraft({ img: value })} placeholder="https://..." />
-        <AdminInput label="일정 제목" value={draft.scheduleName} onChange={(value) => setDraft({ scheduleName: value })} />
-        <AdminInput label="일정 시작" value={draft.scheduleStartAt} onChange={(value) => setDraft({ scheduleStartAt: value })} placeholder="2026-06-15T17:00:00" />
-        <AdminInput label="일정 종료" value={draft.scheduleEndAt} onChange={(value) => setDraft({ scheduleEndAt: value })} placeholder="2026-06-15T23:00:00" />
+        <label className="md:col-span-2 block">
+          <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
+            <span>대표 이미지</span>
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[10px] font-semibold text-[var(--accent)]"
+            >
+              파일 첨부
+            </button>
+          </div>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) onAttachImage(file)
+            }}
+          />
+          <div className="flex items-center gap-2">
+            <input
+              value={draft.img}
+              onChange={(e) => setDraft({ img: e.target.value, imgFileName: '' })}
+              placeholder="https://... 또는 파일 첨부"
+              className="min-w-0 flex-1 rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none"
+            />
+          </div>
+          <div className="mt-1 text-[11px] leading-5 text-slate-400">
+            {draft.imgFileName ? `첨부 파일: ${draft.imgFileName}` : 'URL 또는 파일 첨부 둘 다 사용할 수 있어요.'}
+          </div>
+        </label>
+
+        <div className="md:col-span-2 flex items-center justify-between gap-3">
+          <div className="text-[11px] font-semibold text-slate-500">일정</div>
+          <button
+            type="button"
+            onClick={() =>
+              setDraft({
+                schedules: [...(draft.schedules ?? []), { name: `Day ${(draft.schedules?.length ?? 0) + 1}`, startAt: '', endAt: '' }],
+              })
+            }
+            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[10px] font-semibold text-[var(--accent)]"
+          >
+            + 일정
+          </button>
+        </div>
+
+        <div className="md:col-span-2 space-y-2">
+          {(draft.schedules ?? []).map((schedule, index) => (
+            <div key={`${index}-${schedule.name}`} className="grid gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-end">
+              <AdminInput
+                label={`일정 제목 ${index + 1}`}
+                value={schedule.name}
+                onChange={(value) =>
+                  setDraft({
+                    schedules: (draft.schedules ?? []).map((item, itemIndex) => (itemIndex === index ? { ...item, name: value } : item)),
+                  })
+                }
+              />
+              <AdminInput
+                label="일정 시작"
+                value={schedule.startAt}
+                onChange={(value) =>
+                  setDraft({
+                    schedules: (draft.schedules ?? []).map((item, itemIndex) => (itemIndex === index ? { ...item, startAt: value } : item)),
+                  })
+                }
+                type="datetime-local"
+              />
+              <AdminInput
+                label="일정 종료"
+                value={schedule.endAt}
+                onChange={(value) =>
+                  setDraft({
+                    schedules: (draft.schedules ?? []).map((item, itemIndex) => (itemIndex === index ? { ...item, endAt: value } : item)),
+                  })
+                }
+                type="datetime-local"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setDraft({
+                    schedules: (draft.schedules ?? []).filter((_, itemIndex) => itemIndex !== index),
+                  })
+                }
+                className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"
+              >
+                삭제
+              </button>
+            </div>
+          ))}
+          {(!draft.schedules || draft.schedules.length === 0) && (
+            <div className="rounded-[18px] border border-dashed border-[var(--line)] bg-white px-4 py-5 text-sm text-slate-500">
+              세부 일정이 없으면 비워도 돼요. 상단 시작일/종료일이 행사 기본 일정이 됩니다.
+            </div>
+          )}
+        </div>
         <label className="md:col-span-2 block">
           <div className="mb-1 text-[11px] font-semibold text-slate-500">설명</div>
           <textarea
@@ -831,6 +1071,7 @@ function CategoryAdminPanel({
   onCreate,
   onUpdate,
   onDelete,
+  helperMessage,
   loading,
 }: {
   title: string
@@ -843,6 +1084,7 @@ function CategoryAdminPanel({
   onCreate: () => void
   onUpdate: (categoryId: string, name: string) => void
   onDelete: (categoryId: string) => void
+  helperMessage?: string
   loading?: boolean
 }) {
   return (
@@ -865,6 +1107,7 @@ function CategoryAdminPanel({
           생성
         </button>
       </div>
+      {helperMessage ? <div className="text-xs font-medium text-rose-600">{helperMessage}</div> : null}
 
       <div className="space-y-2">
         {items.map((item) => (
@@ -915,4 +1158,11 @@ function TogglePill({ active, onClick, children }: { active?: boolean; onClick: 
 function normalizeRole(role?: string | null) {
   if (!role) return ''
   return role.replace(/^ROLE_/, '')
+}
+
+function extractErrorMessage(error: any, fallback: string) {
+  return error?.response?.data?.message
+    ?? error?.response?.data?.error
+    ?? error?.message
+    ?? fallback
 }

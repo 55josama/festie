@@ -1,8 +1,9 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getEvents } from '../api/events'
 import type { Event } from '../types'
+import { resolveRegionFromCoordinates } from '../lib/kakao'
 
 const REGION_FILTERS = ['전체', '서울', '경기', '충청', '강원', '경상', '전라', '부산', '제주']
 const CATEGORY_FILTERS = ['전체', '콘서트', '축제', '팬미팅', '팝업스토어']
@@ -12,22 +13,61 @@ export default function Events() {
   const [region, setRegion] = useState(searchParams.get('region') ?? '전체')
   const [category, setCategory] = useState(searchParams.get('category') ?? '전체')
   const [query, setQuery] = useState(searchParams.get('query') ?? '')
+  const [resolvedRegions, setResolvedRegions] = useState<Record<string, string>>({})
+  const regionCacheRef = useRef<Record<string, string>>({})
+  const kakaoKey = String(import.meta.env.VITE_KAKAO_JS_KEY ?? '')
 
   const { data: events = [] } = useQuery({
     queryKey: ['events', 'list'],
     queryFn: () => getEvents({ size: 100 }),
   })
 
+  useEffect(() => {
+    if (!kakaoKey) return
+    let cancelled = false
+    const pending = (events as Event[]).filter((event) => {
+      if (event.region) return false
+      if (regionCacheRef.current[event.id]) return false
+      return event.latitude != null && event.longitude != null
+    })
+
+    if (pending.length === 0) return
+
+    void Promise.all(
+      pending.map(async (event) => {
+        try {
+          const resolved = await resolveRegionFromCoordinates(event.latitude!, event.longitude!)
+          return resolved ? [event.id, resolved] as const : null
+        } catch {
+          return null
+        }
+      }),
+    ).then((pairs) => {
+      if (cancelled) return
+      const next = { ...regionCacheRef.current }
+      for (const pair of pairs) {
+        if (!pair) continue
+        next[pair[0]] = pair[1]
+      }
+      regionCacheRef.current = next
+      setResolvedRegions(next)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [events, kakaoKey])
+
   const filteredEvents = useMemo(() => {
     return sortUpcomingEvents(
       (events as Event[]).filter((event) => {
         const queryOk = !query.trim() || matchesSearchText([event.name, event.place, event.performer ?? '', event.categoryName].join(' '), query)
-        const regionOk = region === '전체' || isRegionMatch(region, event)
+        const regionOk = region === '전체' || getRegionLabel(event, resolvedRegions) === region
         const categoryOk = category === '전체' || event.categoryName === category
         return queryOk && regionOk && categoryOk
       })
     )
-  }, [category, events, query, region])
+  }, [category, events, query, region, resolvedRegions])
 
   const submitSearch = () => {
     const next = query.trim()
@@ -299,6 +339,25 @@ function formatShortRange(startAt?: string | null, endAt?: string | null) {
   return end ? `${startText} - ${endText}` : startText
 }
 
+function getRegionLabel(event: Event, resolvedRegions: Record<string, string>) {
+  const rawRegion = event.region ?? resolvedRegions[event.id] ?? ''
+  return normalizeRegionLabel(rawRegion)
+}
+
+function normalizeRegionLabel(value?: string | null) {
+  if (!value) return ''
+  const compact = value.replace(/\s+/g, '')
+  if (/서울/.test(compact)) return '서울'
+  if (/경기/.test(compact)) return '경기'
+  if (/세종|대전|충청/.test(compact)) return '충청'
+  if (/강원/.test(compact)) return '강원'
+  if (/경상|대구|울산|창원|포항|경주|진주|구미|경산/.test(compact)) return '경상'
+  if (/전라|광주|전주|목포|여수|순천|군산|익산/.test(compact)) return '전라'
+  if (/부산/.test(compact)) return '부산'
+  if (/제주/.test(compact)) return '제주'
+  return compact
+}
+
 function MiniRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-xs">
@@ -306,33 +365,4 @@ function MiniRow({ label, value }: { label: string; value: string }) {
       <span className="truncate text-right font-semibold text-slate-900">{value}</span>
     </div>
   )
-}
-
-function isRegionMatch(region: string, event: Event) {
-  const regionValue = (event.region ?? '').toLowerCase()
-  const normalizedPlace = event.place.toLowerCase()
-  const normalizedName = event.name.toLowerCase()
-  const text = `${regionValue} ${normalizedPlace} ${normalizedName}`
-
-  if (region === '서울') {
-    if (event.region?.includes('서울')) return true
-    if (hasSeoulCoordinates(event)) return true
-    return /서울|성수|올림픽|잠실|고척|여의도|kspo|홍대|이태원|잠실종합운동장|두타몰|동대문|ddp|동대문디자인플라자/.test(text)
-  }
-  if (region === '경기') return /경기|고양|수원|일산|부천|성남|수지|광명|용인|파주/.test(text)
-  if (region === '충청') return /충청|대전|세종|천안|아산|청주|충주|홍성|예산/.test(text)
-  if (region === '강원') return /강원|춘천|원주|강릉|속초|평창|홍천/.test(text)
-  if (region === '경상') return /경상|부산|대구|울산|창원|포항|경주|진주|구미|경산|벡스코/.test(text)
-  if (region === '전라') return /전라|광주|전주|목포|여수|순천|군산|익산/.test(text)
-  if (region === '부산') return /부산|벡스코/.test(text)
-  if (region === '제주') return /제주/.test(text)
-  return true
-}
-
-function hasSeoulCoordinates(event: Event) {
-  const lat = event.latitude
-  const lng = event.longitude
-  if (lat == null || lng == null) return false
-
-  return lat >= 37.3 && lat <= 37.75 && lng >= 126.7 && lng <= 127.3
 }
