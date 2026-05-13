@@ -19,7 +19,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,21 +50,22 @@ public class EventRequestController {
     }
 
     @DeleteMapping("/{requestId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> cancelEventRequest(
             @AuthenticationPrincipal String userId,
-            Authentication authentication,
             @PathVariable UUID requestId) {
 
-        UUID userUuid = UUID.fromString(userId);
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        eventRequestCommandService.cancelEventRequest(UUID.fromString(userId), requestId);
+        return ResponseEntity.noContent().build();
+    }
 
-        if (isAdmin) {
-            eventRequestCommandService.adminCancelEventRequest(userUuid, requestId);
-        } else {
-            eventRequestCommandService.cancelEventRequest(userUuid, requestId);
-        }
+    @DeleteMapping("/admin/{requestId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> adminCancelEventRequest(
+            @AuthenticationPrincipal String userId,
+            @PathVariable UUID requestId) {
+
+        eventRequestCommandService.adminCancelEventRequest(UUID.fromString(userId), requestId);
         return ResponseEntity.noContent().build();
     }
 
