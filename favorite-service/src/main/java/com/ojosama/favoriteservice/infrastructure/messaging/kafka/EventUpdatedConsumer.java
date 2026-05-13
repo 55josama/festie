@@ -29,7 +29,7 @@ public class EventUpdatedConsumer {
     private final FavoriteService favoriteService;
 
     @KafkaListener(
-            topics = "${spring.kafka.topic.event-updated}",
+            topics = "${spring.kafka.topic.event-changed}",
             groupId = CONSUMER_GROUP,
             containerFactory = "kafkaListenerContainerFactory"
     )

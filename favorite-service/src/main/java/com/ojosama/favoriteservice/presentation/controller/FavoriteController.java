@@ -15,12 +15,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,9 +33,10 @@ public class FavoriteController {
     private final FavoriteService favoriteService;
 
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<CreateFavoriteResponseDto>> createFavorite(
             @Valid @RequestBody CreateFavoriteRequestDto favoriteDto,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
 
         FavoriteResult result = favoriteService.createFavorite(favoriteDto.toCommand(), userId);
         return ResponseEntity
@@ -45,16 +47,18 @@ public class FavoriteController {
     }
 
     @DeleteMapping("/{favoriteId}")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<Void>> deleteFavorite(@PathVariable("favoriteId") UUID favoriteId,
-                                                            @RequestHeader("X-User-Id") UUID userId) {
+                                                            @AuthenticationPrincipal UUID userId) {
 
         favoriteService.deleteFavorite(favoriteId, userId);
         return ResponseEntity.ok(ApiResponse.deleted());
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<Page<GetFavoritesResponseDto>>> getFavorites(
-            @RequestHeader("X-User-Id") UUID userId,
+            @AuthenticationPrincipal UUID userId,
             @PageableDefault(size = 10,
                     sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 

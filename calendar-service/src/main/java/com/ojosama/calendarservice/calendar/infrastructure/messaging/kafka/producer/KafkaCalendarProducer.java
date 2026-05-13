@@ -25,7 +25,7 @@ public class KafkaCalendarProducer {
     @Value("${spring.kafka.topic.calendar-event-updated}")
     private String updatedTopic;
 
-    @Value("${spring.kafka.topic.calendar-event-status-updated}")
+    @Value("${spring.kafka.topic.calendar-event-status-changed}")
     private String statusUpdatedTopic;
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
