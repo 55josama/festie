@@ -215,8 +215,7 @@ export async function searchAddressWithKakao(): Promise<AddressSearchResult> {
 export async function resolveRegionFromCoordinates(latitude: number, longitude: number) {
   await ensureKakaoMaps()
   const geocoder = new window.kakao!.maps!.services!.Geocoder()
-
-  const region = await new Promise<string | null>((resolve) => {
+  return await new Promise<string | null>((resolve) => {
     geocoder.coord2RegionCode(longitude, latitude, (result, status) => {
       if (status !== 'OK' || !result[0]) {
         resolve(null)
@@ -225,8 +224,6 @@ export async function resolveRegionFromCoordinates(latitude: number, longitude: 
       resolve(compactRegionLabel(result[0].region_1depth_name))
     })
   })
-
-  return region
 }
 
 async function geocodeFirstMatch(

@@ -244,11 +244,11 @@ function Badge({ children }: { children: ReactNode }) {
 function cardTone(categoryName: string) {
   return (
     {
-      콘서트: { background: 'linear-gradient(135deg, rgba(110,84,255,0.18), rgba(110,84,255,0.42))' },
-      축제: { background: 'linear-gradient(135deg, rgba(141,115,255,0.16), rgba(88,92,255,0.38))' },
-      팬미팅: { background: 'linear-gradient(135deg, rgba(126,92,255,0.18), rgba(178,106,255,0.34))' },
-      팝업스토어: { background: 'linear-gradient(135deg, rgba(98,78,240,0.12), rgba(76,122,255,0.28))' },
-    }[categoryName] ?? { background: 'linear-gradient(135deg, rgba(111,84,255,0.16), rgba(111,84,255,0.32))' }
+      concert: { background: 'linear-gradient(135deg, rgba(110,84,255,0.18), rgba(110,84,255,0.42))' },
+      festival: { background: 'linear-gradient(135deg, rgba(141,115,255,0.16), rgba(88,92,255,0.38))' },
+      fanmeeting: { background: 'linear-gradient(135deg, rgba(126,92,255,0.18), rgba(178,106,255,0.34))' },
+      popup: { background: 'linear-gradient(135deg, rgba(98,78,240,0.12), rgba(76,122,255,0.28))' },
+    }[normalizeCategoryKey(categoryName)] ?? { background: 'linear-gradient(135deg, rgba(111,84,255,0.16), rgba(111,84,255,0.32))' }
   )
 }
 
@@ -268,6 +268,14 @@ function getSortBucket(event: Event) {
   if (isOngoingEvent(event)) return 0
   if (isFutureEvent(event)) return 1
   return 2
+}
+
+function normalizeCategoryKey(name: string) {
+  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
+  if (name === '\uCD95\uC81C') return 'festival'
+  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
+  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
+  return name.toLowerCase()
 }
 
 function getDisplayStatus(event: Event) {
