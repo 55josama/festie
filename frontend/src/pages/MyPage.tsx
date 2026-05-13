@@ -1,18 +1,53 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { updateMe } from '../api/auth'
 import { useAuthStore } from '../store/authStore'
 
 export default function MyPage() {
   const { user, setUser } = useAuthStore()
   const [nickname, setNickname] = useState(user?.nickname ?? '')
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber ?? '')
+  const [saving, setSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   useEffect(() => {
     setNickname(user?.nickname ?? '')
-  }, [user?.nickname])
+    setPhoneNumber(user?.phoneNumber ?? '')
+  }, [user?.nickname, user?.phoneNumber])
 
-  const saveNickname = () => {
+  useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => setToast(null), 2200)
+    return () => window.clearTimeout(timer)
+  }, [toast])
+
+  const saveNickname = async () => {
     if (!user) return
-    setUser({ ...user, nickname: nickname.trim() || user.nickname })
+    const nextNickname = nickname.trim() || user.nickname
+    setSaving(true)
+    setSaveMessage('')
+    try {
+      const updated = await updateMe({
+        name: user.name,
+        nickname: nextNickname,
+        phoneNumber: phoneNumber.trim() || user.phoneNumber || '010-0000-0000',
+      })
+      setUser({
+        ...user,
+        nickname: updated.nickname ?? nextNickname,
+        phoneNumber: updated.phoneNumber ?? phoneNumber ?? user.phoneNumber,
+      })
+      setNickname(updated.nickname ?? nextNickname)
+      setPhoneNumber(updated.phoneNumber ?? phoneNumber)
+      setSaveMessage('닉네임이 저장되었습니다.')
+      setToast({ type: 'success', message: '프로필이 저장되었습니다.' })
+    } catch {
+      setSaveMessage('저장에 실패했습니다.')
+      setToast({ type: 'error', message: '저장에 실패했습니다.' })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -32,10 +67,10 @@ export default function MyPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-[18px] font-black tracking-tight text-slate-950">기본 정보</h2>
-              <p className="mt-1 text-sm text-slate-500">닉네임은 바로 수정할 수 있어요.</p>
+              <p className="mt-1 text-sm text-slate-500">닉네임과 휴대폰 번호를 수정할 수 있어요.</p>
             </div>
             <div className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
-              닉네임 수정
+              프로필 수정
             </div>
           </div>
 
@@ -52,15 +87,26 @@ export default function MyPage() {
             <button
               type="button"
               onClick={saveNickname}
-              className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              disabled={saving}
+              className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-70"
             >
-              저장
+              {saving ? '저장 중...' : '저장'}
             </button>
           </div>
+          {saveMessage && <div className="mt-3 text-sm text-slate-500">{saveMessage}</div>}
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
             <MiniField label="이메일" value={user?.email ?? '-'} />
-            <MiniField label="휴대폰 번호" value="백엔드 인증 연결 후 추가 가능" muted />
+            <MiniField label="이름" value={user?.name ?? '-'} />
+            <div className="rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">휴대폰 번호</div>
+              <input
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="mt-2 w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                placeholder="010-0000-0000"
+              />
+            </div>
           </div>
         </section>
 
@@ -79,6 +125,17 @@ export default function MyPage() {
           </InfoCard>
         </div>
       </div>
+      {toast && (
+        <div
+          className={`fixed bottom-5 right-5 z-50 rounded-2xl border px-4 py-3 text-sm shadow-[0_12px_30px_rgba(15,23,42,0.12)] ${
+            toast.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-rose-200 bg-rose-50 text-rose-700'
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   )
 }

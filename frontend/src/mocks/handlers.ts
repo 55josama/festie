@@ -442,6 +442,22 @@ export const handlers = [
       nickname: isAdmin ? '운영자' : '테스트유저',
       email: isAdmin ? 'admin@festie.kr' : 'test@festie.kr',
       name: isAdmin ? '관리자' : '테스트',
+      phoneNumber: isAdmin ? '010-9999-9999' : '010-1234-5678',
+      role: isAdmin ? 'ADMIN' : 'USER',
+    }))
+  }),
+
+  http.patch('/user-service/v1/users/me', async ({ request }) => {
+    await delay(200)
+    const body = await request.json() as any
+    const token = request.headers.get('authorization') ?? ''
+    const isAdmin = token.includes('mock-admin-token')
+    return HttpResponse.json(wrap({
+      userId: isAdmin ? 'admin-user' : 'me',
+      email: isAdmin ? 'admin@festie.kr' : 'test@festie.kr',
+      name: body.name ?? (isAdmin ? '관리자' : '테스트'),
+      nickname: body.nickname ?? (isAdmin ? '운영자' : '테스트유저'),
+      phoneNumber: body.phoneNumber ?? (isAdmin ? '010-9999-9999' : '010-1234-5678'),
       role: isAdmin ? 'ADMIN' : 'USER',
     }))
   }),

@@ -20,3 +20,12 @@ export const getMe = async () => {
   const res = await client.get('/user-service/v1/users/me')
   return res.data.data ?? res.data
 }
+
+export const updateMe = async (data: {
+  name: string
+  nickname: string
+  phoneNumber: string
+}) => {
+  const res = await client.patch('/user-service/v1/users/me', data)
+  return res.data.data ?? res.data
+}
