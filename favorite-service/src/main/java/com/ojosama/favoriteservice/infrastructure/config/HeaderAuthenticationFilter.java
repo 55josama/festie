@@ -40,15 +40,22 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
         log.debug("필터 - userId: {}, role: {}", userId, role);
 
         if (userId != null && !userId.isBlank() && role != null && !role.isBlank()) {
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            UUID.fromString(userId.trim()),
-                            null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + role.trim()))
-                    );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
+            try {
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                UUID.fromString(userId.trim()),
+                                null,
+                                List.of(new SimpleGrantedAuthority("ROLE_" + role.trim()))
+                        );
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (IllegalArgumentException ex) {
+                log.error("잘못된 인증 헤더 형식입니다. userId={}", userId);
+                SecurityContextHolder.clearContext();
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid authentication headers");
+                return;
 
+            }
+        }
         filterChain.doFilter(request, response);
     }
 }
