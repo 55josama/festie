@@ -3,10 +3,10 @@ import type { Event } from '../types'
 import { formatDateRange, formatPrice, getDDay } from '../lib/format'
 
 const CATEGORY_ACCENT: Record<string, string> = {
-  콘서트: 'from-sky-100 to-sky-50 text-sky-700',
-  축제: 'from-emerald-100 to-emerald-50 text-emerald-700',
-  팬미팅: 'from-fuchsia-100 to-fuchsia-50 text-fuchsia-700',
-  팝업스토어: 'from-sky-100 to-sky-50 text-sky-700',
+  concert: 'from-sky-100 to-sky-50 text-sky-700',
+  festival: 'from-emerald-100 to-emerald-50 text-emerald-700',
+  fanmeeting: 'from-fuchsia-100 to-fuchsia-50 text-fuchsia-700',
+  popup: 'from-sky-100 to-sky-50 text-sky-700',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default function EventCard({ event }: { event: Event }) {
   const dDay = getDDay(event.ticketingOpenAt ?? event.startAt)
   const price = formatPrice(event.minFee, event.maxFee)
-  const accent = CATEGORY_ACCENT[event.categoryName] ?? 'from-slate-100 to-slate-50 text-slate-700'
+  const accent = CATEGORY_ACCENT[normalizeCategoryKey(event.categoryName)] ?? 'from-slate-100 to-slate-50 text-slate-700'
 
   return (
     <Link
@@ -48,4 +48,12 @@ export default function EventCard({ event }: { event: Event }) {
       </div>
     </Link>
   )
+}
+
+function normalizeCategoryKey(name: string) {
+  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
+  if (name === '\uCD95\uC81C') return 'festival'
+  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
+  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
+  return name.toLowerCase()
 }

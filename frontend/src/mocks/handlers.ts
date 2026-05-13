@@ -14,6 +14,14 @@ import {
 
 const wrap = (data: any) => ({ status: 'success', data })
 
+function normalizeCategoryKey(name: string) {
+  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
+  if (name === '\uCD95\uC81C') return 'festival'
+  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
+  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
+  return String(name).toLowerCase()
+}
+
 export const handlers = [
   http.get('/event-service/v1/events', async ({ request }) => {
     await delay(250)
@@ -33,7 +41,7 @@ export const handlers = [
   http.post('/event-service/v1/events', async ({ request }) => {
     await delay(220)
     const body = await request.json() as any
-    const categoryId = body.categoryId ?? ({ 콘서트: 'c1', 축제: 'c2', 팬미팅: 'c3', 팝업스토어: 'c4' } as Record<string, string>)[body.categoryName ?? body.category ?? '콘서트'] ?? 'c1'
+    const categoryId = body.categoryId ?? ({ concert: 'c1', festival: 'c2', fanmeeting: 'c3', popup: 'c4' } as Record<string, string>)[normalizeCategoryKey(body.categoryName ?? body.category ?? '\uCF58\uC11C\uD2B8')] ?? 'c1'
     const categoryName = mockEventCategories.find((item) => item.id === categoryId)?.name ?? body.categoryName ?? body.category ?? '기타'
     const nextId = String(mockEvents.length + 1)
     const nextChatRoomId = `room-${mockChatRooms.length + 1}`

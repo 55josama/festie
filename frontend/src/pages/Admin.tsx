@@ -30,10 +30,10 @@ const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCE
 const CHAT_STATUS_FILTERS = ['ALL', 'SCHEDULED', 'OPEN', 'CLOSED'] as const
 const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
   ADMIN: [],
-  CONCERT_MANAGER: ['콘서트'],
-  FESTIVAL_MANAGER: ['축제'],
-  FANMEETING_MANAGER: ['팬미팅'],
-  POPUP_MANAGER: ['팝업스토어'],
+  CONCERT_MANAGER: ['\uCF58\uC11C\uD2B8'],
+  FESTIVAL_MANAGER: ['\uCD95\uC81C'],
+  FANMEETING_MANAGER: ['\uD32C\uBBF8\uD305'],
+  POPUP_MANAGER: ['\uD31D\uC5C5\uC2A4\uD1A0\uC5B4'],
 }
 
 export default function Admin() {
@@ -96,7 +96,7 @@ export default function Admin() {
   }, [normalizedRole])
 
   const managedChatCategories = useMemo(
-    () => new Set(managedEventCategories.map((name) => EVENT_CATEGORY_TO_CHAT[name] ?? name.toUpperCase())),
+    () => new Set(managedEventCategories.map((name) => EVENT_CATEGORY_TO_CHAT[normalizeEventCategoryKey(name)] ?? name.toUpperCase())),
     [managedEventCategories],
   )
 
@@ -682,10 +682,10 @@ function EmptyState({ text }: { text: string }) {
 }
 
 const EVENT_CATEGORY_TO_CHAT: Record<string, string> = {
-  콘서트: 'CONCERT',
-  축제: 'FESTIVAL',
-  팬미팅: 'FANMEETING',
-  팝업스토어: 'POPUP',
+  concert: 'CONCERT',
+  festival: 'FESTIVAL',
+  fanmeeting: 'FANMEETING',
+  popup: 'POPUP',
 }
 
 interface EventDraft {
@@ -1158,6 +1158,14 @@ function TogglePill({ active, onClick, children }: { active?: boolean; onClick: 
 function normalizeRole(role?: string | null) {
   if (!role) return ''
   return role.replace(/^ROLE_/, '')
+}
+
+function normalizeEventCategoryKey(name: string) {
+  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
+  if (name === '\uCD95\uC81C') return 'festival'
+  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
+  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
+  return name.toLowerCase()
 }
 
 function extractErrorMessage(error: any, fallback: string) {

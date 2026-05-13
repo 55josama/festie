@@ -264,21 +264,37 @@ function PostRow({ post }: { post: Post }) {
 function categoryChipClass(name: string) {
   return (
     {
-      콘서트: 'bg-violet-100 text-violet-700',
-      축제: 'bg-fuchsia-100 text-fuchsia-700',
-      팬미팅: 'bg-pink-100 text-pink-700',
-      팝업스토어: 'bg-sky-100 text-sky-700',
-    }[name] ?? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+      concert: 'bg-violet-100 text-violet-700',
+      festival: 'bg-fuchsia-100 text-fuchsia-700',
+      fanmeeting: 'bg-pink-100 text-pink-700',
+      popup: 'bg-sky-100 text-sky-700',
+    }[normalizeCategoryKey(name)] ?? 'bg-[var(--accent-soft)] text-[var(--accent)]'
   )
 }
 
 function postChipClass(name: string) {
   return (
     {
-      후기: 'bg-violet-100 text-violet-700',
-      꿀팁: 'bg-sky-100 text-sky-700',
-      자유: 'bg-emerald-100 text-emerald-700',
-      요청: 'bg-rose-100 text-rose-700',
-    }[name] ?? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+      review: 'bg-violet-100 text-violet-700',
+      tip: 'bg-sky-100 text-sky-700',
+      free: 'bg-emerald-100 text-emerald-700',
+      request: 'bg-rose-100 text-rose-700',
+    }[normalizePostCategoryKey(name)] ?? 'bg-[var(--accent-soft)] text-[var(--accent)]'
   )
+}
+
+function normalizeCategoryKey(name: string) {
+  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
+  if (name === '\uCD95\uC81C') return 'festival'
+  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
+  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
+  return name.toLowerCase()
+}
+
+function normalizePostCategoryKey(name: string) {
+  if (name === '\uD6C4\uAE30') return 'review'
+  if (name === '\uAFC0\uD301') return 'tip'
+  if (name === '\uC790\uC720') return 'free'
+  if (name === '\uC694\uCCAD') return 'request'
+  return name.toLowerCase()
 }

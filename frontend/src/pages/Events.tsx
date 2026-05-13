@@ -10,8 +10,8 @@ const CATEGORY_FILTERS = ['전체', '콘서트', '축제', '팬미팅', '팝업�
 
 export default function Events() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [region, setRegion] = useState(searchParams.get('region') ?? '전체')
-  const [category, setCategory] = useState(searchParams.get('category') ?? '전체')
+  const [selectedRegion, setSelectedRegion] = useState(searchParams.get('region') ?? '전체')
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') ?? '전체')
   const [query, setQuery] = useState(searchParams.get('query') ?? '')
   const [resolvedRegions, setResolvedRegions] = useState<Record<string, string>>({})
   const regionCacheRef = useRef<Record<string, string>>({})
@@ -62,19 +62,19 @@ export default function Events() {
     return sortUpcomingEvents(
       (events as Event[]).filter((event) => {
         const queryOk = !query.trim() || matchesSearchText([event.name, event.place, event.performer ?? '', event.categoryName].join(' '), query)
-        const regionOk = region === '전체' || getRegionLabel(event, resolvedRegions) === region
-        const categoryOk = category === '전체' || event.categoryName === category
+        const regionOk = selectedRegion === '전체' || getRegionLabel(event, resolvedRegions) === selectedRegion
+        const categoryOk = selectedCategory === '전체' || event.categoryName === selectedCategory
         return queryOk && regionOk && categoryOk
       })
     )
-  }, [category, events, query, region, resolvedRegions])
+  }, [events, query, resolvedRegions, selectedCategory, selectedRegion])
 
   const submitSearch = () => {
     const next = query.trim()
     setSearchParams({
       ...(next ? { query: next } : {}),
-      ...(region !== '전체' ? { region } : {}),
-      ...(category !== '전체' ? { category } : {}),
+      ...(selectedRegion !== '전체' ? { region: selectedRegion } : {}),
+      ...(selectedCategory !== '전체' ? { category: selectedCategory } : {}),
     })
   }
 
@@ -124,14 +124,14 @@ export default function Events() {
           <div className="grid gap-3 md:hidden">
             <FilterRow label="지역">
               {REGION_FILTERS.map((item) => (
-                <Chip key={item} active={region === item} onClick={() => setRegion(item)}>
+                <Chip key={item} active={selectedRegion === item} onClick={() => setSelectedRegion(item)}>
                   {item}
                 </Chip>
               ))}
             </FilterRow>
             <FilterRow label="카테고리">
               {CATEGORY_FILTERS.map((item) => (
-                <Chip key={item} active={category === item} onClick={() => setCategory(item)}>
+                <Chip key={item} active={selectedCategory === item} onClick={() => setSelectedCategory(item)}>
                   {item}
                 </Chip>
               ))}
@@ -141,14 +141,14 @@ export default function Events() {
           <div className="hidden mt-6 flex-wrap items-center gap-3 md:flex">
             <FilterRow label="지역">
               {REGION_FILTERS.map((item) => (
-                <Chip key={item} active={region === item} onClick={() => setRegion(item)}>
+                <Chip key={item} active={selectedRegion === item} onClick={() => setSelectedRegion(item)}>
                   {item}
                 </Chip>
               ))}
             </FilterRow>
             <FilterRow label="카테고리">
               {CATEGORY_FILTERS.map((item) => (
-                <Chip key={item} active={category === item} onClick={() => setCategory(item)}>
+                <Chip key={item} active={selectedCategory === item} onClick={() => setSelectedCategory(item)}>
                   {item}
                 </Chip>
               ))}
