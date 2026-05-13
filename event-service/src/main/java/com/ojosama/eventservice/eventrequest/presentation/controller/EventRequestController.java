@@ -110,11 +110,21 @@ public class EventRequestController {
     }
 
     @GetMapping("/{requestId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
     public ResponseEntity<ApiResponse<EventRequestResponse>> getEventRequest(
             @PathVariable UUID requestId) {
 
         EventRequestResult result = eventRequestQueryService.getEventRequest(requestId);
+        return ResponseEntity.ok(ApiResponse.success(EventRequestResponse.from(result)));
+    }
+
+    @GetMapping("/me/{requestId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<EventRequestResponse>> getMyEventRequest(
+            @AuthenticationPrincipal String userId,
+            @PathVariable UUID requestId) {
+
+        EventRequestResult result = eventRequestQueryService.getMyEventRequest(UUID.fromString(userId), requestId);
         return ResponseEntity.ok(ApiResponse.success(EventRequestResponse.from(result)));
     }
 }
