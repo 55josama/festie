@@ -22,8 +22,14 @@ client.interceptors.response.use(
       try {
         const res = await axios.post('/user-service/v1/auth/reissue')
         useAuthStore.getState().setAccessToken(res.data.accessToken)
-        error.config.headers.Authorization = `Bearer ${res.data.accessToken}`
-        return axios(error.config)
+        const original = error.config as any
+        if (original._retry) {
+          return Promise.reject(error)
+        }
+        original._retry = true
+        original.headers = original.headers ?? {}
+        original.headers.Authorization = `Bearer ${res.data.accessToken}`
+        return client(original)
       } catch {
         useAuthStore.getState().logout()
       }

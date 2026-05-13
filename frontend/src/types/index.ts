@@ -10,16 +10,16 @@ export interface Event {
   latitude?: number
   longitude?: number
   radius?: number
-  minFee?: number | null
-  maxFee?: number | null
-  hasTicketing?: boolean | null
+  minFee: number | null
+  maxFee: number | null
+  hasTicketing: boolean
   ticketingOpenAt?: string | null
   ticketingCloseAt?: string | null
   ticketingLink?: string | null
   officialLink?: string | null
-  description?: string | null
+  description: string | null
   performer?: string | null
-  img?: string | null
+  img: string | null
   status: EventStatus
   schedules?: EventSchedule[]
 }

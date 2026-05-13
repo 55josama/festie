@@ -189,7 +189,7 @@ Authorization: Bearer {{adminAccessToken}}
 }
 
 ### 사용자 권한 변경 - FANMEETING_MANAGER로 변경
-PATCH {{userUrl}}/v1/users/{{fanmeetingManager}}/role
+PATCH {{userUrl}}/v1/users/admin/{{fanmeetingManager}}/role
 Content-Type: application/json
 Authorization: Bearer {{adminAccessToken}}
 

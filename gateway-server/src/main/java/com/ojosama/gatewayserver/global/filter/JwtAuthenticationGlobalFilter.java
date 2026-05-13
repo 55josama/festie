@@ -136,7 +136,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             }
             if (path.endsWith("/**")) {
                 String prefix = path.substring(0, path.length() - 3);
-                return requestPath.startsWith(prefix);
+                return requestPath.equals(prefix) || requestPath.startsWith(prefix + "/");
             }
             return path.equals(requestPath);
         }

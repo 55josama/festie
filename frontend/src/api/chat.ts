@@ -10,7 +10,8 @@ export const getChatRoomByEventId = async (eventId: string) => {
 export const getChatMessages = async (chatRoomId: string) => {
   const res = await client.get(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, { params: { page: 0, size: 30 } })
   const data = unwrap<any>(res.data)
-  return unwrapPage<ChatMessage>({ data: data.messages ?? data.content ?? [] })
+  const normalized = Array.isArray(data) ? data : (data?.messages ?? data?.content ?? [])
+  return unwrapPage<ChatMessage>({ data: normalized })
 }
 
 export const sendChatMessage = async (chatRoomId: string, content: string) => {

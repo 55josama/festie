@@ -27,19 +27,30 @@ export default function EventDetail() {
     queryFn: () => getChatRoomByEventId(eventId),
     enabled: !!eventId,
   })
+  const chatRoomId = chatRoom?.chatRoomId
 
   const { data: messages = [] } = useQuery({
-    queryKey: ['chat-messages', chatRoom?.chatRoomId],
-    queryFn: () => getChatMessages(chatRoom!.chatRoomId),
-    enabled: !!chatRoom?.chatRoomId,
+    queryKey: ['chat-messages', chatRoomId],
+    queryFn: () => {
+      if (!chatRoomId) {
+        return Promise.resolve([])
+      }
+      return getChatMessages(chatRoomId)
+    },
+    enabled: !!chatRoomId,
     refetchInterval: 5000,
   })
 
   const sendMutation = useMutation({
-    mutationFn: (content: string) => sendChatMessage(chatRoom!.chatRoomId, content),
+    mutationFn: (content: string) => {
+      if (!chatRoomId) {
+        throw new Error('chatRoomId is missing')
+      }
+      return sendChatMessage(chatRoomId, content)
+    },
     onSuccess: async () => {
       setMessage('')
-      await queryClient.invalidateQueries({ queryKey: ['chat-messages', chatRoom?.chatRoomId] })
+      await queryClient.invalidateQueries({ queryKey: ['chat-messages', chatRoomId] })
     },
   })
 
@@ -237,6 +248,17 @@ export default function EventDetail() {
 
 function resolveChatState(chatRoom?: ChatRoom) {
   const now = new Date()
+  if (!chatRoom) {
+    return {
+      isOpen: false,
+      label: '채팅방 정보 없음',
+      badgeClass: 'bg-slate-100 text-slate-600',
+      openTimeLabel: '정보 없음',
+      closeTimeLabel: '정보 없음',
+      closedReason: '채팅방 정보를 불러오는 중입니다.',
+      helperText: '잠시 후 다시 시도해주세요.',
+    }
+  }
   const status = String(chatRoom?.status ?? '').toUpperCase()
   const openAtRaw = chatRoom?.openedAt ?? chatRoom?.scheduledOpenAt ?? null
   const closeAtRaw = chatRoom?.closedAt ?? chatRoom?.scheduledCloseAt ?? null

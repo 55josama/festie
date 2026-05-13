@@ -11,10 +11,18 @@ async function prepare() {
   }
 }
 
-prepare().then(() => {
+function mount() {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
     </StrictMode>,
   )
-})
+}
+
+prepare()
+  .catch((error) => {
+    console.error('MSW 초기화 실패:', error)
+  })
+  .finally(() => {
+    mount()
+  })
