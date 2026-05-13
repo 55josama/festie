@@ -1,24 +1,20 @@
-@userUrl = http://localhost:8081
-@email = oojosama5@gmail.com
-@password = 1234
-@userId = 여기에_조회할_userId_UUID_붙여넣기
-@adminAccessToken = 여기에_ADMIN_accessToken_붙여넣기
+@userUrl = http://localhost:8080/user-service
+@password = 12341234
 
-### Gateway 미사용 / user-service 직접 호출 기준
+### Gateway 사용하고 토큰 발급
 
 ### ============================================================
 ### 사용자(User) API - /v1/users
 ### ============================================================
 
 ### 테스트용 ADMIN 회원 생성
-### local/test profile에서만 동작합니다.
 POST {{userUrl}}/v1/dev/users/admin
 Content-Type: application/json
 
 {
   "email": "admin@test.com",
-  "password": "1234",
-  "nickname": "adminUser",
+  "password": "12341234",
+  "nickname": "ADMIN_관리자",
   "name": "관리자",
   "phoneNumber": "010-0000-0000"
 }
@@ -35,23 +31,43 @@ Content-Type: application/json
 
 > {%
 
-    client.global.set("adminAccessToken", response.body.accessToken);
+    client.global.set("adminAccessToken", response.body.data.accessToken);
 
 %}
 
 
-### 회원가입
+### 유저 회원가입
 ### 기본 role은 USER로 생성
 POST {{userUrl}}/v1/users
 Content-Type: application/json
 
 {
-  "email": "hello@gmail.com",
+  "email": "user04@gmail.com",
   "password": "12341234",
-  "nickname": "hoho",
-  "name": "hoho",
-  "phoneNumber": "010-9891-1111"
+  "nickname": "햄볶하자..",
+  "name": "홍길동",
+  "phoneNumber": "010-1292-0513"
 }
+
+### 매니저 회원가입
+### 기본 role은 USER로 생성
+POST {{userUrl}}/v1/users
+Content-Type: application/json
+
+{
+  "email": "manager05@gmail.com",
+  "password": "12341234",
+  "nickname": "커뮤니티_매니저",
+  "name": "이병건",
+  "phoneNumber": "010-0000-0004"
+}
+> {%
+
+    client.global.set("communityManager", response.body.data.userId);
+    client.global.set("email", response.body.data.email);
+    client.global.set("password", response.body.data.password);
+
+%}
 
 ### ============================================================
 ### 인증(Auth) API - /v1/auth
@@ -109,7 +125,7 @@ Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "name": "오죠사마유저수정",
+  "name": "홍길동",
   "nickname": "oojosamaUserUpdated",
   "phoneNumber": "010-9999-9999"
 }
@@ -155,7 +171,7 @@ Authorization: Bearer {{adminAccessToken}}
 }
 
 ### 사용자 권한 변경 - CONCERT_MANAGER로 변경
-PATCH {{userUrl}}/v1/users/admin/{{userId}}/role
+PATCH {{userUrl}}/v1/users/admin/{{concertManager}}/role
 Content-Type: application/json
 Authorization: Bearer {{adminAccessToken}}
 
@@ -164,7 +180,7 @@ Authorization: Bearer {{adminAccessToken}}
 }
 
 ### 사용자 권한 변경 - FESTIVAL_MANAGER로 변경
-PATCH {{userUrl}}/v1/users/admin/{{userId}}/role
+PATCH {{userUrl}}/v1/users/admin/{{festivalManager}}/role
 Content-Type: application/json
 Authorization: Bearer {{adminAccessToken}}
 
@@ -173,7 +189,7 @@ Authorization: Bearer {{adminAccessToken}}
 }
 
 ### 사용자 권한 변경 - FANMEETING_MANAGER로 변경
-PATCH {{userUrl}}/v1/users/admin/{{userId}}/role
+PATCH {{userUrl}}/v1/users/{{fanmeetingManager}}/role
 Content-Type: application/json
 Authorization: Bearer {{adminAccessToken}}
 
@@ -182,7 +198,7 @@ Authorization: Bearer {{adminAccessToken}}
 }
 
 ### 사용자 권한 변경 - POPUP_MANAGER로 변경
-PATCH {{userUrl}}/v1/users/admin/{{userId}}/role
+PATCH {{userUrl}}/v1/users/admin/{{popupManager}}/role
 Content-Type: application/json
 Authorization: Bearer {{adminAccessToken}}
 
@@ -191,7 +207,7 @@ Authorization: Bearer {{adminAccessToken}}
 }
 
 ### 사용자 권한 변경 - COMMUNITY_MANAGER로 변경
-PATCH {{userUrl}}/v1/users/admin/{{userId}}/role
+PATCH {{userUrl}}/v1/users/admin/{{communityManager}}/role
 Content-Type: application/json
 Authorization: Bearer {{adminAccessToken}}
 
