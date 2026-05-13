@@ -61,4 +61,14 @@ public class EventRequestQueryService {
                 .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
         return EventRequestResult.from(request);
     }
+
+    @Transactional(readOnly = true)
+    public EventRequestResult getMyEventRequest(UUID userId, UUID requestId) {
+        EventRequest request = eventRequestRepository.findById(requestId)
+                .orElseThrow(() -> new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND));
+        if (!request.getRequesterId().equals(userId)) {
+            throw new EventRequestException(EventRequestErrorCode.EVENT_REQUEST_NOT_FOUND);
+        }
+        return EventRequestResult.from(request);
+    }
 }

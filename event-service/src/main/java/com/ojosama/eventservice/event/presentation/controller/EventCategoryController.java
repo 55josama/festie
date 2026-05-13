@@ -1,7 +1,5 @@
 package com.ojosama.eventservice.event.presentation.controller;
 
-import com.ojosama.common.exception.CommonErrorCode;
-import com.ojosama.common.exception.CustomException;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCategoryCommand;
 import com.ojosama.eventservice.event.application.dto.command.UpdateEventCategoryCommand;
@@ -18,13 +16,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,12 +35,8 @@ public class EventCategoryController {
     private final EventCategoryQueryService eventCategoryQueryService;
 
     @GetMapping
-//    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<EventCategoryResponse>>> getCategories(
-            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-
-        validateGatewayHeaders(userId, userRole);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<EventCategoryResponse>>> getCategories() {
 
         List<EventCategoryResponse> response = eventCategoryQueryService.getCategories().stream()
                 .map(EventCategoryResponse::from)
@@ -51,49 +45,36 @@ public class EventCategoryController {
     }
 
     @PostMapping
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<EventCategoryResponse>> createCategory(
-            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @AuthenticationPrincipal String userId,
             @Valid @RequestBody CreateEventCategoryRequest request) {
 
-        validateGatewayHeaders(userId, userRole);
-
-        CreateEventCategoryCommand command = new CreateEventCategoryCommand(userId, request.name());
+        CreateEventCategoryCommand command = new CreateEventCategoryCommand(UUID.fromString(userId), request.name());
         EventCategoryResult result = eventCategoryCommandService.createCategory(command);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(EventCategoryResponse.from(result)));
     }
 
     @PatchMapping("/{categoryId}")
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<EventCategoryResponse>> updateCategory(
-            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @AuthenticationPrincipal String userId,
             @PathVariable UUID categoryId,
             @Valid @RequestBody UpdateEventCategoryRequest request) {
 
-        validateGatewayHeaders(userId, userRole);
-
-        UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(userId, categoryId, request.name());
+        UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(UUID.fromString(userId), categoryId, request.name());
         EventCategoryResult result = eventCategoryCommandService.updateCategory(command);
         return ResponseEntity.ok(ApiResponse.success(EventCategoryResponse.from(result)));
     }
 
     @DeleteMapping("/{categoryId}")
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCategory(
-            @RequestHeader(value = "X-User-Id", required = false) UUID userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @AuthenticationPrincipal String userId,
             @PathVariable UUID categoryId) {
 
-        validateGatewayHeaders(userId, userRole);
-
-        eventCategoryCommandService.deleteCategory(userId, categoryId);
+        eventCategoryCommandService.deleteCategory(UUID.fromString(userId), categoryId);
         return ResponseEntity.noContent().build();
-    }
-
-    private void validateGatewayHeaders(UUID userId, String userRole) {
-//        if (userId == null || userRole == null || userRole.isBlank()) { throw new CustomException(CommonErrorCode.INVALID_TOKEN); }
     }
 }
