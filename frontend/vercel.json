@@ -2,39 +2,39 @@
   "rewrites": [
     {
       "source": "/user-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/user-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/user-service/:path*"
     },
     {
       "source": "/event-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/event-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/event-service/:path*"
     },
     {
       "source": "/community-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/community-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/community-service/:path*"
     },
     {
       "source": "/chat-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/chat-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/chat-service/:path*"
     },
     {
       "source": "/calendar-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/calendar-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/calendar-service/:path*"
     },
     {
       "source": "/favorite-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/favorite-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/favorite-service/:path*"
     },
     {
       "source": "/notification-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/notification-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/notification-service/:path*"
     },
     {
       "source": "/operation-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/operation-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/operation-service/:path*"
     },
     {
       "source": "/ai-service/:path*",
-      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/ai-service/:path*"
+      "destination": "https://d14c7wcq4dcy3c.cloudfront.net/ai-service/:path*"
     }
   ]
 }
