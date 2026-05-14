@@ -18,24 +18,29 @@ import com.ojosama.userservice.domain.model.Category;
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.model.UserRole;
 import com.ojosama.userservice.domain.repository.UserRepository;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private static final String NICKNAME_CACHE_KEY_PREFIX = "chat:nickname:";
+    private static final String USER_EMAIL_CACHE_KEY_PREFIX = "user:email:";
+    private static final Duration USER_CACHE_TTL = Duration.ofMinutes(10);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -85,11 +90,10 @@ public class UserService {
         }
     }
 
-    //유저 조회 todo: 관리자 전용, 로그인 사용자 기준 본인만 조회 기능 추가
+    //유저 조회
     @Transactional(readOnly = true)
     public GetUserResult getUser(GetUserQuery query) {
         User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
-                //todo 임시 오류 처리
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         return new GetUserResult(
@@ -162,15 +166,22 @@ public class UserService {
         return message != null && message.contains("nickname");
     }
 
+    //userId로 email 조회
     @Transactional(readOnly = true)
     public InternalUserEmailResult getInternalUserEmail(GetInternalUserEmailQuery query) {
+        String cacheKey = emailCacheKey(query.userId());
+        String cachedEmail = redisTemplate.opsForValue().get(cacheKey);
+
+        if (cachedEmail != null) {
+            return new InternalUserEmailResult(query.userId(), cachedEmail);
+        }
+
         User user = userRepository.findByIdAndDeletedAtIsNull(query.userId())
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        return new InternalUserEmailResult(
-                user.getId(),
-                user.getEmail()
-        );
+        redisTemplate.opsForValue().set(cacheKey, user.getEmail(), USER_CACHE_TTL);
+
+        return new InternalUserEmailResult(user.getId(), user.getEmail());
     }
 
     @Transactional(readOnly = true)
@@ -205,8 +216,17 @@ public class UserService {
     //userId로 nickname 조회
     @Transactional(readOnly = true)
     public String getInternalUserNickname(UUID userId) {
+        String cacheKey = nicknameCacheKey(userId);
+        String cachedNickname = redisTemplate.opsForValue().get(cacheKey);
+
+        if (cachedNickname != null) {
+            return cachedNickname;
+        }
+
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+        redisTemplate.opsForValue().set(cacheKey, user.getNickname(), USER_CACHE_TTL);
 
         return user.getNickname();
     }
@@ -214,13 +234,18 @@ public class UserService {
     private void evictNicknameCache(UUID userId) {
         try {
             redisTemplate.delete(nicknameCacheKey(userId));
-        } catch (Exception ignored) {
-            // 캐시 삭제 실패는 닉네임 수정 자체를 막지 않는다.
+        } catch (Exception e) {
+            log.warn("닉네임 캐시 삭제 실패. userId={}", userId, e);
+            // 캐시 삭제 실패는 닉네임 수정 자체를 막지 않는다. -> warn 로그 남김
         }
     }
 
     private String nicknameCacheKey(UUID userId) {
         return NICKNAME_CACHE_KEY_PREFIX + userId;
+    }
+
+    private String emailCacheKey(UUID userId) {
+        return USER_EMAIL_CACHE_KEY_PREFIX + userId;
     }
 }
 

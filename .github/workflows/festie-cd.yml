@@ -1,0 +1,126 @@
+name: festie-cd
+
+concurrency:
+  group: festie-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ "dev-v1", "dev-v2" ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - services: gateway-server
+            ecr_name: ojosama/festie/gateway
+            ecs_service: festie-gateway-service
+
+          - services: eureka-server
+            ecr_name: ojosama/festie/eureka
+            ecs_service: festie-eureka-service
+
+          - services: config-server
+            ecr_name: ojosama/festie/config
+            ecs_service: festie-config-service
+
+          - services: user-service
+            ecr_name: ojosama/festie/user
+            ecs_service: festie-user-service
+
+          - services: event-service
+            ecr_name: ojosama/festie/event
+            ecs_service: festie-event-service
+
+          - services: operation-service
+            ecr_name: ojosama/festie/operation
+            ecs_service: festie-operation-service
+
+          - services: notification-service
+            ecr_name: ojosama/festie/notification
+            ecs_service: festie-notification-service
+
+          - services: community-service
+            ecr_name: ojosama/festie/community
+            ecs_service: festie-community-service
+
+          - services: favorite-service
+            ecr_name: ojosama/festie/favorite
+            ecs_service: festie-favorite-service
+
+          - services: calendar-service
+            ecr_name: ojosama/festie/calendar
+            ecs_service: festie-calendar-service
+
+          - services: ai-service
+            ecr_name: ojosama/festie/ai
+            ecs_service: festie-ai-service
+
+          - services: chat-service
+            ecr_name: ojosama/festie/chat
+            ecs_service: festie-chat-service
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changed files
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - '${{ matrix.services }}/**'
+              - 'common/**'
+
+      - name: Configure AWS credentials
+        if: steps.filter.outputs.changed == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: festie-cd-${{ github.run_id }}
+          aws-region: ap-northeast-2
+
+      - name: Login to ECR
+        if: steps.filter.outputs.changed == 'true'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up JDK 21
+        if: steps.filter.outputs.changed == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        if: steps.filter.outputs.changed == 'true'
+        run: chmod +x gradlew
+
+      - name: Build
+        if: steps.filter.outputs.changed == 'true'
+        run: ./gradlew :${{ matrix.services }}:bootJar -x test
+
+      - name: Docker build & ECR push
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          docker build -f ${{ matrix.services }}/Dockerfile \
+            -t ${{ secrets.ECR_REGISTRY }}/${{ matrix.ecr_name }}:latest .
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ matrix.ecr_name }}:latest
+
+      - name: ECS 배포
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          aws ecs update-service \
+            --cluster festie-cluster \
+            --service ${{ matrix.ecs_service }} \
+            --force-new-deployment \
+            --region ap-northeast-2

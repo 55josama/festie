@@ -169,6 +169,11 @@ public class EventCommandService {
         applicationEventPublisher.publishEvent(new EventDeletedMessage(event.getId(), event.getName()));
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "event", key = "#eventId"),
+            @CacheEvict(cacheNames = "event-all", allEntries = true),
+            @CacheEvict(cacheNames = "event-ids", allEntries = true)
+    })
     public EventResult cancelEvent(UUID eventId, UUID userId) {
         Event event = eventRepository.findByIdForUpdateWithSchedules(eventId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_NOT_FOUND));
