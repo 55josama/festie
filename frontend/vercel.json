@@ -1,0 +1,40 @@
+{
+  "rewrites": [
+    {
+      "source": "/user-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/user-service/:path*"
+    },
+    {
+      "source": "/event-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/event-service/:path*"
+    },
+    {
+      "source": "/community-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/community-service/:path*"
+    },
+    {
+      "source": "/chat-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/chat-service/:path*"
+    },
+    {
+      "source": "/calendar-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/calendar-service/:path*"
+    },
+    {
+      "source": "/favorite-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/favorite-service/:path*"
+    },
+    {
+      "source": "/notification-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/notification-service/:path*"
+    },
+    {
+      "source": "/operation-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/operation-service/:path*"
+    },
+    {
+      "source": "/ai-service/:path*",
+      "destination": "http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com/ai-service/:path*"
+    }
+  ]
+}
