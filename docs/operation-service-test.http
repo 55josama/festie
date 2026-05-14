@@ -126,11 +126,11 @@ GET {{operationUrl}}/v1/reports?status=PENDING&page=0&size=10
 Authorization: Bearer {{adminAccessToken}}
 
 ### 신고 상세 조회
-GET {{operationUrl}}/v1/reports/{reportId}/messages
+GET {{operationUrl}}/v1/reports/{reportId}
 Authorization: Bearer {{adminAccessToken}}
 
 ### 신고 처리 상태 변경
-PATCH {{operationUrl}}/v1/reports/{reportId}/status}
+PATCH {{operationUrl}}/v1/reports/{reportId}/status
 Authorization: Bearer {{adminAccessToken}}
 Content-Type: application/json
 
