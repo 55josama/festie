@@ -8,6 +8,10 @@ on:
   push:
     branches: [ "dev-v1", "dev-v2" ]
 
+permissions:
+  contents: read
+  id-token: write
+  
 jobs:
   deploy:
     runs-on: ubuntu-latest
