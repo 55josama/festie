@@ -9,6 +9,12 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:${USER_DB_USERNAME:festie}}}
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:${USER_DB_PASSWORD:1234}}}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
@@ -43,3 +49,16 @@ internal:
 kafka:
   topic:
     user-blacklist-status: ${KAFKA_TOPIC_USER_BLACKLIST_STATUS:operation.blacklist.updated.v1}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
