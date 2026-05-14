@@ -1,5 +1,9 @@
 name: festie-cd
 
+concurrency:
+  group: festie-cd-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ "dev-v1", "dev-v2" ]
@@ -41,8 +45,8 @@ jobs:
         if: steps.filter.outputs.changed == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          role-session-name: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
       - name: Login to ECR

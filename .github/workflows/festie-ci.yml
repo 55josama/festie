@@ -49,4 +49,4 @@ jobs:
 
       - name: Build and test
         if: steps.filter.outputs.changed == 'true'
-        run: ./gradlew :${{ matrix.services }}:clean :${{ matrix.services }}:build -x test # 테스트 코드는 무시
+        run: ./gradlew :${{ matrix.services }}:clean :${{ matrix.services }}:build
