@@ -1,0 +1,82 @@
+name: festie-cd
+
+on:
+  push:
+    branches: [ "dev-v1", "dev-v2" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        services:
+          - gateway-server
+          - user-service
+          - event-service
+          - operation-service
+          - notification-service
+          - community-service
+          - favorite-service
+          - calendar-service
+          - ai-service
+          - chat-service
+          - config-server
+          - eureka-server
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changed files
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - '${{ matrix.services }}/**'
+              - 'common/**'
+
+      - name: Configure AWS credentials
+        if: steps.filter.outputs.changed == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Login to ECR
+        if: steps.filter.outputs.changed == 'true'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up JDK 21
+        if: steps.filter.outputs.changed == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        if: steps.filter.outputs.changed == 'true'
+        run: chmod +x gradlew
+
+      - name: Build
+        if: steps.filter.outputs.changed == 'true'
+        run: ./gradlew :${{ matrix.services }}:bootJar -x test
+
+      - name: Docker build & ECR push
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          docker build -f ${{ matrix.services }}/Dockerfile \
+            -t ${{ secrets.ECR_REGISTRY }}/festie/${{ matrix.services }}:latest .
+          docker push ${{ secrets.ECR_REGISTRY }}/festie/${{ matrix.services }}:latest
+
+      - name: ECS 배포
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          aws ecs update-service \
+            --cluster festie-cluster \
+            --service ${{ matrix.services }} \
+            --force-new-deployment \
+            --region ap-northeast-2
