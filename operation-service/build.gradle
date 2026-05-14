@@ -18,6 +18,9 @@ dependencies {
     // feign client
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
+    // Redis - Redisson
+    implementation 'org.redisson:redisson-spring-boot-starter:3.51.0'
+
     // Monitoring
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
@@ -26,6 +29,10 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Monitoring
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 dependencyManagement {

@@ -17,7 +17,11 @@ import com.ojosama.report.domain.model.enums.ReportStatus;
 import com.ojosama.report.domain.model.enums.ReporterType;
 import com.ojosama.report.domain.repository.ReportRepository;
 import com.ojosama.report.infrastructure.client.ChatClient;
+import com.ojosama.report.infrastructure.lock.RedissonDistributedLock;
+import com.ojosama.report.infrastructure.lock.config.DistributedLockProperties;
+import com.ojosama.report.infrastructure.lock.metrics.LockMetrics;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,6 +36,8 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final OutboxEventPublisher outbox;
     private final ChatClient chatClient;
+    private final RedissonDistributedLock redissonDistributedLock;
+    private final DistributedLockProperties lockProperties;
 
     @Value("${spring.kafka.topic.report-blinded}")
     private String targetBlindedTopic;
@@ -44,14 +50,21 @@ public class ReportService {
 
     // 신고 생성
     @Transactional
-    public ReportInfoResult createReport(CreateReportCommand command, ReporterType reporterType){
-        validateDuplicateReport(command.reporterId(), command.targetId());
+    public ReportInfoResult createReport(CreateReportCommand command, ReporterType reporterType) {
+        boolean lockAcquired = acquireDistributedLock(command.targetId());
 
-        Report savedReport = saveReportSafely(command.toEntity(reporterType));
+        try {
+            validateDuplicateReport(command.reporterId(), command.targetId());
 
-        checkAndProcessAutomaticBlind(command);
+            Report savedReport = saveReportSafely(command.toEntity(reporterType));
 
-        return ReportInfoResult.from(savedReport);
+            checkAndProcessAutomaticBlind(command, savedReport);
+
+            return ReportInfoResult.from(savedReport);
+
+        } finally {
+            releaseDistributedLock(command.targetId(), lockAcquired);
+        }
     }
 
     // 신고 목록 조회
@@ -86,24 +99,13 @@ public class ReportService {
         return ReportInfoResult.from(report);
     }
 
+    // ============= 검증 메서드 =============
+
     // 신고 중복 여부 검사
     private void validateDuplicateReport(UUID reporterId, UUID targetId) {
         if (reportRepository.existsByReporterIdAndTargetId(reporterId, targetId)) {
             throw new ReportException(ReportErrorCode.REPORT_EXISTS);
         }
-    }
-
-    private Report saveReportSafely(Report report) {
-        try {
-            return reportRepository.save(report);
-        } catch (DataIntegrityViolationException e) {
-            throw new ReportException(ReportErrorCode.DUPLICATE_REPORT);
-        }
-    }
-
-    private Report findReportById(UUID reportId) {
-        return reportRepository.findById(reportId)
-                .orElseThrow(() -> new ReportException(ReportErrorCode.REPORT_NOT_FOUND));
     }
 
     private void validateReportIsAutoBlinded(Report report) {
@@ -118,6 +120,21 @@ public class ReportService {
         }
     }
 
+    // ============= 저장 및 조회 메서드 =============
+
+    private Report saveReportSafely(Report report) {
+        try {
+            return reportRepository.save(report);
+        } catch (DataIntegrityViolationException e) {
+            throw new ReportException(ReportErrorCode.DUPLICATE_REPORT);
+        }
+    }
+
+    private Report findReportById(UUID reportId) {
+        return reportRepository.findById(reportId)
+                .orElseThrow(() -> new ReportException(ReportErrorCode.REPORT_NOT_FOUND));
+    }
+
     private Page<Report> fetchReportsByQuery(ListReportQuery query, Pageable pageable) {
         if (query.status() != null) {
             return reportRepository.findAllByStatus(query.status(), pageable);
@@ -125,11 +142,46 @@ public class ReportService {
         return reportRepository.findAll(pageable);
     }
 
-    private void checkAndProcessAutomaticBlind(CreateReportCommand command) {
-        long reportCount = reportRepository.countByTargetId(command.targetId());
+    // ============= 분산 락 관련 메서드 =============
 
-        // 신고가 3회 이상이면 신고 대상 블라인드 처리
-        if (reportCount >= 3) {
+    // 락 획득
+    private boolean acquireDistributedLock(UUID targetId) {
+        try {
+            boolean lockAcquired = redissonDistributedLock.tryLock(
+                    targetId,
+                    lockProperties.getWaitTime(),
+                    lockProperties.getLeaseTime(),
+                    TimeUnit.SECONDS
+            );
+
+            if (!lockAcquired) {
+                throw new ReportException(ReportErrorCode.LOCK_ACQUISITION_FAILED);
+            }
+
+            return true;
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ReportException(ReportErrorCode.LOCK_INTERRUPTED);
+        }
+    }
+
+    // 락 해제
+    private void releaseDistributedLock(UUID targetId, boolean lockAcquired) {
+        if (lockAcquired) {
+            redissonDistributedLock.unlock(targetId);
+        }
+    }
+
+    // ============= 블라인드 처리 관련 메서드 =============
+
+    private void checkAndProcessAutomaticBlind(CreateReportCommand command, Report report) {
+        long reportCountBefore = reportRepository.countByTargetId(command.targetId());
+
+        long reportCountAfter = reportCountBefore + 1;
+
+        if (reportCountAfter >= 3 && reportCountBefore < 3) {
+            report.blind();
             publishBlindEvent(command);
         }
     }
@@ -172,6 +224,7 @@ public class ReportService {
         );
     }
 
+    // ============= 블랙리스트 검토 관련 메서드 =============
     // 블랙리스트 검토 로직 (RESOLVED된 게시글만 카운트)
     private void checkAndPublishBlacklistReviewForResolved(UUID targetUserId) {
         long userResolvedCount = reportRepository.countResolvedTargetByUserId(targetUserId);

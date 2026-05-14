@@ -10,7 +10,10 @@ public enum ReportErrorCode implements ErrorCode {
     REPORT_EXISTS(HttpStatus.BAD_REQUEST, "이미 존재하는 신고 요청입니다."),
     REPORT_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 신고 요청입니다."),
     DUPLICATE_REPORT(HttpStatus.BAD_REQUEST, "중복된 신고 요청입니다."),
-    INVALID_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 상태입니다. RESOLVED 또는 REJECTED만 입력 가능합니다.");
+    INVALID_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 상태입니다. RESOLVED 또는 REJECTED만 입력 가능합니다."),
+    LOCK_ACQUISITION_FAILED(HttpStatus.CONFLICT, "락 획득에 실패했습니다."),
+    LOCK_INTERRUPTED(HttpStatus.INTERNAL_SERVER_ERROR, "락 대기 중 인터럽트가 발생했습니다.");
+
 
     private final HttpStatus status;
     private final String message;

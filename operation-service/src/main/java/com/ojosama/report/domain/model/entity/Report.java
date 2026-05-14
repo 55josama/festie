@@ -79,7 +79,7 @@ public class Report extends BaseEntity {
         this.category = category;
         this.description = description;
         this.content = content;
-        this.status = ReportStatus.AUTO_BLINDED;
+        this.status = ReportStatus.PENDING;
     }
 
     public static Report of(UUID reporterId, ReporterType reporterType, UUID targetId, UUID targetUserId,
@@ -94,6 +94,10 @@ public class Report extends BaseEntity {
                 .description(description)
                 .content(content)
                 .build();
+    }
+
+    public void blind() {
+        this.status = ReportStatus.AUTO_BLINDED;
     }
 
     public void resolve(String operatorMemo) {
