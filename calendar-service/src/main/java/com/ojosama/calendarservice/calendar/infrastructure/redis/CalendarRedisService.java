@@ -51,7 +51,7 @@ public class CalendarRedisService {
 
             // 데이터 저장 (이미 있으면 덮어쓰지 않음 - 멱등성)
             // 데이터 키는 트리거보다 조금 더 길게 유지
-            redisTemplate.opsForValue().setIfAbsent(DATA_PREFIX + identifier, json, ttl + 600, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(DATA_PREFIX + identifier, json, ttl + 600, TimeUnit.SECONDS);
 
             // 트리거 저장
             // 시간을 알리기 위한 것. 데이터는 x
