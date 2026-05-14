@@ -2,6 +2,7 @@ package com.ojosama.eventservice.event.application.dto.result;
 
 import com.ojosama.eventservice.event.domain.model.Event;
 import java.math.BigDecimal;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -30,7 +31,7 @@ public record EventResult(
     String img,
     String status,
     List<ScheduleResult> schedules
-) {
+) implements Serializable {
     public static EventResult from(Event event) {
         return new EventResult(
             event.getId(),
