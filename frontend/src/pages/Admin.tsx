@@ -142,24 +142,6 @@ export default function Admin() {
     queryFn: () => getReports({ size: 12, status: reportStatus === 'ALL' ? undefined : reportStatus }),
   })
 
-  const { data: chatRooms = [] } = useQuery({
-    queryKey: ['admin', 'chat-rooms'],
-    queryFn: () => getPopularChatRooms(6),
-  })
-
-  const {
-    data: adminMessagePage = EMPTY_ADMIN_MESSAGE_PAGE,
-    refetch: refetchAdminMessages,
-  } = useQuery({
-    queryKey: ['admin', 'messages', messageStatus, messagePage],
-    queryFn: () =>
-      getAdminChatMessages({
-        page: messagePage,
-        size: 8,
-        status: messageStatus === 'ALL' ? undefined : messageStatus,
-      }),
-  })
-
   const eventCategoryMap = useMemo(
     () => new Map((eventCategories as any[]).map((category) => [category.name, category.id])),
     [eventCategories],
@@ -175,6 +157,29 @@ export default function Admin() {
     () => new Set(managedEventCategories.map((name) => EVENT_CATEGORY_TO_CHAT[normalizeEventCategoryKey(name)] ?? name.toUpperCase())),
     [managedEventCategories],
   )
+  const managedMessageCategory = useMemo(() => {
+    if (isAdmin) return undefined
+    return managedChatCategories.values().next().value as string | undefined
+  }, [isAdmin, managedChatCategories])
+
+  const { data: chatRooms = [] } = useQuery({
+    queryKey: ['admin', 'chat-rooms'],
+    queryFn: () => getPopularChatRooms(6),
+  })
+
+  const {
+    data: adminMessagePage = EMPTY_ADMIN_MESSAGE_PAGE,
+    refetch: refetchAdminMessages,
+  } = useQuery({
+    queryKey: ['admin', 'messages', messageStatus, messagePage, managedMessageCategory ?? 'ALL'],
+    queryFn: () =>
+      getAdminChatMessages({
+        page: messagePage,
+        size: 8,
+        status: messageStatus === 'ALL' ? undefined : messageStatus,
+        category: managedMessageCategory,
+      }),
+  })
 
   const scopedEventRequests = useMemo(() => {
     if (isAdmin || isManager) return eventRequests

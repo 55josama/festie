@@ -15,6 +15,42 @@ import {
 
 const wrap = (data: any) => ({ status: 'success', data })
 
+type MockProfile = {
+  userId: string
+  nickname: string
+  email: string
+  name: string
+  phoneNumber: string
+  role: 'ADMIN' | 'MANAGER' | 'USER'
+}
+
+const mockProfiles = new Map<string, MockProfile>([
+  ['mock-admin-token', {
+    userId: 'admin-user',
+    nickname: '관리자',
+    email: 'admin@festie.kr',
+    name: '관리자',
+    phoneNumber: '010-9999-9999',
+    role: 'ADMIN',
+  }],
+  ['mock-manager-token', {
+    userId: 'manager-user',
+    nickname: '매니저',
+    email: 'manager@festie.kr',
+    name: '매니저',
+    phoneNumber: '010-8888-8888',
+    role: 'MANAGER',
+  }],
+  ['mock-token', {
+    userId: 'me',
+    nickname: '테스트유저',
+    email: 'test@festie.kr',
+    name: '테스트',
+    phoneNumber: '010-1234-5678',
+    role: 'USER',
+  }],
+])
+
 function normalizeCategoryKey(name: string) {
   if (name === '\uCF58\uC11C\uD2B8') return 'concert'
   if (name === '\uCD95\uC81C') return 'festival'
@@ -49,8 +85,8 @@ export const handlers = [
     const body = await request.json() as any
     const categoryId = body.categoryId ?? ({ concert: 'c1', festival: 'c2', fanmeeting: 'c3', popup: 'c4' } as Record<string, string>)[normalizeCategoryKey(body.categoryName ?? body.category ?? '\uCF58\uC11C\uD2B8')] ?? 'c1'
     const categoryName = mockEventCategories.find((item) => item.id === categoryId)?.name ?? body.categoryName ?? body.category ?? '기타'
-    const nextId = String(mockEvents.length + 1)
-    const nextChatRoomId = `room-${mockChatRooms.length + 1}`
+    const nextId = crypto.randomUUID()
+    const nextChatRoomId = `room-${crypto.randomUUID()}`
     const created = {
       id: nextId,
       name: body.name ?? body.eventName ?? '새 행사',
@@ -275,7 +311,12 @@ export const handlers = [
     const [removed] = mockEvents.splice(index, 1)
     const roomIndex = mockChatRooms.findIndex((item) => item.eventId === removed.id)
     if (roomIndex !== -1) {
-      mockChatRooms.splice(roomIndex, 1)
+      const [removedRoom] = mockChatRooms.splice(roomIndex, 1)
+      for (let i = mockMessages.length - 1; i >= 0; i -= 1) {
+        if (mockMessages[i].chatRoomId === removedRoom.chatRoomId) {
+          mockMessages.splice(i, 1)
+        }
+      }
     }
     return HttpResponse.json(wrap({}))
   }),
@@ -347,7 +388,8 @@ export const handlers = [
     await delay(100)
     const url = new URL(request.url)
     const eventId = url.searchParams.get('eventId') ?? '1'
-    const room = mockChatRooms.find((item) => item.eventId === eventId) ?? mockChatRooms[0]
+    const room = mockChatRooms.find((item) => item.eventId === eventId)
+    if (!room) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
     return HttpResponse.json(wrap(room))
   }),
 
@@ -495,9 +537,21 @@ export const handlers = [
     const email = String(body.email ?? '').toLowerCase()
     const isAdmin = email.includes('admin')
     const isManager = !isAdmin && email.includes('manager')
+    const token = isAdmin ? 'mock-admin-token' : isManager ? 'mock-manager-token' : 'mock-token'
+    const refreshToken = isAdmin ? 'mock-admin-refresh' : isManager ? 'mock-manager-refresh' : 'mock-refresh'
+    if (!mockProfiles.has(token)) {
+      mockProfiles.set(token, {
+        userId: isAdmin ? 'admin-user' : isManager ? 'manager-user' : 'me',
+        nickname: isAdmin ? '관리자' : isManager ? '매니저' : '테스트유저',
+        email: isAdmin ? 'admin@festie.kr' : isManager ? 'manager@festie.kr' : 'test@festie.kr',
+        name: isAdmin ? '관리자' : isManager ? '매니저' : '테스트',
+        phoneNumber: isAdmin ? '010-9999-9999' : isManager ? '010-8888-8888' : '010-1234-5678',
+        role: isAdmin ? 'ADMIN' : isManager ? 'MANAGER' : 'USER',
+      })
+    }
     return HttpResponse.json(wrap({
-      accessToken: isAdmin ? 'mock-admin-token' : isManager ? 'mock-manager-token' : 'mock-token',
-      refreshToken: isAdmin ? 'mock-admin-refresh' : isManager ? 'mock-manager-refresh' : 'mock-refresh',
+      accessToken: token,
+      refreshToken,
       tokenType: 'Bearer',
     }))
   }),
@@ -505,32 +559,40 @@ export const handlers = [
   http.get('/user-service/v1/users/me', async ({ request }) => {
     await delay(150)
     const token = request.headers.get('authorization') ?? ''
-    const isAdmin = token.includes('mock-admin-token')
-    const isManager = token.includes('mock-manager-token')
-    return HttpResponse.json(wrap({
-      userId: isAdmin ? 'admin-user' : isManager ? 'manager-user' : 'me',
-      nickname: isAdmin ? '관리자' : isManager ? '매니저' : '테스트유저',
-      email: isAdmin ? 'admin@festie.kr' : isManager ? 'manager@festie.kr' : 'test@festie.kr',
-      name: isAdmin ? '관리자' : isManager ? '매니저' : '테스트',
-      phoneNumber: isAdmin ? '010-9999-9999' : isManager ? '010-8888-8888' : '010-1234-5678',
-      role: isAdmin ? 'ADMIN' : isManager ? 'MANAGER' : 'USER',
-    }))
+    const profile = mockProfiles.get(token.replace('Bearer ', ''))
+    if (!profile) {
+      return HttpResponse.json(wrap({
+        userId: 'me',
+        nickname: '테스트유저',
+        email: 'test@festie.kr',
+        name: '테스트',
+        phoneNumber: '010-1234-5678',
+        role: 'USER',
+      }))
+    }
+    return HttpResponse.json(wrap(profile))
   }),
 
   http.patch('/user-service/v1/users/me', async ({ request }) => {
     await delay(200)
     const body = await request.json() as any
     const token = request.headers.get('authorization') ?? ''
-    const isAdmin = token.includes('mock-admin-token')
-    const isManager = token.includes('mock-manager-token')
-    return HttpResponse.json(wrap({
-      userId: isAdmin ? 'admin-user' : isManager ? 'manager-user' : 'me',
-      email: isAdmin ? 'admin@festie.kr' : isManager ? 'manager@festie.kr' : 'test@festie.kr',
-      name: body.name ?? (isAdmin ? '관리자' : isManager ? '매니저' : '테스트'),
-      nickname: body.nickname ?? (isAdmin ? '운영자' : isManager ? '매니저' : '테스트유저'),
-      phoneNumber: body.phoneNumber ?? (isAdmin ? '010-9999-9999' : isManager ? '010-8888-8888' : '010-1234-5678'),
-      role: isAdmin ? 'ADMIN' : isManager ? 'MANAGER' : 'USER',
-    }))
+    const profile = mockProfiles.get(token.replace('Bearer ', '')) ?? {
+      userId: 'me',
+      nickname: '테스트유저',
+      email: 'test@festie.kr',
+      name: '테스트',
+      phoneNumber: '010-1234-5678',
+      role: 'USER' as const,
+    }
+    const updated = {
+      ...profile,
+      name: body.name ?? profile.name,
+      nickname: body.nickname ?? profile.nickname,
+      phoneNumber: body.phoneNumber ?? profile.phoneNumber,
+    }
+    mockProfiles.set(token.replace('Bearer ', ''), updated)
+    return HttpResponse.json(wrap(updated))
   }),
 
   http.post('/user-service/v1/users', async () => {

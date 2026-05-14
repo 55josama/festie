@@ -24,8 +24,9 @@ export default function EventDetail() {
 
   const { data: chatRoom } = useQuery({
     queryKey: ['chat-room', eventId],
-    queryFn: () => getChatRoomByEventId(eventId),
+    queryFn: () => getChatRoomByEventId(eventId).catch(() => undefined),
     enabled: !!eventId,
+    retry: false,
   })
   const chatRoomId = chatRoom?.chatRoomId
 

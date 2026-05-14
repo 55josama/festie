@@ -31,7 +31,7 @@ export default function MyPage() {
       const updated = await updateMe({
         name: user.name,
         nickname: nextNickname,
-        phoneNumber: phoneNumber.trim() || user.phoneNumber || '010-0000-0000',
+        phoneNumber: phoneNumber.trim() || user.phoneNumber || '',
       })
       setUser({
         ...user,

@@ -1,4 +1,4 @@
-import {type ReactNode, useMemo, useState} from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import {Link} from 'react-router-dom'
 import {useQuery} from '@tanstack/react-query'
 import {getCategories, getPosts} from '../api/community'
@@ -15,7 +15,7 @@ export default function Community() {
     const {data: categories = []} = useQuery({queryKey: ['categories'], queryFn: getCategories})
     const {data: rawPosts = []} = useQuery({
         queryKey: ['posts', categoryId, sort],
-        queryFn: () => getPosts({categoryId, sort: sort === 'popular' ? 'likeCount,desc' : 'createdAt,desc', size: 30}),
+        queryFn: () => getPosts({categoryId, sort: sort === 'popular' ? 'likeCount,desc' : 'createdAt,desc', size: 100}),
     })
 
     const categoryNameById = useMemo(() => {
@@ -24,9 +24,10 @@ export default function Community() {
 
     const posts = useMemo(() => {
         if (sort === 'latest') return rawPosts
-        const today = new Date().toLocaleDateString('ko-KR')
+        const formatter = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' })
+        const today = formatter.format(new Date())
         const todayPosts = [...rawPosts]
-            .filter((post: any) => new Date(post.createdAt).toLocaleDateString('ko-KR') === today)
+            .filter((post: any) => formatter.format(new Date(post.createdAt)) === today)
             .sort((a: any, b: any) => b.likeCount - a.likeCount)
         return todayPosts.length ? todayPosts : [...rawPosts].sort((a: any, b: any) => b.likeCount - a.likeCount)
     }, [rawPosts, sort])
