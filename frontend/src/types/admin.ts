@@ -11,6 +11,15 @@ export interface EventRequestItem {
   createdEventId?: string | null
 }
 
+export interface OperationRequestItem {
+  id: string
+  requesterId: string
+  title: string
+  content: string
+  status: string
+  adminMemo: string | null
+}
+
 export interface ReportItem {
   id: string
   reporterId: string
@@ -22,4 +31,15 @@ export interface ReportItem {
   targetContent?: string | null
   status: string
   operatorMemo: string | null
+}
+
+export interface AdminMessageItem {
+  messageId: string
+  chatRoomId: string
+  userId: string
+  writerNickname: string
+  messageType: string
+  content: string
+  status: string
+  createdAt: string
 }

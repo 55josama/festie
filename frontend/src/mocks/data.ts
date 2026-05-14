@@ -115,6 +115,25 @@ export const mockEventRequests = [
   },
 ]
 
+export const mockOperationRequests = [
+  {
+    id: 'op-1',
+    requesterId: 'u7',
+    title: '메인 배너 문구 수정 요청',
+    content: '홈 화면 행사 탐색 문구를 조금 더 짧게 수정하고 싶습니다.',
+    status: 'PENDING',
+    adminMemo: null as string | null,
+  },
+  {
+    id: 'op-2',
+    requesterId: 'u8',
+    title: '채팅방 공지 고정 요청',
+    content: '드림 팬미팅 채팅방 상단 공지를 고정해 주시면 좋겠습니다.',
+    status: 'IN_PROGRESS',
+    adminMemo: '운영팀 확인 중입니다.',
+  },
+]
+
 export const mockReports = [
   {
     id: 'report-1',

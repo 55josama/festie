@@ -4,11 +4,15 @@ import { useQuery } from '@tanstack/react-query'
 import { getEvents } from '../api/events'
 import type { Event } from '../types'
 import { resolveRegionFromCoordinates } from '../lib/kakao'
+import { useAuthStore } from '../store/authStore'
 
 const REGION_FILTERS = ['전체', '서울', '경기', '충청', '강원', '경상', '전라', '부산', '제주']
 const CATEGORY_FILTERS = ['전체', '콘서트', '축제', '팬미팅', '팝업스토어']
+const CATEGORY_ADMIN_LINK = '/admin?tab=requests&panel=categories'
+const EVENT_CREATE_LINK = '/admin?tab=requests&panel=general'
 
 export default function Events() {
+  const { user } = useAuthStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedRegion, setSelectedRegion] = useState(searchParams.get('region') ?? '전체')
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') ?? '전체')
@@ -16,6 +20,7 @@ export default function Events() {
   const [resolvedRegions, setResolvedRegions] = useState<Record<string, string>>({})
   const regionCacheRef = useRef<Record<string, string>>({})
   const kakaoKey = String(import.meta.env.VITE_KAKAO_JS_KEY ?? '')
+  const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
 
   const { data: events = [] } = useQuery({
     queryKey: ['events', 'list'],
@@ -135,6 +140,15 @@ export default function Events() {
                   {item}
                 </Chip>
               ))}
+              {isManager && (
+                <Link
+                  to={CATEGORY_ADMIN_LINK}
+                  aria-label="카테고리 관리로 이동"
+                  className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition-colors hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[11px]"
+                >
+                  +
+                </Link>
+              )}
             </FilterRow>
           </div>
 
@@ -152,6 +166,15 @@ export default function Events() {
                   {item}
                 </Chip>
               ))}
+              {isManager && (
+                <Link
+                  to={CATEGORY_ADMIN_LINK}
+                  aria-label="카테고리 관리로 이동"
+                  className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition-colors hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[11px]"
+                >
+                  +
+                </Link>
+              )}
             </FilterRow>
           </div>
         </div>
@@ -163,6 +186,14 @@ export default function Events() {
             <h2 className="text-[18px] font-black tracking-tight text-slate-950">행사 결과</h2>
             <p className="mt-1 text-xs text-slate-500">{filteredEvents.length}개의 행사를 보고 있어요.</p>
           </div>
+          {isManager && (
+            <Link
+              to={EVENT_CREATE_LINK}
+              className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-white"
+            >
+              행사생성
+            </Link>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

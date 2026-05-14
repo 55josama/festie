@@ -3,10 +3,15 @@ import {Link} from 'react-router-dom'
 import {useQuery} from '@tanstack/react-query'
 import {getCategories, getPosts} from '../api/community'
 import PostCard from '../components/PostCard'
+import { useAuthStore } from '../store/authStore'
+
+const CATEGORY_ADMIN_LINK = '/admin?tab=requests&panel=categories'
 
 export default function Community() {
+    const { user } = useAuthStore()
     const [categoryId, setCategoryId] = useState<string | undefined>()
     const [sort, setSort] = useState<'latest' | 'popular'>('latest')
+    const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
     const {data: categories = []} = useQuery({queryKey: ['categories'], queryFn: getCategories})
     const {data: rawPosts = []} = useQuery({
         queryKey: ['posts', categoryId, sort],
@@ -31,7 +36,7 @@ export default function Community() {
             <section
                 className="rounded-[24px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-6">
                 <div className="max-w-3xl">
-                    <div
+                <div
                         className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
                         커뮤니티
                     </div>
@@ -61,6 +66,15 @@ export default function Community() {
                                 {category.name}
                             </FilterChip>
                         ))}
+                        {isManager && (
+                            <Link
+                                to={CATEGORY_ADMIN_LINK}
+                                aria-label="카테고리 관리로 이동"
+                                className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition-colors hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[11px]"
+                            >
+                                +
+                            </Link>
+                        )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-1.5">

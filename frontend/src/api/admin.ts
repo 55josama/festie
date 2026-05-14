@@ -1,7 +1,7 @@
 import client from './client'
 import { unwrap, unwrapPage } from '../lib/api'
 import type { ChatRoom, Event } from '../types'
-import type { EventRequestItem, ReportItem } from '../types/admin'
+import type { EventRequestItem, OperationRequestItem, ReportItem } from '../types/admin'
 
 export const getEventRequests = async (params: Record<string, any> = {}) => {
   const res = await client.get('/event-service/v1/event-requests', { params })
@@ -16,6 +16,16 @@ export const approveEventRequest = async (requestId: string) => {
 export const rejectEventRequest = async (requestId: string, rejectReason: string) => {
   const res = await client.post(`/event-service/v1/event-requests/${requestId}/rejections`, { rejectReason })
   return unwrap<EventRequestItem>(res.data)
+}
+
+export const getOperationRequests = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/operation-service/v1/operation-requests', { params })
+  return unwrapPage<OperationRequestItem>(res.data)
+}
+
+export const updateOperationRequestStatus = async (requestId: string, status: string, adminMemo: string) => {
+  const res = await client.patch(`/operation-service/v1/operation-requests/${requestId}/status`, { status, adminMemo })
+  return unwrap<OperationRequestItem>(res.data)
 }
 
 export const getReports = async (params: Record<string, any> = {}) => {

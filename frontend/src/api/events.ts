@@ -19,3 +19,8 @@ export const createEvent = async (payload: Record<string, any>) => {
   const res = await client.post('/event-service/v1/events', payload)
   return unwrap<Event>(res.data)
 }
+
+export const deleteEvent = async (eventId: string) => {
+  const res = await client.delete(`/event-service/v1/events/${eventId}`)
+  return unwrap<void>(res.data)
+}

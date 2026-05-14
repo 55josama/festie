@@ -54,11 +54,13 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
     events.forEach((event: any) => {
       const start = startOfDay(new Date(event.startAt))
       const end = startOfDay(new Date(event.endAt ?? event.startAt))
-      for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+      let cursor = new Date(start)
+      while (cursor <= end) {
         const key = getMonthKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate())
         const list = map.get(key) ?? []
         list.push(event)
         map.set(key, list)
+        cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)
       }
     })
     return map

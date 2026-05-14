@@ -9,6 +9,7 @@ import {
   mockComments,
   mockCalendars,
   mockEventRequests,
+  mockOperationRequests,
   mockReports,
 } from './data'
 
@@ -27,7 +28,12 @@ export const handlers = [
     await delay(250)
     const url = new URL(request.url)
     const hasTicketing = url.searchParams.get('hasTicketing')
-    let events = hasTicketing ? mockEvents.filter(e => e.hasTicketing) : [...mockEvents]
+    let events = [...mockEvents]
+    if (hasTicketing === 'true') {
+      events = events.filter((event) => event.hasTicketing)
+    } else if (hasTicketing === 'false') {
+      events = events.filter((event) => !event.hasTicketing)
+    }
     return HttpResponse.json(wrap({ content: events, totalElements: events.length, totalPages: 1, size: 10, number: 0 }))
   }),
 
@@ -124,7 +130,7 @@ export const handlers = [
     const body = await request.json() as any
     const category = mockCategories.find((item) => item.id === body.categoryId)
     const created = {
-      id: 'new-post',
+      id: `post-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       userId: 'me',
       categoryId: body.categoryId,
       categoryName: category?.name ?? '자유',
@@ -262,6 +268,18 @@ export const handlers = [
     return HttpResponse.json(wrap({}))
   }),
 
+  http.delete('/event-service/v1/events/:eventId', async ({ params }) => {
+    await delay(180)
+    const index = mockEvents.findIndex((item) => item.id === params.eventId)
+    if (index === -1) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    const [removed] = mockEvents.splice(index, 1)
+    const roomIndex = mockChatRooms.findIndex((item) => item.eventId === removed.id)
+    if (roomIndex !== -1) {
+      mockChatRooms.splice(roomIndex, 1)
+    }
+    return HttpResponse.json(wrap({}))
+  }),
+
   http.get('/event-service/v1/event-requests', async ({ request }) => {
     await delay(180)
     const url = new URL(request.url)
@@ -287,6 +305,24 @@ export const handlers = [
     eventRequest.status = 'REJECTED'
     eventRequest.rejectReason = body.rejectReason
     return HttpResponse.json(wrap(eventRequest))
+  }),
+
+  http.get('/operation-service/v1/operation-requests', async ({ request }) => {
+    await delay(180)
+    const url = new URL(request.url)
+    const status = url.searchParams.get('status')
+    const filtered = status ? mockOperationRequests.filter((item) => item.status === status) : mockOperationRequests
+    return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
+  }),
+
+  http.patch('/operation-service/v1/operation-requests/:requestId/status', async ({ params, request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const operationRequest = mockOperationRequests.find((item) => item.id === params.requestId)
+    if (!operationRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    operationRequest.status = body.status
+    operationRequest.adminMemo = body.adminMemo ?? operationRequest.adminMemo
+    return HttpResponse.json(wrap(operationRequest))
   }),
 
   http.get('/operation-service/v1/reports', async ({ request }) => {
@@ -342,6 +378,37 @@ export const handlers = [
       room.closedAt = new Date().toISOString()
     }
     return HttpResponse.json(wrap(room))
+  }),
+
+  http.get('/chat-service/v1/chat/admin/messages', async ({ request }) => {
+    await delay(140)
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 20)
+    const status = url.searchParams.get('status')
+    const category = url.searchParams.get('category')
+    const roomCategoryById = new Map(mockChatRooms.map((room) => [room.chatRoomId, room.category]))
+    let messages = [...mockMessages]
+    if (status) {
+      messages = messages.filter((item) => item.status === status)
+    }
+    if (category) {
+      messages = messages.filter((item) => roomCategoryById.get(item.chatRoomId) === category)
+    }
+    const totalElements = messages.length
+    const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
+    const start = Math.max(page, 0) * Math.max(size, 1)
+    const content = messages.slice(start, start + Math.max(size, 1))
+    return HttpResponse.json(wrap({ content, totalElements, totalPages, size, number: page }))
+  }),
+
+  http.patch('/chat-service/v1/chat/admin/messages/:messageId/status', async ({ params, request }) => {
+    await delay(140)
+    const body = await request.json() as any
+    const message = mockMessages.find((item) => item.messageId === params.messageId)
+    if (!message) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    message.status = body.status
+    return HttpResponse.json(wrap(message))
   }),
 
   http.post('/chat-service/v1/chat/rooms/:chatRoomId/messages', async ({ request, params }) => {

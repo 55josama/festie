@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getEvent } from '../api/events'
+import { deleteEvent, getEvent } from '../api/events'
 import { getChatMessages, getChatRoomByEventId, sendChatMessage } from '../api/chat'
 import { createCalendar } from '../api/calendar'
 import ReportButton from '../components/ReportButton'
@@ -60,6 +60,18 @@ export default function EventDetail() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['calendars'] })
       window.alert('내 일정에 추가했어요.')
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => {
+      if (!event) throw new Error('event is missing')
+      return deleteEvent(event.id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] })
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] })
+      window.alert('행사를 삭제했어요.')
     },
   })
 
@@ -150,6 +162,19 @@ export default function EventDetail() {
                   </Link>
                 )}
                 {isLoggedIn() && <ReportButton targetType="EVENT" targetId={event.id} />}
+                {user && /ADMIN|MANAGER/.test(user.role) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('이 행사를 삭제할까요?')) {
+                        deleteMutation.mutate()
+                      }
+                    }}
+                    className="rounded-full border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700"
+                  >
+                    {deleteMutation.isPending ? '삭제 중...' : '행사 삭제'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

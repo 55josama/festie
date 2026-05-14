@@ -1,16 +1,19 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   approveEventRequest,
   forceChatRoomStatus,
   getEventRequests,
+  getOperationRequests,
   getPopularChatRooms,
   getReports,
   rejectEventRequest,
+  updateOperationRequestStatus,
   updateReportStatus,
 } from '../api/admin'
 import { createEvent } from '../api/events'
+import { getAdminChatMessages, updateAdminChatMessageStatus } from '../api/chat'
 import {
   createCommunityCategory,
   createEventCategory,
@@ -24,10 +27,13 @@ import {
 import { useAuthStore } from '../store/authStore'
 import { formatDateTime } from '../lib/format'
 import { searchAddressWithKakao } from '../lib/kakao'
+import type { AdminMessageItem, OperationRequestItem } from '../types/admin'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
 const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELED'] as const
+const OPERATION_STATUS_FILTERS = ['ALL', 'PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] as const
 const CHAT_STATUS_FILTERS = ['ALL', 'SCHEDULED', 'OPEN', 'CLOSED'] as const
+const ADMIN_TABS = ['requests', 'reports', 'chat'] as const
 const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
   ADMIN: [],
   CONCERT_MANAGER: ['\uCF58\uC11C\uD2B8'],
@@ -36,15 +42,39 @@ const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
   POPUP_MANAGER: ['\uD31D\uC5C5\uC2A4\uD1A0\uC5B4'],
 }
 
+type AdminTab = (typeof ADMIN_TABS)[number]
+
+interface AdminMessagePage {
+  content: AdminMessageItem[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+}
+
+const EMPTY_ADMIN_MESSAGE_PAGE: AdminMessagePage = {
+  content: [],
+  totalElements: 0,
+  totalPages: 0,
+  size: 0,
+  number: 0,
+}
+
 export default function Admin() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuthStore()
+  const activeTab = normalizeAdminTab(searchParams.get('tab'))
   const [reportStatus, setReportStatus] = useState<(typeof REPORT_STATUS_FILTERS)[number]>('ALL')
   const [requestStatus, setRequestStatus] = useState<(typeof REQUEST_STATUS_FILTERS)[number]>('ALL')
+  const [operationStatus, setOperationStatus] = useState<(typeof OPERATION_STATUS_FILTERS)[number]>('ALL')
   const [chatStatus, setChatStatus] = useState<(typeof CHAT_STATUS_FILTERS)[number]>('ALL')
+  const [messageStatus, setMessageStatus] = useState<'ALL' | 'ACTIVE' | 'BLINDED'>('ALL')
+  const [messagePage, setMessagePage] = useState(0)
   const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
   const [reportForms, setReportForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
+  const [operationForms, setOperationForms] = useState<Record<string, { status: string; adminMemo: string }>>({})
   const [requestPanels, setRequestPanels] = useState<Record<string, boolean>>({})
   const [requestDrafts, setRequestDrafts] = useState<Record<string, EventDraft>>({})
   const [generalCreateOpen, setGeneralCreateOpen] = useState(false)
@@ -57,6 +87,27 @@ export default function Admin() {
     event: '',
     community: '',
   })
+  const categoriesSectionRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const panel = searchParams.get('panel')
+    if (panel === 'general') {
+      setGeneralCreateOpen(true)
+    }
+    if (panel === 'categories') {
+      window.requestAnimationFrame(() => {
+        categoriesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!searchParams.get('tab')) {
+      const next = new URLSearchParams(searchParams)
+      next.set('tab', 'requests')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const { data: eventCategories = [] } = useQuery({
     queryKey: ['admin', 'event-categories'],
@@ -68,9 +119,19 @@ export default function Admin() {
     queryFn: getCommunityCategories,
   })
 
+  const normalizedRole = normalizeRole(user?.role)
+  const canCreateCategories = normalizedRole === 'ADMIN'
+  const canViewOperationRequests = normalizedRole === 'ADMIN'
+
   const { data: eventRequests = [] } = useQuery({
     queryKey: ['admin', 'event-requests', requestStatus],
     queryFn: () => getEventRequests({ size: 12, status: requestStatus === 'ALL' ? undefined : requestStatus }),
+  })
+
+  const { data: operationRequests = [] } = useQuery({
+    queryKey: ['admin', 'operation-requests', operationStatus],
+    queryFn: () => getOperationRequests({ size: 12, status: operationStatus === 'ALL' ? undefined : operationStatus }),
+    enabled: canViewOperationRequests,
   })
 
   const { data: reports = [] } = useQuery({
@@ -83,15 +144,27 @@ export default function Admin() {
     queryFn: () => getPopularChatRooms(6),
   })
 
+  const {
+    data: adminMessagePage = EMPTY_ADMIN_MESSAGE_PAGE,
+    refetch: refetchAdminMessages,
+  } = useQuery({
+    queryKey: ['admin', 'messages', messageStatus, messagePage],
+    queryFn: () =>
+      getAdminChatMessages({
+        page: messagePage,
+        size: 8,
+        status: messageStatus === 'ALL' ? undefined : messageStatus,
+      }),
+  })
+
   const eventCategoryMap = useMemo(
     () => new Map((eventCategories as any[]).map((category) => [category.name, category.id])),
     [eventCategories],
   )
 
-  const normalizedRole = normalizeRole(user?.role)
-
   const managedEventCategories = useMemo(() => {
-    if (!normalizedRole || normalizedRole === 'ADMIN') return []
+    if (normalizedRole === 'ADMIN') return []
+    if (!normalizedRole) return []
     return EVENT_CATEGORY_SCOPE[normalizedRole] ?? []
   }, [normalizedRole])
 
@@ -101,20 +174,21 @@ export default function Admin() {
   )
 
   const scopedEventRequests = useMemo(() => {
-    if (!managedEventCategories.length) return eventRequests
+    if (normalizedRole === 'ADMIN') return eventRequests
+    if (!managedEventCategories.length) return []
     return eventRequests.filter((request: any) => managedEventCategories.includes(request.category))
-  }, [eventRequests, managedEventCategories])
+  }, [eventRequests, managedEventCategories, normalizedRole])
 
   const scopedChatRooms = useMemo(() => {
-    let rooms = chatRooms
-    if (managedChatCategories.size > 0) {
+    let rooms = normalizedRole === 'ADMIN' ? chatRooms : []
+    if (normalizedRole !== 'ADMIN' && managedChatCategories.size > 0) {
       rooms = rooms.filter((room: any) => managedChatCategories.has(room.category))
     }
     if (chatStatus !== 'ALL') {
       rooms = rooms.filter((room: any) => room.status === chatStatus)
     }
     return rooms
-  }, [chatRooms, chatStatus, managedChatCategories])
+  }, [chatRooms, chatStatus, managedChatCategories, normalizedRole])
 
   const generalDraftWithCategory = useMemo(() => {
     if (generalDraft.categoryId) return generalDraft
@@ -124,6 +198,11 @@ export default function Admin() {
       categoryId: firstCategory?.id ?? '',
     }
   }, [eventCategories, generalDraft])
+
+  const scopedOperationRequests = useMemo(() => {
+    if (!canViewOperationRequests) return []
+    return operationRequests as OperationRequestItem[]
+  }, [canViewOperationRequests, operationRequests])
 
   const approveMutation = useMutation({
     mutationFn: approveEventRequest,
@@ -140,6 +219,12 @@ export default function Admin() {
     mutationFn: ({ reportId, status, operatorMemo }: { reportId: string; status: string; operatorMemo: string }) =>
       updateReportStatus(reportId, status, operatorMemo),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'reports'] }),
+  })
+
+  const messageMutation = useMutation({
+    mutationFn: ({ messageId, status }: { messageId: string; status: 'ACTIVE' | 'BLINDED' }) =>
+      updateAdminChatMessageStatus(messageId, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'messages'] }),
   })
 
   const createEventMutation = useMutation({
@@ -181,6 +266,12 @@ export default function Admin() {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'event-categories'] })
       navigate(`/events/${createdEvent.id}`)
     },
+  })
+
+  const operationRequestMutation = useMutation({
+    mutationFn: ({ requestId, status, adminMemo }: { requestId: string; status: string; adminMemo: string }) =>
+      updateOperationRequestStatus(requestId, status, adminMemo),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'operation-requests'] }),
   })
 
   const chatRoomMutation = useMutation({
@@ -276,10 +367,15 @@ export default function Admin() {
   })
 
   const summary = useMemo(() => ({
-    requests: scopedEventRequests.length,
+    eventRequests: scopedEventRequests.length,
+    operationRequests: scopedOperationRequests.length,
     reports: reports.length,
     rooms: scopedChatRooms.length,
-  }), [reports.length, scopedChatRooms.length, scopedEventRequests.length])
+    messages: adminMessagePage.totalElements,
+  }), [adminMessagePage.totalElements, reports.length, scopedChatRooms.length, scopedEventRequests.length, scopedOperationRequests.length])
+
+  const adminMessages = adminMessagePage.content
+  const messageTotalPages = Math.max(adminMessagePage.totalPages || 0, 1)
 
   const lookupPlaceForDraft = async (setDraft: (patch: Partial<EventDraft>) => void) => {
     setAddressLookupLoading(true)
@@ -304,200 +400,366 @@ export default function Admin() {
     })
   }
 
+  const updateTab = (tab: AdminTab) => {
+    const next = new URLSearchParams(searchParams)
+    next.set('tab', tab)
+    if (tab !== 'requests') {
+      next.delete('panel')
+    }
+    setSearchParams(next, { replace: true })
+  }
+
+  const tabs: { value: AdminTab; label: string; description: string }[] = [
+    { value: 'requests', label: '요청', description: '행사/운영/카테고리생성' },
+    { value: 'reports', label: '신고', description: '블라인드·처리' },
+    { value: 'chat', label: '채팅', description: '메시지·방' },
+  ]
+
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
-      <section className="rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-6">
-        <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr] xl:items-end">
-          <div className="space-y-3">
-            <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
-              관리자
+      {activeTab === 'requests' && (
+        <section className="rounded-[28px] bg-slate-950 px-5 py-3.5 text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] md:px-6 md:py-4">
+          <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+            <div className="space-y-2.5">
+              <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">관리</div>
+              <div className="text-[22px] font-black tracking-tight text-white md:text-[26px]">
+                요청, 신고, 채팅 운영을 관리할 수 있습니다.
+              </div>
+              <div className="rounded-[20px] bg-white/5 p-3 text-xs leading-5 text-slate-300">
+                <div className="text-xs font-semibold text-slate-400">접속 정보</div>
+                <div className="mt-1.5 text-sm leading-6 text-slate-300">
+                  {user?.nickname ?? '관리자'}로 접속 중입니다. 권한이 없는 계정에서는 운영 메뉴가 숨겨집니다.
+                </div>
+              </div>
             </div>
-            <h1 className="text-[24px] font-black tracking-tight text-slate-950 md:text-[28px]">운영 요청과 채팅을 한 화면에서 관리</h1>
-            <p className="max-w-xl text-sm leading-6 text-slate-600">
-              행사요청 승인/반려, 신고 처리, 채팅방 강제 오픈/클로즈를 백엔드 기준으로 바로 실행할 수 있게 정리했습니다.
-            </p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-2">
+                <MetricCard label="행사요청" value={String(summary.eventRequests)} dark />
+                <MetricCard label="운영요청" value={String(summary.operationRequests)} dark />
+                <MetricCard label="신고" value={String(summary.reports)} dark />
+                <MetricCard label="채팅방" value={String(summary.rooms)} dark />
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <MetricCard label="행사요청" value={String(summary.requests)} />
-            <MetricCard label="신고" value={String(summary.reports)} />
-            <MetricCard label="채팅방" value={String(summary.rooms)} />
-          </div>
+        </section>
+      )}
+
+      <section className="rounded-[22px] border border-[var(--line)] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+        <div className="flex flex-wrap items-center gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => updateTab(tab.value)}
+              className={`rounded-full border px-2 py-1 text-[9px] font-semibold transition-colors md:px-2.5 md:py-1.5 md:text-[10px] ${
+                activeTab === tab.value
+                  ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
+                  : 'border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className="ml-1 text-[10px] font-medium opacity-70">{tab.description}</span>
+            </button>
+          ))}
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[7fr_3fr]">
-        <div className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-          <SectionHeader
-            title="행사 요청 관리"
-            action={
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setGeneralCreateOpen((prev) => !prev)}
-                  className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  {generalCreateOpen ? '일반 생성 닫기' : '일반 행사 생성'}
-                </button>
-                {REQUEST_STATUS_FILTERS.map((item) => (
-                  <Pill key={item} active={requestStatus === item} onClick={() => setRequestStatus(item)}>{item}</Pill>
-                ))}
-              </div>
-            }
-          />
-
-          {managedEventCategories.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-3 text-xs text-slate-500">
-              <span className="font-semibold text-slate-600">담당 카테고리</span>
-              {managedEventCategories.map((item) => (
-                <span key={item} className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
-                  {item}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {generalCreateOpen && (
-            <EventCreatePanel
-              title="일반 행사 생성"
-              subtitle="관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다."
-              draft={generalDraftWithCategory}
-              setDraft={(patch) => setGeneralDraft((prev) => ({ ...prev, ...patch }))}
-              categoryOptions={eventCategories as any[]}
-              onSubmit={() => createEventMutation.mutate({ draft: generalDraftWithCategory })}
-              onClose={() => setGeneralCreateOpen(false)}
-              loading={createEventMutation.isPending}
-              onLookupPlace={() => {
-                void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({ ...prev, ...patch })))
-              }}
-              placeLookupLoading={addressLookupLoading}
-              onAttachImage={(file) => {
-                void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({ ...prev, ...patch })))
-              }}
-            />
-          )}
-
-          <div className="space-y-3">
-            {scopedEventRequests.map((request: any) => (
-              <div key={request.id} className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">{request.status}</span>
-                      <span className="text-xs text-slate-500">{request.category}</span>
-                      {request.createdEventId && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">생성됨</span>}
-                    </div>
-                    <div className="text-sm font-semibold text-slate-950">{request.eventName}</div>
-                    <div className="text-xs leading-5 text-slate-600">{request.description}</div>
-                    {request.rejectReason && <div className="text-xs text-rose-600">반려 사유: {request.rejectReason}</div>}
+      {activeTab === 'requests' && (
+        <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+              <SectionHeader
+                title="행사요청"
+                action={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setGeneralCreateOpen((prev) => !prev)}
+                      className="rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[9px] font-semibold text-slate-700 hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[10px]"
+                    >
+                      {generalCreateOpen ? '일반 생성 닫기' : '일반 행사 생성'}
+                    </button>
+                    {REQUEST_STATUS_FILTERS.map((item) => (
+                      <Pill key={item} active={requestStatus === item} onClick={() => setRequestStatus(item)}>
+                        {item}
+                      </Pill>
+                    ))}
                   </div>
-                  <div className="flex shrink-0 flex-col gap-2 xl:w-[260px]">
-                    {request.status === 'APPROVED' ? (
-                      <>
-                        <button
-                          disabled
-                          className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 disabled:opacity-100"
-                        >
-                          승인 완료
-                        </button>
-                        {!request.createdEventId ? (
-                          <button
-                            type="button"
-                          onClick={() => {
-                              setRequestDrafts((prev) => prev[request.id]
-                                ? prev
-                                : {
-                                    ...prev,
-                                    [request.id]: buildRequestDraft(request, eventCategoryMap),
-                                  })
-                              setRequestPanels((prev) => ({ ...prev, [request.id]: !prev[request.id] }))
-                            }}
-                            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
-                          >
-                            행사 생성
-                          </button>
+                }
+              />
+
+              {managedEventCategories.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                  <span className="font-semibold text-slate-600">담당 카테고리</span>
+                  {managedEventCategories.map((item) => (
+                    <span key={item} className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {generalCreateOpen && (
+                <EventCreatePanel
+                  title="일반 행사 생성"
+                  subtitle="관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다."
+                  draft={generalDraftWithCategory}
+                  setDraft={(patch) => setGeneralDraft((prev) => ({ ...prev, ...patch }))}
+                  categoryOptions={eventCategories as any[]}
+                  onSubmit={() => createEventMutation.mutate({ draft: generalDraftWithCategory })}
+                  onClose={() => setGeneralCreateOpen(false)}
+                  loading={createEventMutation.isPending}
+                  onLookupPlace={() => {
+                    void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({ ...prev, ...patch })))
+                  }}
+                  placeLookupLoading={addressLookupLoading}
+                  onAttachImage={(file) => {
+                    void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({ ...prev, ...patch })))
+                  }}
+                />
+              )}
+
+              <div className="space-y-3">
+                {scopedEventRequests.map((request: any) => (
+                  <div key={request.id} className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">{request.status}</span>
+                          <span className="text-xs text-slate-500">{request.category}</span>
+                          {request.createdEventId && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">생성됨</span>}
+                        </div>
+                        <div className="text-sm font-semibold text-slate-950">{request.eventName}</div>
+                        <div className="text-xs leading-5 text-slate-600">{request.description}</div>
+                        {request.rejectReason && <div className="text-xs text-rose-600">반려 사유: {request.rejectReason}</div>}
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-2 lg:w-[260px]">
+                        {request.status === 'APPROVED' ? (
+                          <>
+                            <button
+                              disabled
+                              className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 disabled:opacity-100"
+                            >
+                              승인 완료
+                            </button>
+                            {!request.createdEventId ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRequestDrafts((prev) =>
+                                    prev[request.id]
+                                      ? prev
+                                      : {
+                                          ...prev,
+                                          [request.id]: buildRequestDraft(request, eventCategoryMap),
+                                        },
+                                  )
+                                  setRequestPanels((prev) => ({ ...prev, [request.id]: !prev[request.id] }))
+                                }}
+                                className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
+                              >
+                                행사 생성
+                              </button>
+                            ) : (
+                              <Link
+                                to={`/events/${request.createdEventId}`}
+                                className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700"
+                              >
+                                생성된 행사 보기
+                              </Link>
+                            )}
+                          </>
                         ) : (
-                          <Link
-                            to={`/events/${request.createdEventId}`}
-                            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700"
-                          >
-                            생성된 행사 보기
-                          </Link>
+                          <>
+                            <button
+                              onClick={() => approveMutation.mutate(request.id)}
+                              className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
+                            >
+                              승인
+                            </button>
+                            <input
+                              value={rejectReasons[request.id] ?? ''}
+                              onChange={(e) => setRejectReasons((prev) => ({ ...prev, [request.id]: e.target.value }))}
+                              placeholder="반려 사유"
+                              className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+                            />
+                            <button
+                              onClick={() => {
+                                const reason = rejectReasons[request.id]?.trim()
+                                if (!reason) return
+                                rejectMutation.mutate({ requestId: request.id, rejectReason: reason })
+                              }}
+                              className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                            >
+                              반려
+                            </button>
+                          </>
                         )}
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => approveMutation.mutate(request.id)}
-                          className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
-                        >
-                          승인
-                        </button>
-                        <input
-                          value={rejectReasons[request.id] ?? ''}
-                          onChange={(e) => setRejectReasons((prev) => ({ ...prev, [request.id]: e.target.value }))}
-                          placeholder="반려 사유"
-                          className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
-                        />
-                        <button
-                          onClick={() => {
-                            const reason = rejectReasons[request.id]?.trim()
-                            if (!reason) return
-                            rejectMutation.mutate({ requestId: request.id, rejectReason: reason })
-                          }}
-                          className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-                        >
-                          반려
-                        </button>
-                      </>
+                      </div>
+                    </div>
+
+                    {request.status === 'APPROVED' && requestPanels[request.id] && !request.createdEventId && (
+                      <EventCreatePanel
+                        title="요청 정보로 행사 생성"
+                        subtitle="요청 글의 내용을 자동으로 이어받아 필요한 항목만 채우면 됩니다."
+                        draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
+                        setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
+                        categoryOptions={eventCategories as any[]}
+                        onSubmit={() =>
+                          createEventMutation.mutate({
+                            requestId: request.id,
+                            draft: requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap),
+                          })
+                        }
+                        onClose={() => setRequestPanels((prev) => ({ ...prev, [request.id]: false }))}
+                        loading={createEventMutation.isPending}
+                        onLookupPlace={() => {
+                          void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                        }}
+                        placeLookupLoading={addressLookupLoading}
+                        onAttachImage={(file) => {
+                          void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                        }}
+                      />
                     )}
                   </div>
-                </div>
-
-                {request.status === 'APPROVED' && requestPanels[request.id] && !request.createdEventId && (
-                  <EventCreatePanel
-                    title="요청 정보로 행사 생성"
-                    subtitle="요청 글의 내용을 자동으로 이어받아 필요한 항목만 채우면 됩니다."
-                    draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
-                    setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
-                    categoryOptions={eventCategories as any[]}
-                    onSubmit={() => createEventMutation.mutate({
-                      requestId: request.id,
-                      draft: requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap),
-                    })}
-                    onClose={() => setRequestPanels((prev) => ({ ...prev, [request.id]: false }))}
-                    loading={createEventMutation.isPending}
-                    onLookupPlace={() => {
-                      void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
-                    }}
-                    placeLookupLoading={addressLookupLoading}
-                    onAttachImage={(file) => {
-                      void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
-                    }}
-                  />
-                )}
+                ))}
+                {scopedEventRequests.length === 0 && <EmptyState text="처리할 행사 요청이 없습니다." />}
               </div>
-            ))}
-            {scopedEventRequests.length === 0 && <EmptyState text="처리할 행사 요청이 없습니다." />}
-          </div>
-        </div>
+            </section>
 
-        <aside className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+            <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+              <SectionHeader
+                title="운영요청"
+                action={
+                  <div className="flex flex-wrap items-center gap-2">
+                    {OPERATION_STATUS_FILTERS.map((item) => (
+                      <Pill key={item} active={operationStatus === item} onClick={() => setOperationStatus(item)}>
+                        {item}
+                      </Pill>
+                    ))}
+                  </div>
+                }
+              />
+              {canViewOperationRequests ? (
+                <div className="space-y-3">
+                  {scopedOperationRequests.map((request: OperationRequestItem) => {
+                    const form = operationForms[request.id] ?? { status: request.status, adminMemo: request.adminMemo ?? '' }
+                    return (
+                      <div key={request.id} className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">{request.status}</span>
+                              <span className="text-xs text-slate-500">운영 요청</span>
+                            </div>
+                            <div className="text-sm font-semibold text-slate-950">{request.title}</div>
+                            <div className="text-sm leading-6 text-slate-600">{request.content}</div>
+                            <div className="text-xs text-slate-500">요청자 ID: {request.requesterId}</div>
+                            {request.adminMemo && <div className="text-xs text-slate-500">관리 메모: {request.adminMemo}</div>}
+                          </div>
+                          <div className="flex shrink-0 flex-col gap-2 lg:w-[260px]">
+                            <select
+                              value={form.status}
+                              onChange={(e) => setOperationForms((prev) => ({
+                                ...prev,
+                                [request.id]: { ...form, status: e.target.value },
+                              }))}
+                              className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+                            >
+                              {OPERATION_STATUS_FILTERS.filter((item) => item !== 'ALL').map((item) => (
+                                <option key={item} value={item}>{item}</option>
+                              ))}
+                            </select>
+                            <input
+                              value={form.adminMemo}
+                              onChange={(e) => setOperationForms((prev) => ({
+                                ...prev,
+                                [request.id]: { ...form, adminMemo: e.target.value },
+                              }))}
+                              placeholder="관리 메모"
+                              className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => operationRequestMutation.mutate({
+                                requestId: request.id,
+                                status: form.status,
+                                adminMemo: form.adminMemo,
+                              })}
+                              className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
+                            >
+                              상태 저장
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {scopedOperationRequests.length === 0 && <EmptyState text="처리할 운영 요청이 없습니다." />}
+                </div>
+              ) : (
+                <EmptyState text="운영 요청은 관리자만 볼 수 있어요." />
+              )}
+            </section>
+          </div>
+
+          <section ref={categoriesSectionRef} className="grid gap-6 lg:grid-cols-2">
+            <CategoryAdminPanel
+              title="행사 카테고리 생성"
+              subtitle="행사 요청 승인이나 일반 행사 생성에서 바로 고를 수 있는 카테고리를 관리합니다."
+              items={eventCategories as any[]}
+              draft={eventCategoryDraft}
+              setDraft={setEventCategoryDraft}
+              drafts={categoryDrafts}
+              setDrafts={(value) => setCategoryDrafts(value)}
+              canCreate={canCreateCategories}
+              onCreate={() => createEventCategoryMutation.mutate(eventCategoryDraft.trim())}
+              onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({ categoryId, name })}
+              onDelete={(categoryId) => deleteEventCategoryMutation.mutate(categoryId)}
+              helperMessage={categoryErrors.event}
+              loading={createEventCategoryMutation.isPending || updateEventCategoryMutation.isPending || deleteEventCategoryMutation.isPending}
+            />
+            <CategoryAdminPanel
+              title="커뮤니티 카테고리 생성"
+              subtitle="후기, 꿀팁, 자유, 요청 같은 게시판 카테고리를 운영합니다."
+              items={communityCategories as any[]}
+              draft={communityCategoryDraft}
+              setDraft={setCommunityCategoryDraft}
+              drafts={categoryDrafts}
+              setDrafts={(value) => setCategoryDrafts(value)}
+              canCreate={canCreateCategories}
+              onCreate={() => createCommunityCategoryMutation.mutate(communityCategoryDraft.trim())}
+              onUpdate={(categoryId, name) => updateCommunityCategoryMutation.mutate({ categoryId, name })}
+              onDelete={(categoryId) => deleteCommunityCategoryMutation.mutate(categoryId)}
+              helperMessage={categoryErrors.community}
+              loading={createCommunityCategoryMutation.isPending || updateCommunityCategoryMutation.isPending || deleteCommunityCategoryMutation.isPending}
+            />
+          </section>
+        </div>
+      )}
+
+      {activeTab === 'reports' && (
+        <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
           <SectionHeader
-            title="신고 관리"
+            title="신고"
             action={
               <div className="flex flex-wrap gap-2">
                 {REPORT_STATUS_FILTERS.map((item) => (
-                  <Pill key={item} active={reportStatus === item} onClick={() => setReportStatus(item)}>{item}</Pill>
+                  <Pill key={item} active={reportStatus === item} onClick={() => setReportStatus(item)}>
+                    {item}
+                  </Pill>
                 ))}
               </div>
             }
           />
 
-          <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {reports.map((report: any) => {
               const form = reportForms[report.id] ?? { status: report.status ?? 'RESOLVED', operatorMemo: '' }
+              const muted = report.status === 'RESOLVED' || report.status === 'REJECTED'
               return (
-                <div key={report.id} className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                <div key={report.id} className={`rounded-[20px] border border-[var(--line)] bg-slate-50 p-4 transition-opacity ${muted ? 'opacity-60' : ''}`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700">{report.status}</span>
                     <span className="text-xs text-slate-500">{report.targetType}</span>
@@ -549,116 +811,196 @@ export default function Admin() {
             })}
             {reports.length === 0 && <EmptyState text="신고 목록이 비어 있어요." />}
           </div>
-        </aside>
-      </section>
+        </section>
+      )}
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <CategoryAdminPanel
-          title="행사 카테고리 생성"
-          subtitle="행사 요청 승인이나 일반 행사 생성에서 바로 고를 수 있는 카테고리를 관리합니다."
-          items={eventCategories as any[]}
-          draft={eventCategoryDraft}
-          setDraft={setEventCategoryDraft}
-          drafts={categoryDrafts}
-          setDrafts={(value) => setCategoryDrafts(value)}
-          onCreate={() => createEventCategoryMutation.mutate(eventCategoryDraft.trim())}
-          onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({ categoryId, name })}
-          onDelete={(categoryId) => deleteEventCategoryMutation.mutate(categoryId)}
-          helperMessage={categoryErrors.event}
-          loading={createEventCategoryMutation.isPending || updateEventCategoryMutation.isPending || deleteEventCategoryMutation.isPending}
-        />
-        <CategoryAdminPanel
-          title="커뮤니티 카테고리 생성"
-          subtitle="후기, 꿀팁, 자유, 요청 같은 게시판 카테고리를 운영합니다."
-          items={communityCategories as any[]}
-          draft={communityCategoryDraft}
-          setDraft={setCommunityCategoryDraft}
-          drafts={categoryDrafts}
-          setDrafts={(value) => setCategoryDrafts(value)}
-          onCreate={() => createCommunityCategoryMutation.mutate(communityCategoryDraft.trim())}
-          onUpdate={(categoryId, name) => updateCommunityCategoryMutation.mutate({ categoryId, name })}
-          onDelete={(categoryId) => deleteCommunityCategoryMutation.mutate(categoryId)}
-          helperMessage={categoryErrors.community}
-          loading={createCommunityCategoryMutation.isPending || updateCommunityCategoryMutation.isPending || deleteCommunityCategoryMutation.isPending}
-        />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[7fr_3fr]">
-        <div className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-          <SectionHeader
-            title="채팅방 조회"
-            action={
-              <div className="flex flex-wrap items-center gap-2">
-                {CHAT_STATUS_FILTERS.map((item) => (
-                  <Pill key={item} active={chatStatus === item} onClick={() => setChatStatus(item)}>{item}</Pill>
+      {activeTab === 'chat' && (
+        <div className="space-y-6">
+          <section className="grid gap-6 lg:grid-cols-[4fr_6fr]">
+            <div className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+              <SectionHeader
+                title="채팅방"
+                action={
+                  <div className="flex flex-wrap items-center gap-2">
+                    {CHAT_STATUS_FILTERS.map((item) => (
+                      <Pill key={item} active={chatStatus === item} onClick={() => setChatStatus(item)}>
+                        {item}
+                      </Pill>
+                    ))}
+                  </div>
+                }
+              />
+              <div className="space-y-3">
+                {scopedChatRooms.map((room: any) => (
+                  <div key={room.chatRoomId} className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">{room.category}</span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{room.status}</span>
+                        </div>
+                        <div className="mt-2 text-sm font-semibold text-slate-950">{room.eventName}</div>
+                        <div className="mt-2 grid gap-1 text-xs text-slate-500">
+                          <div>예정 오픈: {room.scheduledOpenAt ? formatDateTime(room.scheduledOpenAt) : '정보 없음'}</div>
+                          <div>예정 종료: {room.scheduledCloseAt ? formatDateTime(room.scheduledCloseAt) : '정보 없음'}</div>
+                          <div>현재 인원: {room.currentViewerCount ?? 0}명</div>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          onClick={() => chatRoomMutation.mutate({ chatRoomId: room.chatRoomId, action: 'FORCE_OPEN' })}
+                          className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          강제 열기
+                        </button>
+                        <button
+                          onClick={() => chatRoomMutation.mutate({ chatRoomId: room.chatRoomId, action: 'FORCE_CLOSE' })}
+                          className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                        >
+                          강제 닫기
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
+                {scopedChatRooms.length === 0 && <EmptyState text="조회할 채팅방이 없습니다." />}
               </div>
-            }
-          />
-          <div className="space-y-3">
-            {scopedChatRooms.map((room: any) => (
-              <div key={room.chatRoomId} className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">{room.category}</span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{room.status}</span>
-                    </div>
-                    <div className="mt-2 text-sm font-semibold text-slate-950">{room.eventName}</div>
-                    <div className="mt-2 grid gap-1 text-xs text-slate-500">
-                      <div>예정 오픈: {room.scheduledOpenAt ? formatDateTime(room.scheduledOpenAt) : '정보 없음'}</div>
-                      <div>예정 종료: {room.scheduledCloseAt ? formatDateTime(room.scheduledCloseAt) : '정보 없음'}</div>
-                      <div>현재 인원: {room.currentViewerCount ?? 0}명</div>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      onClick={() => chatRoomMutation.mutate({ chatRoomId: room.chatRoomId, action: 'FORCE_OPEN' })}
-                      className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
-                    >
-                      강제 열기
-                    </button>
-                    <button
-                      onClick={() => chatRoomMutation.mutate({ chatRoomId: room.chatRoomId, action: 'FORCE_CLOSE' })}
-                      className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-                    >
-                      강제 닫기
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {scopedChatRooms.length === 0 && <EmptyState text="조회할 채팅방이 없습니다." />}
-          </div>
-        </div>
+            </div>
 
-        <aside className="space-y-4 rounded-[24px] border border-[var(--line)] bg-slate-950 p-5 text-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-          <div className="text-xs font-semibold text-slate-400">접속 정보</div>
-          <div className="mt-2 text-sm leading-6 text-slate-300">
-            {user?.nickname ?? '관리자'}로 접속 중입니다. 이 화면은 운영 전용으로, 권한이 없는 계정에서는 관리자 메뉴가 숨겨집니다.
-          </div>
-          <div className="mt-4 rounded-[20px] bg-white/5 p-4 text-xs leading-6 text-slate-300">
-            행사요청은 승인/반려, 신고는 상태와 메모 저장, 채팅방은 예정 시간이 지났는데 열리지 않은 경우 강제 오픈으로 처리할 수 있어요.
-          </div>
-        </aside>
-      </section>
+            <section className="space-y-3 rounded-[24px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-5">
+              <SectionHeader
+                title="메시지 모니터링"
+                action={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void refetchAdminMessages()
+                      }}
+                      className="rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[9px] font-semibold text-slate-700 hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[10px]"
+                    >
+                      새로고침
+                    </button>
+                    <Pill
+                      active={messageStatus === 'ALL'}
+                      onClick={() => {
+                        setMessageStatus('ALL')
+                        setMessagePage(0)
+                      }}
+                    >
+                      ALL
+                    </Pill>
+                    <Pill
+                      active={messageStatus === 'ACTIVE'}
+                      onClick={() => {
+                        setMessageStatus('ACTIVE')
+                        setMessagePage(0)
+                      }}
+                    >
+                      ACTIVE
+                    </Pill>
+                    <Pill
+                      active={messageStatus === 'BLINDED'}
+                      onClick={() => {
+                        setMessageStatus('BLINDED')
+                        setMessagePage(0)
+                      }}
+                    >
+                      BLINDED
+                    </Pill>
+                  </div>
+                }
+              />
+              <div className="space-y-2">
+                {adminMessages.map((message: AdminMessageItem) => (
+                  <div key={message.messageId} className="rounded-[16px] border border-[var(--line)] bg-slate-50 px-3 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold">
+                          <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] text-[var(--accent)]">{message.status}</span>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{message.messageType}</span>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{message.writerNickname || '알 수 없음'}</span>
+                        </div>
+                        <div className="mt-2 text-sm leading-6 text-slate-800">{message.content}</div>
+                        <div className="mt-2 text-[11px] text-slate-500">
+                          채팅방 ID: {message.chatRoomId} · {formatDateTime(message.createdAt)}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => messageMutation.mutate({ messageId: message.messageId, status: 'ACTIVE' })}
+                          className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700"
+                        >
+                          활성화
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => messageMutation.mutate({ messageId: message.messageId, status: 'BLINDED' })}
+                          className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700"
+                        >
+                          블라인드
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {adminMessages.length === 0 && <EmptyState text="관리할 메시지가 없습니다." />}
+              </div>
+
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <button
+                  type="button"
+                  disabled={messagePage === 0}
+                  onClick={() => setMessagePage((prev) => Math.max(prev - 1, 0))}
+                  className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                >
+                  이전
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: messageTotalPages }, (_, index) => index).map((pageIndex) => (
+                    <button
+                      key={pageIndex}
+                      type="button"
+                      onClick={() => setMessagePage(pageIndex)}
+                      className={`h-8 min-w-8 rounded-full px-2 text-xs font-semibold transition-colors ${
+                        messagePage === pageIndex ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {pageIndex + 1}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={messagePage + 1 >= messageTotalPages}
+                  onClick={() => setMessagePage((prev) => prev + 1)}
+                  className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                >
+                  다음
+                </button>
+              </div>
+            </section>
+          </section>
+        </div>
+      )}
     </div>
   )
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({ label, value, dark = false }: { label: string; value: string; dark?: boolean }) {
   return (
-    <div className="rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3">
-      <div className="text-xs font-medium text-slate-500">{label}</div>
-      <div className="mt-1 text-[24px] font-black tracking-tight text-slate-950">{value}</div>
+    <div className={dark ? 'rounded-[18px] border border-white/10 bg-white/5 px-4 py-3' : 'rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3'}>
+      <div className={dark ? 'text-xs font-medium text-slate-400' : 'text-xs font-medium text-slate-500'}>{label}</div>
+      <div className={dark ? 'mt-1 text-[24px] font-black tracking-tight text-white' : 'mt-1 text-[24px] font-black tracking-tight text-slate-950'}>{value}</div>
     </div>
   )
 }
 
 function SectionHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <h2 className="text-[18px] font-black tracking-tight text-slate-950">{title}</h2>
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <h2 className="whitespace-nowrap text-[17px] font-black tracking-tight text-slate-950 sm:text-[18px]">{title}</h2>
       {action}
     </div>
   )
@@ -668,7 +1010,7 @@ function Pill({ active, onClick, children }: { active?: boolean; onClick: () => 
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+      className={`rounded-full px-2 py-1 text-[9px] font-semibold transition-colors md:px-2.5 md:py-1.5 md:text-[10px] ${
         active ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
       }`}
     >
@@ -1068,6 +1410,7 @@ function CategoryAdminPanel({
   setDraft,
   drafts,
   setDrafts,
+  canCreate,
   onCreate,
   onUpdate,
   onDelete,
@@ -1081,6 +1424,7 @@ function CategoryAdminPanel({
   setDraft: (value: string) => void
   drafts: Record<string, string>
   setDrafts: (value: Record<string, string>) => void
+  canCreate: boolean
   onCreate: () => void
   onUpdate: (categoryId: string, name: string) => void
   onDelete: (categoryId: string) => void
@@ -1091,22 +1435,28 @@ function CategoryAdminPanel({
     <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
       <SectionHeader title={title} action={<span className="text-xs text-slate-500">{items.length}개</span>} />
       <p className="text-sm leading-6 text-slate-600">{subtitle}</p>
-      <div className="flex gap-2">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="카테고리 이름"
-          className="min-w-0 flex-1 rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
-        />
-        <button
-          type="button"
-          disabled={loading || !draft.trim()}
-          onClick={onCreate}
-          className="rounded-full bg-[var(--accent-soft)] px-4 py-2.5 text-sm font-semibold text-[var(--accent)] disabled:opacity-60"
-        >
-          생성
-        </button>
-      </div>
+      {canCreate ? (
+        <div className="flex gap-2">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="카테고리 이름"
+            className="min-w-0 flex-1 rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
+          />
+          <button
+            type="button"
+            disabled={loading || !draft.trim()}
+            onClick={onCreate}
+            className="rounded-full bg-[var(--accent-soft)] px-4 py-2.5 text-sm font-semibold text-[var(--accent)] disabled:opacity-60"
+          >
+            생성
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-[18px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
+          카테고리 생성은 ADMIN만 가능합니다. 목록 수정/삭제는 현재 권한 범위에 따라 가능해요.
+        </div>
+      )}
       {helperMessage ? <div className="text-xs font-medium text-rose-600">{helperMessage}</div> : null}
 
       <div className="space-y-2">
@@ -1158,6 +1508,11 @@ function TogglePill({ active, onClick, children }: { active?: boolean; onClick: 
 function normalizeRole(role?: string | null) {
   if (!role) return ''
   return role.replace(/^ROLE_/, '')
+}
+
+function normalizeAdminTab(value: string | null): AdminTab {
+  if (value === 'reports' || value === 'chat' || value === 'requests') return value
+  return 'requests'
 }
 
 function normalizeEventCategoryKey(name: string) {

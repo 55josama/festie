@@ -12,6 +12,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 export default function Header() {
   const navigate = useNavigate()
   const { user, isLoggedIn, logout } = useAuthStore()
+  const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
 
   const handleLogout = async () => {
     try {
@@ -59,18 +60,18 @@ export default function Header() {
           <NavLink to="/my/calendars" className={navClass}>내 일정</NavLink>
         </nav>
 
-        <div className="hidden items-center gap-6 lg:flex">
+        <div className="relative hidden w-full items-center justify-between gap-6 lg:flex">
           <Link to="/" className="flex shrink-0 items-center whitespace-nowrap text-[22px] font-black leading-none tracking-tight text-slate-950">
             <span>Fest</span><span className="text-[var(--accent)]">ie</span>
           </Link>
 
-          <nav className="flex min-w-0 flex-1 items-center justify-center gap-5 overflow-x-auto whitespace-nowrap pb-0.5">
+          <nav className="absolute left-1/2 top-1/2 flex min-w-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-5 whitespace-nowrap">
             <NavLink to="/" end className={navClass}>홈</NavLink>
             <NavLink to="/events" className={navClass}>행사</NavLink>
             <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
             <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
             <NavLink to="/my/calendars" className={navClass}>내 일정</NavLink>
-            {user && /ADMIN|MANAGER/.test(user.role) && <NavLink to="/admin" className={navClass}>관리자</NavLink>}
+            {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
           </nav>
 
           <div className="flex shrink-0 items-center gap-3">
