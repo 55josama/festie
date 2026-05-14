@@ -61,7 +61,7 @@ public class ScheduleHandler {
         }
 
         notifications.forEach(n -> {
-            sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(notifications));
+            sseEmitterManager.broadcast(n.getReceiverId(), NotificationResult.of(notifications));
         });
     }
 
@@ -92,7 +92,7 @@ public class ScheduleHandler {
         }
 
         notifications.forEach(n -> {
-            sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(notifications));
+            sseEmitterManager.broadcast(n.getReceiverId(), NotificationResult.of(notifications));
         });
     }
 

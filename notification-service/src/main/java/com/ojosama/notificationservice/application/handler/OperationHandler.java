@@ -37,7 +37,7 @@ public class OperationHandler {
                 Notification.of(adminId, "운영알림", command.reason() + "로 블랙리스트 추가되었습니다.",
                         TargetInfo.of(command.targetUserId(), Target.OPERATION, TargetType.BLACKLIST_REGISTERED)));
 
-        sseEmitterManager.sendToUser(adminId, NotificationResult.of(notification));
+        sseEmitterManager.broadcast(adminId, NotificationResult.of(notification));
     }
 
     // 블라인드 처리(각각의 카테고리 관리자에게 알림) -> 일단 ... 매니저가 한명인걸로 ,,
@@ -51,7 +51,7 @@ public class OperationHandler {
                 Notification.of(managerId, "운영알림", command.targetType() + " 에서 블라인드 처리되었습니다.",
                         TargetInfo.of(command.targetId(), Target.OPERATION, TargetType.BLIND_REGISTERED)));
 
-        sseEmitterManager.sendToUser(managerId, NotificationResult.of(notification));
+        sseEmitterManager.broadcast(managerId, NotificationResult.of(notification));
 
     }
 
@@ -71,7 +71,7 @@ public class OperationHandler {
                 Notification.of(adminId, "운영알림", command.title() + " 요청이 들어왔습니다.",
                         TargetInfo.operation(command.requestId())));
 
-        sseEmitterManager.sendToUser(adminId, NotificationResult.of(notification));
+        sseEmitterManager.broadcast(adminId, NotificationResult.of(notification));
     }
 
 
