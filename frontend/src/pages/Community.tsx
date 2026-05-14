@@ -11,7 +11,7 @@ export default function Community() {
     const { user } = useAuthStore()
     const [categoryId, setCategoryId] = useState<string | undefined>()
     const [sort, setSort] = useState<'latest' | 'popular'>('latest')
-    const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
+    const isAdmin = !!user && /ADMIN/.test(user.role)
     const {data: categories = []} = useQuery({queryKey: ['categories'], queryFn: getCategories})
     const {data: rawPosts = []} = useQuery({
         queryKey: ['posts', categoryId, sort],
@@ -66,7 +66,7 @@ export default function Community() {
                                 {category.name}
                             </FilterChip>
                         ))}
-                        {isManager && (
+                        {isAdmin && (
                             <Link
                                 to={CATEGORY_ADMIN_LINK}
                                 aria-label="카테고리 관리로 이동"

@@ -120,6 +120,9 @@ export default function Admin() {
   })
 
   const normalizedRole = normalizeRole(user?.role)
+  const isAdmin = normalizedRole === 'ADMIN'
+  const isManager = normalizedRole === 'MANAGER' || normalizedRole.endsWith('_MANAGER')
+  const canViewEventRequests = isAdmin || isManager
   const canCreateCategories = normalizedRole === 'ADMIN'
   const canViewOperationRequests = normalizedRole === 'ADMIN'
 
@@ -174,21 +177,21 @@ export default function Admin() {
   )
 
   const scopedEventRequests = useMemo(() => {
-    if (normalizedRole === 'ADMIN') return eventRequests
+    if (isAdmin || isManager) return eventRequests
     if (!managedEventCategories.length) return []
     return eventRequests.filter((request: any) => managedEventCategories.includes(request.category))
-  }, [eventRequests, managedEventCategories, normalizedRole])
+  }, [eventRequests, managedEventCategories, isAdmin, isManager])
 
   const scopedChatRooms = useMemo(() => {
-    let rooms = normalizedRole === 'ADMIN' ? chatRooms : []
-    if (normalizedRole !== 'ADMIN' && managedChatCategories.size > 0) {
+    let rooms = isAdmin || isManager ? chatRooms : []
+    if (!isAdmin && !isManager && managedChatCategories.size > 0) {
       rooms = rooms.filter((room: any) => managedChatCategories.has(room.category))
     }
     if (chatStatus !== 'ALL') {
       rooms = rooms.filter((room: any) => room.status === chatStatus)
     }
     return rooms
-  }, [chatRooms, chatStatus, managedChatCategories, normalizedRole])
+  }, [chatRooms, chatStatus, managedChatCategories, isAdmin, isManager])
 
   const generalDraftWithCategory = useMemo(() => {
     if (generalDraft.categoryId) return generalDraft
@@ -433,11 +436,11 @@ export default function Admin() {
               </div>
             </div>
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-2">
+              <div className={`grid gap-2.5 ${isAdmin ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
                 <MetricCard label="행사요청" value={String(summary.eventRequests)} dark />
-                <MetricCard label="운영요청" value={String(summary.operationRequests)} dark />
                 <MetricCard label="신고" value={String(summary.reports)} dark />
                 <MetricCard label="채팅방" value={String(summary.rooms)} dark />
+                {isAdmin && <MetricCard label="운영요청" value={String(summary.operationRequests)} dark />}
               </div>
             </div>
           </div>
@@ -466,7 +469,8 @@ export default function Admin() {
 
       {activeTab === 'requests' && (
         <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className={`grid gap-6 ${canViewOperationRequests ? 'lg:grid-cols-[1.1fr_0.9fr]' : 'lg:grid-cols-1'}`}>
+            {canViewEventRequests && (
             <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
               <SectionHeader
                 title="행사요청"
@@ -627,6 +631,7 @@ export default function Admin() {
                 {scopedEventRequests.length === 0 && <EmptyState text="처리할 행사 요청이 없습니다." />}
               </div>
             </section>
+            )}
 
             <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
               <SectionHeader
@@ -704,38 +709,40 @@ export default function Admin() {
             </section>
           </div>
 
-          <section ref={categoriesSectionRef} className="grid gap-6 lg:grid-cols-2">
-            <CategoryAdminPanel
-              title="행사 카테고리 생성"
-              subtitle="행사 요청 승인이나 일반 행사 생성에서 바로 고를 수 있는 카테고리를 관리합니다."
-              items={eventCategories as any[]}
-              draft={eventCategoryDraft}
-              setDraft={setEventCategoryDraft}
-              drafts={categoryDrafts}
-              setDrafts={(value) => setCategoryDrafts(value)}
-              canCreate={canCreateCategories}
-              onCreate={() => createEventCategoryMutation.mutate(eventCategoryDraft.trim())}
-              onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({ categoryId, name })}
-              onDelete={(categoryId) => deleteEventCategoryMutation.mutate(categoryId)}
-              helperMessage={categoryErrors.event}
-              loading={createEventCategoryMutation.isPending || updateEventCategoryMutation.isPending || deleteEventCategoryMutation.isPending}
-            />
-            <CategoryAdminPanel
-              title="커뮤니티 카테고리 생성"
-              subtitle="후기, 꿀팁, 자유, 요청 같은 게시판 카테고리를 운영합니다."
-              items={communityCategories as any[]}
-              draft={communityCategoryDraft}
-              setDraft={setCommunityCategoryDraft}
-              drafts={categoryDrafts}
-              setDrafts={(value) => setCategoryDrafts(value)}
-              canCreate={canCreateCategories}
-              onCreate={() => createCommunityCategoryMutation.mutate(communityCategoryDraft.trim())}
-              onUpdate={(categoryId, name) => updateCommunityCategoryMutation.mutate({ categoryId, name })}
-              onDelete={(categoryId) => deleteCommunityCategoryMutation.mutate(categoryId)}
-              helperMessage={categoryErrors.community}
-              loading={createCommunityCategoryMutation.isPending || updateCommunityCategoryMutation.isPending || deleteCommunityCategoryMutation.isPending}
-            />
-          </section>
+          {canCreateCategories && (
+            <section ref={categoriesSectionRef} className="grid gap-6 lg:grid-cols-2">
+              <CategoryAdminPanel
+                title="행사 카테고리 생성"
+                subtitle="행사 요청 승인이나 일반 행사 생성에서 바로 고를 수 있는 카테고리를 관리합니다."
+                items={eventCategories as any[]}
+                draft={eventCategoryDraft}
+                setDraft={setEventCategoryDraft}
+                drafts={categoryDrafts}
+                setDrafts={(value) => setCategoryDrafts(value)}
+                canCreate={canCreateCategories}
+                onCreate={() => createEventCategoryMutation.mutate(eventCategoryDraft.trim())}
+                onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({ categoryId, name })}
+                onDelete={(categoryId) => deleteEventCategoryMutation.mutate(categoryId)}
+                helperMessage={categoryErrors.event}
+                loading={createEventCategoryMutation.isPending || updateEventCategoryMutation.isPending || deleteEventCategoryMutation.isPending}
+              />
+              <CategoryAdminPanel
+                title="커뮤니티 카테고리 생성"
+                subtitle="후기, 꿀팁, 자유, 요청 같은 게시판 카테고리를 운영합니다."
+                items={communityCategories as any[]}
+                draft={communityCategoryDraft}
+                setDraft={setCommunityCategoryDraft}
+                drafts={categoryDrafts}
+                setDrafts={(value) => setCategoryDrafts(value)}
+                canCreate={canCreateCategories}
+                onCreate={() => createCommunityCategoryMutation.mutate(communityCategoryDraft.trim())}
+                onUpdate={(categoryId, name) => updateCommunityCategoryMutation.mutate({ categoryId, name })}
+                onDelete={(categoryId) => deleteCommunityCategoryMutation.mutate(categoryId)}
+                helperMessage={categoryErrors.community}
+                loading={createCommunityCategoryMutation.isPending || updateCommunityCategoryMutation.isPending || deleteCommunityCategoryMutation.isPending}
+              />
+            </section>
+          )}
         </div>
       )}
 

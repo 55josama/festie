@@ -492,10 +492,12 @@ export const handlers = [
   http.post('/user-service/v1/auth/login', async ({ request }) => {
     await delay(350)
     const body = await request.json() as any
-    const isAdmin = String(body.email ?? '').includes('admin') || String(body.email ?? '').includes('manager')
+    const email = String(body.email ?? '').toLowerCase()
+    const isAdmin = email.includes('admin')
+    const isManager = !isAdmin && email.includes('manager')
     return HttpResponse.json(wrap({
-      accessToken: isAdmin ? 'mock-admin-token' : 'mock-token',
-      refreshToken: isAdmin ? 'mock-admin-refresh' : 'mock-refresh',
+      accessToken: isAdmin ? 'mock-admin-token' : isManager ? 'mock-manager-token' : 'mock-token',
+      refreshToken: isAdmin ? 'mock-admin-refresh' : isManager ? 'mock-manager-refresh' : 'mock-refresh',
       tokenType: 'Bearer',
     }))
   }),
@@ -504,13 +506,14 @@ export const handlers = [
     await delay(150)
     const token = request.headers.get('authorization') ?? ''
     const isAdmin = token.includes('mock-admin-token')
+    const isManager = token.includes('mock-manager-token')
     return HttpResponse.json(wrap({
-      userId: isAdmin ? 'admin-user' : 'me',
-      nickname: isAdmin ? '운영자' : '테스트유저',
-      email: isAdmin ? 'admin@festie.kr' : 'test@festie.kr',
-      name: isAdmin ? '관리자' : '테스트',
-      phoneNumber: isAdmin ? '010-9999-9999' : '010-1234-5678',
-      role: isAdmin ? 'ADMIN' : 'USER',
+      userId: isAdmin ? 'admin-user' : isManager ? 'manager-user' : 'me',
+      nickname: isAdmin ? '관리자' : isManager ? '매니저' : '테스트유저',
+      email: isAdmin ? 'admin@festie.kr' : isManager ? 'manager@festie.kr' : 'test@festie.kr',
+      name: isAdmin ? '관리자' : isManager ? '매니저' : '테스트',
+      phoneNumber: isAdmin ? '010-9999-9999' : isManager ? '010-8888-8888' : '010-1234-5678',
+      role: isAdmin ? 'ADMIN' : isManager ? 'MANAGER' : 'USER',
     }))
   }),
 
@@ -519,13 +522,14 @@ export const handlers = [
     const body = await request.json() as any
     const token = request.headers.get('authorization') ?? ''
     const isAdmin = token.includes('mock-admin-token')
+    const isManager = token.includes('mock-manager-token')
     return HttpResponse.json(wrap({
-      userId: isAdmin ? 'admin-user' : 'me',
-      email: isAdmin ? 'admin@festie.kr' : 'test@festie.kr',
-      name: body.name ?? (isAdmin ? '관리자' : '테스트'),
-      nickname: body.nickname ?? (isAdmin ? '운영자' : '테스트유저'),
-      phoneNumber: body.phoneNumber ?? (isAdmin ? '010-9999-9999' : '010-1234-5678'),
-      role: isAdmin ? 'ADMIN' : 'USER',
+      userId: isAdmin ? 'admin-user' : isManager ? 'manager-user' : 'me',
+      email: isAdmin ? 'admin@festie.kr' : isManager ? 'manager@festie.kr' : 'test@festie.kr',
+      name: body.name ?? (isAdmin ? '관리자' : isManager ? '매니저' : '테스트'),
+      nickname: body.nickname ?? (isAdmin ? '운영자' : isManager ? '매니저' : '테스트유저'),
+      phoneNumber: body.phoneNumber ?? (isAdmin ? '010-9999-9999' : isManager ? '010-8888-8888' : '010-1234-5678'),
+      role: isAdmin ? 'ADMIN' : isManager ? 'MANAGER' : 'USER',
     }))
   }),
 

@@ -21,6 +21,7 @@ export default function Events() {
   const regionCacheRef = useRef<Record<string, string>>({})
   const kakaoKey = String(import.meta.env.VITE_KAKAO_JS_KEY ?? '')
   const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
+  const isAdmin = !!user && /ADMIN/.test(user.role)
 
   const { data: events = [] } = useQuery({
     queryKey: ['events', 'list'],
@@ -140,7 +141,7 @@ export default function Events() {
                   {item}
                 </Chip>
               ))}
-              {isManager && (
+              {isAdmin && (
                 <Link
                   to={CATEGORY_ADMIN_LINK}
                   aria-label="카테고리 관리로 이동"
@@ -166,7 +167,7 @@ export default function Events() {
                   {item}
                 </Chip>
               ))}
-              {isManager && (
+              {isAdmin && (
                 <Link
                   to={CATEGORY_ADMIN_LINK}
                   aria-label="카테고리 관리로 이동"
