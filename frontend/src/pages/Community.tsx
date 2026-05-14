@@ -27,7 +27,11 @@ export default function Community() {
         const formatter = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' })
         const today = formatter.format(new Date())
         const todayPosts = [...rawPosts]
-            .filter((post: any) => formatter.format(new Date(post.createdAt)) === today)
+            .filter((post: any) => {
+                const createdAt = new Date(post.createdAt)
+                if (Number.isNaN(createdAt.getTime())) return false
+                return formatter.format(createdAt) === today
+            })
             .sort((a: any, b: any) => b.likeCount - a.likeCount)
         return todayPosts.length ? todayPosts : [...rawPosts].sort((a: any, b: any) => b.likeCount - a.likeCount)
     }, [rawPosts, sort])
