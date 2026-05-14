@@ -1,0 +1,10 @@
+/user-service/*  https://d14c7wcq4dcy3c.cloudfront.net/user-service/:splat  200
+/event-service/*  https://d14c7wcq4dcy3c.cloudfront.net/event-service/:splat  200
+/community-service/*  https://d14c7wcq4dcy3c.cloudfront.net/community-service/:splat  200
+/chat-service/*  https://d14c7wcq4dcy3c.cloudfront.net/chat-service/:splat  200
+/calendar-service/*  https://d14c7wcq4dcy3c.cloudfront.net/calendar-service/:splat  200
+/favorite-service/*  https://d14c7wcq4dcy3c.cloudfront.net/favorite-service/:splat  200
+/notification-service/*  https://d14c7wcq4dcy3c.cloudfront.net/notification-service/:splat  200
+/operation-service/*  https://d14c7wcq4dcy3c.cloudfront.net/operation-service/:splat  200
+/ai-service/*  https://d14c7wcq4dcy3c.cloudfront.net/ai-service/:splat  200
+/*  /index.html  200
