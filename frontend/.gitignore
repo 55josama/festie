@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# vite cache
+.vite/
+.vite-deps/
+
+# env files
+.env.local
+.env.*.local
+
+
+
