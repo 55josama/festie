@@ -27,7 +27,7 @@ services:
     container_name: festie-redis
     restart: unless-stopped
     ports:
-      - "127.0.0.1:6379:6379"
+      - "6379:6379"
     networks:
       - festie-network
     command: redis-server --notify-keyspace-events Ex # keyspace notification 활성화
@@ -288,7 +288,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: festie-redis
+      SPRING_DATA_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
@@ -325,7 +325,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: festie-redis
+      SPRING_DATA_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
@@ -361,7 +361,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: festie-redis
+      SPRING_DATA_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
@@ -396,7 +396,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: festie-redis
+      SPRING_DATA_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
       HOST: ${HOST}
@@ -473,7 +473,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: festie-redis
+      SPRING_DATA_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
@@ -508,7 +508,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: festie-redis
+      SPRING_DATA_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
@@ -543,7 +543,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: festie-redis
+      SPRING_DATA_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
