@@ -66,7 +66,7 @@ public class ReportController {
     }
 
     // 신고 목록 조회
-    // @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ListReportResponse>>> getReportList(
             @RequestParam(required = false) ReportStatus status,
