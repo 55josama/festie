@@ -602,6 +602,10 @@ services:
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
 
+      COOLSMS_API_KEY: ${COOLSMS_API_KEY}
+      COOLSMS_API_SECRET: ${COOLSMS_API_SECRET}
+      COOLSMS_SENDER: ${COOLSMS_SENDER}
+
 
 volumes:
   postgres_data:
