@@ -185,6 +185,96 @@ export const handlers = [
     return HttpResponse.json(wrap(created), { status: 201 })
   }),
 
+  http.patch('/event-service/v1/events/:eventId', async ({ params, request }) => {
+    await delay(200)
+    const body = await request.json() as any
+    const event = mockEvents.find((item) => item.id === params.eventId) as any
+    if (!event) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    const categoryId = body.categoryId ?? event.categoryId
+    const categoryName = mockEventCategories.find((item) => item.id === categoryId)?.name ?? event.categoryName
+    event.name = body.name ?? event.name
+    event.categoryId = categoryId
+    event.categoryName = categoryName
+    event.startAt = body.startAt ?? event.startAt
+    event.endAt = body.endAt ?? event.endAt
+    event.place = body.place ?? event.place
+    event.region = body.region ?? event.region
+    event.latitude = body.latitude ?? event.latitude
+    event.longitude = body.longitude ?? event.longitude
+    event.radius = body.radius ?? event.radius
+    event.minFee = body.minFee ?? event.minFee
+    event.maxFee = body.maxFee ?? event.maxFee
+    event.hasTicketing = body.hasTicketing ?? event.hasTicketing
+    event.ticketingOpenAt = body.ticketingOpenAt ?? event.ticketingOpenAt
+    event.ticketingCloseAt = body.ticketingCloseAt ?? event.ticketingCloseAt
+    event.ticketingLink = body.ticketingLink ?? event.ticketingLink
+    event.officialLink = body.officialLink ?? event.officialLink
+    event.description = body.description ?? event.description
+    event.performer = body.performer ?? event.performer
+    event.img = body.img ?? event.img
+    event.schedules = body.schedules ?? event.schedules
+    const room = mockChatRooms.find((item) => item.eventId === event.id) as any
+    if (room) {
+      room.eventName = event.name
+      room.category = categoryName.toUpperCase()
+      room.scheduledOpenAt = body.schedules?.[0]?.startTime ?? room.scheduledOpenAt
+      room.scheduledCloseAt = body.schedules?.[0]?.endTime ?? room.scheduledCloseAt
+    }
+    return HttpResponse.json(wrap(event))
+  }),
+
+  http.post('/event-service/v1/event-requests', async ({ request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const requesterId = request.headers.get('x-user-id') ?? 'me'
+    const title = String(body.title ?? '').trim()
+    const categoryId = String(body.categoryId ?? '').trim()
+    const link = String(body.link ?? '').trim()
+    const description = String(body.description ?? '').trim()
+    if (!title || !categoryId || !link) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    const category = mockEventCategories.find((item) => item.id === categoryId)
+    if (!category) {
+      return HttpResponse.json({ status: 'error', message: '카테고리를 찾을 수 없습니다.' }, { status: 404 })
+    }
+    const created = {
+      id: `req-${crypto.randomUUID()}`,
+      requesterId,
+      eventName: title,
+      categoryId,
+      category: category.name,
+      link,
+      description,
+      rejectReason: null,
+      status: 'PENDING',
+      createdEventId: null,
+    }
+    mockEventRequests.unshift(created as any)
+    return HttpResponse.json(wrap(created), { status: 201 })
+  }),
+
+  http.post('/operation-service/v1/operation-requests', async ({ request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const requesterId = request.headers.get('x-user-id') ?? 'me'
+    const title = String(body.title ?? '').trim()
+    const content = String(body.content ?? '').trim()
+    if (!title || !content) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    const created = {
+      id: `op-${crypto.randomUUID()}`,
+      requesterId,
+      title,
+      content,
+      status: 'PENDING',
+      adminMemo: null,
+    }
+    mockOperationRequests.unshift(created as any)
+    return HttpResponse.json(wrap(created), { status: 201 })
+  }),
+
   http.get('/community-service/v1/posts', async ({ request }) => {
     await delay(250)
     const url = new URL(request.url)
@@ -375,6 +465,13 @@ export const handlers = [
     const url = new URL(request.url)
     const status = url.searchParams.get('status')
     const filtered = status ? mockEventRequests.filter((item) => item.status === status) : mockEventRequests
+    return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
+  }),
+
+  http.get('/event-service/v1/event-requests/me', async ({ request }) => {
+    await delay(180)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const filtered = mockEventRequests.filter((item) => item.requesterId === userId)
     return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
   }),
 

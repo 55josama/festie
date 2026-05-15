@@ -14,7 +14,7 @@ import {
   updateOperationRequestStatus,
   updateReportStatus,
 } from '../api/admin'
-import {createEvent} from '../api/events'
+import {createEvent, getEvent, updateEvent} from '../api/events'
 import {getAdminChatMessages, updateAdminChatMessageStatus} from '../api/chat'
 import {
   createCommunityCategory,
@@ -29,6 +29,7 @@ import {
 import {useAuthStore} from '../store/authStore'
 import {formatDateTime} from '../lib/format'
 import {searchAddressWithKakao} from '../lib/kakao'
+import type {Event} from '../types'
 import type {AdminMessageItem, AdminUserItem, OperationRequestItem, AdminUserRole} from '../types/admin'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
@@ -97,6 +98,8 @@ export default function Admin() {
     const [requestDrafts, setRequestDrafts] = useState<Record<string, EventDraft>>({})
     const [generalCreateOpen, setGeneralCreateOpen] = useState(false)
     const [generalDraft, setGeneralDraft] = useState<EventDraft>(createBlankEventDraft())
+    const editingEventId = searchParams.get('eventId') ?? ''
+    const [prefilledEditingEventId, setPrefilledEditingEventId] = useState('')
     const [addressLookupLoading, setAddressLookupLoading] = useState(false)
     const [eventCategoryDraft, setEventCategoryDraft] = useState('')
     const [communityCategoryDraft, setCommunityCategoryDraft] = useState('')
@@ -119,6 +122,27 @@ export default function Admin() {
         }
     }, [searchParams])
 
+    const normalizedRole = normalizeRole(user?.role)
+
+    const {data: eventToEdit} = useQuery({
+        queryKey: ['admin', 'event-edit', editingEventId],
+        queryFn: () => getEvent(editingEventId),
+        enabled: Boolean(editingEventId) && (normalizedRole === 'ADMIN' || normalizedRole.endsWith('_MANAGER')),
+    })
+
+    useEffect(() => {
+        if (!editingEventId || !eventToEdit) {
+            setPrefilledEditingEventId('')
+            return
+        }
+        if (prefilledEditingEventId === editingEventId) {
+            return
+        }
+        setGeneralCreateOpen(true)
+        setGeneralDraft(buildEventDraftFromEvent(eventToEdit))
+        setPrefilledEditingEventId(editingEventId)
+    }, [editingEventId, eventToEdit, prefilledEditingEventId])
+
     useEffect(() => {
         if (!searchParams.get('tab')) {
             const next = new URLSearchParams(searchParams)
@@ -137,7 +161,6 @@ export default function Admin() {
         queryFn: getCommunityCategories,
     })
 
-    const normalizedRole = normalizeRole(user?.role)
     const isAdmin = normalizedRole === 'ADMIN'
     const isManager = normalizedRole === 'MANAGER' || normalizedRole.endsWith('_MANAGER')
     const canViewEventRequests = isAdmin || isManager
@@ -283,37 +306,7 @@ export default function Admin() {
         mutationFn: ({requestId, draft}: { requestId?: string; draft: EventDraft }) =>
             createEvent({
                 requestId,
-                name: draft.eventName,
-                categoryId: draft.categoryId,
-                startAt: draft.startAt,
-                endAt: draft.endAt,
-                place: draft.place,
-                region: draft.region || null,
-                latitude: toRequiredNumber(draft.latitude),
-                longitude: toRequiredNumber(draft.longitude),
-                radius: toOptionalNumber(draft.radius),
-                minFee: toRequiredNumber(draft.minFee),
-                maxFee: toRequiredNumber(draft.maxFee),
-                hasTicketing: draft.hasTicketing,
-                ticketingOpenAt: normalizeDateTimeInput(draft.ticketingOpenAt),
-                ticketingCloseAt: normalizeDateTimeInput(draft.ticketingCloseAt),
-                ticketingLink: draft.ticketingLink || null,
-                officialLink: draft.officialLink || null,
-                performer: draft.performer || null,
-                description: draft.description || null,
-                img: draft.img,
-                schedules: (draft.schedules?.length
-                    ? draft.schedules
-                    : [{
-                        name: draft.eventName || '메인 일정',
-                        startAt: draft.startAt,
-                        endAt: draft.endAt
-                    }]).map((schedule, index) => ({
-                    name: schedule.name || `Day ${index + 1}`,
-                    startTime: normalizeDateTimeInput(schedule.startAt) ?? draft.startAt,
-                    endTime: normalizeDateTimeInput(schedule.endAt) ?? draft.endAt,
-                })),
-                status: 'SCHEDULED',
+                ...buildEventPayload(draft),
             }),
         onSuccess: async (createdEvent) => {
             await queryClient.invalidateQueries({queryKey: ['admin', 'event-requests']})
@@ -321,6 +314,29 @@ export default function Admin() {
             await queryClient.invalidateQueries({queryKey: ['admin', 'chat-rooms']})
             await queryClient.invalidateQueries({queryKey: ['admin', 'event-categories']})
             navigate(`/events/${createdEvent.id}`)
+        },
+    })
+
+    const saveGeneralEventMutation = useMutation({
+        mutationFn: ({draft}: { draft: EventDraft }) => {
+            const payload = buildEventPayload(draft)
+            if (editingEventId) {
+                return updateEvent(editingEventId, payload)
+            }
+            return createEvent(payload)
+        },
+        onSuccess: async (savedEvent) => {
+            await queryClient.invalidateQueries({queryKey: ['events']})
+            await queryClient.invalidateQueries({queryKey: ['event', savedEvent.id]})
+            await queryClient.invalidateQueries({queryKey: ['admin', 'chat-rooms']})
+            await queryClient.invalidateQueries({queryKey: ['admin', 'event-requests']})
+            const next = new URLSearchParams(searchParams)
+            next.delete('panel')
+            next.delete('eventId')
+            setSearchParams(next, {replace: true})
+            setGeneralCreateOpen(false)
+            setPrefilledEditingEventId('')
+            navigate(`/events/${savedEvent.id}`)
         },
     })
 
@@ -546,10 +562,21 @@ export default function Admin() {
                                         <div className="flex flex-wrap items-center gap-2">
                                             <button
                                                 type="button"
-                                                onClick={() => setGeneralCreateOpen((prev) => !prev)}
+                                                onClick={() => {
+                                                    if (editingEventId && generalCreateOpen) {
+                                                        const next = new URLSearchParams(searchParams)
+                                                        next.delete('eventId')
+                                                        next.delete('panel')
+                                                        setSearchParams(next, {replace: true})
+                                                        setGeneralCreateOpen(false)
+                                                        setPrefilledEditingEventId('')
+                                                        return
+                                                    }
+                                                    setGeneralCreateOpen((prev) => !prev)
+                                                }}
                                                 className="rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[9px] font-semibold text-slate-700 hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[10px]"
                                             >
-                                                {generalCreateOpen ? '일반 생성 닫기' : '일반 행사 생성'}
+                                                {editingEventId ? '수정 닫기' : generalCreateOpen ? '일반 생성 닫기' : '일반 행사 생성'}
                                             </button>
                                             {REQUEST_STATUS_FILTERS.map((item) => (
                                                 <Pill key={item} active={requestStatus === item}
@@ -575,15 +602,25 @@ export default function Admin() {
                                 )}
 
                                 {generalCreateOpen && (
-                                    <EventCreatePanel
-                                        title="일반 행사 생성"
-                                        subtitle="관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다."
+                                    <div className="max-w-full overflow-x-hidden">
+                                        <EventCreatePanel
+                                        title={editingEventId ? '행사 수정' : '일반 행사 생성'}
+                                        subtitle={editingEventId
+                                            ? '기존 행사 내용을 불러와서 필요한 부분만 수정할 수 있어요.'
+                                            : '관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다.'}
                                         draft={generalDraftWithCategory}
                                         setDraft={(patch) => setGeneralDraft((prev) => ({...prev, ...patch}))}
                                         categoryOptions={eventCategories as any[]}
-                                        onSubmit={() => createEventMutation.mutate({draft: generalDraftWithCategory})}
-                                        onClose={() => setGeneralCreateOpen(false)}
-                                        loading={createEventMutation.isPending}
+                                        onSubmit={() => saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})}
+                                        onClose={() => {
+                                            const next = new URLSearchParams(searchParams)
+                                            next.delete('panel')
+                                            next.delete('eventId')
+                                            setSearchParams(next, {replace: true})
+                                            setGeneralCreateOpen(false)
+                                            setPrefilledEditingEventId('')
+                                        }}
+                                        loading={saveGeneralEventMutation.isPending}
                                         onLookupPlace={() => {
                                             void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
                                         }}
@@ -591,7 +628,9 @@ export default function Admin() {
                                         onAttachImage={(file) => {
                                             void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
                                         }}
-                                    />
+                                        submitLabel={editingEventId ? '행사 수정' : '행사 등록'}
+                                        />
+                                    </div>
                                 )}
 
                                 <div className="space-y-3">
@@ -612,7 +651,9 @@ export default function Admin() {
                                                     <div
                                                         className="text-sm font-semibold text-slate-950">{request.eventName}</div>
                                                     <div
-                                                        className="text-xs leading-5 text-slate-600">{request.description}</div>
+                                                        className="whitespace-pre-line break-words text-xs leading-5 text-slate-600">
+                                                        {renderTextWithLinks(request.description)}
+                                                    </div>
                                                     {request.rejectReason && <div className="text-xs text-rose-600">반려
                                                         사유: {request.rejectReason}</div>}
                                                 </div>
@@ -691,31 +732,36 @@ export default function Admin() {
                                             </div>
 
                                             {request.status === 'APPROVED' && requestPanels[request.id] && !request.createdEventId && (
-                                                <EventCreatePanel
-                                                    title="요청 정보로 행사 생성"
-                                                    subtitle="요청 글의 내용을 자동으로 이어받아 필요한 항목만 채우면 됩니다."
-                                                    draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
-                                                    setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
-                                                    categoryOptions={eventCategories as any[]}
-                                                    onSubmit={() =>
-                                                        createEventMutation.mutate({
-                                                            requestId: request.id,
-                                                            draft: requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap),
-                                                        })
-                                                    }
-                                                    onClose={() => setRequestPanels((prev) => ({
-                                                        ...prev,
-                                                        [request.id]: false
-                                                    }))}
-                                                    loading={createEventMutation.isPending}
-                                                    onLookupPlace={() => {
-                                                        void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
-                                                    }}
-                                                    placeLookupLoading={addressLookupLoading}
-                                                    onAttachImage={(file) => {
-                                                        void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
-                                                    }}
-                                                />
+                                                <div className="mt-4">
+                                                    <div className="max-w-full overflow-x-hidden">
+                                                        <EventCreatePanel
+                                                        title="요청 정보로 행사 생성"
+                                                        subtitle="요청 글의 내용을 자동으로 이어받아 필요한 항목만 채우면 됩니다."
+                                                        draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
+                                                        setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
+                                                        categoryOptions={eventCategories as any[]}
+                                                        onSubmit={() =>
+                                                            createEventMutation.mutate({
+                                                                requestId: request.id,
+                                                                draft: requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap),
+                                                            })
+                                                        }
+                                                        onClose={() => setRequestPanels((prev) => ({
+                                                            ...prev,
+                                                            [request.id]: false
+                                                        }))}
+                                                        loading={createEventMutation.isPending}
+                                                        onLookupPlace={() => {
+                                                            void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                                                        }}
+                                                        placeLookupLoading={addressLookupLoading}
+                                                        onAttachImage={(file) => {
+                                                            void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                                                        }}
+                                                        submitLabel="행사 생성"
+                                                        />
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     ))}
@@ -760,7 +806,7 @@ export default function Admin() {
                                                         <div
                                                             className="text-sm font-semibold text-slate-950">{request.title}</div>
                                                         <div
-                                                            className="text-sm leading-6 text-slate-600">{request.content}</div>
+                                                            className="whitespace-pre-line break-words text-sm leading-6 text-slate-600">{renderTextWithLinks(request.content)}</div>
                                                         <div className="text-xs text-slate-500">요청자
                                                             ID: {request.requesterId}</div>
                                                         {request.adminMemo && <div className="text-xs text-slate-500">관리
@@ -1253,6 +1299,35 @@ export default function Admin() {
     )
 }
 
+function renderTextWithLinks(text: string) {
+    const value = String(text ?? '')
+    const lines = value.split('\n')
+    return lines.map((line, lineIndex) => {
+        const parts = line.split(/(https?:\/\/[^\s]+)/g)
+        return (
+            <span key={`line-${lineIndex}`}>
+                {parts.map((part, partIndex) => {
+                    const isUrl = /^https?:\/\/[^\s]+$/.test(part)
+                    return isUrl ? (
+                        <a
+                            key={`part-${lineIndex}-${partIndex}`}
+                            href={part}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="break-all text-[var(--accent)] underline decoration-[var(--accent-soft)] decoration-2 underline-offset-4 transition-colors hover:text-[var(--accent-dark)]"
+                        >
+                            {part}
+                        </a>
+                    ) : (
+                        <span key={`part-${lineIndex}-${partIndex}`}>{part}</span>
+                    )
+                })}
+                {lineIndex < lines.length - 1 ? <br /> : null}
+            </span>
+        )
+    })
+}
+
 function UserRow({
   user,
   onChangeRole,
@@ -1421,6 +1496,71 @@ function buildRequestDraft(request: any, categoryMap: Map<string, string>): Even
     }
 }
 
+function buildEventDraftFromEvent(event: Event): EventDraft {
+    return {
+        eventName: event.name ?? '',
+        categoryId: event.categoryId ?? '',
+        startAt: toDateTimeLocalInput(event.startAt),
+        endAt: toDateTimeLocalInput(event.endAt),
+        place: event.place ?? '',
+        region: event.region ?? '',
+        latitude: event.latitude != null ? String(event.latitude) : '',
+        longitude: event.longitude != null ? String(event.longitude) : '',
+        radius: event.radius != null ? String(event.radius) : '',
+        minFee: event.minFee != null ? String(event.minFee) : '',
+        maxFee: event.maxFee != null ? String(event.maxFee) : '',
+        hasTicketing: Boolean(event.hasTicketing),
+        ticketingOpenAt: toDateTimeLocalInput(event.ticketingOpenAt),
+        ticketingCloseAt: toDateTimeLocalInput(event.ticketingCloseAt),
+        ticketingLink: event.ticketingLink ?? '',
+        officialLink: event.officialLink ?? '',
+        performer: event.performer ?? '',
+        description: event.description ?? '',
+        img: event.img ?? '',
+        imgFileName: '',
+        schedules: (event.schedules ?? []).map((schedule) => ({
+            name: schedule.name ?? schedule.title ?? schedule.memo ?? '',
+            startAt: toDateTimeLocalInput(schedule.startTime ?? schedule.startAt),
+            endAt: toDateTimeLocalInput(schedule.endTime ?? schedule.endAt),
+        })),
+    }
+}
+
+function buildEventPayload(draft: EventDraft) {
+    return {
+        name: draft.eventName,
+        categoryId: draft.categoryId,
+        startAt: draft.startAt,
+        endAt: draft.endAt,
+        place: draft.place,
+        region: draft.region || null,
+        latitude: toRequiredNumber(draft.latitude),
+        longitude: toRequiredNumber(draft.longitude),
+        radius: toOptionalNumber(draft.radius),
+        minFee: toRequiredNumber(draft.minFee),
+        maxFee: toRequiredNumber(draft.maxFee),
+        hasTicketing: draft.hasTicketing,
+        ticketingOpenAt: normalizeDateTimeInput(draft.ticketingOpenAt),
+        ticketingCloseAt: normalizeDateTimeInput(draft.ticketingCloseAt),
+        ticketingLink: draft.ticketingLink || null,
+        officialLink: draft.officialLink || null,
+        performer: draft.performer || null,
+        description: draft.description || null,
+        img: draft.img,
+        schedules: (draft.schedules?.length
+            ? draft.schedules
+            : [{
+                name: draft.eventName || '메인 일정',
+                startAt: draft.startAt,
+                endAt: draft.endAt,
+            }]).map((schedule, index) => ({
+            name: schedule.name || `Day ${index + 1}`,
+            startTime: normalizeDateTimeInput(schedule.startAt) ?? draft.startAt,
+            endTime: normalizeDateTimeInput(schedule.endAt) ?? draft.endAt,
+        })),
+    }
+}
+
 function mergeDraft(drafts: Record<string, EventDraft>, requestId: string, patch: Partial<EventDraft>) {
     const current = drafts[requestId] ?? createBlankEventDraft()
     return {
@@ -1448,6 +1588,14 @@ function normalizeDateTimeInput(value: string) {
     if (!trimmed) return null
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) return `${trimmed}:00`
     return trimmed
+}
+
+function toDateTimeLocalInput(value?: string | null) {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 function readFileAsDataUrl(file: File) {
@@ -1503,6 +1651,7 @@ function EventCreatePanel({
                               onLookupPlace,
                               placeLookupLoading,
                               onAttachImage,
+                              submitLabel,
                           }: {
     title: string
     subtitle: string
@@ -1515,17 +1664,20 @@ function EventCreatePanel({
     onLookupPlace: () => void
     placeLookupLoading?: boolean
     onAttachImage: (file: File) => void
+    submitLabel: string
 }) {
     const categoryValue = draft.categoryId || categoryOptions[0]?.id || ''
+    const categoryLabel = categoryOptions.find((category) => category.id === categoryValue)?.name ?? '선택 안 됨'
     const imageInputRef = useRef<HTMLInputElement | null>(null)
     const hasCoordinates = Boolean(draft.latitude.trim()) && Boolean(draft.longitude.trim())
     const hasPlace = Boolean(draft.place.trim())
     const hasLocationAttempt = Boolean(draft.place.trim() || draft.latitude.trim() || draft.longitude.trim())
     const showLocationWarning = hasLocationAttempt && (!hasPlace || !hasCoordinates)
     const canSubmit = hasPlace && hasCoordinates
+    const scheduleCount = draft.schedules?.length ?? 0
 
     return (
-        <div className="rounded-[22px] border border-[var(--line)] bg-white p-4">
+        <div className="w-full max-w-full overflow-x-hidden rounded-[22px] border border-[var(--line)] bg-white p-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <div className="text-sm font-semibold text-slate-950">{title}</div>
@@ -1537,7 +1689,7 @@ function EventCreatePanel({
                 </button>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="mt-4 grid gap-3 grid-cols-1 md:grid-cols-2">
                 <AdminInput label="행사명" value={draft.eventName} onChange={(value) => setDraft({eventName: value})}/>
                 <label className="block">
                     <div className="mb-1 text-[11px] font-semibold text-slate-500">카테고리</div>
@@ -1625,7 +1777,7 @@ function EventCreatePanel({
                 {draft.hasTicketing && (
                     <div className="md:col-span-2 space-y-3 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
                         <div className="text-[11px] font-semibold text-slate-500">티켓팅 정보</div>
-                        <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <AdminInput label="티켓팅 오픈" value={draft.ticketingOpenAt}
                                         onChange={(value) => setDraft({ticketingOpenAt: value})} type="datetime-local"/>
                             <AdminInput label="티켓팅 종료" value={draft.ticketingCloseAt}
@@ -1673,7 +1825,7 @@ function EventCreatePanel({
                     </div>
                 </label>
 
-                <div className="md:col-span-2 flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 md:col-span-2 md:flex-row md:items-center md:justify-between">
                     <div className="text-[11px] font-semibold text-slate-500">일정</div>
                     <button
                         type="button"
@@ -1692,11 +1844,11 @@ function EventCreatePanel({
                     </button>
                 </div>
 
-                <div className="md:col-span-2 space-y-2">
+                    <div className="md:col-span-2 space-y-2">
                     {(draft.schedules ?? []).map((schedule, index) => (
                         <div key={index}
-                             className="grid gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 sm:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_auto] xl:items-end">
-                            <div className="sm:col-span-2 xl:col-span-1">
+                             className="grid grid-cols-1 gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_auto] xl:items-end">
+                            <div className="md:col-span-2 xl:col-span-1">
                                 <AdminInput
                                     label={`일정 제목 ${index + 1}`}
                                     value={schedule.name}
@@ -1743,7 +1895,7 @@ function EventCreatePanel({
                                         schedules: (draft.schedules ?? []).filter((_, itemIndex) => itemIndex !== index),
                                     })
                                 }
-                                className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:col-span-2 xl:col-span-1"
+                                className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 md:col-span-2 xl:col-span-1"
                             >
                                 삭제
                             </button>
@@ -1766,6 +1918,18 @@ function EventCreatePanel({
                 </label>
             </div>
 
+            <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
+                <div className="text-[11px] font-semibold text-slate-500">등록 미리보기</div>
+                <div className="mt-3 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
+                    <PreviewField label="행사명" value={draft.eventName || '미입력'} />
+                    <PreviewField label="카테고리" value={categoryLabel} />
+                    <PreviewField label="기간" value={draft.startAt && draft.endAt ? `${draft.startAt} ~ ${draft.endAt}` : '미입력'} />
+                    <PreviewField label="장소" value={draft.place || '미입력'} />
+                    <PreviewField label="티켓팅" value={draft.hasTicketing ? '있음' : '없음'} />
+                    <PreviewField label="일정 개수" value={`${scheduleCount}개`} />
+                </div>
+            </div>
+
             <div className="mt-4 flex items-center justify-end gap-2">
                 {!canSubmit && (
                     <div className="mr-auto rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
@@ -1785,9 +1949,18 @@ function EventCreatePanel({
                     disabled={loading || !canSubmit}
                     className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
                 >
-                    {loading ? '생성 중...' : '행사 등록'}
+                    {loading ? '처리 중...' : submitLabel}
                 </button>
             </div>
+        </div>
+    )
+}
+
+function PreviewField({label, value}: { label: string; value: string }) {
+    return (
+        <div className="rounded-[16px] border border-white/80 bg-white px-3 py-2">
+            <div className="text-[10px] font-semibold text-slate-500">{label}</div>
+            <div className="mt-1 text-sm font-medium text-slate-800">{value}</div>
         </div>
     )
 }

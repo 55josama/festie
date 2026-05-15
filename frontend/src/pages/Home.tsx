@@ -253,21 +253,21 @@ function PostRow({ post, categoryLabel }: { post: Post; categoryLabel?: string }
   return (
     <Link
       to={`/community/${post.id}`}
-      className="flex items-center justify-between gap-4 rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3 hover:bg-white"
+      className="flex items-center justify-between gap-4 rounded-[20px] border border-[var(--line)] bg-slate-50 px-5 py-4 hover:bg-white md:px-6"
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{label}</span>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-slate-950">{post.title}</div>
+            <div className="truncate text-[15px] font-semibold leading-6 text-slate-950">{post.title}</div>
           </div>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-slate-500">
           {post.eventName && <span>{post.eventName}</span>}
           <span>{post.authorNickname ?? '익명'} · {post.createdAt}</span>
         </div>
       </div>
-      <div className="shrink-0 text-right text-xs text-slate-500">
+      <div className="shrink-0 text-right text-[12px] text-slate-500">
         <div>♡ {post.likeCount}</div>
         <div>💬 {post.commentCount}</div>
       </div>

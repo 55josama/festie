@@ -35,7 +35,6 @@ export default function Community() {
             .sort((a: any, b: any) => b.likeCount - a.likeCount)
         return todayPosts.length ? todayPosts : [...rawPosts].sort((a: any, b: any) => b.likeCount - a.likeCount)
     }, [rawPosts, sort])
-
     return (
         <div className="space-y-5 px-5 py-5 md:px-8 md:py-7">
             <section
@@ -113,9 +112,14 @@ export default function Community() {
 
                 <div className="space-y-3">
                     {posts.map((post: any) => (
-                        <PostCard key={post.id} post={post}/>
+                        <PostCard
+                          key={post.id}
+                          post={post}
+                          categoryLabel={categoryNameById.get(post.categoryId) ?? post.categoryName}
+                        />
                     ))}
                 </div>
+
             </section>
         </div>
     )
@@ -154,6 +158,15 @@ function categoryTone(name: string) {
             tip: 'sky',
             free: 'emerald',
             request: 'rose',
-        }[name] ?? 'violet'
+        }[normalizeCategoryKey(name)] ?? 'violet'
     ) as 'violet' | 'sky' | 'emerald' | 'rose' | 'slate'
+}
+
+function normalizeCategoryKey(name: string) {
+    const normalized = String(name ?? '').trim().toLowerCase()
+    if (normalized === '후기' || normalized === 'review') return 'review'
+    if (normalized === '꿀팁' || normalized === 'tip') return 'tip'
+    if (normalized === '자유' || normalized === 'free') return 'free'
+    if (normalized === '요청' || normalized === 'request') return 'request'
+    return normalized
 }

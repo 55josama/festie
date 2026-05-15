@@ -8,7 +8,7 @@ const client = axios.create({
     headers: {'Content-Type': 'application/json'},
 })
 
-const rawClient = axios.create({
+export const publicClient = axios.create({
     baseURL: apiBaseUrl,
     headers: {'Content-Type': 'application/json'},
 })
@@ -18,7 +18,7 @@ export const reissueAccessToken = async () => {
     if (!refreshToken) {
         throw new Error('refreshToken is missing')
     }
-    const res = await rawClient.post('/user-service/v1/auth/reissue', {refreshToken})
+    const res = await publicClient.post('/user-service/v1/auth/reissue', {refreshToken})
     const tokens = res.data.data ?? res.data
     if (!tokens?.accessToken) {
         throw new Error('accessToken is missing')
