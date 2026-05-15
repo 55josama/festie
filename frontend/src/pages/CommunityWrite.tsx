@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { createPost, getCategories } from '../api/community'
 
 export default function CommunityWrite() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories })
   const [form, setForm] = useState({ title: '', content: '', categoryId: '' })
   const [visibility, setVisibility] = useState<'public' | 'private'>('public')
@@ -20,6 +21,27 @@ export default function CommunityWrite() {
 
   const selectedCategory = useMemo(() => categories.find((category: any) => category.id === form.categoryId), [categories, form.categoryId])
   const isRequestCategory = selectedCategory?.name === '요청'
+
+  useEffect(() => {
+    const nextCategory = searchParams.get('category')
+    const nextRequestType = searchParams.get('requestType')
+    if (nextRequestType === 'event') {
+      setRequestType('event')
+    }
+    if (nextCategory === 'request') {
+      const requestCategory = categories.find((category: any) => category.name === '요청')
+      if (requestCategory?.id) {
+        setForm((prev) => ({
+          ...prev,
+          categoryId: requestCategory.id,
+        }))
+        setVisibility('private')
+        if (nextRequestType === 'event') {
+          setRequestType('event')
+        }
+      }
+    }
+  }, [categories, searchParams])
 
   useEffect(() => {
     if (!isRequestCategory) {

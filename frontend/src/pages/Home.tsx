@@ -210,7 +210,7 @@ function EmptyEventState() {
     <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 p-5">
       <div className="text-sm font-semibold text-slate-900">일정이 없네요.. 😮‍💨</div>
       <p className="mt-1 text-sm text-slate-500">
-        원하시는 일정이 있나요? <Link to="/community/new" className="font-semibold text-[var(--accent)] underline decoration-[var(--accent-soft)] decoration-2 underline-offset-4 transition-colors hover:text-[var(--accent-dark)]">요청하러 가기!</Link>
+        원하시는 일정이 있나요? <Link to="/community/new?category=request&requestType=event" className="font-semibold text-[var(--accent)] underline decoration-[var(--accent-soft)] decoration-2 underline-offset-4 transition-colors hover:text-[var(--accent-dark)]">행사 요청하러 가기!</Link>
       </p>
     </div>
   )
