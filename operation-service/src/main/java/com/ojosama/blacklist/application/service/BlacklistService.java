@@ -13,9 +13,12 @@ import com.ojosama.blacklist.domain.model.enums.BlacklistStatus;
 import com.ojosama.blacklist.domain.repository.BlacklistRepository;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
+import com.ojosama.common.response.PageResponse;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,7 @@ public class BlacklistService {
 
     // 블랙리스트 생성(관리자 수동 등록)
     @Transactional
+    @CacheEvict(cacheNames = {"blacklist", "blacklistList"}, allEntries = true)
     public BlacklistResult createBlacklistManual(CreateBlacklistCommand command) {
         validateNotAlreadyActive(command.userId());
 
@@ -44,13 +48,18 @@ public class BlacklistService {
     }
 
     // 블랙리스트 목록 조회
-    public Page<BlacklistResult> getBlacklists(ListBlacklistQuery listBlacklistQuery, Pageable pageable) {
+    @Cacheable(
+            cacheNames = "blacklistList",
+            key = "(#listBlacklistQuery.blacklistStatus() != null ? #listBlacklistQuery.blacklistStatus().name() : 'ALL') + ':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize"
+    )
+    public PageResponse<BlacklistResult> getBlacklists(ListBlacklistQuery listBlacklistQuery, Pageable pageable) {
         Page<Blacklist> blacklists = fetchBlacklistsByQuery(listBlacklistQuery, pageable);
-        return blacklists.map(BlacklistResult::from);
+        return PageResponse.from(blacklists.map(BlacklistResult::from));
     }
 
     // 블랙리스트 해제
     @Transactional
+    @CacheEvict(cacheNames = {"blacklist", "blacklistList"}, allEntries = true)
     public BlacklistResult releaseBlacklist(UUID blacklistId, UpdateBlacklistCommand command) {
         Blacklist blacklist = findBlacklistById(blacklistId);
 
