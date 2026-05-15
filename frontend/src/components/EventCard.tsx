@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export default function EventCard({ event }: { event: Event }) {
-  const dDay = getDDay(event.ticketingOpenAt ?? event.startAt)
+  const dDay = getDDay(event.startAt)
   const price = formatPrice(event.minFee, event.maxFee)
   const accent = CATEGORY_ACCENT[normalizeCategoryKey(event.categoryName)] ?? 'from-slate-100 to-slate-50 text-slate-700'
 

@@ -3,10 +3,10 @@ import {Link, useNavigate, useSearchParams} from 'react-router-dom'
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {
   approveEventRequest,
+  getAdminChatRooms,
   forceChatRoomStatus,
   getEventRequests,
   getOperationRequests,
-  getPopularChatRooms,
   getReports,
   rejectEventRequest,
   updateOperationRequestStatus,
@@ -167,7 +167,7 @@ export default function Admin() {
 
     const {data: chatRooms = []} = useQuery({
         queryKey: ['admin', 'chat-rooms'],
-        queryFn: () => getPopularChatRooms(6),
+        queryFn: getAdminChatRooms,
     })
 
     const {
@@ -1301,6 +1301,11 @@ function EventCreatePanel({
 }) {
     const categoryValue = draft.categoryId || categoryOptions[0]?.id || ''
     const imageInputRef = useRef<HTMLInputElement | null>(null)
+    const hasCoordinates = Boolean(draft.latitude.trim()) && Boolean(draft.longitude.trim())
+    const hasPlace = Boolean(draft.place.trim())
+    const hasLocationAttempt = Boolean(draft.place.trim() || draft.latitude.trim() || draft.longitude.trim())
+    const showLocationWarning = hasLocationAttempt && (!hasPlace || !hasCoordinates)
+    const canSubmit = hasPlace && hasCoordinates
 
     return (
         <div className="rounded-[22px] border border-[var(--line)] bg-white p-4">
@@ -1342,20 +1347,39 @@ function EventCreatePanel({
                         <span>장소</span>
                         <button
                             type="button"
-                            onClick={onLookupPlace}
-                            disabled={placeLookupLoading}
-                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[10px] font-semibold text-[var(--accent)] disabled:opacity-60"
+                            onClick={() => {
+                                if (placeLookupLoading) return
+                                onLookupPlace()
+                            }}
+                            aria-busy={placeLookupLoading}
+                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[10px] font-semibold text-[var(--accent)]"
                         >
                             {placeLookupLoading ? '검색 중...' : '카카오 주소검색'}
                         </button>
                     </div>
                     <input
                         value={draft.place}
-                        onChange={(e) => setDraft({place: e.target.value})}
+                        onChange={(e) =>
+                            setDraft({
+                                place: e.target.value,
+                                region: '',
+                                latitude: '',
+                                longitude: '',
+                            })
+                        }
                         placeholder="주소를 검색하거나 직접 입력하세요"
                         className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none"
                     />
-                    <div className="mt-1 text-[11px] leading-5 text-slate-400">선택한 주소로 지역, 위도, 경도가 자동 입력돼요.</div>
+                    <div className="mt-1 text-[11px] leading-5 text-slate-400">
+                        주소를 다시 바꾸면 지역, 위도, 경도는 비워져요. 다시 검색해서 자동 입력하면 돼요.
+                    </div>
+                    {showLocationWarning && (
+                        <div className="mt-2 rounded-[14px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-700">
+                            {!hasPlace
+                                ? '장소를 입력하거나 카카오 주소검색을 먼저 눌러주세요.'
+                                : '주소는 입력됐지만 위도/경도가 비어 있어요. 카카오 주소검색을 다시 눌러 자동 입력하거나, 위도/경도를 직접 채워주세요.'}
+                        </div>
+                    )}
                 </label>
                 <AdminInput label="지역" value={draft.region} onChange={(value) => setDraft({region: value})}
                             placeholder="자동 입력"/>
@@ -1454,19 +1478,21 @@ function EventCreatePanel({
                 <div className="md:col-span-2 space-y-2">
                     {(draft.schedules ?? []).map((schedule, index) => (
                         <div key={index}
-                             className="grid gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-end">
-                            <AdminInput
-                                label={`일정 제목 ${index + 1}`}
-                                value={schedule.name}
-                                onChange={(value) =>
-                                    setDraft({
-                                        schedules: (draft.schedules ?? []).map((item, itemIndex) => (itemIndex === index ? {
-                                            ...item,
-                                            name: value
-                                        } : item)),
-                                    })
-                                }
-                            />
+                             className="grid gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 sm:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_auto] xl:items-end">
+                            <div className="sm:col-span-2 xl:col-span-1">
+                                <AdminInput
+                                    label={`일정 제목 ${index + 1}`}
+                                    value={schedule.name}
+                                    onChange={(value) =>
+                                        setDraft({
+                                            schedules: (draft.schedules ?? []).map((item, itemIndex) => (itemIndex === index ? {
+                                                ...item,
+                                                name: value
+                                            } : item)),
+                                        })
+                                    }
+                                />
+                            </div>
                             <AdminInput
                                 label="일정 시작"
                                 value={schedule.startAt}
@@ -1500,7 +1526,7 @@ function EventCreatePanel({
                                         schedules: (draft.schedules ?? []).filter((_, itemIndex) => itemIndex !== index),
                                     })
                                 }
-                                className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"
+                                className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 sm:col-span-2 xl:col-span-1"
                             >
                                 삭제
                             </button>
@@ -1524,6 +1550,11 @@ function EventCreatePanel({
             </div>
 
             <div className="mt-4 flex items-center justify-end gap-2">
+                {!canSubmit && (
+                    <div className="mr-auto rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                        장소와 위도/경도를 모두 채워야 행사 등록이 가능해요.
+                    </div>
+                )}
                 <button
                     type="button"
                     onClick={onClose}
@@ -1534,7 +1565,7 @@ function EventCreatePanel({
                 <button
                     type="button"
                     onClick={onSubmit}
-                    disabled={loading}
+                    disabled={loading || !canSubmit}
                     className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
                 >
                     {loading ? '생성 중...' : '행사 등록'}

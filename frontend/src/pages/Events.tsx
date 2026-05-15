@@ -69,7 +69,8 @@ export default function Events() {
       (events as Event[]).filter((event) => {
         const queryOk = !query.trim() || matchesSearchText([event.name, event.place, event.performer ?? '', event.categoryName].join(' '), query)
         const regionOk = selectedRegion === '전체' || getRegionLabel(event, resolvedRegions) === selectedRegion
-        const categoryOk = selectedCategory === '전체' || event.categoryName === selectedCategory
+        const categoryOk = selectedCategory === '전체'
+          || normalizeCategoryKey(event.categoryName) === normalizeCategoryKey(selectedCategory)
         return queryOk && regionOk && categoryOk
       })
     )
@@ -303,11 +304,12 @@ function getSortBucket(event: Event) {
 }
 
 function normalizeCategoryKey(name: string) {
-  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
-  if (name === '\uCD95\uC81C') return 'festival'
-  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
-  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
-  return name.toLowerCase()
+  const normalized = String(name ?? '').trim().toLowerCase()
+  if (normalized === '콘서트' || normalized === 'concert') return 'concert'
+  if (normalized === '축제' || normalized === 'festival') return 'festival'
+  if (normalized === '팬미팅' || normalized === 'fanmeeting') return 'fanmeeting'
+  if (normalized === '팝업스토어' || normalized === 'popup' || normalized === 'popupstore') return 'popup'
+  return normalized
 }
 
 function getDisplayStatus(event: Event) {
