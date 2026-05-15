@@ -1,6 +1,7 @@
 package com.ojosama.userservice.presentation.controller;
 
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.userservice.application.dto.query.AdminDetailUserQuery;
 import com.ojosama.userservice.application.dto.result.AdminUserDetailResult;
 import com.ojosama.userservice.application.service.UserAdminService;
@@ -12,7 +13,6 @@ import com.ojosama.userservice.presentation.dto.response.AdminUserListResponseDt
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,12 +33,12 @@ public class AdminUserController {
 
     // 회원 목록 조회
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<AdminUserListResponseDto>>> getUsers(
+    public ResponseEntity<ApiResponse<PageResponse<AdminUserListResponseDto>>> getUsers(
             @ModelAttribute AdminUserListRequestDto request
     ) {
-        Page<AdminUserListResponseDto> response = adminUserService.getUsers(request.toQuery())
-                .map(AdminUserListResponseDto::from);
-
+        PageResponse<AdminUserListResponseDto> response = PageResponse.from(
+                adminUserService.getUsers(request.toQuery()).map(AdminUserListResponseDto::from)
+        );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

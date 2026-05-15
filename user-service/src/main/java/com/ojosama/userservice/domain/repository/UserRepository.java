@@ -16,6 +16,24 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Page<User> findAllByDeletedAtIsNull(Pageable pageable);
 
+    @Query("""
+            select u
+            from User u
+            where u.deletedAt is null
+              and (
+                    (:email is null or :email = '' or lower(u.email) like lower(concat('%', :email, '%')))
+                    or (:name is null or :name = '' or lower(u.name) like lower(concat('%', :name, '%')))
+                    or (:name is null or :name = '' or lower(u.nickname) like lower(concat('%', :name, '%')))
+                  )
+              and (:role is null or u.role = :role)
+            """)
+    Page<User> findAllByDeletedAtIsNullAndSearch(
+            @Param("email") String email,
+            @Param("name") String name,
+            @Param("role") UserRole role,
+            Pageable pageable
+    );
+
     boolean existsByEmailAndDeletedAtIsNull(String email);
 
     boolean existsByNicknameAndDeletedAtIsNull(String nickname);

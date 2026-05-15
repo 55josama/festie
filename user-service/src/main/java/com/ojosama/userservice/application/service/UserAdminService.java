@@ -24,7 +24,10 @@ public class UserAdminService {
 
     @Transactional(readOnly = true)
     public Page<AdminUserListResult> getUsers(AdminUserListQuery query) {
-        return userRepository.findAllByDeletedAtIsNull(
+        return userRepository.findAllByDeletedAtIsNullAndSearch(
+                        query.email(),
+                        query.name(),
+                        query.role(),
                         PageRequest.of(query.page(), query.size())
                 )
                 .map(AdminUserListResult::from);
