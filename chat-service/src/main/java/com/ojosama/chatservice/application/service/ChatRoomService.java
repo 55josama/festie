@@ -21,6 +21,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,6 +87,12 @@ public class ChatRoomService {
         return chatRoomRepository.findByEventId(query.eventId())
                 .map(ChatRoomSummaryResult::from)
                 .orElseGet(ChatRoomSummaryResult::empty);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChatRoomResult> getAllChatRooms(Pageable pageable) {
+        return chatRoomRepository.findAll(pageable)
+                .map(ChatRoomResult::from);
     }
 
     public ChatRoomResult changeChatRoomSchedule(ChangeChatRoomScheduleCommand command) {

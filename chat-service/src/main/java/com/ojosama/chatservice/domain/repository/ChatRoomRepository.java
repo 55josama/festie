@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ChatRoomRepository {
 
@@ -15,6 +17,8 @@ public interface ChatRoomRepository {
     Optional<ChatRoom> findById(UUID id);
 
     Optional<ChatRoom> findByEventId(UUID eventId);
+
+    Page<ChatRoom> findAll(Pageable pageable);
 
     List<ChatRoom> findAllByIds(Collection<UUID> ids);
 
