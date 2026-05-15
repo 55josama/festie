@@ -8,13 +8,6 @@ import com.ojosama.notice.domain.exception.NoticeErrorCode;
 import com.ojosama.notice.domain.exception.NoticeException;
 import com.ojosama.notice.domain.model.entity.Notice;
 import com.ojosama.notice.domain.repository.NoticeRepository;
-import com.ojosama.report.application.dto.command.CreateReportCommand;
-import com.ojosama.report.application.dto.command.UpdateReportCommand;
-import com.ojosama.report.application.dto.query.ListReportQuery;
-import com.ojosama.report.application.dto.result.ReportInfoResult;
-import com.ojosama.report.application.dto.result.ReportResult;
-import com.ojosama.report.domain.model.entity.Report;
-import com.ojosama.report.domain.model.enums.ReporterType;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -43,7 +36,7 @@ public class NoticeService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = "noticeList",
-            key = "':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize"
+            key = "':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize + ':sort:' + #pageable.sort.toString()"
     )
     public PageResponse<NoticeResult> getNoticeList(Pageable pageable) {
         Page<Notice> notices = noticeRepository.findAllByDeletedAtIsNull(pageable);
@@ -53,7 +46,7 @@ public class NoticeService {
 
     // 공지사항 상세 조회
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "notice", key = "#id")
+    @Cacheable(cacheNames = "notice", key = "#noticeId")
     public NoticeResult getNotice(UUID noticeId) {
         Notice notice = findNoticeById(noticeId);
 

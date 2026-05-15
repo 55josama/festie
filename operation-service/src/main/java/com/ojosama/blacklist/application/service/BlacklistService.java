@@ -50,7 +50,8 @@ public class BlacklistService {
     // 블랙리스트 목록 조회
     @Cacheable(
             cacheNames = "blacklistList",
-            key = "(#listBlacklistQuery.blacklistStatus() != null ? #listBlacklistQuery.blacklistStatus().name() : 'ALL') + ':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize"
+            key = "(#listBlacklistQuery.status() != null ? #listBlacklistQuery.status().name() : 'ALL') + "
+                    + "':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize + ':sort:' + #pageable.sort.toString()"
     )
     public PageResponse<BlacklistResult> getBlacklists(ListBlacklistQuery listBlacklistQuery, Pageable pageable) {
         Page<Blacklist> blacklists = fetchBlacklistsByQuery(listBlacklistQuery, pageable);
@@ -129,8 +130,8 @@ public class BlacklistService {
     }
 
     private Page<Blacklist> fetchBlacklistsByQuery(ListBlacklistQuery query, Pageable pageable) {
-        if (query.blacklistStatus() != null) {
-            return blacklistRepository.findAllByStatus(query.blacklistStatus(), pageable);
+        if (query.status() != null) {
+            return blacklistRepository.findAllByStatus(query.status(), pageable);
         }
         return blacklistRepository.findAll(pageable);
     }

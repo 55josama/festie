@@ -42,7 +42,8 @@ public class OperationRequestService {
     // 운영 요청 목록 조회
     @Cacheable(
             cacheNames = "operationRequestList",
-            key = "(#query.status() != null ? #query.status().name() : 'ALL') + ':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize"
+            key = "(#query.status() != null ? #query.status().name() : 'ALL') + "
+                    + "':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize + ':sort:' + #pageable.sort.toString()"
     )
     public PageResponse<OperationRequestResult> getOperationRequestList(ListOperationRequestQuery query, Pageable pageable) {
         Page<OperationRequest> requests = fetchRequestsByQuery(query, pageable);
@@ -50,7 +51,7 @@ public class OperationRequestService {
     }
 
     // 운영 요청 상세 조회
-    @Cacheable(cacheNames = "operationRequest", key = "#id")
+    @Cacheable(cacheNames = "operationRequest", key = "#requestId")
     public OperationRequestResult getOperationRequestInfo(UUID requestId) {
         OperationRequest request = findOperationRequestById(requestId);
         return OperationRequestResult.from(request);

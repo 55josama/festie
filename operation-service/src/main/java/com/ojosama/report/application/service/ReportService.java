@@ -20,7 +20,6 @@ import com.ojosama.report.domain.repository.ReportRepository;
 import com.ojosama.report.infrastructure.client.ChatClient;
 import com.ojosama.report.infrastructure.lock.RedissonDistributedLock;
 import com.ojosama.report.infrastructure.lock.config.DistributedLockProperties;
-import com.ojosama.report.infrastructure.lock.metrics.LockMetrics;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -74,7 +73,8 @@ public class ReportService {
     // 신고 목록 조회
     @Cacheable(
             cacheNames = "reportList",
-            key = "(#listReportQuery.status() != null ? #listReportQuery.status().name() : 'ALL') + ':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize"
+            key = "(#listReportQuery.status() != null ? #listReportQuery.status().name() : 'ALL') + "
+                    + "':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize + ':sort:' + #pageable.sort.toString()"
     )
     public PageResponse<ReportResult> getReportList(ListReportQuery listReportQuery, Pageable pageable) {
         Page<Report> reports = fetchReportsByQuery(listReportQuery, pageable);
@@ -83,7 +83,7 @@ public class ReportService {
     }
 
     // 신고 상세 조회
-    @Cacheable(cacheNames = "report", key = "#id")
+    @Cacheable(cacheNames = "report", key = "#reportId")
     public ReportInfoResult getReportInfo(UUID reportId) {
         Report report = findReportById(reportId);
         return ReportInfoResult.from(report);
