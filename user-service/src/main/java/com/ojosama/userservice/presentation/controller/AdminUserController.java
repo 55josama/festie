@@ -9,6 +9,7 @@ import com.ojosama.userservice.presentation.dto.request.AdminUserListRequestDto;
 import com.ojosama.userservice.presentation.dto.response.AdminChangeUserRoleResponseDto;
 import com.ojosama.userservice.presentation.dto.response.AdminDetailUserResponseDto;
 import com.ojosama.userservice.presentation.dto.response.AdminUserListResponseDto;
+import com.ojosama.userservice.presentation.dto.response.PageResponseDto;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +34,13 @@ public class AdminUserController {
 
     // 회원 목록 조회
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<AdminUserListResponseDto>>> getUsers(
+    public ResponseEntity<ApiResponse<PageResponseDto<AdminUserListResponseDto>>> getUsers(
             @ModelAttribute AdminUserListRequestDto request
     ) {
         Page<AdminUserListResponseDto> response = adminUserService.getUsers(request.toQuery())
                 .map(AdminUserListResponseDto::from);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PageResponseDto.from(response)));
     }
 
     // 회원 상세 조회 1
