@@ -31,7 +31,15 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             new PublicEndpoint(HttpMethod.POST, "/user-service/v1/auth/login"),
             new PublicEndpoint(HttpMethod.POST, "/user-service/v1/auth/reissue"),
             new PublicEndpoint(HttpMethod.POST, "/user-service/v1/users"),
-            new PublicEndpoint(HttpMethod.GET, "/chat-service/ws-test.html")
+            new PublicEndpoint(HttpMethod.GET, "/chat-service/ws-test.html"),
+            new PublicEndpoint(HttpMethod.GET, "/event-service/v1/events"),
+            new PublicEndpoint(HttpMethod.GET, "/event-service/v1/events/**"),
+            new PublicEndpoint(HttpMethod.GET, "/community-service/v1/community-categories"),
+            new PublicEndpoint(HttpMethod.GET, "/community-service/v1/posts"),
+            new PublicEndpoint(HttpMethod.GET, "/community-service/v1/posts/**"),
+            new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/event"),
+            new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/popular"),
+            new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/**")
     );
 
     @Override
@@ -123,7 +131,14 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             String path
     ) {
         private boolean matches(HttpMethod requestMethod, String requestPath) {
-            return method.equals(requestMethod) && path.equals(requestPath);
+            if (!method.equals(requestMethod)) {
+                return false;
+            }
+            if (path.endsWith("/**")) {
+                String prefix = path.substring(0, path.length() - 3);
+                return requestPath.equals(prefix) || requestPath.startsWith(prefix + "/");
+            }
+            return path.equals(requestPath);
         }
     }
 }

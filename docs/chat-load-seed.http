@@ -15,6 +15,37 @@
 @chatUrl = http://localhost:8088
 @adminUserId = 00000000-0000-0000-0000-000000000001
 @adminUserRole = ADMIN
+@accessToken=
+
+### ADMIN 로그인
+### 응답의 accessToken을 adminAccessToken 전역 변수로 저장
+POST {{userUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "1234"
+}
+
+> {%
+
+    client.global.set("accessToken", response.body.accessToken);
+
+%}
+
+
+### 회원가입
+### 기본 role은 USER로 생성
+POST {{userUrl}}/v1/users
+Content-Type: application/json
+
+{
+  "email": "hello12@gmail.com",
+  "password": "12341234",
+  "nickname": "hoho12",
+  "name": "hoho12",
+  "phoneNumber": "010-9821-1111"
+}
 
 ### ============================================================
 ### 1) 카테고리
@@ -26,14 +57,16 @@
 GET {{eventUrl}}/v1/event-categories
 Content-Type: application/json
 X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+X-User-Role: ADMIN
 
 ### 카테고리 생성 - FESTIVAL
 POST {{eventUrl}}/v1/event-categories
 Content-Type: application/json
 X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
+X-User-Role: ADMIN
 
 {
-  "name": "FESTIVAL"
+  "name": "MUSICAL"
 }
 
 ### 카테고리 생성 - CONCERT
@@ -98,9 +131,9 @@ Content-Type: application/json
 X-User-Id: 3e9605c7-3d25-4171-9c00-e83a10cccf25
 
 {
-  "name": "http 테스트행사1",
-  "categoryId": "{{festivalCategoryId}}",
-  "startAt": "2026-05-12T20:00:00",
+  "name": "http 테스트행사1312",
+  "categoryId": "e029d1bf-db38-4314-940a-a8b0313f87a3",
+  "startAt": "2026-05-13T20:00:00",
   "endAt": "2026-05-22T20:00:00",
   "place": "테스트장소1",
   "latitude": 37.5001,
@@ -248,8 +281,6 @@ X-User-Role: {{adminUserRole}}
 ### - 채팅방이 OPEN 상태여야 메시지 생성이 성공한다.
 
 
-@chatUrl = http://localhost:8088
-@adminUserId = 3e9605c7-3d25-4171-9c00-e83a10cccf25
 @adminRole = ADMIN
 @userId1 = b6137489-2e8a-4166-87aa-7651f61c219c
 @userId2 = 4ee050e8-44e6-4764-8860-691322e23e59
@@ -259,7 +290,9 @@ X-User-Role: {{adminUserRole}}
 
 
 ### 채팅방 조회
-GET {{chatUrl}}/v1/chat/rooms/event?eventId={{eventId}}
+GET {{chatUrl}}/v1/chat/rooms/event?eventId=68d886d3-5e69-49ad-ad1c-89cda92ca454
+
+
 
 ### 채팅방 강제 오픈
 PATCH {{chatUrl}}/v1/chat/admin/rooms/{{chatRoomId}}/status

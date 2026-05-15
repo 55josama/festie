@@ -1,0 +1,52 @@
+import client from './client'
+import { unwrap, unwrapPage } from '../lib/api'
+import type { ChatMessage, ChatRoom } from '../types'
+import type { AdminMessageItem } from '../types/admin'
+
+export const getChatRoomByEventId = async (eventId: string) => {
+  const res = await client.get('/chat-service/v1/chat/rooms/event', { params: { eventId } })
+  return unwrap<ChatRoom>(res.data)
+}
+
+export const getChatMessages = async (chatRoomId: string) => {
+  const res = await client.get(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, { params: { page: 0, size: 30 } })
+  const data = unwrap<any>(res.data)
+  const normalized = Array.isArray(data) ? data : (data?.messages ?? data?.content ?? [])
+  return unwrapPage<ChatMessage>({ data: normalized })
+}
+
+export const sendChatMessage = async (chatRoomId: string, content: string) => {
+  const res = await client.post(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, { content })
+  return unwrap<ChatMessage>(res.data)
+}
+
+export const getPopularChatRooms = async (limit = 3) => {
+  const res = await client.get('/chat-service/v1/chat/rooms/popular', { params: { limit } })
+  return unwrapPage<ChatRoom>(res.data)
+}
+
+export const getAdminChatMessages = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/chat-service/v1/chat/admin/messages', { params })
+  const data = unwrap<any>(res.data)
+  if (Array.isArray(data)) {
+    return {
+      content: data,
+      totalElements: data.length,
+      totalPages: 1,
+      size: data.length,
+      number: 0,
+    }
+  }
+  return {
+    content: data?.content ?? [],
+    totalElements: data?.totalElements ?? data?.content?.length ?? 0,
+    totalPages: data?.totalPages ?? 1,
+    size: data?.size ?? data?.content?.length ?? 0,
+    number: data?.number ?? 0,
+  }
+}
+
+export const updateAdminChatMessageStatus = async (messageId: string, status: 'ACTIVE' | 'BLINDED') => {
+  const res = await client.patch(`/chat-service/v1/chat/admin/messages/${messageId}/status`, { status })
+  return unwrap<AdminMessageItem>(res.data)
+}
