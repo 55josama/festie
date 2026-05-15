@@ -199,7 +199,8 @@ export async function searchAddressWithKakao(): Promise<AddressSearchResult> {
   try {
     await ensureKakaoMaps()
     const geocoder = new window.kakao!.maps!.services!.Geocoder()
-    const geo = await geocodeFirstMatch(geocoder, [selected.roadAddress, selected.jibunAddress, selected.address, address])
+    const candidates = buildGeocodeCandidates(selected)
+    const geo = await geocodeFirstMatch(geocoder, candidates)
 
     return {
       address,
@@ -266,4 +267,27 @@ async function geocodeFirstMatch(
   }
 
   return null
+}
+
+function buildGeocodeCandidates(selected: DaumPostcodeResult) {
+  const raw = [selected.roadAddress, selected.jibunAddress, selected.address]
+  const normalized = raw
+    .flatMap((value) => {
+      const trimmed = value?.trim()
+      if (!trimmed) return []
+
+      const candidates = [trimmed]
+      const stripped = trimmed
+        .replace(/\s*\([^)]*\)\s*/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (stripped && stripped !== trimmed) {
+        candidates.push(stripped)
+      }
+
+      return candidates
+    })
+    .filter((value, index, array) => array.indexOf(value) === index)
+
+  return normalized.length ? normalized : [selected.address]
 }
