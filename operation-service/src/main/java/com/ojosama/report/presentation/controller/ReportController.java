@@ -1,9 +1,11 @@
 package com.ojosama.report.presentation.controller;
 
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.report.application.dto.command.CreateReportCommand;
 import com.ojosama.report.application.dto.query.ListReportQuery;
 import com.ojosama.report.application.dto.result.ReportInfoResult;
+import com.ojosama.report.application.dto.result.ReportResult;
 import com.ojosama.report.application.service.ReportService;
 import com.ojosama.report.domain.exception.ReportErrorCode;
 import com.ojosama.report.domain.exception.ReportException;
@@ -19,9 +21,10 @@ import com.ojosama.report.presentation.dto.UpdateReportRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -78,14 +81,25 @@ public class ReportController {
     )
     @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ListReportResponse>>> getReportList(
+    public ResponseEntity<ApiResponse<PageResponse<ListReportResponse>>> getReportList(
             @RequestParam(required = false) ReportStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         ListReportQuery query = new ListReportQuery(status);
 
-        Page<ListReportResponse> response = reportService.getReportList(query, pageable)
-                .map(ListReportResponse::from);
+        PageResponse<ReportResult> serviceResult = reportService.getReportList(query, pageable);
+
+        List<ListReportResponse> content = serviceResult.content().stream()
+                .map(ListReportResponse::from)
+                .collect(Collectors.toList());
+
+        PageResponse<ListReportResponse> response = new PageResponse<>(
+                content,
+                serviceResult.page(),
+                serviceResult.size(),
+                serviceResult.totalElements(),
+                serviceResult.totalPages()
+        );
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }

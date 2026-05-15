@@ -1,10 +1,12 @@
 package com.ojosama.calendarservice.calendar.infrastructure.scheduler;
 
-import com.ojosama.calendarservice.calendar.application.CalendarRedisService;
 import com.ojosama.calendarservice.calendar.domain.model.Calendar;
 import com.ojosama.calendarservice.calendar.domain.repository.CalendarRepository;
+import com.ojosama.calendarservice.calendar.infrastructure.redis.CalendarRedisService;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +21,8 @@ public class CalendarSchedule {
     private final CalendarRepository calendarRepository;
     private final CalendarRedisService notificationService;
 
-    @Scheduled(cron = "0 0 0 * * *")
+    // @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(fixedDelay = 60000)
     public void registerAlarms() {
         LocalDate today = LocalDate.now();
         LocalDate tomorrow = today.plusDays(1);
@@ -29,14 +32,18 @@ public class CalendarSchedule {
                 today.atStartOfDay(), tomorrow.atStartOfDay());
 
         calendars.stream()
-                .collect(Collectors.toMap(
-                        calendar -> calendar.getEventInfo().getEventId(),
-                        calendar -> calendar,
-                        (a, b) -> a
+                .collect(Collectors.groupingBy(
+                        calendar -> calendar.getEventInfo().getEventId()
                 ))
-                .forEach((eventId, calendar) ->
-                        notificationService.registerTicketingAlarm(eventId,
-                                calendar.getEventInfo().getEventTicketingDate()));
+                .forEach((eventId, calendarList) -> {
+                    List<UUID> userIds = calendarList.stream()
+                            .map(Calendar::getUserId)
+                            .distinct()
+                            .toList();
+                    String eventName = calendarList.get(0).getEventInfo().getEventName();
+                    LocalDateTime ticketingDate = calendarList.get(0).getEventInfo().getEventTicketingDate();
+                    notificationService.registerTicketingAlarm(eventId, eventName, ticketingDate, userIds);
+                });
 
         log.info("티켓팅 알림 redis 등록 : {}", calendars.size());
 
@@ -48,14 +55,21 @@ public class CalendarSchedule {
                 );
 
         eventCalendars.stream()
-                .collect(Collectors.toMap(
-                        calendar -> calendar.getEventInfo().getEventId(),
-                        calendar -> calendar,
-                        (a, b) -> a
-                ))
-                .forEach((eventId, calendar) ->
-                        notificationService.registerEventAlarm(eventId,
-                                calendar.getEventInfo().getEventDate()));
+                .collect(Collectors.groupingBy(calendar -> calendar.getEventInfo().getEventId()))
+                .forEach((eventId, calendarList) -> {
+                    List<UUID> userIds = calendarList.stream()
+                            .map(Calendar::getUserId)
+                            .distinct()
+                            .toList();
+                    String eventName = calendarList.get(0).getEventInfo().getEventName();
+                    notificationService.registerEventAlarm(eventId, eventName,
+                            calendarList.get(0).getEventInfo().getEventDate(), userIds);
+                });
+
+        if (calendars.isEmpty() && eventCalendars.isEmpty()) {
+            log.info("오늘 처리할 알림 예약 대상이 없습니다.");
+            return;
+        }
 
         log.info("행사 알림 redis 등록 : {}", eventCalendars.size());
     }

@@ -221,7 +221,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "http_server_requests_seconds_max{job=\"operation-service\"}",
+          "expr": "max(http_server_requests_seconds_max{job=\"operation-service\",uri=~\"/v1/.*\"})",
           "legendFormat": "Max",
           "refId": "A"
         }
@@ -514,7 +514,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "rate(http_server_requests_seconds_count{uri=\"/v1/reports\"}[1m])",
+          "expr": "sum(rate(http_server_requests_seconds_count{uri=\"/v1/reports\"}[1m]))",
           "legendFormat": "TPS",
           "refId": "A"
         }
@@ -585,7 +585,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "rate(http_server_requests_seconds_sum{uri=\"/v1/reports\"}[1m]) / rate(http_server_requests_seconds_count{uri=\"/v1/reports\"}[1m])",
+          "expr": "sum(rate(http_server_requests_seconds_sum{uri=\"/v1/reports\"}[1m])) / sum(rate(http_server_requests_seconds_count{uri=\"/v1/reports\"}[1m]))",
           "legendFormat": "Avg Response",
           "refId": "A"
         }
@@ -658,7 +658,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "rate(http_server_requests_seconds_count{uri=\"/v1/reports\",status=~\"5..\"}[1m]) / rate(http_server_requests_seconds_count{uri=\"/v1/reports\"}[1m]) * 100",
+          "expr": "sum(rate(http_server_requests_seconds_count{uri=\"/v1/reports\",status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{uri=\"/v1/reports\"}[1m])) * 100",
           "legendFormat": "Error %",
           "refId": "A"
         }
@@ -952,8 +952,8 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
+        "w": 24,
+        "x": 0,
         "y": 9
       },
       "id": 15,

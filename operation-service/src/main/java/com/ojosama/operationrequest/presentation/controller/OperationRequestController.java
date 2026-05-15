@@ -1,6 +1,7 @@
 package com.ojosama.operationrequest.presentation.controller;
 
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.operationrequest.application.dto.query.ListOperationRequestQuery;
 import com.ojosama.operationrequest.application.dto.result.OperationRequestResult;
 import com.ojosama.operationrequest.application.service.OperationRequestService;
@@ -13,16 +14,16 @@ import com.ojosama.operationrequest.presentation.dto.UpdateOperationStatusReques
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,7 +32,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -68,13 +68,25 @@ public class OperationRequestController {
     )
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ListOperationResponse>>> getOperationRequestList(
+    public ResponseEntity<ApiResponse<PageResponse<ListOperationResponse>>> getOperationRequestList(
             @RequestParam(required = false) OperationRequestStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         ListOperationRequestQuery query = new ListOperationRequestQuery(status);
-        Page<ListOperationResponse> response = operationRequestService.getOperationRequestList(query, pageable)
-                .map(ListOperationResponse::from);
+
+        PageResponse<OperationRequestResult> serviceResult = operationRequestService.getOperationRequestList(query, pageable);
+
+        List<ListOperationResponse> content = serviceResult.content().stream()
+                .map(ListOperationResponse::from)
+                .collect(Collectors.toList());
+
+        PageResponse<ListOperationResponse> response = new PageResponse<>(
+                content,
+                serviceResult.page(),
+                serviceResult.size(),
+                serviceResult.totalElements(),
+                serviceResult.totalPages()
+        );
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
