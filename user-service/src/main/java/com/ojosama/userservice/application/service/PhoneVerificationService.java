@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service;
 public class PhoneVerificationService {
 
     private static final String PHONE_VERIFICATION_KEY_PREFIX = "phone:verification:";
+    private static final String PHONE_VERIFIED_KEY_PREFIX = "phone:verified:";
     private static final Duration VERIFICATION_CODE_TTL = Duration.ofMinutes(3);
+    private static final Duration VERIFIED_TTL = Duration.ofMinutes(10);
 
     private final StringRedisTemplate redisTemplate;
     private final DefaultMessageService messageService;
@@ -48,6 +50,24 @@ public class PhoneVerificationService {
         }
     }
 
+    public void verifyCode(String phoneNumber, String code) {
+        String cacheKey = verificationCodeKey(phoneNumber);
+        String savedCode = redisTemplate.opsForValue().get(cacheKey);
+
+        if (savedCode == null) {
+            throw new UserException(UserErrorCode.PHONE_VERIFICATION_CODE_NOT_FOUND);
+        }
+
+        if (!savedCode.equals(code)) {
+            throw new UserException(UserErrorCode.PHONE_VERIFICATION_CODE_MISMATCH);
+        }
+
+        redisTemplate.delete(cacheKey);
+        redisTemplate.opsForValue().set(verifiedKey(phoneNumber), "true", VERIFIED_TTL);
+
+        log.info("휴대폰 인증 성공. phoneNumber={}", maskPhoneNumber(phoneNumber));
+    }
+
     private String generateVerificationCode() {
         int code = ThreadLocalRandom.current().nextInt(100000, 1000000);
         return String.valueOf(code);
@@ -55,6 +75,10 @@ public class PhoneVerificationService {
 
     private String verificationCodeKey(String phoneNumber) {
         return PHONE_VERIFICATION_KEY_PREFIX + phoneNumber;
+    }
+
+    private String verifiedKey(String phoneNumber) {
+        return PHONE_VERIFIED_KEY_PREFIX + phoneNumber;
     }
 
     private String maskPhoneNumber(String phoneNumber) {
