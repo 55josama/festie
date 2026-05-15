@@ -47,7 +47,11 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             new PublicEndpoint(HttpMethod.GET, "/v3/api-docs/**"),
             new PublicEndpoint(HttpMethod.GET, "/docs/**"),
             new PublicEndpoint(HttpMethod.GET, "/swagger-resources/**"),
-            new PublicEndpoint(HttpMethod.GET, "/webjars/**")
+            new PublicEndpoint(HttpMethod.GET, "/webjars/**"),
+
+            // 모든 마이크로서비스의 프로메테우스 경로를 한 방에 허용
+            new PublicEndpoint(HttpMethod.GET, "/*/actuator/prometheus")
+
     );
 
     @Override
