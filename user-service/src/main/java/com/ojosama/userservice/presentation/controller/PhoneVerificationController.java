@@ -3,6 +3,7 @@ package com.ojosama.userservice.presentation.controller;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.userservice.application.service.PhoneVerificationService;
 import com.ojosama.userservice.presentation.dto.request.SendPhoneVerificationRequestDto;
+import com.ojosama.userservice.presentation.dto.request.VerifyPhoneVerificationRequestDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,16 @@ public class PhoneVerificationController {
             @Valid @RequestBody SendPhoneVerificationRequestDto request
     ) {
         phoneVerificationService.sendVerificationCode(request.phoneNumber());
+
+        return ApiResponse.success(null);
+    }
+
+    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/verify")
+    public ApiResponse<Void> verifyCode(
+            @Valid @RequestBody VerifyPhoneVerificationRequestDto request
+    ) {
+        phoneVerificationService.verifyCode(request.phoneNumber(), request.code());
 
         return ApiResponse.success(null);
     }

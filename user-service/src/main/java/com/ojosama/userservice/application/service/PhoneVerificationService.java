@@ -88,4 +88,16 @@ public class PhoneVerificationService {
 
         return phoneNumber.substring(0, 3) + "****" + phoneNumber.substring(phoneNumber.length() - 4);
     }
+
+    public void validateVerified(String phoneNumber) {
+        String verified = redisTemplate.opsForValue().get(verifiedKey(phoneNumber));
+
+        if (!"true".equals(verified)) {
+            throw new UserException(UserErrorCode.PHONE_VERIFICATION_REQUIRED);
+        }
+    }
+
+    public void deleteVerified(String phoneNumber) {
+        redisTemplate.delete(verifiedKey(phoneNumber));
+    }
 }

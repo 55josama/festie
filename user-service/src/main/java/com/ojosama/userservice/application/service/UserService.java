@@ -45,6 +45,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
+    private final PhoneVerificationService phoneVerificationService;
 
     //회원가입
     @Transactional
@@ -61,6 +62,8 @@ public class UserService {
             throw new UserException(UserErrorCode.DUPLICATE_PHONE_NUMBER);
         }
 
+        phoneVerificationService.validateVerified(command.phoneNumber());
+
         String encodedPassword = passwordEncoder.encode(command.password());
 
         User user = User.create(
@@ -73,6 +76,7 @@ public class UserService {
 
         try {
             User savedUser = userRepository.save(user);
+            phoneVerificationService.deleteVerified(command.phoneNumber());
 
             return new CreateUserResult(
                     savedUser.getId(),
