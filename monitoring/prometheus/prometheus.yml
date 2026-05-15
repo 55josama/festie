@@ -4,31 +4,31 @@ global:
 
 scrape_configs:
   - job_name: "chat-service"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/chat-service/actuator/prometheus"
     static_configs:
-      - targets: [ "chat-service:8088" ]
+      - targets: [ "festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com:80" ]
 
   - job_name: "gateway-server"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/gateway-server/actuator/prometheus"
     static_configs:
-      - targets: [ "gateway-server:8085" ]
+      - targets: [ "festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com:80" ]
 
   - job_name: "user-service"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/user-service/actuator/prometheus"
     static_configs:
-      - targets: [ "user-service:8081" ]
+      - targets: [ "festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com:80" ]
 
   - job_name: "event-service"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/event-service/actuator/prometheus"
     static_configs:
-      - targets: [ "event-service:8082" ]
+      - targets: [ "festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com:80" ]
 
   - job_name: "operation-service"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/operation-service/actuator/prometheus"
     static_configs:
-      - targets: [ "operation-service:8084" ]
+      - targets: [ "festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com:80" ]
 
   - job_name: "ai-service"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/ai-service/actuator/prometheus"
     static_configs:
-      - targets: [ "ai-service:8083" ]
+      - targets: [ "festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com:80" ]
