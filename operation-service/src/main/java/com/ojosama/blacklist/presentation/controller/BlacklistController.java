@@ -10,8 +10,13 @@ import com.ojosama.blacklist.presentation.dto.CreateBlacklistRequest;
 import com.ojosama.blacklist.presentation.dto.FindBlacklistResponse;
 import com.ojosama.blacklist.presentation.dto.ListBlacklistResponse;
 import com.ojosama.blacklist.presentation.dto.UpdateBlacklistRequest;
+import com.ojosama.common.response.PageResponse;
+import com.ojosama.report.application.dto.result.ReportResult;
+import com.ojosama.report.presentation.dto.ListReportResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,13 +58,25 @@ public class BlacklistController {
     // 블랙리스트 목록 조회
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ListBlacklistResponse>>> getBlacklists(
+    public ResponseEntity<ApiResponse<PageResponse<ListBlacklistResponse>>> getBlacklists(
             @RequestParam(required = false) BlacklistStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         ListBlacklistQuery query = new ListBlacklistQuery(status);
-        Page<ListBlacklistResponse> response = blacklistService.getBlacklists(query, pageable)
-                .map(ListBlacklistResponse::from);
+
+        PageResponse<BlacklistResult> serviceResult = blacklistService.getBlacklists(query, pageable);
+
+        List<ListBlacklistResponse> content = serviceResult.content().stream()
+                .map(ListBlacklistResponse::from)
+                .collect(Collectors.toList());
+
+        PageResponse<ListBlacklistResponse> response = new PageResponse<>(
+                content,
+                serviceResult.page(),
+                serviceResult.size(),
+                serviceResult.totalElements(),
+                serviceResult.totalPages()
+        );
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
