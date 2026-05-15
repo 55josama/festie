@@ -10,6 +10,8 @@ import com.ojosama.blacklist.presentation.dto.CreateBlacklistRequest;
 import com.ojosama.blacklist.presentation.dto.FindBlacklistResponse;
 import com.ojosama.blacklist.presentation.dto.ListBlacklistResponse;
 import com.ojosama.blacklist.presentation.dto.UpdateBlacklistRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,10 +36,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v1/blacklists")
 @RequiredArgsConstructor
+@Tag(name = "블랙리스트", description = "블랙리스트 관리 API")
 public class BlacklistController {
     private final BlacklistService blacklistService;
 
     // 블랙리스트 수동 등록
+    @Operation(
+            summary = "블랙리스트 수동 등록",
+            description = "블랙리스트를 수동으로 등록합니다. <br>" +
+                    "관리자만 접근 가능합니다."
+    )
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<FindBlacklistResponse>> createBlacklist(
@@ -51,6 +59,12 @@ public class BlacklistController {
     }
 
     // 블랙리스트 목록 조회
+    @Operation(
+            summary = "블랙리스트 목록 조회",
+            description = "블랙리스트 목록을 조회합니다. <br>" +
+                    "상태별 필터링이 가능하며, 페이징 처리됩니다. <br>" +
+                    "관리자만 접근 가능합니다."
+    )
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ListBlacklistResponse>>> getBlacklists(
@@ -65,6 +79,11 @@ public class BlacklistController {
     }
 
     // 블랙리스트 해제
+    @Operation(
+            summary = "블랙리스트 해제",
+            description = "블랙리스트를 해제하고 상태를 변경합니다. <br>" +
+                    "관리자만 접근 가능합니다."
+    )
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{blacklistId}/status")
     public ResponseEntity<ApiResponse<FindBlacklistResponse>> releaseBlacklist(
