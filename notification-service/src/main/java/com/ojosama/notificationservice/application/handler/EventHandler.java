@@ -44,7 +44,7 @@ public class EventHandler {
         notificationRepository.saveAll(notifications);
 
         notifications.forEach(n ->
-                sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(n))
+                sseEmitterManager.broadcast(n.getReceiverId(), NotificationResult.of(n))
         );
     }
 
@@ -61,7 +61,7 @@ public class EventHandler {
         notificationRepository.saveAll(notifications);
 
         notifications.forEach(n ->
-                sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(n))
+                sseEmitterManager.broadcast(n.getReceiverId(), NotificationResult.of(n))
         );
     }
 
@@ -78,7 +78,7 @@ public class EventHandler {
         notificationRepository.saveAll(notifications);
 
         notifications.forEach(n ->
-                sseEmitterManager.sendToUser(n.getReceiverId(), NotificationResult.of(n))
+                sseEmitterManager.broadcast(n.getReceiverId(), NotificationResult.of(n))
         );
     }
 
@@ -90,7 +90,7 @@ public class EventHandler {
                 Notification.of(managerId, "행사 요청", "승인을 기다리는 요청이 있습니다.",
                         TargetInfo.of(command.targetId(), Target.EVENT, TargetType.EVENT_REQUEST)));
 
-        sseEmitterManager.sendToUser(managerId, NotificationResult.of(notification));
+        sseEmitterManager.broadcast(managerId, NotificationResult.of(notification));
     }
 
     public void handleEventRequestResult(EventRequestResultCommand command) {
@@ -100,7 +100,7 @@ public class EventHandler {
                 Notification.of(command.receiverId(), "행사 요청 결과", content,
                         TargetInfo.of(command.targetId(), Target.EVENT, TargetType.EVENT_REQUEST_RESULT)));
 
-        sseEmitterManager.sendToUser(command.receiverId(),
+        sseEmitterManager.broadcast(command.receiverId(),
                 NotificationResult.of(notification));
     }
 

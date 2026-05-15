@@ -2,13 +2,13 @@ package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.cons
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ojosama.calendarservice.calendar.application.CalendarRedisService;
 import com.ojosama.calendarservice.calendar.application.CalendarService;
 import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventUpdatedMessage;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
 import com.ojosama.calendarservice.calendar.domain.model.FieldChange;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventUpdatedMessage;
+import com.ojosama.calendarservice.calendar.infrastructure.redis.CalendarRedisService;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import java.time.LocalDate;
@@ -91,13 +91,13 @@ public class EventUpdatedConsumer {
             if (field.fieldName().equals("ticketingOpenAt") && field.after() != null) {
                 LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
                 if (after.toLocalDate().equals(LocalDate.now())) {
-                    redisService.registerTicketingAlarm(event.eventId(), after);
+                    redisService.registerTicketingAlarm(event.eventId(), event.eventName(), after, userIds);
                 }
             }
             if (field.fieldName().equals("startAt") && field.after() != null) {
                 LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
                 if (after.toLocalDate().equals(LocalDate.now().plusDays(1))) {
-                    redisService.registerEventAlarm(event.eventId(), after);
+                    redisService.registerEventAlarm(event.eventId(), event.eventName(), after, userIds);
                 }
             }
         });

@@ -1,30 +1,35 @@
 package com.ojosama.notificationservice.infrastructure.sse;
 
+import com.ojosama.notificationservice.infrastructure.redis.NotificationDto;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class SseEmitterManager {
 
     private final Map<UUID, SseEmitter> emitters = new ConcurrentHashMap<>();
+    private final RedisTemplate<String, Object> redisTemplate;
+
+
+    public void broadcast(UUID userId, Object data) {
+        redisTemplate.convertAndSend("notification-topic", new NotificationDto(userId, data));
+    }
 
     public void sendToUser(UUID userId, Object data) {
         SseEmitter emitter = emitters.get(userId);
-        log.info("현재 연결된 유저 수: {}", emitters.size());
-
         if (emitter != null) {
             try {
-                emitter.send(SseEmitter.event()
-                        .name("notification")
-                        .data(data));
+                emitter.send(SseEmitter.event().name("notification").data(data));
             } catch (IOException e) {
-                log.error("SseEmitter send error: {}, userId: {}", e.getMessage(), userId);
                 emitters.remove(userId, emitter);
             }
         } else {
@@ -58,5 +63,4 @@ public class SseEmitterManager {
 
         return emitter;
     }
-
 }
