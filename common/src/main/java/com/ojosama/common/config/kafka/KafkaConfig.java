@@ -7,7 +7,9 @@ import org.springframework.kafka.annotation.EnableKafka;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.context.annotation.Bean;
@@ -35,11 +37,21 @@ public class KafkaConfig {
     @Value("${spring.kafka.consumer.group-id:default-group}")
     private String groupId;
 
+    @Value("${spring.kafka.properties.security.protocol:}")
+    private String securityProtocol;
+
+    @Value("${spring.kafka.properties.sasl.mechanism:}")
+    private String saslMechanism;
+
+    @Value("${spring.kafka.properties.sasl.jaas.config:}")
+    private String saslJaasConfig;
+
     // ── Producer 설정 (공통 프로퍼티) ──────────────────────────────
     private Map<String, Object> commonProducerProps() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        applySecurityProps(props);
 
         // 안정성 핵심: acks=all + 멱등성 활성화
         props.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -50,6 +62,18 @@ public class KafkaConfig {
         props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120000);
 
         return props;
+    }
+
+    private void applySecurityProps(Map<String, Object> props) {
+        if (securityProtocol != null && !securityProtocol.isBlank()) {
+            props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, securityProtocol);
+        }
+        if (saslMechanism != null && !saslMechanism.isBlank()) {
+            props.put(SaslConfigs.SASL_MECHANISM, saslMechanism);
+        }
+        if (saslJaasConfig != null && !saslJaasConfig.isBlank()) {
+            props.put(SaslConfigs.SASL_JAAS_CONFIG, saslJaasConfig);
+        }
     }
 
     // ── 1. String 전용 KafkaTemplate (Outbox Poller 등에서 사용) ──
@@ -89,6 +113,7 @@ public class KafkaConfig {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        applySecurityProps(props);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false); //직접 로직(Inbox 등)을 다 마친 뒤에 확정 짓기 위해서
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         return new DefaultKafkaConsumerFactory<>(props);
