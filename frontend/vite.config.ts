@@ -10,44 +10,41 @@ export default defineConfig({
   server: {
     proxy: {
       '/event-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
       },
       '/community-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
       },
       '/chat-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
+        ws: true,
       },
       '/calendar-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
       },
       '/user-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
       },
       '/operation-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
       },
       '/favorite-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
       },
       '/notification-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
       },
       '/ai-service': {
-        target: 'http://localhost:8080',
+        target: 'http://festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com',
         changeOrigin: true,
-      },
-      '/ws': {
-        target: 'http://localhost:8080',
-        ws: true,
       },
     },
   },
