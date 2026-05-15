@@ -93,6 +93,71 @@ spring:
               filters:
                 - StripPrefix=1
 
+            # ==========================================
+            # Swagger API 명세서 전용 라우트
+            # ==========================================
+            - id: user-service-docs
+              uri: lb://user-service
+              predicates:
+                - Path=/docs/user-service/**
+              filters:
+                - RewritePath=/docs/user-service/(?<segment>.*), /$\{segment}
+
+            - id: chat-service-docs
+              uri: lb://chat-service
+              predicates:
+                - Path=/docs/chat-service/**
+              filters:
+                - RewritePath=/docs/chat-service/(?<segment>.*), /$\{segment}
+
+            - id: operation-service-docs
+              uri: lb://operation-service
+              predicates:
+                - Path=/docs/operation-service/**
+              filters:
+                - RewritePath=/docs/operation-service/(?<segment>.*), /$\{segment}
+
+            - id: event-service-docs
+              uri: lb://event-service
+              predicates:
+                - Path=/docs/event-service/**
+              filters:
+                - RewritePath=/docs/event-service/(?<segment>.*), /$\{segment}
+
+            - id: community-service-docs
+              uri: lb://community-service
+              predicates:
+                - Path=/docs/community-service/**
+              filters:
+                - RewritePath=/docs/community-service/(?<segment>.*), /$\{segment}
+
+            - id: favorite-service-docs
+              uri: lb://favorite-service
+              predicates:
+                - Path=/docs/favorite-service/**
+              filters:
+                - RewritePath=/docs/favorite-service/(?<segment>.*), /$\{segment}
+
+            - id: notification-service-docs
+              uri: lb://notification-service
+              predicates:
+                - Path=/docs/notification-service/**
+              filters:
+                - RewritePath=/docs/notification-service/(?<segment>.*), /$\{segment}
+
+            - id: calendar-service-docs
+              uri: lb://calendar-service
+              predicates:
+                - Path=/docs/calendar-service/**
+              filters:
+                - RewritePath=/docs/calendar-service/(?<segment>.*), /$\{segment}
+
+            - id: ai-service-docs
+              uri: lb://ai-service
+              predicates:
+                - Path=/docs/ai-service/**
+              filters:
+                - RewritePath=/docs/ai-service/(?<segment>.*), /$\{segment}
 eureka:
   client:
     service-url:
@@ -115,3 +180,26 @@ management:
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:http://festie-zipkin:9411/api/v2/spans}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: 유저 서비스 (User)
+        url: /docs/user-service/v3/api-docs
+      - name: 채팅 서비스 (Chat)
+        url: /docs/chat-service/v3/api-docs
+      - name: 운영 서비스 (Operation)
+        url: /docs/operation-service/v3/api-docs
+      - name: 행사 서비스 (Event)
+        url: /docs/event-service/v3/api-docs
+      - name: 커뮤니티 서비스 (Community)
+        url: /docs/community-service/v3/api-docs
+      - name: 찜 서비스 (Favorite)
+        url: /docs/favorite-service/v3/api-docs
+      - name: 알림 서비스 (Notification)
+        url: /docs/notification-service/v3/api-docs
+      - name: 일정 서비스 (Calendar)
+        url: /docs/calendar-service/v3/api-docs
+      - name: AI 서비스 (Ai)
+        url: /docs/ai-service/v3/api-docs

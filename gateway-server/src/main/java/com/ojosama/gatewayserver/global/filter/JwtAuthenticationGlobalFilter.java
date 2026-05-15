@@ -39,7 +39,15 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             new PublicEndpoint(HttpMethod.GET, "/community-service/v1/posts/**"),
             new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/event"),
             new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/popular"),
-            new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/**")
+            new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/**"),
+
+            // Swagger
+            new PublicEndpoint(HttpMethod.GET, "/swagger-ui.html"),
+            new PublicEndpoint(HttpMethod.GET, "/swagger-ui/**"),
+            new PublicEndpoint(HttpMethod.GET, "/v3/api-docs/**"),
+            new PublicEndpoint(HttpMethod.GET, "/docs/**"),
+            new PublicEndpoint(HttpMethod.GET, "/swagger-resources/**"),
+            new PublicEndpoint(HttpMethod.GET, "/webjars/**")
     );
 
     @Override
