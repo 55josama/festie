@@ -59,7 +59,6 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             new PublicEndpoint(HttpMethod.GET, "/notification-service/actuator/prometheus"),
             new PublicEndpoint(HttpMethod.GET, "/operation-service/actuator/prometheus"),
             new PublicEndpoint(HttpMethod.GET, "/user-service/actuator/prometheus")
-
     );
 
     @Override
