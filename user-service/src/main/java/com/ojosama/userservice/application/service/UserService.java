@@ -90,6 +90,10 @@ public class UserService {
                 throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
             }
 
+            if (isPhoneNumberUniqueViolation(e)) {
+                throw new UserException(UserErrorCode.DUPLICATE_PHONE_NUMBER);
+            }
+
             throw e;
         }
     }
@@ -254,6 +258,12 @@ public class UserService {
 
     private String emailCacheKey(UUID userId) {
         return USER_EMAIL_CACHE_KEY_PREFIX + userId;
+    }
+
+    //휴대폰 번호 중복
+    private boolean isPhoneNumberUniqueViolation(DataIntegrityViolationException e) {
+        String message = NestedExceptionUtils.getMostSpecificCause(e).getMessage();
+        return message != null && message.contains("phone_number");
     }
 }
 

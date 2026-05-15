@@ -43,3 +43,8 @@ internal:
 kafka:
   topic:
     user-blacklist-status: ${KAFKA_TOPIC_USER_BLACKLIST_STATUS:operation.blacklist.updated.v1}
+
+coolsms:
+  api-key: ${COOLSMS_API_KEY:}
+  api-secret: ${COOLSMS_API_SECRET:}
+  sender: ${COOLSMS_SENDER:}

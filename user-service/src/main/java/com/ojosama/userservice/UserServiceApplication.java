@@ -1,5 +1,6 @@
 package com.ojosama.userservice;
 
+import com.ojosama.userservice.global.properties.CoolSmsProperties;
 import com.ojosama.userservice.global.security.InternalApiProperties;
 import com.ojosama.userservice.global.security.JwtProperties;
 import org.springframework.boot.SpringApplication;
@@ -10,7 +11,11 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@EnableConfigurationProperties({JwtProperties.class, InternalApiProperties.class})
+@EnableConfigurationProperties({
+        JwtProperties.class,
+        InternalApiProperties.class,
+        CoolSmsProperties.class
+})
 @ComponentScan(basePackages = "com.ojosama")
 @EntityScan(basePackages = {
         "com.ojosama.userservice.domain.model",
