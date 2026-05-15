@@ -15,6 +15,8 @@ public enum UserErrorCode implements ErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
     DUPLICATE_PHONE_NUMBER(HttpStatus.CONFLICT, "이미 사용 중인 휴대전화 번호입니다."),
 
+    PHONE_VERIFICATION_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "인증번호 발송에 실패했습니다."),
+
     INVALID_LOGIN_INFO(HttpStatus.BAD_REQUEST, "이메일 혹은 비밀번호가 올바르지 않습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token입니다."),
     REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "Refresh Token이 일치하지 않습니다."),

@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/v1/auth/reissue").permitAll()
                         .requestMatchers(HttpMethod.POST, "/v1/dev/users/admin").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/phone-verifications/send").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
