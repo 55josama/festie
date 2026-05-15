@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getMe, login } from '../api/auth'
+import { buildUserFromToken } from '../lib/jwt'
 import { useAuthStore } from '../store/authStore'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { setAccessToken, setUser } = useAuthStore()
+  const { setAccessToken, setRefreshToken, setUser, syncUserFromAccessToken } = useAuthStore()
   const [email, setEmail] = useState('test@festie.kr')
   const [password, setPassword] = useState('password')
   const [error, setError] = useState('')
@@ -18,8 +19,14 @@ export default function Login() {
     try {
       const result = await login(email, password)
       if (result?.accessToken) setAccessToken(result.accessToken)
+      if (result?.refreshToken) setRefreshToken(result.refreshToken)
+      if (result?.accessToken) {
+        const fallbackUser = buildUserFromToken(result.accessToken)
+        if (fallbackUser) setUser(fallbackUser)
+      }
       const me = await getMe().catch(() => null)
       if (me) setUser(me)
+      else syncUserFromAccessToken()
       navigate('/')
     } catch (err: any) {
       setError(err?.response?.data?.message ?? '로그인에 실패했습니다.')

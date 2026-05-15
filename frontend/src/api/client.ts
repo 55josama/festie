@@ -1,12 +1,21 @@
 import axios from 'axios'
 import {useAuthStore} from '../store/authStore'
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || ''
+
 const client = axios.create({
-    baseURL: '',
+    baseURL: apiBaseUrl,
+    headers: {'Content-Type': 'application/json'},
+})
+
+const rawClient = axios.create({
+    baseURL: apiBaseUrl,
     headers: {'Content-Type': 'application/json'},
 })
 
 client.interceptors.request.use((config) => {
+    const store = useAuthStore.getState()
+    store.syncUserFromAccessToken()
     const {accessToken, user} = useAuthStore.getState()
     const headers = config.headers as any
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`
@@ -20,15 +29,24 @@ client.interceptors.response.use(
     async (error) => {
         if (error.response?.status === 401) {
             try {
-                const res = await axios.post('/user-service/v1/auth/reissue')
-                useAuthStore.getState().setAccessToken(res.data.accessToken)
+                const refreshToken = useAuthStore.getState().refreshToken
+                if (!refreshToken) {
+                    useAuthStore.getState().logout()
+                    return Promise.reject(error)
+                }
+                const res = await rawClient.post('/user-service/v1/auth/reissue', {refreshToken})
+                const tokens = res.data.data ?? res.data
+                useAuthStore.getState().setAccessToken(tokens.accessToken)
+                if (tokens.refreshToken) {
+                    useAuthStore.getState().setRefreshToken(tokens.refreshToken)
+                }
                 const original = error.config as any
                 if (original._retry) {
                     return Promise.reject(error)
                 }
                 original._retry = true
                 original.headers = original.headers ?? {}
-                original.headers.Authorization = `Bearer ${res.data.accessToken}`
+                original.headers.Authorization = `Bearer ${tokens.accessToken}`
                 return client(original)
             } catch {
                 useAuthStore.getState().logout()
