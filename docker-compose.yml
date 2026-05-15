@@ -27,7 +27,7 @@ services:
     container_name: festie-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     networks:
       - festie-network
     command: redis-server --notify-keyspace-events Ex # keyspace notification 활성화
