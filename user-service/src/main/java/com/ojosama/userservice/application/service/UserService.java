@@ -46,7 +46,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
 
-    //유저 생성
+    //회원가입
     @Transactional
     public CreateUserResult createUser(CreateUserCommand command) {
         if (userRepository.existsByEmailAndDeletedAtIsNull(command.email())) {
@@ -55,6 +55,10 @@ public class UserService {
 
         if (userRepository.existsByNicknameAndDeletedAtIsNull(command.nickname())) {
             throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
+        }
+
+        if (userRepository.existsByPhoneNumberAndDeletedAtIsNull(command.phoneNumber())) {
+            throw new UserException(UserErrorCode.DUPLICATE_PHONE_NUMBER);
         }
 
         String encodedPassword = passwordEncoder.encode(command.password());
@@ -116,6 +120,10 @@ public class UserService {
 
         if (userRepository.existsByNicknameAndIdNotAndDeletedAtIsNull(command.nickname(), command.userId())) {
             throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
+        }
+
+        if (userRepository.existsByPhoneNumberAndIdNotAndDeletedAtIsNull(command.phoneNumber(), command.userId())) {
+            throw new UserException(UserErrorCode.DUPLICATE_PHONE_NUMBER);
         }
 
         savedUser.update(

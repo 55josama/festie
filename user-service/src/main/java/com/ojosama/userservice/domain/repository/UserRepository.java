@@ -32,6 +32,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findFirstByRoleAndDeletedAtIsNull(UserRole role);
 
+    boolean existsByPhoneNumberAndDeletedAtIsNull(String phoneNumber);
+
+    boolean existsByPhoneNumberAndIdNotAndDeletedAtIsNull(String phoneNumber, UUID id);
+
     @Modifying
     @Query("""
             update User u
