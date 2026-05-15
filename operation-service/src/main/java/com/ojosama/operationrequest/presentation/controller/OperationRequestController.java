@@ -83,7 +83,6 @@ public class OperationRequestController {
     @Operation(
             summary = "운영 요청 상세 조회",
             description = "특정 운영 요청의 상세 정보를 조회합니다. <br>" +
-                    "상태별 필터링이 가능하며, 페이징 처리됩니다. <br>" +
                     "관리자만 접근 가능합니다."
     )
     @PreAuthorize("hasRole('ADMIN')")
@@ -97,7 +96,7 @@ public class OperationRequestController {
     @Operation(
             summary = "운영 요청 수정",
             description = "운영 요청 내용을 수정합니다. <br>" +
-                    "요청 작성자 본인 또는 관리자만 접근 가능합니다." +
+                    "요청 작성자 본인 또는 관리자만 접근 가능합니다. <br>" +
                     "작성자는 운영 요청 상태가 대기중(PENDING)일 때만 수정 가능합니다."
     )
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
@@ -131,7 +130,7 @@ public class OperationRequestController {
     @Operation(
             summary = "운영 요청 삭제",
             description = "운영 요청을 삭제합니다. <br>" +
-                    "작성자 본인 또는 관리자만 접근 가능합니다." +
+                    "작성자 본인 또는 관리자만 접근 가능합니다. <br>" +
                     "작성자는 운영 요청 상태가 대기중(PENDING)일 때만 삭제 가능합니다."
     )
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
