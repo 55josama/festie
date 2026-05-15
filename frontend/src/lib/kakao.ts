@@ -122,6 +122,7 @@ export async function ensureDaumPostcode() {
   if (window.daum?.Postcode) return
   if (!postcodePromise) {
     postcodePromise = loadScript('https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js', 'festie-daum-postcode')
+    postcodePromise.catch(() => { postcodePromise = null })
   }
   await postcodePromise
 }
@@ -134,21 +135,23 @@ export async function ensureKakaoMaps() {
   }
   if (!kakaoPromise) {
     kakaoPromise = new Promise<void>((resolve, reject) => {
+      // 이미 로드된 스크립트가 있으면 재사용
       const existing = document.getElementById('festie-kakao-maps') as HTMLScriptElement | null
       if (existing) {
+        // 이미 로드 완료 + services 사용 가능
         if (existing.dataset.loaded === 'true' && window.kakao?.maps?.services) {
           resolve()
           return
         }
-        existing.addEventListener(
-          'load',
-          () => {
-            window.kakao?.maps?.load(() => resolve())
-          },
-          { once: true },
-        )
-        existing.addEventListener('error', () => reject(new Error('Kakao maps SDK를 불러오지 못했습니다.')), { once: true })
-        return
+        // 이미 로드 완료됐지만 services 없음 → 스크립트 제거 후 재로드
+        if (existing.dataset.loaded === 'true') {
+          existing.remove()
+        } else {
+          // 아직 로딩 중이면 이벤트 기다림
+          existing.addEventListener('load', () => { window.kakao?.maps?.load(() => resolve()) }, { once: true })
+          existing.addEventListener('error', () => reject(new Error('Kakao maps SDK를 불러오지 못했습니다.')), { once: true })
+          return
+        }
       }
 
       const script = document.createElement('script')
@@ -167,6 +170,8 @@ export async function ensureKakaoMaps() {
       script.addEventListener('error', () => reject(new Error('Kakao maps SDK를 불러오지 못했습니다.')), { once: true })
       document.head.appendChild(script)
     })
+    // 실패 시 캐시 초기화 → 다음 호출 때 재시도 가능
+    kakaoPromise.catch(() => { kakaoPromise = null })
   }
   await kakaoPromise
 }
