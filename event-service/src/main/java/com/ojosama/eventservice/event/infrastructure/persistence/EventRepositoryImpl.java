@@ -1,6 +1,7 @@
 package com.ojosama.eventservice.event.infrastructure.persistence;
 
 import com.ojosama.eventservice.event.domain.model.Event;
+import com.ojosama.eventservice.event.domain.model.EventStatus;
 import com.ojosama.eventservice.event.domain.model.QEvent;
 import com.ojosama.eventservice.event.domain.repository.EventFilter;
 import com.ojosama.eventservice.event.domain.repository.EventRepository;
@@ -105,6 +106,18 @@ public class EventRepositoryImpl implements EventRepository {
     @Override
     public void delete(Event event) {
         jpaEventRepository.save(event);
+    }
+
+    @Override
+    public boolean existsActiveEventsByCategoryId(UUID categoryId) {
+        QEvent event = QEvent.event;
+        return queryFactory
+            .selectOne()
+            .from(event)
+            .where(event.category.id.eq(categoryId)
+                .and(event.status.in(EventStatus.SCHEDULED, EventStatus.IN_PROGRESS))
+                .and(event.deletedAt.isNull()))
+            .fetchFirst() != null;
     }
 
     private BooleanBuilder buildWhere(QEvent event, EventFilter filter) {

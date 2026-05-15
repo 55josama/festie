@@ -17,4 +17,5 @@ public interface EventRepository {
     List<Event> findAllByIds(List<UUID> ids);
     Page<Event> findAll(EventFilter filter, Pageable pageable);
     void delete(Event event);
+    boolean existsActiveEventsByCategoryId(UUID categoryId);
 }

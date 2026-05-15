@@ -7,6 +7,7 @@ import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
 import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
 import com.ojosama.eventservice.event.domain.repository.EventCategoryRepository;
+import com.ojosama.eventservice.event.domain.repository.EventRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventCategoryCommandService {
 
     private final EventCategoryRepository eventCategoryRepository;
+    private final EventRepository eventRepository;
 
     public EventCategoryResult createCategory(CreateEventCategoryCommand command) {
         String normalizedName = EventCategory.normalizeName(command.name());
@@ -48,6 +50,9 @@ public class EventCategoryCommandService {
     public void deleteCategory(UUID userId, UUID categoryId) {
         EventCategory category = eventCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new EventException(EventErrorCode.EVENT_CATEGORY_NOT_FOUND));
+        if (eventRepository.existsActiveEventsByCategoryId(categoryId)) {
+            throw new EventException(EventErrorCode.EVENT_CATEGORY_HAS_ACTIVE_EVENTS);
+        }
         category.deleted(userId);
     }
 }
