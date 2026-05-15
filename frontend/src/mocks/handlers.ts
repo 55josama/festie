@@ -24,6 +24,16 @@ type MockProfile = {
   role: 'ADMIN' | 'MANAGER' | 'USER'
 }
 
+type MockAdminUser = {
+  userId: string
+  email: string
+  nickname: string
+  name: string
+  role: 'USER' | 'ADMIN' | 'CONCERT_MANAGER' | 'FESTIVAL_MANAGER' | 'FANMEETING_MANAGER' | 'POPUP_MANAGER' | 'COMMUNITY_MANAGER'
+  createdAt: string
+  updatedAt: string
+}
+
 const mockProfiles = new Map<string, MockProfile>([
   ['mock-admin-token', {
     userId: 'admin-user',
@@ -50,6 +60,45 @@ const mockProfiles = new Map<string, MockProfile>([
     role: 'USER',
   }],
 ])
+
+const mockAdminUsers: MockAdminUser[] = [
+  {
+    userId: 'admin-user',
+    email: 'admin@festie.com',
+    nickname: '어드민',
+    name: '관리자',
+    role: 'ADMIN',
+    createdAt: '2026-05-01T09:00:00.000Z',
+    updatedAt: '2026-05-15T09:00:00.000Z',
+  },
+  {
+    userId: 'manager-user',
+    email: 'manager@festie.com',
+    nickname: '매니저',
+    name: '매니저',
+    role: 'CONCERT_MANAGER',
+    createdAt: '2026-05-02T09:00:00.000Z',
+    updatedAt: '2026-05-15T09:10:00.000Z',
+  },
+  {
+    userId: 'u-1001',
+    email: 'subin@festie.com',
+    nickname: '호잇호잇',
+    name: '수빈',
+    role: 'USER',
+    createdAt: '2026-05-03T09:00:00.000Z',
+    updatedAt: '2026-05-15T09:20:00.000Z',
+  },
+  {
+    userId: 'u-1002',
+    email: 'popup@example.com',
+    nickname: '팝업덕후',
+    name: '팝업덕후',
+    role: 'POPUP_MANAGER',
+    createdAt: '2026-05-04T09:00:00.000Z',
+    updatedAt: '2026-05-15T09:30:00.000Z',
+  },
+]
 
 function normalizeCategoryKey(name: string) {
   if (name === '\uCF58\uC11C\uD2B8') return 'concert'
@@ -584,6 +633,42 @@ export const handlers = [
     }
     mockCalendars.splice(index, 1)
     return HttpResponse.json(wrap({}))
+  }),
+
+  http.get('/user-service/v1/users/admin', async ({ request }) => {
+    await delay(180)
+    const url = new URL(request.url)
+    const email = (url.searchParams.get('email') ?? '').trim().toLowerCase()
+    const name = (url.searchParams.get('name') ?? '').trim().toLowerCase()
+    const role = (url.searchParams.get('role') ?? '').trim().toUpperCase()
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 20)
+    let users = [...mockAdminUsers]
+    if (email || name) {
+      users = users.filter((item) => {
+        const emailMatch = email ? item.email.toLowerCase().includes(email) : false
+        const nameMatch = name ? item.name.toLowerCase().includes(name) || item.nickname.toLowerCase().includes(name) : false
+        return emailMatch || nameMatch
+      })
+    }
+    if (role && role !== 'ALL') {
+      users = users.filter((item) => item.role === role)
+    }
+    const totalElements = users.length
+    const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
+    const start = Math.max(page, 0) * Math.max(size, 1)
+    const content = users.slice(start, start + Math.max(size, 1))
+    return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
+  }),
+
+  http.patch('/user-service/v1/users/admin/:userId/role', async ({ params, request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const user = mockAdminUsers.find((item) => item.userId === params.userId)
+    if (!user) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    user.role = body.role ?? user.role
+    user.updatedAt = new Date().toISOString()
+    return HttpResponse.json(wrap(user))
   }),
 
   http.post('/user-service/v1/auth/login', async ({ request }) => {

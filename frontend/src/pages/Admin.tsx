@@ -4,11 +4,13 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {
   approveEventRequest,
   getAdminChatRooms,
+  getAdminUsers,
   forceChatRoomStatus,
   getEventRequests,
   getOperationRequests,
   getReports,
   rejectEventRequest,
+  changeAdminUserRole,
   updateOperationRequestStatus,
   updateReportStatus,
 } from '../api/admin'
@@ -27,13 +29,14 @@ import {
 import {useAuthStore} from '../store/authStore'
 import {formatDateTime} from '../lib/format'
 import {searchAddressWithKakao} from '../lib/kakao'
-import type {AdminMessageItem, OperationRequestItem} from '../types/admin'
+import type {AdminMessageItem, AdminUserItem, OperationRequestItem, AdminUserRole} from '../types/admin'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
 const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELED'] as const
 const OPERATION_STATUS_FILTERS = ['ALL', 'PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] as const
 const CHAT_STATUS_FILTERS = ['ALL', 'SCHEDULED', 'OPEN', 'CLOSED'] as const
-const ADMIN_TABS = ['requests', 'reports', 'chat'] as const
+const USER_ROLE_FILTERS = ['ALL', 'USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER'] as const
+const ADMIN_TABS = ['requests', 'reports', 'chat', 'users'] as const
 const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
     ADMIN: [],
     CONCERT_MANAGER: ['\uCF58\uC11C\uD2B8'],
@@ -43,6 +46,17 @@ const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
 }
 
 type AdminTab = (typeof ADMIN_TABS)[number]
+
+const USER_ROLE_OPTIONS: { value: AdminUserRole | 'ALL'; label: string }[] = [
+    {value: 'ALL', label: '전체'},
+    {value: 'USER', label: '일반 사용자'},
+    {value: 'ADMIN', label: '관리자'},
+    {value: 'CONCERT_MANAGER', label: '콘서트 매니저'},
+    {value: 'FESTIVAL_MANAGER', label: '축제 매니저'},
+    {value: 'FANMEETING_MANAGER', label: '팬미팅 매니저'},
+    {value: 'POPUP_MANAGER', label: '팝업 매니저'},
+    {value: 'COMMUNITY_MANAGER', label: '커뮤니티 매니저'},
+]
 
 interface AdminMessagePage {
     content: AdminMessageItem[]
@@ -72,6 +86,10 @@ export default function Admin() {
     const [chatStatus, setChatStatus] = useState<(typeof CHAT_STATUS_FILTERS)[number]>('ALL')
     const [messageStatus, setMessageStatus] = useState<'ALL' | 'ACTIVE' | 'BLINDED'>('ALL')
     const [messagePage, setMessagePage] = useState(0)
+    const [userSearchEmail, setUserSearchEmail] = useState('')
+    const [userSearchName, setUserSearchName] = useState('')
+    const [userSearchRole, setUserSearchRole] = useState<(typeof USER_ROLE_FILTERS)[number]>('ALL')
+    const [userPage, setUserPage] = useState(0)
     const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
     const [reportForms, setReportForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
     const [operationForms, setOperationForms] = useState<Record<string, { status: string; adminMemo: string }>>({})
@@ -125,6 +143,22 @@ export default function Admin() {
     const canViewEventRequests = isAdmin || isManager
     const canCreateCategories = normalizedRole === 'ADMIN'
     const canViewOperationRequests = normalizedRole === 'ADMIN'
+
+    const {
+        data: adminUsersPage = {content: [], totalElements: 0, totalPages: 0, size: 0, page: 0},
+        refetch: refetchAdminUsers,
+    } = useQuery({
+        queryKey: ['admin', 'users', userPage, userSearchEmail, userSearchName, userSearchRole],
+        queryFn: () =>
+            getAdminUsers({
+                page: userPage,
+                size: 12,
+                email: userSearchEmail.trim() || undefined,
+                name: userSearchName.trim() || undefined,
+                role: userSearchRole === 'ALL' ? undefined : userSearchRole,
+            }),
+        enabled: isAdmin,
+    })
 
     const {data: eventRequests = []} = useQuery({
         queryKey: ['admin', 'event-requests', requestStatus],
@@ -236,6 +270,13 @@ export default function Admin() {
         mutationFn: ({messageId, status}: { messageId: string; status: 'ACTIVE' | 'BLINDED' }) =>
             updateAdminChatMessageStatus(messageId, status),
         onSuccess: () => queryClient.invalidateQueries({queryKey: ['admin', 'messages']}),
+    })
+
+    const userRoleMutation = useMutation({
+        mutationFn: ({userId, role}: { userId: string; role: string }) => changeAdminUserRole(userId, role),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['admin', 'users']})
+        },
     })
 
     const createEventMutation = useMutation({
@@ -431,7 +472,12 @@ export default function Admin() {
         {value: 'requests', label: '요청', description: '행사/운영/카테고리생성'},
         {value: 'reports', label: '신고', description: '블라인드·처리'},
         {value: 'chat', label: '채팅', description: '메시지·방'},
+        {value: 'users', label: '사용자 조회', description: '이메일·이름·권한'},
     ]
+    const visibleTabs = useMemo(
+        () => tabs.filter((tab) => tab.value !== 'users' || isAdmin),
+        [isAdmin],
+    )
 
     return (
         <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
@@ -469,7 +515,7 @@ export default function Admin() {
             <section
                 className="rounded-[22px] border border-[var(--line)] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                 <div className="flex flex-wrap items-center gap-2">
-                    {tabs.map((tab) => (
+                    {visibleTabs.map((tab) => (
                         <button
                             key={tab.value}
                             type="button"
@@ -1089,8 +1135,179 @@ export default function Admin() {
                     </section>
                 </div>
             )}
+
+            {activeTab === 'users' && isAdmin && (
+                <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                    <SectionHeader
+                        title="사용자 조회"
+                        action={<span className="text-xs text-slate-500">{adminUsersPage.totalElements}명</span>}
+                    />
+                    <p className="text-sm leading-6 text-slate-600">
+                        이메일 또는 이름/닉네임으로 사용자를 찾고, 각 사용자 권한을 바로 바꿀 수 있어요.
+                    </p>
+
+                    <div className="grid gap-3 md:grid-cols-[1fr_1fr_0.8fr_auto_auto]">
+                        <input
+                            value={userSearchEmail}
+                            onChange={(e) => {
+                                setUserPage(0)
+                                setUserSearchEmail(e.target.value)
+                            }}
+                            placeholder="이메일 검색"
+                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
+                        />
+                        <input
+                            value={userSearchName}
+                            onChange={(e) => {
+                                setUserPage(0)
+                                setUserSearchName(e.target.value)
+                            }}
+                            placeholder="이름/닉네임 검색"
+                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
+                        />
+                        <select
+                            value={userSearchRole}
+                            onChange={(e) => {
+                                setUserPage(0)
+                                setUserSearchRole(e.target.value as typeof USER_ROLE_FILTERS[number])
+                            }}
+                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
+                        >
+                            {USER_ROLE_FILTERS.map((role) => (
+                                <option key={role} value={role}>
+                                    {role === 'ALL' ? '권한 전체' : labelUserRole(role)}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setUserSearchEmail('')
+                                setUserSearchName('')
+                                setUserSearchRole('ALL')
+                                setUserPage(0)
+                            }}
+                            className="rounded-full border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
+                        >
+                            초기화
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setUserPage(0)
+                                void refetchAdminUsers()
+                            }}
+                            className="rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white"
+                        >
+                            검색
+                        </button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {adminUsersPage.content.map((item: AdminUserItem) => (
+                            <UserRow
+                                key={item.userId}
+                                user={item}
+                                onChangeRole={(role) => userRoleMutation.mutate({userId: item.userId, role})}
+                                loading={userRoleMutation.isPending}
+                            />
+                        ))}
+                        {adminUsersPage.content.length === 0 && <EmptyState text="사용자가 없습니다."/>}
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                        <button
+                            type="button"
+                            disabled={adminUsersPage.page === 0}
+                            onClick={() => setUserPage((prev) => Math.max(prev - 1, 0))}
+                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                        >
+                            이전
+                        </button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({length: Math.max(adminUsersPage.totalPages || 0, 1)}, (_, index) => index).map((pageIndex) => (
+                                <button
+                                    key={pageIndex}
+                                    type="button"
+                                    onClick={() => setUserPage(pageIndex)}
+                                    className={`h-8 min-w-8 rounded-full px-2 text-xs font-semibold transition-colors ${
+                                        adminUsersPage.page === pageIndex ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {pageIndex + 1}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            disabled={adminUsersPage.page + 1 >= Math.max(adminUsersPage.totalPages || 0, 1)}
+                            onClick={() => setUserPage((prev) => prev + 1)}
+                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                        >
+                            다음
+                        </button>
+                    </div>
+                </section>
+            )}
         </div>
     )
+}
+
+function UserRow({
+  user,
+  onChangeRole,
+  loading,
+}: {
+  user: AdminUserItem
+  onChangeRole: (role: AdminUserRole) => void
+  loading?: boolean
+}) {
+  const [role, setRole] = useState<AdminUserRole>(user.role)
+
+  useEffect(() => {
+    setRole(user.role)
+  }, [user.role])
+
+  return (
+    <div className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+              {labelUserRole(user.role)}
+            </span>
+            <span className="text-xs text-slate-500">{user.userId}</span>
+          </div>
+          <div className="text-sm font-semibold text-slate-950">{user.nickname} · {user.name}</div>
+          <div className="text-xs leading-5 text-slate-600">{user.email}</div>
+          <div className="text-[11px] text-slate-500">
+            생성: {formatDateTime(user.createdAt)} · 수정: {formatDateTime(user.updatedAt)}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 lg:w-[240px]">
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as AdminUserRole)}
+            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+          >
+            {USER_ROLE_OPTIONS.filter((item) => item.value !== 'ALL').map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={loading || role === user.role}
+            onClick={() => onChangeRole(role)}
+            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+          >
+            {loading ? '저장 중...' : '권한 저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function MetricCard({label, value, dark = false}: { label: string; value: string; dark?: boolean }) {
@@ -1687,7 +1904,7 @@ function normalizeRole(role?: string | null) {
 }
 
 function normalizeAdminTab(value: string | null): AdminTab {
-    if (value === 'reports' || value === 'chat' || value === 'requests') return value
+    if (value === 'reports' || value === 'chat' || value === 'requests' || value === 'users') return value
     return 'requests'
 }
 
@@ -1697,6 +1914,20 @@ function normalizeEventCategoryKey(name: string) {
     if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
     if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
     return name.toLowerCase()
+}
+
+function labelUserRole(role: string) {
+    const normalized = String(role ?? '').trim()
+    const map: Record<string, string> = {
+        USER: '일반 사용자',
+        ADMIN: '관리자',
+        CONCERT_MANAGER: '콘서트 매니저',
+        FESTIVAL_MANAGER: '축제 매니저',
+        FANMEETING_MANAGER: '팬미팅 매니저',
+        POPUP_MANAGER: '팝업 매니저',
+        COMMUNITY_MANAGER: '커뮤니티 매니저',
+    }
+    return map[normalized] ?? (normalized || '알 수 없음')
 }
 
 function extractErrorMessage(error: any, fallback: string) {

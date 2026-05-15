@@ -43,3 +43,30 @@ export interface AdminMessageItem {
   status: string
   createdAt: string
 }
+
+export type AdminUserRole =
+  | 'USER'
+  | 'ADMIN'
+  | 'CONCERT_MANAGER'
+  | 'FESTIVAL_MANAGER'
+  | 'FANMEETING_MANAGER'
+  | 'POPUP_MANAGER'
+  | 'COMMUNITY_MANAGER'
+
+export interface AdminUserItem {
+  userId: string
+  email: string
+  nickname: string
+  name: string
+  role: AdminUserRole
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminUserPage {
+  content: AdminUserItem[]
+  page: number
+  totalElements: number
+  totalPages: number
+  size: number
+}
