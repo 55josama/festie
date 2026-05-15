@@ -13,6 +13,23 @@ const rawClient = axios.create({
     headers: {'Content-Type': 'application/json'},
 })
 
+export const reissueAccessToken = async () => {
+    const refreshToken = useAuthStore.getState().refreshToken
+    if (!refreshToken) {
+        throw new Error('refreshToken is missing')
+    }
+    const res = await rawClient.post('/user-service/v1/auth/reissue', {refreshToken})
+    const tokens = res.data.data ?? res.data
+    if (!tokens?.accessToken) {
+        throw new Error('accessToken is missing')
+    }
+    useAuthStore.getState().setAccessToken(tokens.accessToken)
+    if (tokens.refreshToken) {
+        useAuthStore.getState().setRefreshToken(tokens.refreshToken)
+    }
+    return tokens.accessToken as string
+}
+
 client.interceptors.request.use((config) => {
     const store = useAuthStore.getState()
     store.syncUserFromAccessToken()
@@ -29,24 +46,14 @@ client.interceptors.response.use(
     async (error) => {
         if (error.response?.status === 401) {
             try {
-                const refreshToken = useAuthStore.getState().refreshToken
-                if (!refreshToken) {
-                    useAuthStore.getState().logout()
-                    return Promise.reject(error)
-                }
-                const res = await rawClient.post('/user-service/v1/auth/reissue', {refreshToken})
-                const tokens = res.data.data ?? res.data
-                useAuthStore.getState().setAccessToken(tokens.accessToken)
-                if (tokens.refreshToken) {
-                    useAuthStore.getState().setRefreshToken(tokens.refreshToken)
-                }
+                const accessToken = await reissueAccessToken()
                 const original = error.config as any
                 if (original._retry) {
                     return Promise.reject(error)
                 }
                 original._retry = true
                 original.headers = original.headers ?? {}
-                original.headers.Authorization = `Bearer ${tokens.accessToken}`
+                original.headers.Authorization = `Bearer ${accessToken}`
                 return client(original)
             } catch {
                 useAuthStore.getState().logout()

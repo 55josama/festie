@@ -393,6 +393,37 @@ export const handlers = [
     return HttpResponse.json(wrap(room))
   }),
 
+  http.post('/chat-service/v1/chat/admin/rooms', async ({ request }) => {
+    await delay(140)
+    const body = await request.json() as any
+    const eventId = String(body.eventId ?? '')
+    const eventName = String(body.eventName ?? '').trim()
+    const category = String(body.category ?? '').trim().toUpperCase()
+    const scheduledOpenAt = body.scheduledOpenAt ?? null
+    const scheduledCloseAt = body.scheduledCloseAt ?? null
+    if (!eventId || !eventName || !category || !scheduledOpenAt || !scheduledCloseAt) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    if (mockChatRooms.some((item) => item.eventId === eventId)) {
+      return HttpResponse.json({ status: 'error', message: '채팅방이 이미 존재합니다.' }, { status: 409 })
+    }
+    const chatRoomId = `room-${crypto.randomUUID()}`
+    const room = {
+      chatRoomId,
+      eventId,
+      eventName,
+      category,
+      status: 'SCHEDULED',
+      scheduledOpenAt,
+      scheduledCloseAt,
+      openedAt: null,
+      closedAt: null,
+      currentViewerCount: 0,
+    }
+    mockChatRooms.push(room as any)
+    return HttpResponse.json(wrap(room), { status: 201 })
+  }),
+
   http.get('/chat-service/v1/chat/rooms/:chatRoomId/messages', async ({ params }) => {
     await delay(120)
     const messages = mockMessages.filter((item) => item.chatRoomId === params.chatRoomId)
@@ -404,6 +435,16 @@ export const handlers = [
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? 3)
     return HttpResponse.json(wrap(mockChatRooms.slice(0, limit)))
+  }),
+
+  http.get('/chat-service/v1/chat/admin/rooms', async () => {
+    await delay(140)
+    return HttpResponse.json(wrap(
+      mockChatRooms.map((room) => ({
+        ...room,
+        currentViewerCount: room.currentViewerCount ?? 0,
+      })),
+    ))
   }),
 
   http.patch('/chat-service/v1/chat/admin/rooms/:chatRoomId/status', async ({ params, request }) => {
@@ -468,6 +509,20 @@ export const handlers = [
     }
     mockMessages.push(message as any)
     return HttpResponse.json(wrap(message), { status: 201 })
+  }),
+
+  http.delete('/chat-service/v1/chat/messages/:messageId', async ({ params, request }) => {
+    await delay(120)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const role = request.headers.get('x-user-role')
+    const index = mockMessages.findIndex((item) => item.messageId === params.messageId)
+    if (index === -1) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    const message = mockMessages[index]
+    if (role !== 'ADMIN' && message.userId !== userId) {
+      return HttpResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 })
+    }
+    mockMessages.splice(index, 1)
+    return HttpResponse.json(wrap(null))
   }),
 
   http.get('/calendar-service/v1/calendars', async ({ request }) => {
