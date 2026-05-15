@@ -32,3 +32,8 @@ scrape_configs:
     metrics_path: "/actuator/prometheus"
     static_configs:
       - targets: [ "ai-service:8083" ]
+
+  - job_name: "calendar-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: [ "calendar-service:8087" ]
