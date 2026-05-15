@@ -138,7 +138,12 @@ export default function Events() {
             </FilterRow>
             <FilterRow label="카테고리">
               {CATEGORY_FILTERS.map((item) => (
-                <Chip key={item} active={selectedCategory === item} onClick={() => setSelectedCategory(item)}>
+                <Chip
+                  key={item}
+                  active={selectedCategory === item}
+                  tone={item === '전체' ? 'slate' : getCategoryTone(item)}
+                  onClick={() => setSelectedCategory(item)}
+                >
                   {item}
                 </Chip>
               ))}
@@ -164,7 +169,12 @@ export default function Events() {
             </FilterRow>
             <FilterRow label="카테고리">
               {CATEGORY_FILTERS.map((item) => (
-                <Chip key={item} active={selectedCategory === item} onClick={() => setSelectedCategory(item)}>
+                <Chip
+                  key={item}
+                  active={selectedCategory === item}
+                  tone={item === '전체' ? 'slate' : getCategoryTone(item)}
+                  onClick={() => setSelectedCategory(item)}
+                >
                   {item}
                 </Chip>
               ))}
@@ -210,6 +220,7 @@ export default function Events() {
 
 function EventNewsCard({ event }: { event: Event }) {
   const displayStatus = getDisplayStatus(event)
+  const categoryTone = getCategoryTone(event.categoryName)
   return (
     <Link
       to={`/events/${event.id}`}
@@ -229,7 +240,7 @@ function EventNewsCard({ event }: { event: Event }) {
       </div>
       <div className="min-w-0 flex h-full flex-1 flex-col space-y-2.5 p-3 md:space-y-3 md:p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>{event.categoryName}</Badge>
+          <Badge tone={categoryTone}>{displayEventCategoryLabel(event.categoryName)}</Badge>
           <span className={`text-xs font-semibold ${displayStatus.statusClass}`}>{displayStatus.label}</span>
         </div>
         <div>
@@ -255,14 +266,34 @@ function FilterRow({ label, children }: { label: string; children: ReactNode }) 
   )
 }
 
-function Chip({ active, onClick, children }: { active?: boolean; onClick: () => void; children: ReactNode }) {
+function Chip({
+  active,
+  tone = 'slate',
+  onClick,
+  children,
+}: {
+  active?: boolean
+  tone?: 'violet' | 'sky' | 'emerald' | 'rose' | 'slate' | 'concert' | 'festival' | 'fanmeeting' | 'popup'
+  onClick: () => void
+  children: ReactNode
+}) {
+  const toneClass = {
+    violet: 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+    sky: 'border-sky-200 bg-sky-50 text-sky-700',
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    rose: 'border-rose-200 bg-rose-50 text-rose-700',
+    slate: 'border-slate-200 bg-slate-50 text-slate-700',
+    concert: 'border-violet-200 bg-violet-50 text-violet-700',
+    festival: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
+    fanmeeting: 'border-pink-200 bg-pink-50 text-pink-700',
+    popup: 'border-sky-200 bg-sky-50 text-sky-700',
+  }[tone]
+
   return (
     <button
       onClick={onClick}
       className={`rounded-full border px-2 py-1 text-[10px] font-semibold transition-colors md:px-2.5 md:py-1.5 md:text-[11px] ${
-        active
-          ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
-          : 'border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
+        active ? toneClass : 'border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
       }`}
     >
       {children}
@@ -270,17 +301,24 @@ function Chip({ active, onClick, children }: { active?: boolean; onClick: () => 
   )
 }
 
-function Badge({ children }: { children: ReactNode }) {
-  return <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)] md:px-2.5 md:py-1 md:text-[11px]">{children}</span>
+function Badge({ children, tone }: { children: ReactNode; tone?: 'concert' | 'festival' | 'fanmeeting' | 'popup' }) {
+  const toneClass = {
+    concert: 'bg-violet-100 text-violet-700',
+    festival: 'bg-fuchsia-100 text-fuchsia-700',
+    fanmeeting: 'bg-pink-100 text-pink-700',
+    popup: 'bg-sky-100 text-sky-700',
+  }[tone ?? 'concert']
+
+  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${toneClass}`}>{children}</span>
 }
 
 function cardTone(categoryName: string) {
   return (
     {
-      concert: { background: 'linear-gradient(135deg, rgba(110,84,255,0.18), rgba(110,84,255,0.42))' },
-      festival: { background: 'linear-gradient(135deg, rgba(141,115,255,0.16), rgba(88,92,255,0.38))' },
-      fanmeeting: { background: 'linear-gradient(135deg, rgba(126,92,255,0.18), rgba(178,106,255,0.34))' },
-      popup: { background: 'linear-gradient(135deg, rgba(98,78,240,0.12), rgba(76,122,255,0.28))' },
+      concert: { background: 'linear-gradient(135deg, rgba(167,139,250,0.18), rgba(124,58,237,0.42))' },
+      festival: { background: 'linear-gradient(135deg, rgba(244,114,182,0.18), rgba(236,72,153,0.38))' },
+      fanmeeting: { background: 'linear-gradient(135deg, rgba(251,113,133,0.18), rgba(244,63,94,0.34))' },
+      popup: { background: 'linear-gradient(135deg, rgba(125,211,252,0.16), rgba(96,165,250,0.30))' },
     }[normalizeCategoryKey(categoryName)] ?? { background: 'linear-gradient(135deg, rgba(111,84,255,0.16), rgba(111,84,255,0.32))' }
   )
 }
@@ -307,9 +345,29 @@ function normalizeCategoryKey(name: string) {
   const normalized = String(name ?? '').trim().toLowerCase()
   if (normalized === '콘서트' || normalized === 'concert') return 'concert'
   if (normalized === '축제' || normalized === 'festival') return 'festival'
-  if (normalized === '팬미팅' || normalized === 'fanmeeting') return 'fanmeeting'
-  if (normalized === '팝업스토어' || normalized === 'popup' || normalized === 'popupstore') return 'popup'
+  if (normalized === '팬미팅' || normalized === 'fanmeeting' || normalized === 'fan-meeting' || normalized === 'fan meeting') return 'fanmeeting'
+  if (normalized === '팝업스토어' || normalized === '팝업' || normalized === 'popup' || normalized === 'popupstore' || normalized === 'pop-up-store' || normalized === 'pop up store') return 'popup'
   return normalized
+}
+
+function getCategoryTone(name: string) {
+  return (normalizeCategoryKey(name) === 'festival'
+    ? 'festival'
+    : normalizeCategoryKey(name) === 'fanmeeting'
+      ? 'fanmeeting'
+      : normalizeCategoryKey(name) === 'popup'
+        ? 'popup'
+        : 'concert') as 'concert' | 'festival' | 'fanmeeting' | 'popup'
+}
+
+function displayEventCategoryLabel(name: string) {
+  const key = normalizeCategoryKey(name)
+  return {
+    concert: 'CONCERT',
+    festival: 'FESTIVAL',
+    fanmeeting: 'FANMEETING',
+    popup: 'POPUP STORE',
+  }[key] ?? (String(name ?? '').trim().toUpperCase() || 'EVENT')
 }
 
 function getDisplayStatus(event: Event) {

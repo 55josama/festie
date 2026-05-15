@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { getCategories } from '../api/community'
 import { getEvents, getTicketingEvents } from '../api/events'
 import { getPosts } from '../api/community'
 import { getPopularChatRooms } from '../api/chat'
@@ -11,11 +12,15 @@ export default function Home() {
   const { data: allEvents = [] } = useQuery({ queryKey: ['events', 'home'], queryFn: () => getEvents({ size: 100 }) })
   const { data: ticketingEvents = [] } = useQuery({ queryKey: ['events', 'ticketing'], queryFn: getTicketingEvents })
   const { data: posts = [] } = useQuery({ queryKey: ['posts', 'home'], queryFn: () => getPosts({ size: 4, sort: 'createdAt,desc' }) })
+  const { data: categories = [] } = useQuery({ queryKey: ['categories', 'home'], queryFn: getCategories })
   const { data: popularRooms = [] } = useQuery({ queryKey: ['popular-chat-rooms', 'home'], queryFn: () => getPopularChatRooms(3) })
 
   const featuredPosts = useMemo(() => pickTodayPopularPosts(posts as Post[]), [posts])
   const upcomingEvents = useMemo(() => getCurrentEventWindow(allEvents as Event[]), [allEvents])
   const upcomingTicketing = useMemo(() => getCurrentTicketingWindow(ticketingEvents as Event[]), [ticketingEvents])
+  const categoryNameById = useMemo(() => {
+    return new Map((categories as any[]).map((category: any) => [category.id, category.name]))
+  }, [categories])
 
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
@@ -100,7 +105,11 @@ export default function Home() {
         />
         <div className="mt-4 grid gap-3">
           {featuredPosts.map((post) => (
-            <PostRow key={post.id} post={post} />
+            <PostRow
+              key={post.id}
+              post={post}
+              categoryLabel={categoryNameById.get(post.categoryId) ?? post.categoryName}
+            />
           ))}
         </div>
       </section>
@@ -190,7 +199,7 @@ function CompactEventRow({ event }: { event: Event }) {
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{event.categoryName}</span>
+          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{displayEventCategoryLabel(event.categoryName)}</span>
           <span className="text-[11px] text-slate-500">{event.status}</span>
         </div>
         <div className="mt-2 truncate text-sm font-semibold text-slate-950">{event.name}</div>
@@ -225,7 +234,7 @@ function TicketingRow({ event }: { event: Event }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{event.categoryName}</div>
+          <div className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{displayEventCategoryLabel(event.categoryName)}</div>
           <div className="mt-1 truncate text-sm font-semibold text-slate-950">{event.name}</div>
           <div className="mt-1 truncate text-xs text-slate-500">{formatDateRange(event.startAt, event.endAt)}</div>
           <div className="mt-2 text-xs text-slate-500">{event.place}</div>
@@ -238,8 +247,9 @@ function TicketingRow({ event }: { event: Event }) {
   )
 }
 
-function PostRow({ post }: { post: Post }) {
-  const chipClass = postChipClass(post.categoryName)
+function PostRow({ post, categoryLabel }: { post: Post; categoryLabel?: string }) {
+  const label = categoryLabel ?? post.categoryName ?? '카테고리'
+  const chipClass = postChipClass(label)
   return (
     <Link
       to={`/community/${post.id}`}
@@ -247,11 +257,15 @@ function PostRow({ post }: { post: Post }) {
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{post.categoryName}</span>
-          {post.eventName && <span className="text-[11px] text-slate-500">{post.eventName}</span>}
+          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{label}</span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-slate-950">{post.title}</div>
+          </div>
         </div>
-        <div className="mt-2 truncate text-sm font-semibold text-slate-950">{post.title}</div>
-        <div className="mt-1 truncate text-xs text-slate-500">{post.authorNickname ?? '익명'} · {post.createdAt}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          {post.eventName && <span>{post.eventName}</span>}
+          <span>{post.authorNickname ?? '익명'} · {post.createdAt}</span>
+        </div>
       </div>
       <div className="shrink-0 text-right text-xs text-slate-500">
         <div>♡ {post.likeCount}</div>
@@ -268,8 +282,18 @@ function categoryChipClass(name: string) {
       festival: 'bg-fuchsia-100 text-fuchsia-700',
       fanmeeting: 'bg-pink-100 text-pink-700',
       popup: 'bg-sky-100 text-sky-700',
-    }[normalizeCategoryKey(name)] ?? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+    }[normalizeCategoryKey(name)] ?? 'bg-violet-100 text-violet-700'
   )
+}
+
+function displayEventCategoryLabel(name: string) {
+  const key = normalizeCategoryKey(name)
+  return {
+    concert: 'CONCERT',
+    festival: 'FESTIVAL',
+    fanmeeting: 'FANMEETING',
+    popup: 'POPUP STORE',
+  }[key] ?? (String(name ?? '').trim().toUpperCase() || 'EVENT')
 }
 
 function postChipClass(name: string) {
@@ -284,17 +308,19 @@ function postChipClass(name: string) {
 }
 
 function normalizeCategoryKey(name: string) {
-  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
-  if (name === '\uCD95\uC81C') return 'festival'
-  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
-  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
-  return name.toLowerCase()
+  const normalized = String(name ?? '').trim().toLowerCase()
+  if (normalized === '콘서트' || normalized === 'concert') return 'concert'
+  if (normalized === '축제' || normalized === 'festival') return 'festival'
+  if (normalized === '팬미팅' || normalized === 'fanmeeting' || normalized === 'fan-meeting') return 'fanmeeting'
+  if (normalized === '팝업스토어' || normalized === '팝업' || normalized === 'popup' || normalized === 'popupstore') return 'popup'
+  return normalized
 }
 
 function normalizePostCategoryKey(name: string) {
-  if (name === '\uD6C4\uAE30') return 'review'
-  if (name === '\uAFC0\uD301') return 'tip'
-  if (name === '\uC790\uC720') return 'free'
-  if (name === '\uC694\uCCAD') return 'request'
-  return name.toLowerCase()
+  const normalized = String(name ?? '').trim().toLowerCase()
+  if (normalized === '후기' || normalized === 'review') return 'review'
+  if (normalized === '꿀팁' || normalized === 'tip') return 'tip'
+  if (normalized === '자유' || normalized === 'free') return 'free'
+  if (normalized === '요청' || normalized === 'request') return 'request'
+  return normalized
 }
