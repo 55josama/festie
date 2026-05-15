@@ -41,7 +41,6 @@ subprojects {
         testAnnotationProcessor 'org.projectlombok:lombok'
         implementation 'io.micrometer:micrometer-tracing-bridge-brave'
         implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
-        implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.3.0'
     }
 
     tasks.named('test') {
