@@ -102,9 +102,9 @@ function normalizeRegionName(value?: string) {
   if (/경기/.test(compact)) return '경기'
   if (/세종|대전|충청/.test(compact)) return '충청'
   if (/강원/.test(compact)) return '강원'
-  if (/경상|부산|대구|울산|창원|포항|경주|진주|구미|경산/.test(compact)) return '경상'
-  if (/전라|광주|전주|목포|여수|순천|군산|익산/.test(compact)) return '전라'
   if (/부산/.test(compact)) return '부산'
+  if (/경상|대구|울산|창원|포항|경주|진주|구미|경산/.test(compact)) return '경상'
+  if (/전라|광주|전주|목포|여수|순천|군산|익산/.test(compact)) return '전라'
   if (/제주/.test(compact)) return '제주'
   return compact
 }

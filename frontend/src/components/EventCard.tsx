@@ -61,19 +61,20 @@ export default function EventCard({ event }: { event: Event }) {
 
 function normalizeCategoryKey(name: string) {
   const normalized = String(name ?? '').trim().toLowerCase()
-  if (normalized === '콘서트' || normalized === 'concert') return 'concert'
-  if (normalized === '축제' || normalized === 'festival') return 'festival'
-  if (normalized === '팬미팅' || normalized === 'fanmeeting' || normalized === 'fan-meeting' || normalized === 'fan meeting') return 'fanmeeting'
-  if (normalized === '팝업스토어' || normalized === '팝업' || normalized === 'popup' || normalized === 'popupstore' || normalized === 'pop-up-store' || normalized === 'pop up store') return 'popup'
+  const compact = normalized.replace(/[\s_-]+/g, '')
+  if (compact.includes('concert') || compact.includes('콘서트')) return 'concert'
+  if (compact.includes('festival') || compact.includes('페스티벌') || compact.includes('축제')) return 'festival'
+  if (compact.includes('fanmeeting') || compact.includes('팬미팅') || compact.includes('팬 미팅')) return 'fanmeeting'
+  if (compact.includes('popup') || compact.includes('팝업스토어') || compact.includes('팝업') || compact.includes('pop-up') || compact.includes('pop up')) return 'popup'
   return normalized
 }
 
 function displayEventCategoryLabel(name: string) {
   const key = normalizeCategoryKey(name)
   return {
-    concert: 'CONCERT',
-    festival: 'FESTIVAL',
-    fanmeeting: 'FANMEETING',
-    popup: 'POPUP STORE',
+    concert: '콘서트',
+    festival: '축제',
+    fanmeeting: '팬미팅',
+    popup: '팝업스토어',
   }[key] ?? (String(name ?? '').trim().toUpperCase() || 'EVENT')
 }

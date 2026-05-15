@@ -20,6 +20,8 @@ export default function EventDetail() {
   const [message, setMessage] = useState('')
   const [isChatEntered, setIsChatEntered] = useState(false)
   const [chatConnectionStatus, setChatConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
+  const [calendarDate, setCalendarDate] = useState('')
+  const [scheduleCalendarDates, setScheduleCalendarDates] = useState<Record<string, string>>({})
   const stompClientRef = useRef<any>(null)
   const chatConnectionStatusRef = useRef<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const chatMessagesScrollRef = useRef<HTMLDivElement | null>(null)
@@ -104,9 +106,17 @@ export default function EventDetail() {
   })
 
   const schedules = useMemo(() => event?.schedules ?? [], [event?.schedules])
+  const hasDetailedSchedules = schedules.length > 0
+  const calendarDateOptions = useMemo(() => buildCalendarDateOptions(event), [event?.id, event?.startAt, event?.endAt, schedules.length])
   const chatState = useMemo(() => resolveChatState(chatRoom), [chatRoom])
+  const chatTheme = useMemo(() => getChatTheme(chatRoom?.category ?? event?.categoryName ?? ''), [chatRoom?.category, event?.categoryName])
   const orderedMessages = useMemo(() => normalizeChatMessages(messages), [messages])
   const canJoinChat = Boolean(chatRoomId && chatRoom && chatState.isOpen && isLoggedIn())
+
+  useEffect(() => {
+    if (!event) return
+    setCalendarDate(calendarDateOptions[0] ?? event.startAt)
+  }, [calendarDateOptions, event?.startAt, event?.id])
 
   useEffect(() => {
     if (!isChatEntered || !chatMessagesScrollRef.current) {
@@ -200,8 +210,8 @@ export default function EventDetail() {
     return <div className="px-5 py-10 text-slate-500">행사를 찾을 수 없어요.</div>
   }
 
-  return (
-    <div className="px-5 py-6 md:px-8 md:py-8">
+    return (
+    <div className="px-5 py-6 min-[700px]:px-8 min-[700px]:py-8">
       <div className="mb-4 flex items-center gap-2 text-sm text-slate-500">
         <Link to="/" className="hover:text-slate-900">홈</Link>
         <span>/</span>
@@ -210,22 +220,22 @@ export default function EventDetail() {
         <span className="text-slate-900">{event.name}</span>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-[1.25fr_0.75fr]">
-        <section className="space-y-6 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-6">
+      <div className="grid gap-6 min-[700px]:grid-cols-[1.25fr_0.75fr]">
+        <section className="space-y-6 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)] min-[700px]:p-6">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge>{event.categoryName}</Badge>
+            <Badge>{displayEventCategoryLabel(event.categoryName)}</Badge>
             <Badge tone="slate">{event.status}</Badge>
             {event.ticketingOpenAt && <Badge tone="blue">{calcDDay(event.ticketingOpenAt)}</Badge>}
           </div>
 
-          <div className="grid gap-5 md:grid-cols-[1fr_0.95fr]">
-            <div className="overflow-hidden rounded-[26px] border border-[var(--line)] bg-white">
+          <div className="grid gap-5 min-[700px]:grid-cols-[1fr_0.95fr]">
+            <div className="overflow-hidden rounded-[26px] bg-white">
               {event.img ? (
-                <div className="h-[320px] w-full overflow-hidden bg-slate-50">
+                <div className="h-[320px] w-full overflow-hidden bg-white">
                   <img
                     src={event.img}
                     alt={event.name}
-                    className="block h-full w-full object-cover object-top"
+                    className="block h-full w-full object-cover object-top md:rounded-[20px] md:shadow-[0_0_0_1px_rgba(148,163,184,0.22)]"
                   />
                 </div>
               ) : (
@@ -242,7 +252,7 @@ export default function EventDetail() {
               </div>
 
               <div className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 min-[700px]:grid-cols-2">
                   <MiniInfoCard label="시작" value={formatDateTime(event.startAt)} />
                   <MiniInfoCard label="종료" value={formatDateTime(event.endAt)} />
                 </div>
@@ -265,26 +275,43 @@ export default function EventDetail() {
                   </span>
                 ) : null}
                 {event.officialLink && (
-                  <a href={event.officialLink} target="_blank" rel="noreferrer" className="rounded-full border border-[var(--line)] bg-white px-5 py-3 text-sm font-semibold text-slate-700">
+                  <a href={event.officialLink} target="_blank" rel="noreferrer" className="rounded-full border border-violet-300 bg-violet-50 px-5 py-3 text-sm font-semibold text-violet-700 shadow-[0_0_0_1px_rgba(167,139,250,0.08)] transition-colors hover:bg-violet-100">
                     공식 링크
                   </a>
                 )}
                 {isLoggedIn() ? (
-                  <button
-                    onClick={() => calendarMutation.mutate({ eventDate: event.startAt, memo: event.name })}
-                    className="rounded-full border border-[var(--line)] bg-white px-5 py-3 text-sm font-medium text-slate-700"
-                  >
-                    {calendarMutation.isPending ? '추가 중...' : '추가'}
-                  </button>
+                  !hasDetailedSchedules ? (
+                    <>
+                      {calendarDateOptions.length > 1 && (
+                        <select
+                          value={calendarDate}
+                          onChange={(e) => setCalendarDate(e.target.value)}
+                          className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none"
+                        >
+                          {calendarDateOptions.map((date) => (
+                            <option key={date} value={date}>
+                              {formatDateTime(date)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        onClick={() => calendarMutation.mutate({ eventDate: calendarDate || event.startAt, memo: event.name })}
+                        className="rounded-full border border-[var(--accent-soft)] bg-[var(--accent-soft)] px-5 py-3 text-sm font-medium text-[var(--accent)]"
+                      >
+                        {calendarMutation.isPending ? '추가 중...' : '추가'}
+                      </button>
+                    </>
+                  ) : null
                 ) : (
                   <Link to="/login" className="rounded-full border border-[var(--line)] bg-white px-5 py-3 text-sm font-medium text-slate-700">
                     추가
                   </Link>
                 )}
-                {isLoggedIn() && <ReportButton targetType="EVENT" targetId={event.id} />}
+                {isLoggedIn() && <ReportButton targetType="EVENT" targetId={event.id} className="rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-medium text-slate-500" />}
                 {user && /ADMIN|MANAGER/.test(user.role) && (
                   <Link
-                    to={`/admin?tab=requests&panel=general&eventId=${event.id}`}
+                    to={`/admin?panel=general&eventId=${event.id}`}
                     className="rounded-full border border-[var(--line)] bg-white px-5 py-3 text-sm font-semibold text-slate-700"
                   >
                     수정
@@ -307,17 +334,17 @@ export default function EventDetail() {
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h2 className="text-[18px] font-black tracking-tight text-slate-950">일정 세부</h2>
-            <div className="grid gap-3 md:grid-cols-2">
-              {schedules.length === 0 ? (
-                <div className="rounded-[22px] border border-[var(--line)] bg-slate-50 p-5 text-sm text-slate-500 md:col-span-2">
-                  등록된 세부 일정이 없습니다.
-                </div>
-              ) : schedules.map((schedule: any, index: number) => {
+          {hasDetailedSchedules && (
+            <div className="space-y-3">
+              <h2 className="text-[18px] font-black tracking-tight text-slate-950">일정 세부</h2>
+              <div className={`grid gap-3 ${schedules.length === 1 ? 'md:grid-cols-1' : 'md:grid-cols-2'}`}>
+                {schedules.map((schedule: any, index: number) => {
                 const scheduleName = schedule.name ?? schedule.title ?? schedule.memo ?? '일정'
                 const scheduleStartAt = schedule.startTime ?? schedule.startAt
                 const scheduleEndAt = schedule.endTime ?? schedule.endAt
+                const scheduleDateOptions = buildDateOptions(scheduleStartAt, scheduleEndAt)
+                const scheduleKey = String(schedule.id ?? index)
+                const selectedScheduleDate = scheduleCalendarDates[scheduleKey] ?? scheduleDateOptions[0] ?? scheduleStartAt ?? ''
                 return (
                 <div key={schedule.id ?? index} className="rounded-[22px] border border-[var(--line)] bg-white p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -327,31 +354,51 @@ export default function EventDetail() {
                       <div className="mt-1 text-sm text-slate-500">{formatDateTime(scheduleStartAt)} - {formatDateTime(scheduleEndAt)}</div>
                     </div>
                     {isLoggedIn() && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          scheduleStartAt &&
-                          calendarMutation.mutate({ eventDate: scheduleStartAt, memo: scheduleName })
-                        }
-                        className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700"
-                      >
-                        추가
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {scheduleDateOptions.length > 1 && (
+                          <select
+                            value={selectedScheduleDate}
+                            onChange={(e) =>
+                              setScheduleCalendarDates((prev) => ({ ...prev, [scheduleKey]: e.target.value }))
+                            }
+                            className="min-w-[150px] shrink-0 rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-medium text-slate-700 outline-none"
+                          >
+                            {scheduleDateOptions.map((date) => (
+                              <option key={date} value={date}>
+                                {formatDateTime(date)}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            calendarMutation.mutate({
+                              eventDate: selectedScheduleDate || scheduleStartAt || event.startAt,
+                              memo: scheduleName,
+                            })
+                          }
+                          className="shrink-0 whitespace-nowrap rounded-full border border-[var(--accent-soft)] bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
+                        >
+                          추가
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
-              )})}
+                )})}
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
-        <aside className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-5 md:sticky md:top-24 md:self-start">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <aside className={`space-y-4 rounded-[24px] border p-4 shadow-[0_12px_30px_rgba(15,23,42,0.06)] min-[700px]:p-5 min-[700px]:sticky min-[700px]:top-24 min-[700px]:self-start ${chatTheme.asideClass}`}>
+          <div className="flex flex-col gap-3 min-[700px]:flex-row min-[700px]:items-start min-[700px]:justify-between">
             <div className="min-w-0">
               <div className="text-sm font-semibold text-slate-500">실시간 채팅</div>
               <div className="text-[18px] font-black tracking-tight text-slate-950">{chatRoom?.eventName ?? event.name}</div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <div className="flex flex-wrap items-center gap-2 min-[700px]:justify-end">
               {user && /ADMIN|MANAGER/.test(user.role) && !chatRoom && (
                 <button
                   type="button"
@@ -367,7 +414,7 @@ export default function EventDetail() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 min-[700px]:grid-cols-2">
             <MiniInfoCard label="오픈 시간" value={chatState.openTimeLabel} />
             <MiniInfoCard label="클로즈 시간" value={chatState.closeTimeLabel} />
           </div>
@@ -378,8 +425,8 @@ export default function EventDetail() {
             </div>
           )}
 
-          <div className={`space-y-2 rounded-[20px] border border-[var(--line)] p-3.5 transition-opacity ${chatState.isOpen ? 'bg-white' : 'bg-slate-50 opacity-55'}`}>
-            <div className="relative overflow-hidden rounded-[18px] border border-[var(--line)] bg-white p-3">
+          <div className={`space-y-2 rounded-[20px] border p-3.5 transition-opacity ${chatTheme.outerClass} ${chatState.isOpen ? 'bg-white/80' : 'opacity-65'}`}>
+              <div className={`relative overflow-hidden rounded-[18px] border p-3 ${chatTheme.messagesShellClass}`}>
               <div className={`space-y-2 ${isChatEntered ? '' : 'pointer-events-none select-none blur-[1px]'}`}>
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold text-slate-500">메시지</div>
@@ -398,11 +445,11 @@ export default function EventDetail() {
               </div>
 
               {!isChatEntered && canJoinChat && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/45 px-4 backdrop-blur-[1px]">
+                <div className={`absolute inset-0 flex items-center justify-center px-4 backdrop-blur-[1px] ${chatTheme.overlayClass}`}>
                   <button
                     type="button"
                     onClick={() => setIsChatEntered(true)}
-                    className="rounded-full border border-[var(--line)] bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--accent)] shadow-sm"
+                    className={`rounded-full border bg-white/95 px-4 py-2 text-sm font-semibold shadow-sm ${chatTheme.entryButtonClass}`}
                   >
                     채팅방 입장하기
                   </button>
@@ -410,36 +457,39 @@ export default function EventDetail() {
               )}
             </div>
 
-            <div className="rounded-[18px] border border-[var(--line)] bg-slate-50 p-3.5">
-              {!chatState.isOpen ? (
-                <div className="space-y-1 text-sm text-slate-500">
-                  <div className="font-semibold text-slate-700">{chatState.closedReason}</div>
+            {!chatState.isOpen ? (
+              <div className={`rounded-[18px] border p-3.5 ${chatTheme.noticeClass}`}>
+                <div className={`space-y-1 text-sm ${chatTheme.noticeTextClass}`}>
+                  <div className={`font-semibold ${chatTheme.noticeStrongClass}`}>{chatState.closedReason}</div>
                   <div>{chatState.helperText}</div>
                 </div>
-              ) : !isChatEntered ? (
-                <div className="space-y-1 text-sm text-slate-500">
-                  <div className="font-semibold text-slate-700">채팅방에 들어가야 메시지를 보낼 수 있어요.</div>
+              </div>
+            ) : !isChatEntered ? (
+              <div className={`rounded-[18px] border p-3.5 ${chatTheme.noticeClass}`}>
+                <div className={`space-y-1 text-sm ${chatTheme.noticeTextClass}`}>
+                  <div className={`font-semibold ${chatTheme.noticeStrongClass}`}>채팅방에 들어가야 메시지를 보낼 수 있어요.</div>
                   <div>들어가기를 누르면 실시간 구독을 시작합니다.</div>
                 </div>
-              ) : isLoggedIn() ? (
-                <div className="space-y-2">
-                  {chatConnectionStatus !== 'connected' && (
-                    <div className="rounded-[14px] border border-[var(--line)] bg-white px-3 py-2 text-[12px] text-slate-500">
-                      {chatConnectionStatus === 'connecting'
-                        ? '채팅 연결 중입니다. 잠시만 기다려 주세요.'
-                        : chatConnectionStatus === 'error'
-                          ? '연결에 실패했어요. 다시 입장해 주세요.'
-                      : '채팅방 입장을 먼저 눌러 주세요.'}
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <input
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="메시지를 입력하세요"
-                      disabled={chatConnectionStatus !== 'connected'}
-                      className="min-w-0 flex-1 rounded-full border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                    />
+              </div>
+            ) : isLoggedIn() ? (
+              <>
+                {chatConnectionStatus !== 'connected' && (
+                  <div className={`rounded-[14px] border px-3 py-2 text-[12px] ${chatTheme.noticeClass} ${chatTheme.noticeTextClass}`}>
+                    {chatConnectionStatus === 'connecting'
+                      ? '채팅 연결 중입니다. 잠시만 기다려 주세요.'
+                      : chatConnectionStatus === 'error'
+                        ? '연결에 실패했어요. 다시 입장해 주세요.'
+                    : '채팅방 입장을 먼저 눌러 주세요.'}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="메시지를 입력하세요"
+                    disabled={chatConnectionStatus !== 'connected'}
+                    className={`min-w-0 flex-1 rounded-full border bg-white px-3 py-2.5 text-sm outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${chatTheme.inputClass}`}
+                  />
                   <button
                     disabled={chatConnectionStatus !== 'connected'}
                     onClick={() => sendChatOverSocket({
@@ -450,18 +500,17 @@ export default function EventDetail() {
                       onSent: () => setMessage(''),
                       onInvalid: () => window.alert('채팅방에 먼저 들어가 주세요.'),
                     })}
-                    className="rounded-full border border-[var(--line)] bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    className={`rounded-full border bg-white px-3.5 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${chatTheme.actionButtonClass}`}
                   >
-                      전송
-                    </button>
-                  </div>
+                    전송
+                  </button>
                 </div>
-              ) : (
-                <div className="text-sm text-slate-500">
-                  <Link to="/login" className="font-semibold text-[var(--accent)]">로그인</Link> 후 채팅에 참여할 수 있어요.
-                </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className={`rounded-[18px] border p-3.5 text-sm ${chatTheme.noticeClass} ${chatTheme.noticeTextClass}`}>
+                <Link to="/login" className={`font-semibold underline underline-offset-4 ${chatTheme.linkClass}`}>로그인</Link> 후 채팅에 참여할 수 있어요.
+              </div>
+            )}
 
             {isChatEntered && (
               <div className="flex items-center justify-between text-[11px] text-slate-400">
@@ -571,6 +620,87 @@ function resolveChatState(chatRoom?: ChatRoom) {
     closedReason: '',
     helperText: '',
   }
+}
+
+function getChatTheme(_categoryName: string) {
+  return {
+    asideClass: 'border-violet-100 bg-[linear-gradient(180deg,rgba(245,243,255,0.96),rgba(255,255,255,0.98))]',
+    outerClass: 'border-violet-100 bg-violet-50/70',
+    messagesShellClass: 'border-violet-100 bg-violet-50',
+    overlayClass: 'bg-violet-50/55',
+    entryButtonClass: 'border-violet-200 text-violet-700',
+    noticeClass: 'border-violet-100 bg-violet-50',
+    noticeTextClass: 'text-violet-700',
+    noticeStrongClass: 'text-violet-800',
+    inputClass: 'border-violet-200 focus:border-violet-300',
+    actionButtonClass: 'border-violet-200 text-violet-700',
+    linkClass: 'text-violet-700',
+  }
+}
+
+function buildCalendarDateOptions(event: { startAt: string; endAt: string; schedules?: Array<{ startTime?: string; startAt?: string; endTime?: string; endAt?: string }> } | undefined) {
+  if (!event?.startAt) return []
+  const result = buildDateOptions(event.startAt, event.endAt)
+  const scheduleDates = (event.schedules ?? [])
+    .flatMap((schedule) => buildDateOptions(schedule.startTime ?? schedule.startAt, schedule.endTime ?? schedule.endAt))
+
+  return Array.from(new Set([...result, ...scheduleDates])).sort((a, b) => a.localeCompare(b))
+}
+
+function buildDateOptions(startAt?: string, endAt?: string) {
+  if (!startAt) return []
+  const start = new Date(startAt)
+  const end = new Date(endAt ?? startAt)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return [startAt]
+
+  const result: string[] = []
+  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), start.getMinutes(), start.getSeconds())
+  const last = new Date(end.getFullYear(), end.getMonth(), end.getDate(), start.getHours(), start.getMinutes(), start.getSeconds())
+
+  while (cursor <= last) {
+    result.push(formatCalendarDateTime(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return result
+}
+
+function formatCalendarDateTime(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return [
+    date.getFullYear(),
+    '-',
+    pad(date.getMonth() + 1),
+    '-',
+    pad(date.getDate()),
+    'T',
+    pad(date.getHours()),
+    ':',
+    pad(date.getMinutes()),
+    ':',
+    pad(date.getSeconds()),
+  ].join('')
+}
+
+function displayEventCategoryLabel(name: string) {
+  const normalized = String(name ?? '').trim().toLowerCase()
+  const compact = normalized.replace(/[\s_-]+/g, '')
+  const key = compact.includes('concert') || compact.includes('콘서트')
+    ? 'concert'
+    : compact.includes('festival') || compact.includes('페스티벌') || compact.includes('축제')
+      ? 'festival'
+      : compact.includes('fanmeeting') || compact.includes('팬미팅') || compact.includes('팬 미팅')
+        ? 'fanmeeting'
+        : compact.includes('popup') || compact.includes('팝업스토어') || compact.includes('팝업') || compact.includes('pop-up') || compact.includes('pop up')
+          ? 'popup'
+          : normalized
+
+  return {
+    concert: '콘서트',
+    festival: '축제',
+    fanmeeting: '팬미팅',
+    popup: '팝업스토어',
+  }[key] ?? (String(name ?? '').trim().toUpperCase() || '기타')
 }
 
 function buildManualChatRoomPayload(event: { id: string; name: string; categoryName: string; startAt: string; endAt: string }) {

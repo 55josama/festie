@@ -92,6 +92,8 @@ export const mockEventRequests = [
   {
     id: 'req-1',
     requesterId: 'u9',
+    requesterNickname: '봄봄봄',
+    createdAt: '2026-05-15T09:10:00.000Z',
     eventName: '2026 여름 콘서트',
     categoryId: 'c1',
     category: '콘서트',
@@ -104,6 +106,8 @@ export const mockEventRequests = [
   {
     id: 'req-2',
     requesterId: 'u10',
+    requesterNickname: '팝업덕후',
+    createdAt: '2026-05-15T09:20:00.000Z',
     eventName: '성수 브랜드 팝업 2차',
     categoryId: 'c4',
     category: '팝업스토어',
@@ -119,6 +123,8 @@ export const mockOperationRequests = [
   {
     id: 'op-1',
     requesterId: 'u7',
+    requesterNickname: '운영요청러',
+    createdAt: '2026-05-15T09:30:00.000Z',
     title: '메인 배너 문구 수정 요청',
     content: '홈 화면 행사 탐색 문구를 조금 더 짧게 수정하고 싶습니다.',
     status: 'PENDING',
@@ -127,6 +133,8 @@ export const mockOperationRequests = [
   {
     id: 'op-2',
     requesterId: 'u8',
+    requesterNickname: '홍보담당',
+    createdAt: '2026-05-15T09:40:00.000Z',
     title: '채팅방 공지 고정 요청',
     content: '드림 팬미팅 채팅방 상단 공지를 고정해 주시면 좋겠습니다.',
     status: 'IN_PROGRESS',

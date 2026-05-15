@@ -219,7 +219,7 @@ function EmptyEventState() {
     <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 p-5">
       <div className="text-sm font-semibold text-slate-900">일정이 없네요.. 😮‍💨</div>
       <p className="mt-1 text-sm text-slate-500">
-        원하시는 일정이 있나요? <Link to="/community/new?category=request&requestType=event" className="font-semibold text-[var(--accent)] underline decoration-[var(--accent-soft)] decoration-2 underline-offset-4 transition-colors hover:text-[var(--accent-dark)]">행사 요청하러 가기!</Link>
+        원하시는 일정이 있나요? <Link to="/community/new?requestKind=event" className="font-semibold text-[var(--accent)] underline decoration-[var(--accent-soft)] decoration-2 underline-offset-4 transition-colors hover:text-[var(--accent-dark)]">행사 요청하러 가기!</Link>
       </p>
     </div>
   )
@@ -289,10 +289,10 @@ function categoryChipClass(name: string) {
 function displayEventCategoryLabel(name: string) {
   const key = normalizeCategoryKey(name)
   return {
-    concert: 'CONCERT',
-    festival: 'FESTIVAL',
-    fanmeeting: 'FANMEETING',
-    popup: 'POPUP STORE',
+    concert: '콘서트',
+    festival: '축제',
+    fanmeeting: '팬미팅',
+    popup: '팝업스토어',
   }[key] ?? (String(name ?? '').trim().toUpperCase() || 'EVENT')
 }
 
@@ -309,10 +309,11 @@ function postChipClass(name: string) {
 
 function normalizeCategoryKey(name: string) {
   const normalized = String(name ?? '').trim().toLowerCase()
-  if (normalized === '콘서트' || normalized === 'concert') return 'concert'
-  if (normalized === '축제' || normalized === 'festival') return 'festival'
-  if (normalized === '팬미팅' || normalized === 'fanmeeting' || normalized === 'fan-meeting') return 'fanmeeting'
-  if (normalized === '팝업스토어' || normalized === '팝업' || normalized === 'popup' || normalized === 'popupstore') return 'popup'
+  const compact = normalized.replace(/[\s_-]+/g, '')
+  if (compact.includes('concert') || compact.includes('콘서트')) return 'concert'
+  if (compact.includes('festival') || compact.includes('페스티벌') || compact.includes('축제')) return 'festival'
+  if (compact.includes('fanmeeting') || compact.includes('팬미팅') || compact.includes('팬 미팅')) return 'fanmeeting'
+  if (compact.includes('popup') || compact.includes('팝업스토어') || compact.includes('팝업') || compact.includes('pop-up') || compact.includes('pop up')) return 'popup'
   return normalized
 }
 

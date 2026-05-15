@@ -37,7 +37,7 @@ const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCE
 const OPERATION_STATUS_FILTERS = ['ALL', 'PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] as const
 const CHAT_STATUS_FILTERS = ['ALL', 'SCHEDULED', 'OPEN', 'CLOSED'] as const
 const USER_ROLE_FILTERS = ['ALL', 'USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER'] as const
-const ADMIN_TABS = ['requests', 'reports', 'chat', 'users'] as const
+const ADMIN_TABS = ['manage', 'reports', 'chat', 'users'] as const
 const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
     ADMIN: [],
     CONCERT_MANAGER: ['\uCF58\uC11C\uD2B8'],
@@ -96,7 +96,7 @@ export default function Admin() {
     const [operationForms, setOperationForms] = useState<Record<string, { status: string; adminMemo: string }>>({})
     const [requestPanels, setRequestPanels] = useState<Record<string, boolean>>({})
     const [requestDrafts, setRequestDrafts] = useState<Record<string, EventDraft>>({})
-    const [generalCreateOpen, setGeneralCreateOpen] = useState(false)
+    const [generalCreateOpen, setGeneralCreateOpen] = useState(true)
     const [generalDraft, setGeneralDraft] = useState<EventDraft>(createBlankEventDraft())
     const editingEventId = searchParams.get('eventId') ?? ''
     const [prefilledEditingEventId, setPrefilledEditingEventId] = useState('')
@@ -146,7 +146,7 @@ export default function Admin() {
     useEffect(() => {
         if (!searchParams.get('tab')) {
             const next = new URLSearchParams(searchParams)
-            next.set('tab', 'requests')
+            next.set('tab', 'manage')
             setSearchParams(next, {replace: true})
         }
     }, [searchParams, setSearchParams])
@@ -441,14 +441,6 @@ export default function Admin() {
         },
     })
 
-    const summary = useMemo(() => ({
-        eventRequests: scopedEventRequests.length,
-        operationRequests: scopedOperationRequests.length,
-        reports: reports.length,
-        rooms: scopedChatRooms.length,
-        messages: adminMessagePage.totalElements,
-    }), [adminMessagePage.totalElements, reports.length, scopedChatRooms.length, scopedEventRequests.length, scopedOperationRequests.length])
-
     const adminMessages = adminMessagePage.content
     const messageTotalPages = Math.max(adminMessagePage.totalPages || 0, 1)
 
@@ -478,14 +470,12 @@ export default function Admin() {
     const updateTab = (tab: AdminTab) => {
         const next = new URLSearchParams(searchParams)
         next.set('tab', tab)
-        if (tab !== 'requests') {
-            next.delete('panel')
-        }
+        next.delete('panel')
         setSearchParams(next, {replace: true})
     }
 
     const tabs: { value: AdminTab; label: string; description: string }[] = [
-        {value: 'requests', label: '요청', description: '행사/운영/카테고리생성'},
+        {value: 'manage', label: '행사/카테고리', description: '생성·수정'},
         {value: 'reports', label: '신고', description: '블라인드·처리'},
         {value: 'chat', label: '채팅', description: '메시지·방'},
         {value: 'users', label: '사용자 조회', description: '이메일·이름·권한'},
@@ -496,37 +486,23 @@ export default function Admin() {
     )
 
     return (
-        <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
-            {activeTab === 'requests' && (
-                <section
-                    className="rounded-[28px] bg-slate-950 px-5 py-3.5 text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] md:px-6 md:py-4">
-                    <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-                        <div className="space-y-2.5">
-                            <div
-                                className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">관리
-                            </div>
-                            <div className="text-[22px] font-black tracking-tight text-white md:text-[26px]">
-                                요청, 신고, 채팅 운영을 관리할 수 있습니다.
-                            </div>
-                            <div className="rounded-[20px] bg-white/5 p-3 text-xs leading-5 text-slate-300">
-                                <div className="text-xs font-semibold text-slate-400">접속 정보</div>
-                                <div className="mt-1.5 text-sm leading-6 text-slate-300">
-                                    {user?.nickname ?? '관리자'}로 접속 중입니다. 권한이 없는 계정에서는 운영 메뉴가 숨겨집니다.
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-3">
-                            <div
-                                className={`grid gap-2.5 ${isAdmin ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
-                                <MetricCard label="행사요청" value={String(summary.eventRequests)} dark/>
-                                <MetricCard label="신고" value={String(summary.reports)} dark/>
-                                <MetricCard label="채팅방" value={String(summary.rooms)} dark/>
-                                {isAdmin && <MetricCard label="운영요청" value={String(summary.operationRequests)} dark/>}
-                            </div>
+        <div className="mx-auto max-w-[1180px] space-y-6 px-5 py-5 md:px-8 md:py-7">
+            <section className="rounded-[28px] bg-slate-950 px-5 py-4 text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] md:px-6 md:py-5">
+                <div className="space-y-2.5">
+                    <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">
+                        관리
+                    </div>
+                    <div className="text-[22px] font-black tracking-tight text-white md:text-[26px]">
+                        운영과 관리를 한 곳에서 빠르게 처리합니다.
+                    </div>
+                    <div className="rounded-[20px] bg-white/5 p-3 text-xs leading-5 text-slate-300">
+                        <div className="text-xs font-semibold text-slate-400">접속 정보</div>
+                        <div className="mt-1.5 text-sm leading-6 text-slate-300">
+                            {user?.nickname ?? '관리자'}로 접속 중입니다. 권한에 따라 보이는 메뉴가 달라집니다.
                         </div>
                     </div>
-                </section>
-            )}
+                </div>
+            </section>
 
             <section
                 className="rounded-[22px] border border-[var(--line)] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
@@ -549,7 +525,86 @@ export default function Admin() {
                 </div>
             </section>
 
-            {activeTab === 'requests' && (
+            {activeTab === 'manage' && (
+                <section className="grid gap-5 lg:grid-cols-[6fr_4fr]">
+                    <div className="space-y-4">
+                        {generalCreateOpen ? (
+                            <div className="max-w-full overflow-x-hidden">
+                                <EventCreatePanel
+                                    title={editingEventId ? '행사 수정' : '일반 행사 생성'}
+                                    subtitle={editingEventId
+                                        ? '기존 행사 내용을 불러와서 필요한 부분만 수정할 수 있어요.'
+                                        : '관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다.'}
+                                    draft={generalDraftWithCategory}
+                                    setDraft={(patch) => setGeneralDraft((prev) => ({...prev, ...patch}))}
+                                    categoryOptions={eventCategories as any[]}
+                                    onSubmit={() => saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})}
+                                    onClose={() => setGeneralCreateOpen(false)}
+                                    loading={saveGeneralEventMutation.isPending}
+                                    onLookupPlace={() => {
+                                        void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
+                                    }}
+                                    placeLookupLoading={addressLookupLoading}
+                                    onAttachImage={(file) => {
+                                        void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
+                                    }}
+                                    submitLabel={editingEventId ? '행사 수정' : '행사 등록'}
+                                />
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setGeneralCreateOpen(true)}
+                                className="w-full rounded-[24px] border border-[var(--line)] bg-white px-4 py-5 text-left text-sm font-semibold text-slate-700 shadow-[0_12px_30px_rgba(15,23,42,0.04)]"
+                            >
+                                행사 생성 패널 열기
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        {canCreateCategories && (
+                            <>
+                                <CategoryAdminPanel
+                                    title="행사 카테고리 생성"
+                                    subtitle="행사 요청 승인이나 일반 행사 생성에서 바로 고를 수 있는 카테고리를 관리합니다."
+                                    items={eventCategories as any[]}
+                                    draft={eventCategoryDraft}
+                                    setDraft={setEventCategoryDraft}
+                                    drafts={categoryDrafts}
+                                    setDrafts={(value) => setCategoryDrafts(value)}
+                                    canCreate={canCreateCategories}
+                                    onCreate={() => createEventCategoryMutation.mutate(eventCategoryDraft.trim())}
+                                    onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({categoryId, name})}
+                                    onDelete={(categoryId) => deleteEventCategoryMutation.mutate(categoryId)}
+                                    helperMessage={categoryErrors.event}
+                                    loading={createEventCategoryMutation.isPending || updateEventCategoryMutation.isPending || deleteEventCategoryMutation.isPending}
+                                />
+                                <CategoryAdminPanel
+                                    title="커뮤니티 카테고리 생성"
+                                    subtitle="후기, 꿀팁, 자유, 요청 같은 게시판 카테고리를 운영합니다."
+                                    items={communityCategories as any[]}
+                                    draft={communityCategoryDraft}
+                                    setDraft={setCommunityCategoryDraft}
+                                    drafts={categoryDrafts}
+                                    setDrafts={(value) => setCategoryDrafts(value)}
+                                    canCreate={canCreateCategories}
+                                    onCreate={() => createCommunityCategoryMutation.mutate(communityCategoryDraft.trim())}
+                                    onUpdate={(categoryId, name) => updateCommunityCategoryMutation.mutate({
+                                        categoryId,
+                                        name
+                                    })}
+                                    onDelete={(categoryId) => deleteCommunityCategoryMutation.mutate(categoryId)}
+                                    helperMessage={categoryErrors.community}
+                                    loading={createCommunityCategoryMutation.isPending || updateCommunityCategoryMutation.isPending || deleteCommunityCategoryMutation.isPending}
+                                />
+                            </>
+                        )}
+                    </div>
+                </section>
+            )}
+
+            {false && activeTab === 'manage' && (
                 <div className="space-y-6">
                     <div
                         className={`grid gap-6 ${canViewOperationRequests ? 'lg:grid-cols-[1.1fr_0.9fr]' : 'lg:grid-cols-1'}`}>
@@ -1385,18 +1440,6 @@ function UserRow({
   )
 }
 
-function MetricCard({label, value, dark = false}: { label: string; value: string; dark?: boolean }) {
-    return (
-        <div
-            className={dark ? 'rounded-[18px] border border-white/10 bg-white/5 px-4 py-3' : 'rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3'}>
-            <div
-                className={dark ? 'text-xs font-medium text-slate-400' : 'text-xs font-medium text-slate-500'}>{label}</div>
-            <div
-                className={dark ? 'mt-1 text-[24px] font-black tracking-tight text-white' : 'mt-1 text-[24px] font-black tracking-tight text-slate-950'}>{value}</div>
-        </div>
-    )
-}
-
 function SectionHeader({title, action}: { title: string; action?: ReactNode }) {
     return (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
@@ -1527,6 +1570,26 @@ function buildEventDraftFromEvent(event: Event): EventDraft {
 }
 
 function buildEventPayload(draft: EventDraft) {
+    const schedules = (draft.schedules?.length
+        ? draft.schedules
+        : [{
+            name: draft.eventName || '메인 일정',
+            startAt: draft.startAt,
+            endAt: draft.endAt,
+        }]).map((schedule, index) => ({
+        name: schedule.name || `Day ${index + 1}`,
+        startTime: normalizeDateTimeInput(schedule.startAt) ?? draft.startAt,
+        endTime: normalizeDateTimeInput(schedule.endAt) ?? draft.endAt,
+    }))
+
+    if (schedules.length === 1) {
+        schedules[0] = {
+            ...schedules[0],
+            startTime: normalizeDateTimeInput(draft.startAt) ?? schedules[0].startTime,
+            endTime: normalizeDateTimeInput(draft.endAt) ?? schedules[0].endTime,
+        }
+    }
+
     return {
         name: draft.eventName,
         categoryId: draft.categoryId,
@@ -1547,17 +1610,7 @@ function buildEventPayload(draft: EventDraft) {
         performer: draft.performer || null,
         description: draft.description || null,
         img: draft.img,
-        schedules: (draft.schedules?.length
-            ? draft.schedules
-            : [{
-                name: draft.eventName || '메인 일정',
-                startAt: draft.startAt,
-                endAt: draft.endAt,
-            }]).map((schedule, index) => ({
-            name: schedule.name || `Day ${index + 1}`,
-            startTime: normalizeDateTimeInput(schedule.startAt) ?? draft.startAt,
-            endTime: normalizeDateTimeInput(schedule.endAt) ?? draft.endAt,
-        })),
+        schedules,
     }
 }
 
@@ -1825,7 +1878,7 @@ function EventCreatePanel({
                     </div>
                 </label>
 
-                <div className="flex flex-col gap-3 md:col-span-2 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-3 min-[700px]:col-span-2 min-[700px]:flex-row min-[700px]:items-center min-[700px]:justify-between">
                     <div className="text-[11px] font-semibold text-slate-500">일정</div>
                     <button
                         type="button"
@@ -1844,11 +1897,11 @@ function EventCreatePanel({
                     </button>
                 </div>
 
-                    <div className="md:col-span-2 space-y-2">
+                    <div className="min-[700px]:col-span-2 space-y-2">
                     {(draft.schedules ?? []).map((schedule, index) => (
                         <div key={index}
-                             className="grid grid-cols-1 gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_auto] xl:items-end">
-                            <div className="md:col-span-2 xl:col-span-1">
+                             className="grid grid-cols-1 gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 min-[700px]:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_auto] xl:items-end">
+                            <div className="min-[700px]:col-span-2 xl:col-span-1">
                                 <AdminInput
                                     label={`일정 제목 ${index + 1}`}
                                     value={schedule.name}
@@ -1895,7 +1948,7 @@ function EventCreatePanel({
                                         schedules: (draft.schedules ?? []).filter((_, itemIndex) => itemIndex !== index),
                                     })
                                 }
-                                className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 md:col-span-2 xl:col-span-1"
+                                className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 min-[700px]:col-span-2 xl:col-span-1"
                             >
                                 삭제
                             </button>
@@ -1908,7 +1961,7 @@ function EventCreatePanel({
                         </div>
                     )}
                 </div>
-                <label className="md:col-span-2 block">
+                <label className="min-[700px]:col-span-2 block">
                     <div className="mb-1 text-[11px] font-semibold text-slate-500">설명</div>
                     <textarea
                         value={draft.description}
@@ -2077,8 +2130,8 @@ function normalizeRole(role?: string | null) {
 }
 
 function normalizeAdminTab(value: string | null): AdminTab {
-    if (value === 'reports' || value === 'chat' || value === 'requests' || value === 'users') return value
-    return 'requests'
+    if (value === 'manage' || value === 'reports' || value === 'chat' || value === 'users') return value
+    return 'manage'
 }
 
 function normalizeEventCategoryKey(name: string) {

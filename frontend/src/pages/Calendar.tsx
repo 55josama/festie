@@ -11,7 +11,8 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
   const queryClient = useQueryClient()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
-  const [selectedDay, setSelectedDay] = useState<number>(today.getDate())
+  const [selectedAllDay, setSelectedAllDay] = useState(today.getDate())
+  const [selectedMineDay, setSelectedMineDay] = useState<number | null>(null)
   const [mineSort, setMineSort] = useState<'oldest' | 'latest'>('latest')
   const [mineCategory, setMineCategory] = useState('전체')
   const [memoDrafts, setMemoDrafts] = useState<Record<string, string>>({})
@@ -88,10 +89,14 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
     return [...calendars]
       .map((item: any) => {
         const event = eventById.get(item.eventId)
+        const categoryKey = normalizeEventCategoryKey(event?.categoryName ?? '')
+        const knownCategory = ['concert', 'festival', 'fanmeeting', 'popup'].includes(categoryKey)
+        const categoryLabel = knownCategory ? displayEventCategoryLabel(event?.categoryName ?? '') : ''
         return {
           ...item,
           event,
-          categoryName: event?.categoryName ?? '기타',
+          categoryKey,
+          categoryName: categoryLabel,
         }
       })
       .sort((a: any, b: any) => mineSort === 'oldest'
@@ -100,22 +105,27 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
   }, [calendars, eventById, mineSort])
 
   const mineCategories = useMemo(() => {
-    const fallback = ['콘서트', '축제', '팬미팅', '팝업스토어']
-    const discovered = Array.from(new Set([...mineCards.map((item: any) => item.categoryName), ...fallback]))
+    const fallback = ['concert', 'festival', 'fanmeeting', 'popup']
+    const discovered = Array.from(new Set([
+      ...mineCards.map((item: any) => item.categoryKey).filter(Boolean),
+      ...fallback,
+    ]))
     const ordered = [...fallback.filter((item) => discovered.includes(item)), ...discovered.filter((item) => !fallback.includes(item))]
     return ['전체', ...ordered]
   }, [mineCards])
 
   const filteredMineCards = useMemo(() => {
-    return mineCards.filter((item: any) => mineCategory === '전체' || item.categoryName === mineCategory)
+    return mineCards.filter((item: any) => mineCategory === '전체' || item.categoryKey === mineCategory)
   }, [mineCards, mineCategory])
 
+  const selectedMineDateKey = selectedMineDay ? getMonthKey(year, month, selectedMineDay) : null
   const visibleMineCards = useMemo(() => {
+    if (!selectedMineDateKey) return filteredMineCards
     return filteredMineCards.filter((item: any) => {
       const date = new Date(item.eventDate)
-      return date.getFullYear() === year && date.getMonth() + 1 === month
+      return getMonthKey(date.getFullYear(), date.getMonth() + 1, date.getDate()) === selectedMineDateKey
     })
-  }, [filteredMineCards, month, year])
+  }, [filteredMineCards, selectedMineDateKey])
 
   const currentMonthEvents = useMemo(() => {
     const seen = new Set<string>()
@@ -156,11 +166,11 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
             <div className="mb-3 flex items-center justify-between">
               <div className="text-lg font-black tracking-tight text-slate-950">{year}년 {month}월</div>
               <div className="flex items-center gap-2">
-                <button onClick={() => shiftMonth(-1, year, month, setYear, setMonth, setSelectedDay)} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:px-4">
+                <button onClick={() => shiftMonth(-1, year, month, setYear, setMonth, setSelectedAllDay)} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:px-4">
                   <span className="sm:hidden">‹</span>
                   <span className="hidden sm:inline">이전</span>
                 </button>
-                <button onClick={() => shiftMonth(1, year, month, setYear, setMonth, setSelectedDay)} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:px-4">
+                <button onClick={() => shiftMonth(1, year, month, setYear, setMonth, setSelectedAllDay)} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:px-4">
                   <span className="sm:hidden">›</span>
                   <span className="hidden sm:inline">다음</span>
                 </button>
@@ -177,12 +187,12 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                 const key = getMonthKey(year, month, day)
                 const publicEvents = eventsByDay.get(key) ?? []
                 const isToday = today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() === day
-                const isSelected = selectedDay === day
+                const isSelected = selectedAllDay === day
 
                 return (
                   <button
                     key={day}
-                    onClick={() => setSelectedDay(day)}
+                    onClick={() => setSelectedAllDay(day)}
                     className={`min-h-16 bg-white p-1.5 text-left transition-colors hover:bg-[var(--accent-soft)]/40 sm:min-h-24 sm:p-2.5 ${
                       isSelected ? 'bg-[var(--accent-soft)]' : ''
                     }`}
@@ -220,10 +230,12 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
             <div className="mt-4 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-500">선택한 날짜</div>
-                <div className="text-xs text-slate-400">{year}.{String(month).padStart(2, '0')}.{String(selectedDay).padStart(2, '0')}</div>
+                <div className="text-xs text-slate-400">
+                  {selectedAllDay ? `${year}.${String(month).padStart(2, '0')}.${String(selectedAllDay).padStart(2, '0')}` : '전체 날짜'}
+                </div>
               </div>
               <div className="mt-3 space-y-2">
-                {(eventsByDay.get(getMonthKey(year, month, selectedDay)) ?? []).slice(0, 3).map((event: any) => (
+                {(eventsByDay.get(getMonthKey(year, month, selectedAllDay)) ?? []).slice(0, 3).map((event: any) => (
                   <Link
                     key={event.id}
                     to={`/events/${event.id}`}
@@ -231,10 +243,13 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                   >
                     <div className="font-semibold text-slate-950">{event.name}</div>
                     <div className="mt-1 text-xs text-slate-500">{event.place}</div>
+                    <div className="mt-1 text-[11px] text-slate-400">{displayEventCategoryLabel(event.categoryName)}</div>
                   </Link>
                 ))}
-                {(eventsByDay.get(getMonthKey(year, month, selectedDay)) ?? []).length === 0 && (
-                  <div className="text-sm text-slate-500">이 날짜에 공개 행사 정보가 없어요.</div>
+                {(eventsByDay.get(getMonthKey(year, month, selectedAllDay)) ?? []).length === 0 && (
+                  <div className="rounded-[18px] border border-dashed border-[var(--line)] bg-white/70 p-4 text-sm text-slate-500">
+                    이 날짜에 공개 행사 정보가 없어요.
+                  </div>
                 )}
               </div>
             </div>
@@ -251,7 +266,9 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                   <Link key={event.id} to={`/events/${event.id}`} className="block rounded-[18px] border border-[var(--line)] bg-white p-3 transition-colors hover:bg-[var(--accent-soft)]">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold text-[var(--accent)]">{event.categoryName}</div>
+                        <div className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${categoryBadgeClass(event.categoryName)}`}>
+                          {displayEventCategoryLabel(event.categoryName)}
+                        </div>
                         <div className="mt-1 truncate text-sm font-semibold text-slate-950">{event.name}</div>
                         <div className="mt-1 truncate text-xs text-slate-500">{event.place}</div>
                       </div>
@@ -290,8 +307,8 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] font-semibold text-slate-500">행사 카테고리</span>
               {mineCategories.map((category) => (
-                <SortPill key={category} active={mineCategory === category} onClick={() => setMineCategory(category)}>
-                  {category}
+                <SortPill key={category} active={mineCategory === category} toneClass={categoryTone(category)} onClick={() => setMineCategory(category)}>
+                  {category === '전체' ? '전체' : displayEventCategoryLabel(category)}
                 </SortPill>
               ))}
             </div>
@@ -306,20 +323,48 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                   const statusLabel = getMineStatusLabel(item)
                   const isEnded = statusLabel === '종료' || statusLabel === '취소'
                   const memoValue = memoDrafts[item.id] ?? item.memo ?? ''
+                  const categoryLabel = item.categoryName && item.categoryName !== '기타' ? item.categoryName : ''
+                  const memoBadgeLabel = memoValue ? `${memoValue.slice(0, 10)}${memoValue.length > 10 ? '…' : ''}` : ''
 
                   return (
                     <div
                       key={item.id}
-                      className={`rounded-[18px] border p-2.5 ${isEnded ? 'border-slate-200 bg-slate-50 opacity-85' : 'border-[var(--line)] bg-white'}`}
+                      className={`overflow-hidden rounded-[18px] border p-2.5 ${
+                        isEnded
+                          ? 'border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.96))] opacity-85'
+                          : 'border-[rgba(111,84,255,0.14)] bg-[linear-gradient(180deg,rgba(242,238,255,0.96),rgba(255,255,255,0.98))]'
+                      }`}
                     >
-                      <Link to={item.eventId ? `/events/${item.eventId}` : '#'} className="flex gap-2.5 rounded-[16px] p-1 transition-colors hover:bg-slate-50">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-center text-[10px] font-semibold text-[var(--accent)]">
-                          {item.eventName.slice(0, 4) || '일정'}
+                      <Link to={item.eventId ? `/events/${item.eventId}` : '#'} className="flex gap-2.5 rounded-[16px] p-1 transition-colors hover:bg-white/55">
+                        <div className="relative flex h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-[var(--accent-soft)] shadow-[0_0_0_1px_rgba(111,84,255,0.12)]">
+                          {item.event?.img ? (
+                            <img src={item.event.img} alt={item.eventName} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-center text-[10px] font-semibold text-[var(--accent)]">
+                              {item.eventName.slice(0, 4) || '일정'}
+                            </div>
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className={`text-[10px] font-semibold ${getMineStatusStyle(item)}`}>{statusLabel}</div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className={`text-[10px] font-semibold ${getMineStatusStyle(item)}`}>{statusLabel}</div>
+                            {categoryLabel ? (
+                              <div className="rounded-full border border-slate-100 bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                                {categoryLabel}
+                              </div>
+                            ) : memoValue ? (
+                              <div className="rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-400">
+                                {memoBadgeLabel || '•'}
+                              </div>
+                            ) : (
+                              <div className="h-2.5 w-2.5 rounded-full bg-violet-300" aria-hidden="true" />
+                            )}
+                          </div>
                           <div className="mt-0.5 truncate text-sm font-semibold text-slate-950">{item.eventName}</div>
                           <div className="mt-0.5 text-[11px] text-slate-500">{formatDateTime(item.eventDate)}</div>
+                          {memoValue && (
+                            <div className="mt-1 truncate text-[11px] font-medium text-slate-600">{memoValue}</div>
+                          )}
                         </div>
                       </Link>
 
@@ -369,11 +414,11 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
               <div className="flex items-center justify-between">
                 <h2 className="text-[18px] font-black tracking-tight text-slate-950">내 일정 달력</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => shiftMonth(-1, year, month, setYear, setMonth, setSelectedDay)} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:px-4">
-                    <span className="sm:hidden">‹</span>
-                    <span className="hidden sm:inline">이전</span>
-                  </button>
-                  <button onClick={() => shiftMonth(1, year, month, setYear, setMonth, setSelectedDay)} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:px-4">
+                <button onClick={() => shiftMineMonth(-1, year, month, setYear, setMonth, setSelectedMineDay)} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:px-4">
+                  <span className="sm:hidden">‹</span>
+                  <span className="hidden sm:inline">이전</span>
+                </button>
+                  <button onClick={() => shiftMineMonth(1, year, month, setYear, setMonth, setSelectedMineDay)} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:px-4">
                     <span className="sm:hidden">›</span>
                     <span className="hidden sm:inline">다음</span>
                   </button>
@@ -392,13 +437,13 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                   const key = getMonthKey(year, month, day)
                   const saved = calendarByDay.get(key) ?? []
                   const isToday = today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() === day
-                  const isSelected = selectedDay === day
+                  const isSelected = selectedMineDay === day
 
                   return (
                     <button
                       key={day}
                       type="button"
-                      onClick={() => setSelectedDay(day)}
+                      onClick={() => setSelectedMineDay(day)}
                       className={`min-h-14 bg-white p-1 text-left transition-colors hover:bg-[var(--accent-soft)]/40 ${
                         isSelected ? 'bg-[var(--accent-soft)]' : ''
                       }`}
@@ -409,8 +454,13 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                         {day}
                       </div>
                       {saved.slice(0, 1).map((entry: any, index: number) => (
-                        <div key={`${entry.id ?? index}`} className="mt-1 truncate rounded-md bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] text-[var(--accent)]">
-                          {entry.eventName}
+                        <div key={`${entry.id ?? index}`} className="mt-1 truncate rounded-md border border-dashed border-[var(--line)] bg-white/60 px-1.5 py-0.5 text-[10px] text-slate-500">
+                          {(() => {
+                            const memo = String(entry.memo ?? '').trim()
+                            if (memo) return memo.slice(0, 6) + (memo.length > 6 ? '…' : '')
+                            const label = displayEventCategoryLabel(entry.categoryName)
+                            return label === '기타' ? '메모 없음' : label
+                          })()}
                         </div>
                       ))}
                     </button>
@@ -428,21 +478,53 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
   )
 }
 
-function shiftMonth(step: number, year: number, month: number, setYear: (v: number) => void, setMonth: (v: number) => void, setSelectedDay?: (v: number) => void) {
+function shiftMonth(
+  step: number,
+  year: number,
+  month: number,
+  setYear: (v: number) => void,
+  setMonth: (v: number) => void,
+  setSelectedDay?: (v: number) => void,
+  nextSelectedDay: number = 1,
+) {
   const next = new Date(year, month - 1 + step, 1)
   setYear(next.getFullYear())
   setMonth(next.getMonth() + 1)
-  if (setSelectedDay) setSelectedDay(1)
+  if (setSelectedDay) setSelectedDay(nextSelectedDay)
 }
 
-function SortPill({ active, onClick, children }: { active?: boolean; onClick: () => void; children: ReactNode }) {
+function shiftMineMonth(
+  step: number,
+  year: number,
+  month: number,
+  setYear: (v: number) => void,
+  setMonth: (v: number) => void,
+  setSelectedDay: (v: number | null) => void,
+) {
+  const next = new Date(year, month - 1 + step, 1)
+  setYear(next.getFullYear())
+  setMonth(next.getMonth() + 1)
+  setSelectedDay(null)
+}
+
+function SortPill({
+  active,
+  onClick,
+  children,
+  toneClass,
+}: {
+  active?: boolean
+  onClick: () => void
+  children: ReactNode
+  toneClass?: string
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`rounded-full border px-1.5 py-0.5 text-[9px] font-semibold transition-colors md:px-2.5 md:py-1 md:text-[10px] ${
         active
-          ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
+          ? toneClass ?? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
           : 'border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
       }`}
     >
@@ -458,6 +540,41 @@ function getMineStatusLabel(item: any) {
   if (status === 'COMPLETED') return '종료'
   const eventDate = new Date(item.eventDate)
   return eventDate < new Date() ? '종료' : '예정'
+}
+
+function normalizeEventCategoryKey(name: string) {
+  const normalized = String(name ?? '').trim().toLowerCase()
+  const compact = normalized.replace(/[\s_-]+/g, '')
+  if (compact.includes('concert') || compact.includes('콘서트')) return 'concert'
+  if (compact.includes('festival') || compact.includes('페스티벌') || compact.includes('축제')) return 'festival'
+  if (compact.includes('fanmeeting') || compact.includes('팬미팅') || compact.includes('팬 미팅')) return 'fanmeeting'
+  if (compact.includes('popup') || compact.includes('팝업스토어') || compact.includes('팝업') || compact.includes('pop-up') || compact.includes('pop up')) return 'popup'
+  return normalized
+}
+
+function displayEventCategoryLabel(name: string) {
+  const key = normalizeEventCategoryKey(name)
+  return {
+    concert: '콘서트',
+    festival: '축제',
+    fanmeeting: '팬미팅',
+    popup: '팝업스토어',
+  }[key] ?? (String(name ?? '').trim().toUpperCase() || '기타')
+}
+
+function categoryTone(name: string) {
+  return (
+    {
+      concert: 'border-violet-100 bg-violet-50 text-violet-600',
+      festival: 'border-fuchsia-100 bg-fuchsia-50 text-fuchsia-600',
+      fanmeeting: 'border-pink-100 bg-pink-50 text-pink-600',
+      popup: 'border-sky-100 bg-sky-50 text-sky-600',
+    }[normalizeEventCategoryKey(name)] ?? 'border-slate-100 bg-slate-50 text-slate-500'
+  )
+}
+
+function categoryBadgeClass(name: string) {
+  return categoryTone(name)
 }
 
 function getMineStatusStyle(item: any) {

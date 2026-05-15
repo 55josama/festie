@@ -262,13 +262,34 @@ function categoryBadgeClass(name: string) {
   )
 }
 
-function CommentItem({ comment, postId, currentUser }: { comment: any; postId: string; currentUser: any }) {
+function CommentItem({
+  comment,
+  postId,
+  currentUser,
+  depth = 0,
+}: {
+  comment: any
+  postId: string
+  currentUser: any
+  depth?: number
+}) {
   const queryClient = useQueryClient()
+  const [replyOpen, setReplyOpen] = useState(false)
+  const [replyContent, setReplyContent] = useState('')
   const canDelete = currentUser?.userId === comment.userId || currentUser?.role === 'ADMIN'
   const writerLabel = currentUser?.userId === comment.userId ? currentUser?.nickname ?? '작성자' : '작성자'
+  const canReply = depth === 0
   const deleteMutation = useMutation({
     mutationFn: () => deleteComment(comment.id),
     onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['comments', postId] })
+    },
+  })
+  const replyMutation = useMutation({
+    mutationFn: (content: string) => createComment(postId, content, comment.id),
+    onSuccess: async () => {
+      setReplyContent('')
+      setReplyOpen(false)
       await queryClient.invalidateQueries({ queryKey: ['comments', postId] })
     },
   })
@@ -279,6 +300,15 @@ function CommentItem({ comment, postId, currentUser }: { comment: any; postId: s
         <div className="text-sm font-semibold text-slate-900">{writerLabel}</div>
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <span>{formatRelativeTime(comment.createdAt)}</span>
+          {currentUser && canReply && (
+            <button
+              type="button"
+              onClick={() => setReplyOpen((prev) => !prev)}
+              className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600"
+            >
+              답글
+            </button>
+          )}
           {currentUser && (
             <ReportButton targetType="COMMENT" targetId={comment.id} label="신고" className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600" />
           )}
@@ -295,10 +325,40 @@ function CommentItem({ comment, postId, currentUser }: { comment: any; postId: s
         </div>
       </div>
       <div className="mt-2 text-sm leading-6 text-slate-700">{comment.content}</div>
+      {replyOpen && currentUser && (
+        <div className="mt-4 rounded-[18px] border border-slate-200 bg-slate-50 p-3">
+          <textarea
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            placeholder="답글을 남겨보세요"
+            className="min-h-24 w-full rounded-[16px] border border-slate-200 bg-white p-3 text-sm outline-none placeholder:text-slate-400"
+          />
+          <div className="mt-3 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setReplyOpen(false)
+                setReplyContent('')
+              }}
+              className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              disabled={!replyContent.trim() || replyMutation.isPending}
+              onClick={() => replyContent.trim() && replyMutation.mutate(replyContent.trim())}
+              className="rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-70"
+            >
+              답글 등록
+            </button>
+          </div>
+        </div>
+      )}
       {comment.replies?.length ? (
         <div className="mt-4 space-y-3 border-l border-slate-200 pl-4">
           {comment.replies.map((reply: any) => (
-            <CommentItem key={reply.id} comment={reply} postId={postId} currentUser={currentUser} />
+            <CommentItem key={reply.id} comment={reply} postId={postId} currentUser={currentUser} depth={depth + 1} />
           ))}
         </div>
       ) : null}

@@ -1,5 +1,6 @@
 import client from './client'
-import { unwrap } from '../lib/api'
+import { unwrap, unwrapPage } from '../lib/api'
+import type { EventRequestItem, OperationRequestItem } from '../types/admin'
 
 export const createOperationRequest = async (payload: {
   title: string
@@ -7,4 +8,34 @@ export const createOperationRequest = async (payload: {
 }) => {
   const res = await client.post('/operation-service/v1/operation-requests', payload)
   return unwrap<{ id: string }>(res.data)
+}
+
+export const getEventRequests = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/event-service/v1/event-requests', { params })
+  return unwrapPage<EventRequestItem>(res.data)
+}
+
+export const getMyEventRequests = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/event-service/v1/event-requests/me', { params })
+  return unwrapPage<EventRequestItem>(res.data)
+}
+
+export const getMyEventRequest = async (requestId: string) => {
+  const res = await client.get(`/event-service/v1/event-requests/me/${requestId}`)
+  return unwrap<EventRequestItem>(res.data)
+}
+
+export const getOperationRequests = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/operation-service/v1/operation-requests', { params })
+  return unwrapPage<OperationRequestItem>(res.data)
+}
+
+export const getMyOperationRequests = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/operation-service/v1/operation-requests/me', { params })
+  return unwrapPage<OperationRequestItem>(res.data)
+}
+
+export const getMyOperationRequest = async (requestId: string) => {
+  const res = await client.get(`/operation-service/v1/operation-requests/me/${requestId}`)
+  return unwrap<OperationRequestItem>(res.data)
 }

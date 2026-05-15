@@ -241,6 +241,8 @@ export const handlers = [
     const created = {
       id: `req-${crypto.randomUUID()}`,
       requesterId,
+      requesterNickname: requesterId === 'admin-user' ? '관리자' : requesterId === 'manager-user' ? '매니저' : '테스트유저',
+      createdAt: new Date().toISOString(),
       eventName: title,
       categoryId,
       category: category.name,
@@ -266,6 +268,8 @@ export const handlers = [
     const created = {
       id: `op-${crypto.randomUUID()}`,
       requesterId,
+      requesterNickname: requesterId === 'admin-user' ? '관리자' : requesterId === 'manager-user' ? '매니저' : '테스트유저',
+      createdAt: new Date().toISOString(),
       title,
       content,
       status: 'PENDING',
@@ -475,6 +479,14 @@ export const handlers = [
     return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
   }),
 
+  http.get('/event-service/v1/event-requests/me/:requestId', async ({ params, request }) => {
+    await delay(180)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const eventRequest = mockEventRequests.find((item) => item.id === params.requestId && item.requesterId === userId)
+    if (!eventRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap(eventRequest))
+  }),
+
   http.post('/event-service/v1/event-requests/:requestId/approval', async ({ params }) => {
     await delay(150)
     const request = mockEventRequests.find((item) => item.id === params.requestId)
@@ -500,6 +512,26 @@ export const handlers = [
     const status = url.searchParams.get('status')
     const filtered = status ? mockOperationRequests.filter((item) => item.status === status) : mockOperationRequests
     return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
+  }),
+
+  http.get('/operation-service/v1/operation-requests/me', async ({ request }) => {
+    await delay(180)
+    const url = new URL(request.url)
+    const status = url.searchParams.get('status')
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    let filtered = mockOperationRequests.filter((item) => item.requesterId === userId)
+    if (status) {
+      filtered = filtered.filter((item) => item.status === status)
+    }
+    return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
+  }),
+
+  http.get('/operation-service/v1/operation-requests/me/:requestId', async ({ params, request }) => {
+    await delay(180)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const operationRequest = mockOperationRequests.find((item) => item.id === params.requestId && item.requesterId === userId)
+    if (!operationRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap(operationRequest))
   }),
 
   http.patch('/operation-service/v1/operation-requests/:requestId/status', async ({ params, request }) => {

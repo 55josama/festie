@@ -8,8 +8,7 @@ import { useAuthStore } from '../store/authStore'
 
 const REGION_FILTERS = ['전체', '서울', '경기', '충청', '강원', '경상', '전라', '부산', '제주']
 const CATEGORY_FILTERS = ['전체', '콘서트', '축제', '팬미팅', '팝업스토어']
-const CATEGORY_ADMIN_LINK = '/admin?tab=requests&panel=categories'
-const EVENT_CREATE_LINK = '/admin?tab=requests&panel=general'
+const EVENT_CREATE_LINK = '/admin?panel=general'
 
 export default function Events() {
   const { user } = useAuthStore()
@@ -21,7 +20,6 @@ export default function Events() {
   const regionCacheRef = useRef<Record<string, string>>({})
   const kakaoKey = String(import.meta.env.VITE_KAKAO_JS_KEY ?? '')
   const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
-  const isAdmin = !!user && /ADMIN/.test(user.role)
 
   const { data: events = [] } = useQuery({
     queryKey: ['events', 'list'],
@@ -147,15 +145,6 @@ export default function Events() {
                   {item}
                 </Chip>
               ))}
-              {isAdmin && (
-                <Link
-                  to={CATEGORY_ADMIN_LINK}
-                  aria-label="카테고리 관리로 이동"
-                  className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition-colors hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[11px]"
-                >
-                  +
-                </Link>
-              )}
             </FilterRow>
           </div>
 
@@ -178,15 +167,6 @@ export default function Events() {
                   {item}
                 </Chip>
               ))}
-              {isAdmin && (
-                <Link
-                  to={CATEGORY_ADMIN_LINK}
-                  aria-label="카테고리 관리로 이동"
-                  className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition-colors hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[11px]"
-                >
-                  +
-                </Link>
-              )}
             </FilterRow>
           </div>
         </div>
@@ -230,14 +210,27 @@ function EventNewsCard({ event }: { event: Event }) {
           : 'border-[var(--line)] bg-white'
       }`}
     >
-      <div
-        style={cardTone(event.categoryName)}
-        className="flex h-auto w-[104px] shrink-0 items-center justify-center px-3 py-3 md:h-36 md:w-full md:px-4 md:py-3"
-      >
-        <div className="flex h-24 w-full items-center justify-center rounded-[18px] border border-white/60 bg-white/30 text-[11px] font-semibold text-white/90 md:h-full md:text-sm">
-          행사 이미지
+      {event.img ? (
+        <div className="relative flex h-auto w-[104px] shrink-0 overflow-hidden md:h-36 md:w-full md:p-3">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(238,232,255,0.82),rgba(245,243,255,0.58),rgba(249,168,212,0.20))]" />
+          <div className="relative flex h-full w-full items-center justify-center p-2.5 md:p-0">
+            <img
+              src={event.img}
+              alt={event.name}
+              className="h-full w-full object-cover md:rounded-[18px] md:shadow-[0_0_0_1px_rgba(148,163,184,0.18)]"
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div
+          style={cardTone(event.categoryName)}
+          className="flex h-auto w-[104px] shrink-0 items-center justify-center px-3 py-3 md:h-36 md:w-full md:px-4 md:py-3"
+        >
+          <div className="flex h-24 w-full items-center justify-center rounded-[18px] border border-white/60 bg-white/30 text-[11px] font-semibold text-white/90 md:h-full md:text-sm">
+            행사 이미지
+          </div>
+        </div>
+      )}
       <div className="min-w-0 flex h-full flex-1 flex-col space-y-2.5 p-3 md:space-y-3 md:p-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={categoryTone}>{displayEventCategoryLabel(event.categoryName)}</Badge>
@@ -343,10 +336,11 @@ function getSortBucket(event: Event) {
 
 function normalizeCategoryKey(name: string) {
   const normalized = String(name ?? '').trim().toLowerCase()
-  if (normalized === '콘서트' || normalized === 'concert') return 'concert'
-  if (normalized === '축제' || normalized === 'festival') return 'festival'
-  if (normalized === '팬미팅' || normalized === 'fanmeeting' || normalized === 'fan-meeting' || normalized === 'fan meeting') return 'fanmeeting'
-  if (normalized === '팝업스토어' || normalized === '팝업' || normalized === 'popup' || normalized === 'popupstore' || normalized === 'pop-up-store' || normalized === 'pop up store') return 'popup'
+  const compact = normalized.replace(/[\s_-]+/g, '')
+  if (compact.includes('concert') || compact.includes('콘서트')) return 'concert'
+  if (compact.includes('festival') || compact.includes('페스티벌') || compact.includes('축제')) return 'festival'
+  if (compact.includes('fanmeeting') || compact.includes('팬미팅') || compact.includes('팬 미팅')) return 'fanmeeting'
+  if (compact.includes('popup') || compact.includes('팝업스토어') || compact.includes('팝업') || compact.includes('pop-up') || compact.includes('pop up')) return 'popup'
   return normalized
 }
 
@@ -363,10 +357,10 @@ function getCategoryTone(name: string) {
 function displayEventCategoryLabel(name: string) {
   const key = normalizeCategoryKey(name)
   return {
-    concert: 'CONCERT',
-    festival: 'FESTIVAL',
-    fanmeeting: 'FANMEETING',
-    popup: 'POPUP STORE',
+    concert: '콘서트',
+    festival: '축제',
+    fanmeeting: '팬미팅',
+    popup: '팝업스토어',
   }[key] ?? (String(name ?? '').trim().toUpperCase() || 'EVENT')
 }
 
@@ -441,7 +435,10 @@ function formatShortRange(startAt?: string | null, endAt?: string | null) {
 
 function getRegionLabel(event: Event, resolvedRegions: Record<string, string>) {
   const rawRegion = event.region ?? resolvedRegions[event.id] ?? ''
-  return normalizeRegionLabel(rawRegion)
+  const normalized = normalizeRegionLabel(rawRegion)
+  if (normalized !== '경상') return normalized
+  const placeHint = normalizeRegionLabel(event.place)
+  return placeHint === '부산' ? '부산' : normalized
 }
 
 function normalizeRegionLabel(value?: string | null) {
@@ -451,9 +448,9 @@ function normalizeRegionLabel(value?: string | null) {
   if (/경기/.test(compact)) return '경기'
   if (/세종|대전|충청/.test(compact)) return '충청'
   if (/강원/.test(compact)) return '강원'
+  if (/부산/.test(compact)) return '부산'
   if (/경상|대구|울산|창원|포항|경주|진주|구미|경산/.test(compact)) return '경상'
   if (/전라|광주|전주|목포|여수|순천|군산|익산/.test(compact)) return '전라'
-  if (/부산/.test(compact)) return '부산'
   if (/제주/.test(compact)) return '제주'
   return compact
 }

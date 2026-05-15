@@ -1,6 +1,8 @@
 export interface EventRequestItem {
   id: string
   requesterId: string
+  requesterNickname?: string
+  createdAt?: string
   eventName: string
   categoryId: string
   category: string
@@ -14,6 +16,8 @@ export interface EventRequestItem {
 export interface OperationRequestItem {
   id: string
   requesterId: string
+  requesterNickname?: string
+  createdAt?: string
   title: string
   content: string
   status: string
