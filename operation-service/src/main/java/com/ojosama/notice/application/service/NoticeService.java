@@ -1,5 +1,6 @@
 package com.ojosama.notice.application.service;
 
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.notice.application.dto.command.CreateNoticeCommand;
 import com.ojosama.notice.application.dto.command.UpdateNoticeCommand;
 import com.ojosama.notice.application.dto.result.NoticeResult;
@@ -16,6 +17,8 @@ import com.ojosama.report.domain.model.entity.Report;
 import com.ojosama.report.domain.model.enums.ReporterType;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ public class NoticeService {
 
     // 공지사항 생성
     @Transactional
+    @CacheEvict(cacheNames = {"notice", "noticeList"}, allEntries = true)
     public NoticeResult createNotice(CreateNoticeCommand command) {
         Notice notice = command.toEntity();
         Notice savedNotice = noticeRepository.save(notice);
@@ -37,14 +41,19 @@ public class NoticeService {
 
     // 공지사항 목록 조회
     @Transactional(readOnly = true)
-    public Page<NoticeResult> getNoticeList(Pageable pageable) {
+    @Cacheable(
+            cacheNames = "noticeList",
+            key = "':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize"
+    )
+    public PageResponse<NoticeResult> getNoticeList(Pageable pageable) {
         Page<Notice> notices = noticeRepository.findAllByDeletedAtIsNull(pageable);
 
-        return notices.map(NoticeResult::from);
+        return PageResponse.from(notices.map(NoticeResult::from));
     }
 
     // 공지사항 상세 조회
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "notice", key = "#id")
     public NoticeResult getNotice(UUID noticeId) {
         Notice notice = findNoticeById(noticeId);
 
@@ -53,6 +62,7 @@ public class NoticeService {
 
     // 공지사항 수정
     @Transactional
+    @CacheEvict(cacheNames = {"notice", "noticeList"}, allEntries = true)
     public NoticeResult updateNotice(UUID noticeId, UpdateNoticeCommand command) {
         Notice notice = findNoticeById(noticeId);
         notice.update(command.title(), command.content());
@@ -62,6 +72,7 @@ public class NoticeService {
 
     // 공지사항 삭제
     @Transactional
+    @CacheEvict(cacheNames = {"notice", "noticeList"}, allEntries = true)
     public void deleteNotice(UUID noticeId) {
         Notice notice = findNoticeById(noticeId);
         notice.deleted();

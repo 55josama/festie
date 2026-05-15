@@ -1,14 +1,19 @@
 package com.ojosama.notice.presentation.controller;
 
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.notice.application.dto.result.NoticeResult;
 import com.ojosama.notice.application.service.NoticeService;
 import com.ojosama.notice.presentation.dto.CreateNoticeRequest;
 import com.ojosama.notice.presentation.dto.FindNoticeResponse;
 import com.ojosama.notice.presentation.dto.ListNoticeResponse;
 import com.ojosama.notice.presentation.dto.UpdateNoticeRequest;
+import com.ojosama.report.application.dto.result.ReportResult;
+import com.ojosama.report.presentation.dto.ListReportResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,11 +53,22 @@ public class NoticeController {
 
     // 공지사항 목록 조회
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ListNoticeResponse>>> getNoticeList(
+    public ResponseEntity<ApiResponse<PageResponse<ListNoticeResponse>>> getNoticeList(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<ListNoticeResponse> response = noticeService.getNoticeList(pageable)
-                .map(ListNoticeResponse::from);
+        PageResponse<NoticeResult> serviceResult = noticeService.getNoticeList(pageable);
+
+        List<ListNoticeResponse> content = serviceResult.content().stream()
+                .map(ListNoticeResponse::from)
+                .collect(Collectors.toList());
+
+        PageResponse<ListNoticeResponse> response = new PageResponse<>(
+                content,
+                serviceResult.page(),
+                serviceResult.size(),
+                serviceResult.totalElements(),
+                serviceResult.totalPages()
+        );
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
