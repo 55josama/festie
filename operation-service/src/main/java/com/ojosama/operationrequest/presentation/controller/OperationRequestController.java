@@ -1,6 +1,7 @@
 package com.ojosama.operationrequest.presentation.controller;
 
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.operationrequest.application.dto.query.ListOperationRequestQuery;
 import com.ojosama.operationrequest.application.dto.result.OperationRequestResult;
 import com.ojosama.operationrequest.application.service.OperationRequestService;
@@ -10,8 +11,12 @@ import com.ojosama.operationrequest.presentation.dto.FindOperationResponse;
 import com.ojosama.operationrequest.presentation.dto.ListOperationResponse;
 import com.ojosama.operationrequest.presentation.dto.UpdateOperationRequest;
 import com.ojosama.operationrequest.presentation.dto.UpdateOperationStatusRequest;
+import com.ojosama.report.application.dto.result.ReportResult;
+import com.ojosama.report.presentation.dto.ListReportResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -54,13 +59,25 @@ public class OperationRequestController {
     // 운영 요청 목록 조회
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ListOperationResponse>>> getOperationRequestList(
+    public ResponseEntity<ApiResponse<PageResponse<ListOperationResponse>>> getOperationRequestList(
             @RequestParam(required = false) OperationRequestStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         ListOperationRequestQuery query = new ListOperationRequestQuery(status);
-        Page<ListOperationResponse> response = operationRequestService.getOperationRequestList(query, pageable)
-                .map(ListOperationResponse::from);
+
+        PageResponse<OperationRequestResult> serviceResult = operationRequestService.getOperationRequestList(query, pageable);
+
+        List<ListOperationResponse> content = serviceResult.content().stream()
+                .map(ListOperationResponse::from)
+                .collect(Collectors.toList());
+
+        PageResponse<ListOperationResponse> response = new PageResponse<>(
+                content,
+                serviceResult.page(),
+                serviceResult.size(),
+                serviceResult.totalElements(),
+                serviceResult.totalPages()
+        );
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
