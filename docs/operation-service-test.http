@@ -119,7 +119,7 @@ Content-Type: application/json
 
 ### 신고 목록 조회
 GET {{operationUrl}}/v1/reports
-Authorization: Bearer {{accessToken}}
+Authorization: Bearer {{adminAccessToken}}
 
 ### 신고 목록 조회 (PENDING 상태만)
 GET {{operationUrl}}/v1/reports?status=PENDING&page=0&size=10
@@ -242,9 +242,11 @@ Content-Type: application/json
 
 ### 공지사항 목록 조회
 GET {{operationUrl}}/v1/notices
+Authorization: Bearer {{accessToken}}
 
 ### 공지사항 상세 조회
 GET {{operationUrl}}/v1/notices/{noticeId}
+Authorization: Bearer {{accessToken}}
 
 ### 공지사항 수정
 PATCH {{operationUrl}}/v1/notices/{noticeId}
