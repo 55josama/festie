@@ -1,5 +1,5 @@
-import { type ReactNode, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCategories, getPosts } from '../api/community'
 import { approveEventRequest, rejectEventRequest, updateOperationRequestStatus } from '../api/admin'
@@ -32,9 +32,10 @@ type RequestFeedItem = {
 
 export default function Community() {
     const { user } = useAuthStore()
+    const [searchParams] = useSearchParams()
     const queryClient = useQueryClient()
-    const [feedTab, setFeedTab] = useState<FeedTab>('posts')
-    const [requestKind, setRequestKind] = useState<RequestKind>('event')
+    const [feedTab, setFeedTab] = useState<FeedTab>(() => searchParams.get('tab') === 'requests' ? 'requests' : 'posts')
+    const [requestKind, setRequestKind] = useState<RequestKind>(() => searchParams.get('requestKind') === 'operation' ? 'operation' : 'event')
     const [categoryId, setCategoryId] = useState<string | undefined>()
     const [sort, setSort] = useState<'latest' | 'popular'>('latest')
     const [requestRejectReasons, setRequestRejectReasons] = useState<Record<string, string>>({})
@@ -42,6 +43,13 @@ export default function Community() {
     const isManager = !!user && /_MANAGER$/.test(user.role)
     const canViewAllRequests = isAdmin || isManager
     const canModerateEventRequests = isAdmin || isManager
+
+    useEffect(() => {
+        const nextFeedTab = searchParams.get('tab') === 'requests' ? 'requests' : 'posts'
+        const nextRequestKind = searchParams.get('requestKind') === 'operation' ? 'operation' : 'event'
+        setFeedTab(nextFeedTab)
+        setRequestKind(nextRequestKind)
+    }, [searchParams])
 
     const {data: categories = []} = useQuery({
         queryKey: ['categories'],

@@ -31,8 +31,12 @@ function useMediaQuery(query: string) {
 
 function mergeUnique(existing: Notification[], incoming: Notification[]) {
   const map = new Map<string, Notification>()
-  incoming.forEach((item) => map.set(item.id, item))
   existing.forEach((item) => map.set(item.id, item))
+  incoming.forEach((item) => {
+    if (!map.has(item.id)) {
+      map.set(item.id, item)
+    }
+  })
   return Array.from(map.values())
 }
 
