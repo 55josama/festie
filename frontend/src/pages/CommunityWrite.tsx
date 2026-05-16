@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { createPost, getCategories, getPost, updatePost } from '../api/community'
 import { createEventRequest, getEvents } from '../api/events'
-import { createOperationRequest } from '../api/requests'
+import { createOperationRequest, getMyOperationRequest, getOperationRequest, updateOperationRequest } from '../api/requests'
 import { useAuthStore } from '../store/authStore'
 
 export default function CommunityWrite() {
@@ -12,7 +12,17 @@ export default function CommunityWrite() {
   const isEditMode = !!postId
   const [searchParams] = useSearchParams()
   const { user } = useAuthStore()
-  const canCreateRequest = user?.role === 'USER'
+  const canCreateRequest = !!user
+  const requestMode = useMemo<'event' | 'operation' | null>(() => {
+    const nextKind = searchParams.get('requestKind')
+    if (nextKind === 'event' || nextKind === 'operation') return nextKind
+    if (searchParams.get('category') === 'request') {
+      return searchParams.get('requestType') === 'event' ? 'event' : 'operation'
+    }
+    return null
+  }, [searchParams])
+  const requestEditId = searchParams.get('requestId') ?? ''
+  const isOperationEditMode = requestMode === 'operation' && !!requestEditId
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories })
   const { data: requestEvents = [] } = useQuery({
     queryKey: ['request-form', 'event-categories'],
@@ -23,6 +33,14 @@ export default function CommunityWrite() {
     queryKey: ['post', postId],
     queryFn: () => getPost(postId),
     enabled: isEditMode,
+  })
+
+  const { data: editingOperationRequest } = useQuery({
+    queryKey: ['operation-request', requestEditId, user?.role],
+    queryFn: () => user?.role === 'ADMIN'
+      ? getOperationRequest(requestEditId)
+      : getMyOperationRequest(requestEditId),
+    enabled: isOperationEditMode && !!user,
   })
 
   const [form, setForm] = useState({ title: '', content: '', categoryId: '' })
@@ -37,15 +55,6 @@ export default function CommunityWrite() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [initialized, setInitialized] = useState(false)
-
-  const requestMode = useMemo<'event' | 'operation' | null>(() => {
-    const nextKind = searchParams.get('requestKind')
-    if (nextKind === 'event' || nextKind === 'operation') return nextKind
-    if (searchParams.get('category') === 'request') {
-      return searchParams.get('requestType') === 'event' ? 'event' : 'operation'
-    }
-    return null
-  }, [searchParams])
 
   const requestEventCategories = useMemo(() => {
     const seen = new Map<string, { id: string; name: string }>()
@@ -77,6 +86,17 @@ export default function CommunityWrite() {
     setVisibility(editingPost.visibility === 'PRIVATE' ? 'private' : 'public')
     setInitialized(true)
   }, [editingPost, initialized, isEditMode])
+
+  useEffect(() => {
+    if (!isOperationEditMode || initialized || !editingOperationRequest) return
+    setForm({
+      title: editingOperationRequest.title,
+      content: editingOperationRequest.content,
+      categoryId: '',
+    })
+    setVisibility('private')
+    setInitialized(true)
+  }, [editingOperationRequest, initialized, isOperationEditMode])
 
   useEffect(() => {
     if (requestMode !== 'event' || requestForm.categoryId || requestEventCategories.length === 0) return
@@ -111,6 +131,14 @@ export default function CommunityWrite() {
       }
 
       if (requestMode === 'operation') {
+        if (requestEditId) {
+          await updateOperationRequest(requestEditId, {
+            title: form.title,
+            content: form.content,
+          })
+          navigate('/community')
+          return
+        }
         await createOperationRequest({
           title: form.title,
           content: form.content,
@@ -171,7 +199,9 @@ export default function CommunityWrite() {
             {requestMode === 'event'
               ? '이벤트 요청을 남겨보세요'
               : requestMode === 'operation'
-                ? '운영 요청을 남겨보세요'
+                ? requestEditId
+                  ? '운영 요청을 수정해보세요'
+                  : '운영 요청을 남겨보세요'
                 : isEditMode
                   ? '게시글을 수정해보세요'
                   : '공연을 본 사람의 시선으로 남겨보세요'}
@@ -180,7 +210,9 @@ export default function CommunityWrite() {
             {requestMode === 'event'
               ? '행사 카테고리와 요청 내용을 함께 정리할 수 있어요.'
               : requestMode === 'operation'
-                ? '운영 요청 내용을 간단하게 정리할 수 있어요.'
+                ? requestEditId
+                  ? '운영 요청 내용을 다시 정리할 수 있어요.'
+                  : '운영 요청 내용을 간단하게 정리할 수 있어요.'
                 : isEditMode
                   ? '제목, 카테고리, 내용을 다시 정리할 수 있어요.'
                   : '후기, 꿀팁, 요청 글을 빠르게 작성할 수 있어요.'}

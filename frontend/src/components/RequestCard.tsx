@@ -32,6 +32,7 @@ export default function RequestCard({
 }: RequestCardProps) {
   const hasTitle = Boolean(String(title ?? '').trim())
   const hasAuthor = Boolean(String(authorNickname ?? '').trim())
+  const hasCreatedAt = Boolean(String(createdAt ?? '').trim())
   return (
     <article className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4 transition-colors hover:bg-white md:p-5">
       <div className="flex items-start justify-between gap-4">
@@ -52,11 +53,13 @@ export default function RequestCard({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-[12px] text-slate-500">
-            {hasAuthor && <span>{authorNickname}</span>}
-            {hasAuthor && <span>·</span>}
-            <span>{formatDateTime(createdAt)}</span>
-          </div>
+          {(hasAuthor || hasCreatedAt) && (
+            <div className="flex flex-wrap items-center gap-2 text-[12px] text-slate-500">
+              {hasAuthor && <span>{authorNickname}</span>}
+              {hasAuthor && hasCreatedAt && <span>·</span>}
+              {hasCreatedAt && <span>{formatDateTime(createdAt)}</span>}
+            </div>
+          )}
 
           <div className="line-clamp-2 whitespace-pre-wrap break-words text-[13px] leading-6 text-slate-600">
             {body}

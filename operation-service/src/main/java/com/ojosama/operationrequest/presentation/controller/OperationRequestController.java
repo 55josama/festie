@@ -41,7 +41,7 @@ public class OperationRequestController {
     private final OperationRequestService operationRequestService;
 
     // 운영 요청 등록 (사용자)
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @PostMapping
     public ResponseEntity<ApiResponse<FindOperationResponse>> createOperationRequest(
             @Valid @RequestBody CreateOperationRequest request,
@@ -52,7 +52,7 @@ public class OperationRequestController {
     }
 
     // 운영 요청 목록 조회
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ListOperationResponse>>> getOperationRequestList(
             @RequestParam(required = false) OperationRequestStatus status,
@@ -61,15 +61,40 @@ public class OperationRequestController {
         ListOperationRequestQuery query = new ListOperationRequestQuery(status);
         Page<ListOperationResponse> response = operationRequestService.getOperationRequestList(query, pageable)
                 .map(ListOperationResponse::from);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
+    // 운영 요청 목록 조회 (작성자 본인)
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<Page<ListOperationResponse>>> getMyOperationRequestList(
+            @AuthenticationPrincipal UUID currentUserId,
+            @RequestParam(required = false) OperationRequestStatus status,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        ListOperationRequestQuery query = new ListOperationRequestQuery(status);
+        Page<ListOperationResponse> response = operationRequestService
+                .getMyOperationRequestList(currentUserId, query, pageable)
+                .map(ListOperationResponse::from);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 운영 요청 상세 조회
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<FindOperationResponse>> getOperationRequest(@PathVariable UUID requestId) {
         OperationRequestResult result = operationRequestService.getOperationRequestInfo(requestId);
+        return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
+    }
+
+    // 운영 요청 상세 조회 (작성자 본인)
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/me/{requestId}")
+    public ResponseEntity<ApiResponse<FindOperationResponse>> getMyOperationRequest(
+            @PathVariable UUID requestId,
+            @AuthenticationPrincipal UUID currentUserId
+    ) {
+        OperationRequestResult result = operationRequestService.getMyOperationRequestInfo(requestId, currentUserId);
         return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
     }
 
@@ -81,12 +106,17 @@ public class OperationRequestController {
             @Valid @RequestBody UpdateOperationRequest request,
             @AuthenticationPrincipal UUID currentUserId
     ) {
-        OperationRequestResult result = operationRequestService.updateOperationRequest(requestId, request.toCommand(currentUserId));
+        boolean isAdmin = isCurrentUserAdmin();
+        OperationRequestResult result = operationRequestService.updateOperationRequest(
+                requestId,
+                request.toCommand(currentUserId),
+                isAdmin
+        );
         return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
     }
 
     // 운영 요청 상태 처리 (관리자)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER')")
     @PatchMapping("/{requestId}/status")
     public ResponseEntity<ApiResponse<FindOperationResponse>> updateOperationRequestStatus(
             @PathVariable UUID requestId,

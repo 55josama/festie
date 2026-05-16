@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCategories, getPosts } from '../api/community'
 import { approveEventRequest, rejectEventRequest, updateOperationRequestStatus } from '../api/admin'
-import { getEventRequests, getMyEventRequests, getMyOperationRequests, getOperationRequests } from '../api/requests'
+import { deleteOperationRequest, getEventRequests, getMyEventRequests, getMyOperationRequests, getOperationRequests } from '../api/requests'
 import PostCard from '../components/PostCard'
 import RequestCard from '../components/RequestCard'
 import { useAuthStore } from '../store/authStore'
@@ -14,6 +14,7 @@ type RequestKind = 'event' | 'operation'
 
 type RequestFeedItem = {
     id: string
+    requesterId: string
     kind: 'event' | 'operation'
     kindLabel: string
     metaLabel: string
@@ -24,6 +25,8 @@ type RequestFeedItem = {
     status: string
     rejectReason?: string | null
     statusClassName: string
+    sortAt: number
+    sortIndex: number
 }
 
 export default function Community() {
@@ -37,7 +40,6 @@ export default function Community() {
     const isAdmin = !!user && /ADMIN/.test(user.role)
     const isManager = !!user && /_MANAGER$/.test(user.role)
     const canViewAllRequests = isAdmin || isManager
-    const canViewOperationRequests = isAdmin
     const canModerateEventRequests = isAdmin || isManager
 
     const {data: categories = []} = useQuery({
@@ -60,11 +62,11 @@ export default function Community() {
     })
 
     const {data: operationRequests = []} = useQuery<OperationRequestItem[]>({
-        queryKey: ['community', 'operation-requests', canViewOperationRequests],
-        queryFn: () => canViewAllRequests
+        queryKey: ['community', 'operation-requests', isAdmin],
+        queryFn: () => isAdmin
             ? getOperationRequests({size: 100})
             : getMyOperationRequests({size: 100}),
-        enabled: feedTab === 'requests' && canViewOperationRequests,
+        enabled: feedTab === 'requests' && !!user,
     })
 
     const approveEventMutation = useMutation({
@@ -89,6 +91,13 @@ export default function Community() {
         },
     })
 
+    const deleteOperationMutation = useMutation({
+        mutationFn: (requestId: string) => deleteOperationRequest(requestId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['community', 'operation-requests']})
+        },
+    })
+
     const categoryNameById = useMemo(() => {
         return new Map(categories.map((category: any) => [category.id, category.name]))
     }, [categories])
@@ -108,41 +117,48 @@ export default function Community() {
     }, [rawPosts, sort])
 
     const requestItems = useMemo<RequestFeedItem[]>(() => {
-        const eventRequestCards = (eventRequests ?? []).map((request: any) => ({
+        const eventRequestCards = (eventRequests ?? []).map((request: any, index: number) => ({
             id: request.id,
+            requesterId: request.requesterId,
             kind: 'event' as const,
             kindLabel: '요청',
             metaLabel: '이벤트 요청',
             title: request.eventName ?? '',
             body: request.description ?? '',
             authorNickname: request.requesterNickname ?? null,
-            createdAt: request.createdAt,
+            createdAt: request.createdAt ?? null,
             status: request.status ?? 'PENDING',
             rejectReason: request.rejectReason,
             statusClassName: requestStatusClass(request.status),
+            sortAt: request.createdAt ? new Date(request.createdAt).getTime() : 0,
+            sortIndex: index,
         }))
 
-        const operationRequestCards = (operationRequests ?? []).map((request: any) => ({
+        const operationRequestCards = (operationRequests ?? []).map((request: any, index: number) => ({
             id: request.id,
+            requesterId: request.requesterId,
             kind: 'operation' as const,
             kindLabel: '요청',
             metaLabel: '운영 요청',
             title: request.title ?? '운영 요청',
             body: request.content ?? '',
             authorNickname: request.requesterNickname ?? null,
-            createdAt: request.createdAt,
+            createdAt: null,
             status: request.status ?? 'PENDING',
             rejectReason: request.adminMemo,
             statusClassName: requestStatusClass(request.status),
+            sortAt: 0,
+            sortIndex: index,
         }))
 
         const combined = [...eventRequestCards, ...operationRequestCards]
         const filtered = requestKind === 'event'
             ? combined.filter((request) => request.kind === 'event')
             : combined.filter((request) => request.kind === 'operation')
-        return filtered.sort(
-            (left, right) => new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime(),
-        )
+        return filtered.sort((left, right) => {
+            if (right.sortAt !== left.sortAt) return right.sortAt - left.sortAt
+            return left.sortIndex - right.sortIndex
+        })
     }, [eventRequests, operationRequests, requestKind])
 
     return (
@@ -197,7 +213,7 @@ export default function Community() {
                             }}>
                                 이벤트
                             </FilterChip>
-                            {canViewOperationRequests && (
+                            {!!user && (
                                 <FilterChip active={feedTab === 'requests' && requestKind === 'operation'} tone="rose" onClick={() => {
                                     setFeedTab('requests')
                                     setRequestKind('operation')
@@ -300,59 +316,128 @@ export default function Community() {
                             </div>
                         ) : (
                             requestItems.map((request) => {
-                                const canModerate = request.kind === 'event' ? canModerateEventRequests : canViewOperationRequests
                                 const reason = requestRejectReasons[request.id] ?? ''
-                                const actions = canModerate && request.status === 'PENDING' ? (
-                                    <div className="space-y-2 border-t border-slate-200 pt-3">
-                                        <input
-                                            value={reason}
-                                            onChange={(e) => setRequestRejectReasons((prev) => ({
-                                                ...prev,
-                                                [request.id]: e.target.value,
-                                            }))}
-                                            placeholder="반려 사유"
-                                            className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
-                                        />
-                                        <div className="flex flex-wrap gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (request.kind === 'event') {
-                                                        approveEventMutation.mutate(request.id)
-                                                    } else {
+                                const canModerateOperation = isAdmin
+                                const isOperationOwner = !!user && request.requesterId === user.userId
+                                const canEditOperationRequest = request.kind === 'operation' && (isAdmin || (isOperationOwner && request.status === 'PENDING'))
+                                const canDeleteOperationRequest = request.kind === 'operation' && (isAdmin || isOperationOwner) && (request.status === 'PENDING' || isAdmin)
+                                const operationActions = (() => {
+                                    const moderationBlock = canModerateOperation && request.status === 'PENDING' ? (
+                                        <>
+                                            <input
+                                                value={reason}
+                                                onChange={(e) => setRequestRejectReasons((prev) => ({
+                                                    ...prev,
+                                                    [request.id]: e.target.value,
+                                                }))}
+                                                placeholder="반려 사유"
+                                                className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
+                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
                                                         updateOperationStatusMutation.mutate({
                                                             requestId: request.id,
                                                             status: 'IN_PROGRESS',
                                                             reason: reason.trim(),
                                                         })
-                                                    }
-                                                }}
-                                                className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
-                                            >
-                                                승인
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const rejectReason = reason.trim()
-                                                    if (!rejectReason) return
-                                                    if (request.kind === 'event') {
-                                                        rejectEventMutation.mutate({requestId: request.id, reason: rejectReason})
-                                                    } else {
+                                                    }}
+                                                    className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
+                                                >
+                                                    승인
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const rejectReason = reason.trim()
+                                                        if (!rejectReason) return
                                                         updateOperationStatusMutation.mutate({
                                                             requestId: request.id,
                                                             status: 'REJECTED',
                                                             reason: rejectReason,
                                                         })
-                                                    }
-                                                }}
-                                                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
-                                            >
-                                                거절
-                                            </button>
+                                                    }}
+                                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                                                >
+                                                    거절
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : null
+
+                                    const editDeleteBlock = canEditOperationRequest || canDeleteOperationRequest ? (
+                                        <div className={`${moderationBlock ? 'border-t border-slate-200 pt-3' : ''} flex flex-wrap gap-2`}>
+                                            {canEditOperationRequest && (
+                                                <Link
+                                                    to={`/community/new?requestKind=operation&requestId=${request.id}`}
+                                                    className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-semibold text-violet-700"
+                                                >
+                                                    수정
+                                                </Link>
+                                            )}
+                                            {canDeleteOperationRequest && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (window.confirm('운영 요청을 삭제할까요?')) {
+                                                            deleteOperationMutation.mutate(request.id)
+                                                        }
+                                                    }}
+                                                    className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700"
+                                                    disabled={deleteOperationMutation.isPending}
+                                                >
+                                                    삭제
+                                                </button>
+                                            )}
                                         </div>
-                                    </div>
-                                ) : null
+                                    ) : null
+
+                                    if (!moderationBlock && !editDeleteBlock) return null
+                                    return (
+                                        <div className="space-y-2 border-t border-slate-200 pt-3">
+                                            {moderationBlock}
+                                            {editDeleteBlock}
+                                        </div>
+                                    )
+                                })()
+                                const actions = request.kind === 'event'
+                                    ? (canModerateEventRequests && request.status === 'PENDING' ? (
+                                        <div className="space-y-2 border-t border-slate-200 pt-3">
+                                            <input
+                                                value={reason}
+                                                onChange={(e) => setRequestRejectReasons((prev) => ({
+                                                    ...prev,
+                                                    [request.id]: e.target.value,
+                                                }))}
+                                                placeholder="반려 사유"
+                                                className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
+                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        approveEventMutation.mutate(request.id)
+                                                    }}
+                                                    className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
+                                                >
+                                                    승인
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const rejectReason = reason.trim()
+                                                        if (!rejectReason) return
+                                                        rejectEventMutation.mutate({requestId: request.id, reason: rejectReason})
+                                                    }}
+                                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                                                >
+                                                    거절
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : null)
+                                    : operationActions
 
                                 return (
                                     <RequestCard

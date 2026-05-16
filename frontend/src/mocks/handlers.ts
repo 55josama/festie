@@ -268,8 +268,6 @@ export const handlers = [
     const created = {
       id: `op-${crypto.randomUUID()}`,
       requesterId,
-      requesterNickname: requesterId === 'admin-user' ? '관리자' : requesterId === 'manager-user' ? '매니저' : '테스트유저',
-      createdAt: new Date().toISOString(),
       title,
       content,
       status: 'PENDING',
@@ -532,6 +530,31 @@ export const handlers = [
     const operationRequest = mockOperationRequests.find((item) => item.id === params.requestId && item.requesterId === userId)
     if (!operationRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
     return HttpResponse.json(wrap(operationRequest))
+  }),
+
+  http.get('/operation-service/v1/operation-requests/:requestId', async ({ params }) => {
+    await delay(180)
+    const operationRequest = mockOperationRequests.find((item) => item.id === params.requestId)
+    if (!operationRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap(operationRequest))
+  }),
+
+  http.patch('/operation-service/v1/operation-requests/:requestId', async ({ params, request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const operationRequest = mockOperationRequests.find((item) => item.id === params.requestId)
+    if (!operationRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    operationRequest.title = body.title ?? operationRequest.title
+    operationRequest.content = body.content ?? operationRequest.content
+    return HttpResponse.json(wrap(operationRequest))
+  }),
+
+  http.delete('/operation-service/v1/operation-requests/:requestId', async ({ params }) => {
+    await delay(180)
+    const index = mockOperationRequests.findIndex((item) => item.id === params.requestId)
+    if (index === -1) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    mockOperationRequests.splice(index, 1)
+    return HttpResponse.json(wrap({}))
   }),
 
   http.patch('/operation-service/v1/operation-requests/:requestId/status', async ({ params, request }) => {

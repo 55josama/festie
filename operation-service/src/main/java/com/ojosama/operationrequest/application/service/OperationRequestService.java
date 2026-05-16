@@ -41,20 +41,38 @@ public class OperationRequestService {
         return requests.map(OperationRequestResult::from);
     }
 
+    // 요청자 본인 운영 요청 목록 조회
+    public Page<OperationRequestResult> getMyOperationRequestList(UUID requesterId, ListOperationRequestQuery query,
+                                                                  Pageable pageable) {
+        Page<OperationRequest> requests = fetchMyRequestsByQuery(requesterId, query, pageable);
+        return requests.map(OperationRequestResult::from);
+    }
+
     // 운영 요청 상세 조회
     public OperationRequestResult getOperationRequestInfo(UUID requestId) {
         OperationRequest request = findOperationRequestById(requestId);
         return OperationRequestResult.from(request);
     }
 
+    // 요청자 본인 운영 요청 상세 조회
+    public OperationRequestResult getMyOperationRequestInfo(UUID requestId, UUID requesterId) {
+        OperationRequest request = operationRequestRepository
+                .findByIdAndRequesterIdAndDeletedAtIsNull(requestId, requesterId)
+                .orElseThrow(
+                        () -> new OperationRequestException(OperationRequestErrorCode.OPERATION_REQUEST_NOT_FOUND));
+        return OperationRequestResult.from(request);
+    }
+
     // 운영 요청 수정 (사용자)
     @Transactional
-    public OperationRequestResult updateOperationRequest(UUID requestId, UpdateOperationRequestCommand command) {
+    public OperationRequestResult updateOperationRequest(UUID requestId, UpdateOperationRequestCommand command, boolean isAdmin) {
         OperationRequest request = findOperationRequestById(requestId);
 
-        validateRequester(request, command.requesterId());
+        if (!isAdmin) {
+            validateRequester(request, command.requesterId());
+        }
 
-        request.update(command.title(), command.content());
+        request.update(command.title(), command.content(), isAdmin);
 
         return OperationRequestResult.from(request);
     }
@@ -84,7 +102,8 @@ public class OperationRequestService {
 
     private OperationRequest findOperationRequestById(UUID requestId) {
         return operationRequestRepository.findByIdAndDeletedAtIsNull(requestId)
-                .orElseThrow(() -> new OperationRequestException(OperationRequestErrorCode.OPERATION_REQUEST_NOT_FOUND));
+                .orElseThrow(
+                        () -> new OperationRequestException(OperationRequestErrorCode.OPERATION_REQUEST_NOT_FOUND));
     }
 
     private Page<OperationRequest> fetchRequestsByQuery(ListOperationRequestQuery query, Pageable pageable) {
@@ -92,6 +111,15 @@ public class OperationRequestService {
             return operationRequestRepository.findByStatusAndDeletedAtIsNull(query.status(), pageable);
         }
         return operationRequestRepository.findAllByDeletedAtIsNull(pageable);
+    }
+
+    private Page<OperationRequest> fetchMyRequestsByQuery(UUID requesterId, ListOperationRequestQuery query,
+                                                          Pageable pageable) {
+        if (query.status() != null) {
+            return operationRequestRepository.findByRequesterIdAndStatusAndDeletedAtIsNull(requesterId, query.status(),
+                    pageable);
+        }
+        return operationRequestRepository.findByRequesterIdAndDeletedAtIsNull(requesterId, pageable);
     }
 
     // 작성자 본인인지 검증
