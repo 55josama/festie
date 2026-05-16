@@ -5,7 +5,7 @@ import java.util.UUID;
 public record EventRequestResultMessage(
         UUID targetId,
         UUID receiverId,
-        String status,
+        String resultStatus,
         String eventName
 ) {
 }

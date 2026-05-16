@@ -70,7 +70,7 @@ public class EventRequestResultConsumer {
                 new EventRequestResultCommand(
                         event.targetId(),
                         event.receiverId(),
-                        event.status(),
+                        event.resultStatus(),
                         event.eventName()
                 ));
     }
