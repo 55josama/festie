@@ -34,6 +34,7 @@ export default function App() {
             <Route path="/calendar" element={<Calendar mode="all" />} />
             <Route path="/community" element={<Community />} />
             <Route path="/community/new" element={<CommunityWrite />} />
+            <Route path="/community/:postId/edit" element={<CommunityWrite />} />
             <Route path="/community/:postId" element={<PostDetail />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/login" element={<Login />} />

@@ -26,6 +26,11 @@ public class OperationRequestRepositoryImpl implements OperationRequestRepositor
     }
 
     @Override
+    public Optional<OperationRequest> findByIdAndRequesterIdAndDeletedAtIsNull(UUID id, UUID requesterId) {
+        return operationRequestJpaRepository.findByIdAndRequesterIdAndDeletedAtIsNull(id, requesterId);
+    }
+
+    @Override
     public Page<OperationRequest> findAllByDeletedAtIsNull(Pageable pageable) {
         return operationRequestJpaRepository.findAllByDeletedAtIsNull(pageable);
     }
@@ -33,5 +38,15 @@ public class OperationRequestRepositoryImpl implements OperationRequestRepositor
     @Override
     public Page<OperationRequest> findByStatusAndDeletedAtIsNull(OperationRequestStatus status, Pageable pageable){
         return operationRequestJpaRepository.findByStatusAndDeletedAtIsNull(status, pageable);
+    }
+
+    @Override
+    public Page<OperationRequest> findByRequesterIdAndDeletedAtIsNull(UUID requesterId, Pageable pageable) {
+        return operationRequestJpaRepository.findByRequesterIdAndDeletedAtIsNull(requesterId, pageable);
+    }
+
+    @Override
+    public Page<OperationRequest> findByRequesterIdAndStatusAndDeletedAtIsNull(UUID requesterId, OperationRequestStatus status, Pageable pageable) {
+        return operationRequestJpaRepository.findByRequesterIdAndStatusAndDeletedAtIsNull(requesterId, status, pageable);
     }
 }

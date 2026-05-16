@@ -102,9 +102,9 @@ function normalizeRegionName(value?: string) {
   if (/경기/.test(compact)) return '경기'
   if (/세종|대전|충청/.test(compact)) return '충청'
   if (/강원/.test(compact)) return '강원'
-  if (/경상|부산|대구|울산|창원|포항|경주|진주|구미|경산/.test(compact)) return '경상'
-  if (/전라|광주|전주|목포|여수|순천|군산|익산/.test(compact)) return '전라'
   if (/부산/.test(compact)) return '부산'
+  if (/경상|대구|울산|창원|포항|경주|진주|구미|경산/.test(compact)) return '경상'
+  if (/전라|광주|전주|목포|여수|순천|군산|익산/.test(compact)) return '전라'
   if (/제주/.test(compact)) return '제주'
   return compact
 }
@@ -122,6 +122,7 @@ export async function ensureDaumPostcode() {
   if (window.daum?.Postcode) return
   if (!postcodePromise) {
     postcodePromise = loadScript('https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js', 'festie-daum-postcode')
+    postcodePromise.catch(() => { postcodePromise = null })
   }
   await postcodePromise
 }
@@ -134,21 +135,23 @@ export async function ensureKakaoMaps() {
   }
   if (!kakaoPromise) {
     kakaoPromise = new Promise<void>((resolve, reject) => {
+      // 이미 로드된 스크립트가 있으면 재사용
       const existing = document.getElementById('festie-kakao-maps') as HTMLScriptElement | null
       if (existing) {
+        // 이미 로드 완료 + services 사용 가능
         if (existing.dataset.loaded === 'true' && window.kakao?.maps?.services) {
           resolve()
           return
         }
-        existing.addEventListener(
-          'load',
-          () => {
-            window.kakao?.maps?.load(() => resolve())
-          },
-          { once: true },
-        )
-        existing.addEventListener('error', () => reject(new Error('Kakao maps SDK를 불러오지 못했습니다.')), { once: true })
-        return
+        // 이미 로드 완료됐지만 services 없음 → 스크립트 제거 후 재로드
+        if (existing.dataset.loaded === 'true') {
+          existing.remove()
+        } else {
+          // 아직 로딩 중이면 이벤트 기다림
+          existing.addEventListener('load', () => { window.kakao?.maps?.load(() => resolve()) }, { once: true })
+          existing.addEventListener('error', () => reject(new Error('Kakao maps SDK를 불러오지 못했습니다.')), { once: true })
+          return
+        }
       }
 
       const script = document.createElement('script')
@@ -167,6 +170,8 @@ export async function ensureKakaoMaps() {
       script.addEventListener('error', () => reject(new Error('Kakao maps SDK를 불러오지 못했습니다.')), { once: true })
       document.head.appendChild(script)
     })
+    // 실패 시 캐시 초기화 → 다음 호출 때 재시도 가능
+    kakaoPromise.catch(() => { kakaoPromise = null })
   }
   await kakaoPromise
 }
@@ -194,7 +199,8 @@ export async function searchAddressWithKakao(): Promise<AddressSearchResult> {
   try {
     await ensureKakaoMaps()
     const geocoder = new window.kakao!.maps!.services!.Geocoder()
-    const geo = await geocodeFirstMatch(geocoder, [selected.roadAddress, selected.jibunAddress, selected.address, address])
+    const candidates = buildGeocodeCandidates(selected)
+    const geo = await geocodeFirstMatch(geocoder, candidates)
 
     return {
       address,
@@ -261,4 +267,27 @@ async function geocodeFirstMatch(
   }
 
   return null
+}
+
+function buildGeocodeCandidates(selected: DaumPostcodeResult) {
+  const raw = [selected.roadAddress, selected.jibunAddress, selected.address]
+  const normalized = raw
+    .flatMap((value) => {
+      const trimmed = value?.trim()
+      if (!trimmed) return []
+
+      const candidates = [trimmed]
+      const stripped = trimmed
+        .replace(/\s*\([^)]*\)\s*/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (stripped && stripped !== trimmed) {
+        candidates.push(stripped)
+      }
+
+      return candidates
+    })
+    .filter((value, index, array) => array.indexOf(value) === index)
+
+  return normalized.length ? normalized : [selected.address]
 }

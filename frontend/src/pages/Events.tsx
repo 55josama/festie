@@ -8,8 +8,7 @@ import { useAuthStore } from '../store/authStore'
 
 const REGION_FILTERS = ['전체', '서울', '경기', '충청', '강원', '경상', '전라', '부산', '제주']
 const CATEGORY_FILTERS = ['전체', '콘서트', '축제', '팬미팅', '팝업스토어']
-const CATEGORY_ADMIN_LINK = '/admin?tab=requests&panel=categories'
-const EVENT_CREATE_LINK = '/admin?tab=requests&panel=general'
+const EVENT_CREATE_LINK = '/admin?panel=general'
 
 export default function Events() {
   const { user } = useAuthStore()
@@ -21,7 +20,6 @@ export default function Events() {
   const regionCacheRef = useRef<Record<string, string>>({})
   const kakaoKey = String(import.meta.env.VITE_KAKAO_JS_KEY ?? '')
   const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
-  const isAdmin = !!user && /ADMIN/.test(user.role)
 
   const { data: events = [] } = useQuery({
     queryKey: ['events', 'list'],
@@ -69,7 +67,8 @@ export default function Events() {
       (events as Event[]).filter((event) => {
         const queryOk = !query.trim() || matchesSearchText([event.name, event.place, event.performer ?? '', event.categoryName].join(' '), query)
         const regionOk = selectedRegion === '전체' || getRegionLabel(event, resolvedRegions) === selectedRegion
-        const categoryOk = selectedCategory === '전체' || event.categoryName === selectedCategory
+        const categoryOk = selectedCategory === '전체'
+          || normalizeCategoryKey(event.categoryName) === normalizeCategoryKey(selectedCategory)
         return queryOk && regionOk && categoryOk
       })
     )
@@ -137,19 +136,15 @@ export default function Events() {
             </FilterRow>
             <FilterRow label="카테고리">
               {CATEGORY_FILTERS.map((item) => (
-                <Chip key={item} active={selectedCategory === item} onClick={() => setSelectedCategory(item)}>
+                <Chip
+                  key={item}
+                  active={selectedCategory === item}
+                  tone={item === '전체' ? 'slate' : getCategoryTone(item)}
+                  onClick={() => setSelectedCategory(item)}
+                >
                   {item}
                 </Chip>
               ))}
-              {isAdmin && (
-                <Link
-                  to={CATEGORY_ADMIN_LINK}
-                  aria-label="카테고리 관리로 이동"
-                  className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition-colors hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[11px]"
-                >
-                  +
-                </Link>
-              )}
             </FilterRow>
           </div>
 
@@ -163,19 +158,15 @@ export default function Events() {
             </FilterRow>
             <FilterRow label="카테고리">
               {CATEGORY_FILTERS.map((item) => (
-                <Chip key={item} active={selectedCategory === item} onClick={() => setSelectedCategory(item)}>
+                <Chip
+                  key={item}
+                  active={selectedCategory === item}
+                  tone={item === '전체' ? 'slate' : getCategoryTone(item)}
+                  onClick={() => setSelectedCategory(item)}
+                >
                   {item}
                 </Chip>
               ))}
-              {isAdmin && (
-                <Link
-                  to={CATEGORY_ADMIN_LINK}
-                  aria-label="카테고리 관리로 이동"
-                  className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 transition-colors hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[11px]"
-                >
-                  +
-                </Link>
-              )}
             </FilterRow>
           </div>
         </div>
@@ -209,6 +200,7 @@ export default function Events() {
 
 function EventNewsCard({ event }: { event: Event }) {
   const displayStatus = getDisplayStatus(event)
+  const categoryTone = getCategoryTone(event.categoryName)
   return (
     <Link
       to={`/events/${event.id}`}
@@ -218,17 +210,30 @@ function EventNewsCard({ event }: { event: Event }) {
           : 'border-[var(--line)] bg-white'
       }`}
     >
-      <div
-        style={cardTone(event.categoryName)}
-        className="flex h-auto w-[104px] shrink-0 items-center justify-center px-3 py-3 md:h-36 md:w-full md:px-4 md:py-3"
-      >
-        <div className="flex h-24 w-full items-center justify-center rounded-[18px] border border-white/60 bg-white/30 text-[11px] font-semibold text-white/90 md:h-full md:text-sm">
-          행사 이미지
+      {event.img ? (
+        <div className="relative flex h-auto w-[104px] shrink-0 overflow-hidden md:h-36 md:w-full md:p-3">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(238,232,255,0.82),rgba(245,243,255,0.58),rgba(249,168,212,0.20))]" />
+          <div className="relative flex h-full w-full items-center justify-center p-2.5 md:p-0">
+            <img
+              src={event.img}
+              alt={event.name}
+              className="h-full w-full object-cover md:rounded-[18px] md:shadow-[0_0_0_1px_rgba(148,163,184,0.18)]"
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div
+          style={cardTone(event.categoryName)}
+          className="flex h-auto w-[104px] shrink-0 items-center justify-center px-3 py-3 md:h-36 md:w-full md:px-4 md:py-3"
+        >
+          <div className="flex h-24 w-full items-center justify-center rounded-[18px] border border-white/60 bg-white/30 text-[11px] font-semibold text-white/90 md:h-full md:text-sm">
+            행사 이미지
+          </div>
+        </div>
+      )}
       <div className="min-w-0 flex h-full flex-1 flex-col space-y-2.5 p-3 md:space-y-3 md:p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>{event.categoryName}</Badge>
+          <Badge tone={categoryTone}>{displayEventCategoryLabel(event.categoryName)}</Badge>
           <span className={`text-xs font-semibold ${displayStatus.statusClass}`}>{displayStatus.label}</span>
         </div>
         <div>
@@ -254,14 +259,34 @@ function FilterRow({ label, children }: { label: string; children: ReactNode }) 
   )
 }
 
-function Chip({ active, onClick, children }: { active?: boolean; onClick: () => void; children: ReactNode }) {
+function Chip({
+  active,
+  tone = 'slate',
+  onClick,
+  children,
+}: {
+  active?: boolean
+  tone?: 'violet' | 'sky' | 'emerald' | 'rose' | 'slate' | 'concert' | 'festival' | 'fanmeeting' | 'popup'
+  onClick: () => void
+  children: ReactNode
+}) {
+  const toneClass = {
+    violet: 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+    sky: 'border-sky-200 bg-sky-50 text-sky-700',
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    rose: 'border-rose-200 bg-rose-50 text-rose-700',
+    slate: 'border-slate-200 bg-slate-50 text-slate-700',
+    concert: 'border-violet-200 bg-violet-50 text-violet-700',
+    festival: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
+    fanmeeting: 'border-pink-200 bg-pink-50 text-pink-700',
+    popup: 'border-sky-200 bg-sky-50 text-sky-700',
+  }[tone]
+
   return (
     <button
       onClick={onClick}
       className={`rounded-full border px-2 py-1 text-[10px] font-semibold transition-colors md:px-2.5 md:py-1.5 md:text-[11px] ${
-        active
-          ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
-          : 'border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
+        active ? toneClass : 'border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
       }`}
     >
       {children}
@@ -269,17 +294,24 @@ function Chip({ active, onClick, children }: { active?: boolean; onClick: () => 
   )
 }
 
-function Badge({ children }: { children: ReactNode }) {
-  return <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)] md:px-2.5 md:py-1 md:text-[11px]">{children}</span>
+function Badge({ children, tone }: { children: ReactNode; tone?: 'concert' | 'festival' | 'fanmeeting' | 'popup' }) {
+  const toneClass = {
+    concert: 'bg-violet-100 text-violet-700',
+    festival: 'bg-fuchsia-100 text-fuchsia-700',
+    fanmeeting: 'bg-pink-100 text-pink-700',
+    popup: 'bg-sky-100 text-sky-700',
+  }[tone ?? 'concert']
+
+  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${toneClass}`}>{children}</span>
 }
 
 function cardTone(categoryName: string) {
   return (
     {
-      concert: { background: 'linear-gradient(135deg, rgba(110,84,255,0.18), rgba(110,84,255,0.42))' },
-      festival: { background: 'linear-gradient(135deg, rgba(141,115,255,0.16), rgba(88,92,255,0.38))' },
-      fanmeeting: { background: 'linear-gradient(135deg, rgba(126,92,255,0.18), rgba(178,106,255,0.34))' },
-      popup: { background: 'linear-gradient(135deg, rgba(98,78,240,0.12), rgba(76,122,255,0.28))' },
+      concert: { background: 'linear-gradient(135deg, rgba(167,139,250,0.18), rgba(124,58,237,0.42))' },
+      festival: { background: 'linear-gradient(135deg, rgba(244,114,182,0.18), rgba(236,72,153,0.38))' },
+      fanmeeting: { background: 'linear-gradient(135deg, rgba(251,113,133,0.18), rgba(244,63,94,0.34))' },
+      popup: { background: 'linear-gradient(135deg, rgba(125,211,252,0.16), rgba(96,165,250,0.30))' },
     }[normalizeCategoryKey(categoryName)] ?? { background: 'linear-gradient(135deg, rgba(111,84,255,0.16), rgba(111,84,255,0.32))' }
   )
 }
@@ -303,11 +335,33 @@ function getSortBucket(event: Event) {
 }
 
 function normalizeCategoryKey(name: string) {
-  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
-  if (name === '\uCD95\uC81C') return 'festival'
-  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
-  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
-  return name.toLowerCase()
+  const normalized = String(name ?? '').trim().toLowerCase()
+  const compact = normalized.replace(/[\s_-]+/g, '')
+  if (compact.includes('concert') || compact.includes('콘서트')) return 'concert'
+  if (compact.includes('festival') || compact.includes('페스티벌') || compact.includes('축제')) return 'festival'
+  if (compact.includes('fanmeeting') || compact.includes('팬미팅') || compact.includes('팬 미팅')) return 'fanmeeting'
+  if (compact.includes('popup') || compact.includes('팝업스토어') || compact.includes('팝업') || compact.includes('pop-up') || compact.includes('pop up')) return 'popup'
+  return normalized
+}
+
+function getCategoryTone(name: string) {
+  return (normalizeCategoryKey(name) === 'festival'
+    ? 'festival'
+    : normalizeCategoryKey(name) === 'fanmeeting'
+      ? 'fanmeeting'
+      : normalizeCategoryKey(name) === 'popup'
+        ? 'popup'
+        : 'concert') as 'concert' | 'festival' | 'fanmeeting' | 'popup'
+}
+
+function displayEventCategoryLabel(name: string) {
+  const key = normalizeCategoryKey(name)
+  return {
+    concert: '콘서트',
+    festival: '축제',
+    fanmeeting: '팬미팅',
+    popup: '팝업스토어',
+  }[key] ?? (String(name ?? '').trim().toUpperCase() || 'EVENT')
 }
 
 function getDisplayStatus(event: Event) {
@@ -381,7 +435,10 @@ function formatShortRange(startAt?: string | null, endAt?: string | null) {
 
 function getRegionLabel(event: Event, resolvedRegions: Record<string, string>) {
   const rawRegion = event.region ?? resolvedRegions[event.id] ?? ''
-  return normalizeRegionLabel(rawRegion)
+  const normalized = normalizeRegionLabel(rawRegion)
+  if (normalized !== '경상') return normalized
+  const placeHint = normalizeRegionLabel(event.place)
+  return placeHint === '부산' ? '부산' : normalized
 }
 
 function normalizeRegionLabel(value?: string | null) {
@@ -391,9 +448,9 @@ function normalizeRegionLabel(value?: string | null) {
   if (/경기/.test(compact)) return '경기'
   if (/세종|대전|충청/.test(compact)) return '충청'
   if (/강원/.test(compact)) return '강원'
+  if (/부산/.test(compact)) return '부산'
   if (/경상|대구|울산|창원|포항|경주|진주|구미|경산/.test(compact)) return '경상'
   if (/전라|광주|전주|목포|여수|순천|군산|익산/.test(compact)) return '전라'
-  if (/부산/.test(compact)) return '부산'
   if (/제주/.test(compact)) return '제주'
   return compact
 }

@@ -59,8 +59,8 @@ public class OperationRequest extends BaseEntity {
                 .build();
     }
 
-    public void update(String title, String content) {
-        if (this.status != OperationRequestStatus.PENDING) {
+    public void update(String title, String content, boolean isAdmin) {
+        if (!isAdmin && this.status != OperationRequestStatus.PENDING) {
             throw new OperationRequestException(OperationRequestErrorCode.INVALID_UPDATE_STATUS);
         }
         this.title = title;

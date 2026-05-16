@@ -1,2 +1,3 @@
-FROM grafana/grafana-oss:11.4.0
-COPY provisioning /etc/grafana/provisioning
+FROM grafana/grafana:latest
+COPY provisioning/datasources/ /etc/grafana/provisioning/datasources/
+COPY provisioning/dashboards/ /etc/grafana/provisioning/dashboards/

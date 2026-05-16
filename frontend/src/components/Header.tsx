@@ -36,16 +36,19 @@ export default function Header() {
               <>
                 <Link
                   to="/my"
-                  className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                 >
                   {user.nickname}
                 </Link>
-                <button onClick={handleLogout} className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-slate-700">
+                <button
+                  onClick={handleLogout}
+                  className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
+                >
                   로그아웃
                 </button>
               </>
             ) : (
-              <Link to="/login" className="rounded-full border border-[var(--line)] px-3 py-2 text-sm font-medium text-slate-700">
+              <Link to="/login" className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                 로그인
               </Link>
             )}
@@ -58,6 +61,7 @@ export default function Header() {
           <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
           <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
           <NavLink to="/my/calendars" className={navClass}>내 일정</NavLink>
+          {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
         </nav>
 
         <div className="relative hidden w-full items-center justify-between gap-6 lg:flex">
@@ -76,8 +80,11 @@ export default function Header() {
 
           <div className="flex shrink-0 items-center gap-3">
             {user ? (
-              <Link to="/my" className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50">
-                <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+              <Link
+                to="/my"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
                   {user.nickname?.[0] ?? 'U'}
                 </span>
                 {user.nickname}

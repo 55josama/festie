@@ -92,6 +92,8 @@ export const mockEventRequests = [
   {
     id: 'req-1',
     requesterId: 'u9',
+    requesterNickname: '봄봄봄',
+    createdAt: '2026-05-15T09:10:00.000Z',
     eventName: '2026 여름 콘서트',
     categoryId: 'c1',
     category: '콘서트',
@@ -104,6 +106,8 @@ export const mockEventRequests = [
   {
     id: 'req-2',
     requesterId: 'u10',
+    requesterNickname: '팝업덕후',
+    createdAt: '2026-05-15T09:20:00.000Z',
     eventName: '성수 브랜드 팝업 2차',
     categoryId: 'c4',
     category: '팝업스토어',

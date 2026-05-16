@@ -9,7 +9,7 @@ scrape_configs:
       - targets: [ "festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com:80" ]
 
   - job_name: "gateway-server"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/gateway-server/actuator/prometheus"
     static_configs:
       - targets: [ "festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com:80" ]
 

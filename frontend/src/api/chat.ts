@@ -3,6 +3,17 @@ import { unwrap, unwrapPage } from '../lib/api'
 import type { ChatMessage, ChatRoom } from '../types'
 import type { AdminMessageItem } from '../types/admin'
 
+export const createChatRoom = async (payload: {
+  eventId: string
+  eventName: string
+  category: string
+  scheduledOpenAt: string
+  scheduledCloseAt: string
+}) => {
+  const res = await client.post('/chat-service/v1/chat/admin/rooms', payload)
+  return unwrap<ChatRoom>(res.data)
+}
+
 export const getChatRoomByEventId = async (eventId: string) => {
   const res = await client.get('/chat-service/v1/chat/rooms/event', { params: { eventId } })
   return unwrap<ChatRoom>(res.data)
@@ -18,6 +29,11 @@ export const getChatMessages = async (chatRoomId: string) => {
 export const sendChatMessage = async (chatRoomId: string, content: string) => {
   const res = await client.post(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, { content })
   return unwrap<ChatMessage>(res.data)
+}
+
+export const deleteChatMessage = async (messageId: string) => {
+  const res = await client.delete(`/chat-service/v1/chat/messages/${messageId}`)
+  return unwrap(res.data)
 }
 
 export const getPopularChatRooms = async (limit = 3) => {

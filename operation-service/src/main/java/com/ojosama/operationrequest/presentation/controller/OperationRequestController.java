@@ -14,9 +14,7 @@ import com.ojosama.operationrequest.presentation.dto.UpdateOperationStatusReques
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -55,7 +53,8 @@ public class OperationRequestController {
             @Valid @RequestBody CreateOperationRequest request,
             @AuthenticationPrincipal UUID currentUserId
     ) {
-        OperationRequestResult result = operationRequestService.createOperationRequest(request.toCommand(currentUserId));
+        OperationRequestResult result = operationRequestService.createOperationRequest(
+                request.toCommand(currentUserId));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(FindOperationResponse.from(result)));
     }
 
@@ -73,19 +72,34 @@ public class OperationRequestController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         ListOperationRequestQuery query = new ListOperationRequestQuery(status);
-
         PageResponse<OperationRequestResult> serviceResult = operationRequestService.getOperationRequestList(query, pageable);
 
-        List<ListOperationResponse> content = serviceResult.content().stream()
-                .map(ListOperationResponse::from)
-                .collect(Collectors.toList());
-
         PageResponse<ListOperationResponse> response = new PageResponse<>(
-                content,
+                serviceResult.content().stream()
+                        .map(ListOperationResponse::from)
+                        .toList(),
                 serviceResult.page(),
                 serviceResult.size(),
                 serviceResult.totalElements(),
                 serviceResult.totalPages()
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // 운영 요청 목록 조회 (작성자 본인)
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<PageResponse<ListOperationResponse>>> getMyOperationRequestList(
+            @AuthenticationPrincipal UUID currentUserId,
+            @RequestParam(required = false) OperationRequestStatus status,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        ListOperationRequestQuery query = new ListOperationRequestQuery(status);
+
+        PageResponse<ListOperationResponse> response = PageResponse.from(
+                operationRequestService.getMyOperationRequestList(currentUserId, query, pageable)
+                        .map(ListOperationResponse::from)
         );
 
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -104,6 +118,17 @@ public class OperationRequestController {
         return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
     }
 
+    // 운영 요청 상세 조회 (작성자 본인)
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/me/{requestId}")
+    public ResponseEntity<ApiResponse<FindOperationResponse>> getMyOperationRequest(
+            @PathVariable UUID requestId,
+            @AuthenticationPrincipal UUID currentUserId
+    ) {
+        OperationRequestResult result = operationRequestService.getMyOperationRequestInfo(requestId, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
+    }
+
     // 운영 요청 수정 (요청 작성자 본인)
     @Operation(
             summary = "운영 요청 수정",
@@ -118,7 +143,12 @@ public class OperationRequestController {
             @Valid @RequestBody UpdateOperationRequest request,
             @AuthenticationPrincipal UUID currentUserId
     ) {
-        OperationRequestResult result = operationRequestService.updateOperationRequest(requestId, request.toCommand(currentUserId));
+        boolean isAdmin = isCurrentUserAdmin();
+        OperationRequestResult result = operationRequestService.updateOperationRequest(
+                requestId,
+                request.toCommand(currentUserId),
+                isAdmin
+        );
         return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
     }
 
@@ -134,7 +164,8 @@ public class OperationRequestController {
             @PathVariable UUID requestId,
             @Valid @RequestBody UpdateOperationStatusRequest request
     ) {
-        OperationRequestResult result = operationRequestService.updateOperationRequestStatus(requestId, request.toCommand());
+        OperationRequestResult result = operationRequestService.updateOperationRequestStatus(requestId,
+                request.toCommand());
         return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
     }
 
