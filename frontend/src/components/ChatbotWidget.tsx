@@ -23,6 +23,13 @@ const QUICK_PROMPTS = [
 
 export default function ChatbotWidget() {
     const {user, accessToken} = useAuthStore()
+    const defaultMessages = useMemo<ChatMessage[]>(() => ([
+        {
+            id: 'welcome',
+            role: 'assistant',
+            content: '👋 안녕하세요. Festie 챗봇입니다. 사이트 이용 방법이나 행사에 관련한 정보 탐색을 도와드려요.👀 \n\n무엇을 물어보시겠어요?',
+        },
+    ]), [])
     const [open, setOpen] = useState(false)
     const [input, setInput] = useState('')
     const {data: eventCatalog = []} = useQuery({
@@ -30,13 +37,7 @@ export default function ChatbotWidget() {
         queryFn: () => getEvents({size: 200}),
         staleTime: 10 * 60 * 1000,
     })
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        {
-            id: 'welcome',
-            role: 'assistant',
-            content: '👋 안녕하세요. Festie 챗봇입니다. 사이트 이용 방법이나 행사에 관련한 정보 탐색을 도와드려요.👀 \n\n무엇을 물어보시겠어요?',
-        },
-    ])
+    const [messages, setMessages] = useState<ChatMessage[]>(defaultMessages)
     const bottomRef = useRef<HTMLDivElement | null>(null)
     const inputRef = useRef<HTMLTextAreaElement | null>(null)
     const hydratedRef = useRef(false)
@@ -48,7 +49,12 @@ export default function ChatbotWidget() {
         hydratedRef.current = false
         try {
             const raw = window.localStorage.getItem(storageKey)
-            if (!raw) return
+            if (!raw) {
+                setOpen(false)
+                setInput('')
+                setMessages(defaultMessages)
+                return
+            }
             const parsed = JSON.parse(raw) as {
                 open?: boolean
                 input?: string
@@ -62,13 +68,17 @@ export default function ChatbotWidget() {
             }
             if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
                 setMessages(parsed.messages.slice(-30))
+            } else {
+                setMessages(defaultMessages)
             }
         } catch {
-            // 저장된 채팅이 깨졌으면 기본값 사용
+            setOpen(false)
+            setInput('')
+            setMessages(defaultMessages)
         } finally {
             hydratedRef.current = true
         }
-    }, [storageKey])
+    }, [defaultMessages, storageKey])
 
     useEffect(() => {
         if (!hydratedRef.current) return
@@ -303,10 +313,15 @@ function normalizeAssistantMessage(answer: string, eventCatalog: Array<{ id: str
     const compact = compactAssistantText(raw)
     const matchingEvents = findMatchingEvents(raw, eventCatalog)
     const links = matchingEvents.length > 0
-        ? matchingEvents.map((event) => ({
-            label: matchingEvents.length === 1 ? '상세 페이지 바로가기' : event.name,
-            href: new URL(`/events/${event.id}`, window.location.origin).toString(),
-        }))
+        ? matchingEvents.length === 1
+            ? [{
+                label: '상세 페이지 바로가기',
+                href: new URL(`/events/${matchingEvents[0].id}`, window.location.origin).toString(),
+            }]
+            : [{
+                label: '행사 조회 페이지',
+                href: new URL('/events', window.location.origin).toString(),
+            }]
         : undefined
 
     return {

@@ -20,7 +20,7 @@ export default function EventDetail() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user, isLoggedIn } = useAuthStore()
-  const canFavoriteEvent = user?.role === 'USER'
+  const canFavoriteEvent = !user || user.role === 'USER'
   const [message, setMessage] = useState('')
   const [isChatEntered, setIsChatEntered] = useState(false)
   const [chatConnectionStatus, setChatConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
@@ -47,7 +47,7 @@ export default function EventDetail() {
   const { data: favoritePage = { content: [], page: 0, size: 0, totalElements: 0, totalPages: 0 } } = useQuery({
     queryKey: ['favorites', 'mine', eventId],
     queryFn: () => getFavorites({ size: 200 }),
-    enabled: !!eventId && isLoggedIn() && canFavoriteEvent,
+    enabled: !!eventId && isLoggedIn() && user?.role === 'USER',
   })
 
   const { data: messages = [] } = useQuery({
