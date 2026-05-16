@@ -11,6 +11,7 @@ import {
   mockEventRequests,
   mockOperationRequests,
   mockBlacklists,
+  mockFavorites,
   mockReports,
 } from './data'
 
@@ -806,6 +807,60 @@ export const handlers = [
     return HttpResponse.json(wrap({}))
   }),
 
+  http.get('/favorite-service/v1/favorites', async ({ request }) => {
+    await delay(120)
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 10)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const favorites = mockFavorites.filter((item) => item.userId === userId)
+    const totalElements = favorites.length
+    const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
+    const start = Math.max(page, 0) * Math.max(size, 1)
+    const content = favorites.slice(start, start + Math.max(size, 1))
+    return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
+  }),
+
+  http.post('/favorite-service/v1/favorites', async ({ request }) => {
+    await delay(120)
+    const body = await request.json() as any
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const event = mockEvents.find((item) => item.id === body.eventId)
+    if (!event) {
+      return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    }
+    const exists = mockFavorites.find((item) => item.userId === userId && item.eventId === body.eventId)
+    if (exists) {
+      return HttpResponse.json({ status: 'error', message: '이미 찜한 행사입니다.' }, { status: 409 })
+    }
+    const created = {
+      id: `fav-${Date.now()}`,
+      favoriteId: `fav-${Date.now()}`,
+      eventId: body.eventId,
+      categoryId: body.categoryId,
+      userId,
+      eventName: event.name,
+      eventImg: event.img,
+    }
+    mockFavorites.push(created as any)
+    return HttpResponse.json(wrap({
+      eventId: created.eventId,
+      eventName: created.eventName,
+      userId: created.userId,
+    }), { status: 201 })
+  }),
+
+  http.delete('/favorite-service/v1/favorites/:favoriteId', async ({ params, request }) => {
+    await delay(120)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const index = mockFavorites.findIndex((item) => item.favoriteId === params.favoriteId && item.userId === userId)
+    if (index === -1) {
+      return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    }
+    mockFavorites.splice(index, 1)
+    return HttpResponse.json(wrap({}))
+  }),
+
   http.get('/user-service/v1/users/admin', async ({ request }) => {
     await delay(180)
     const url = new URL(request.url)
@@ -873,7 +928,7 @@ export const handlers = [
     const totalElements = blacklists.length
     const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
     const start = Math.max(page, 0) * Math.max(size, 1)
-    const content = blacklists.slice(start, start + Math.max(size, 1))
+    const content = blacklists.slice(start, start + Math.max(size, 1)).map(({ id, userId, status }) => ({ id, userId, status }))
     return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
   }),
 
@@ -899,7 +954,7 @@ export const handlers = [
     }
     mockBlacklists.unshift(created as any)
     syncMockUserStatus(userId, 'BLOCKED')
-    return HttpResponse.json(wrap(created), { status: 201 })
+    return HttpResponse.json(wrap({ id: created.id, userId: created.userId, status: created.status }), { status: 201 })
   }),
 
   http.patch('/operation-service/v1/blacklists/:blacklistId/status', async ({ params, request }) => {
@@ -915,7 +970,7 @@ export const handlers = [
     blacklist.reason = reason
     blacklist.updatedAt = new Date().toISOString()
     syncMockUserStatus(blacklist.userId, 'ACTIVE')
-    return HttpResponse.json(wrap(blacklist))
+    return HttpResponse.json(wrap({ id: blacklist.id, userId: blacklist.userId, status: blacklist.status }))
   }),
 
   http.post('/user-service/v1/auth/login', async ({ request }) => {

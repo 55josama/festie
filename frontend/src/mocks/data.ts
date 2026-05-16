@@ -170,17 +170,11 @@ export const mockBlacklists = [
     id: 'bl-1',
     userId: 'u-1002',
     status: 'ACTIVE',
-    reason: '허위 신고 누적',
-    createdAt: '2026-05-15T10:00:00.000Z',
-    updatedAt: '2026-05-15T10:00:00.000Z',
   },
   {
     id: 'bl-2',
     userId: 'u-1001',
     status: 'INACTIVE',
-    reason: '차단 해제됨',
-    createdAt: '2026-05-14T10:00:00.000Z',
-    updatedAt: '2026-05-15T08:00:00.000Z',
   },
 ]
 
@@ -192,4 +186,25 @@ export const mockComments = [
 export const mockCalendars = [
   { id: 'cal-1', userId: 'me', eventDate: '2026-05-01T18:00:00', ticketingDate: '2026-04-25T20:00:00', memo: '1일차 입장 30분 전에 도착', eventName: '2026 봄 콘서트', eventId: '1', eventStatus: 'SCHEDULED' },
   { id: 'cal-2', userId: 'me', eventDate: '2026-05-10T15:00:00', ticketingDate: '2026-05-01T20:00:00', memo: '친구랑 같이 가기', eventName: '아이돌 팬미팅 2026', eventId: '3', eventStatus: 'SCHEDULED' },
+]
+
+export const mockFavorites = [
+  {
+    id: 'fav-1',
+    favoriteId: 'fav-1',
+    eventId: '1',
+    categoryId: 'c1',
+    userId: 'me',
+    eventName: '2026 봄 콘서트',
+    eventImg: null,
+  },
+  {
+    id: 'fav-2',
+    favoriteId: 'fav-2',
+    eventId: '4',
+    categoryId: 'c4',
+    userId: 'me',
+    eventName: '브랜드 팝업 성수',
+    eventImg: null,
+  },
 ]

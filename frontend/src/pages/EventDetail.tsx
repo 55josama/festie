@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteEvent, getEvent } from '../api/events'
 import { createChatRoom, deleteChatMessage, getChatMessages, getChatRoomByEventId } from '../api/chat'
 import { createCalendar } from '../api/calendar'
+import { createFavorite, deleteFavorite, getFavorites } from '../api/favorites'
 import { reissueAccessToken } from '../api/client'
 import ReportButton from '../components/ReportButton'
 import { useAuthStore } from '../store/authStore'
 import { formatPrice, formatDateTime } from '../lib/format'
+import { getErrorMessage } from '../lib/error'
 import { getDDay as calcDDay } from '../lib/format'
 import type { ChatRoom } from '../types'
 import { Stomp, type IMessage } from '@stomp/stompjs'
@@ -15,8 +17,10 @@ import SockJS from 'sockjs-client'
 
 export default function EventDetail() {
   const { eventId = '' } = useParams()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user, isLoggedIn } = useAuthStore()
+  const canFavoriteEvent = user?.role === 'USER'
   const [message, setMessage] = useState('')
   const [isChatEntered, setIsChatEntered] = useState(false)
   const [chatConnectionStatus, setChatConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
@@ -39,6 +43,12 @@ export default function EventDetail() {
     retry: false,
   })
   const chatRoomId = chatRoom?.chatRoomId
+
+  const { data: favoritePage = { content: [], page: 0, size: 0, totalElements: 0, totalPages: 0 } } = useQuery({
+    queryKey: ['favorites', 'mine', eventId],
+    queryFn: () => getFavorites({ size: 200 }),
+    enabled: !!eventId && isLoggedIn() && canFavoriteEvent,
+  })
 
   const { data: messages = [] } = useQuery({
     queryKey: ['chat-messages', chatRoomId],
@@ -102,6 +112,28 @@ export default function EventDetail() {
       queryClient.invalidateQueries({ queryKey: ['events'] })
       queryClient.invalidateQueries({ queryKey: ['event', eventId] })
       window.alert('행사를 삭제했어요.')
+    },
+  })
+
+  const favoriteEntry = useMemo(
+    () => favoritePage.content.find((item) => item.eventId === event?.id),
+    [favoritePage.content, event?.id],
+  )
+
+  const favoriteToggleMutation = useMutation({
+    mutationFn: async () => {
+      if (!event) throw new Error('event is missing')
+      if (favoriteEntry?.favoriteId) {
+        return deleteFavorite(favoriteEntry.favoriteId)
+      }
+      return createFavorite({ eventId: event.id, categoryId: event.categoryId })
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['favorites'] })
+      window.alert(favoriteEntry ? '관심 목록에서 삭제했어요.' : '관심 목록에 추가했어요.')
+    },
+    onError: (error) => {
+      window.alert(getErrorMessage(error, '관심 목록 처리에 실패했어요.'))
     },
   })
 
@@ -247,7 +279,35 @@ export default function EventDetail() {
 
             <div className="space-y-5">
               <div>
-                <h1 className="text-[26px] font-black tracking-tight text-slate-950 md:text-[30px]">{event.name}</h1>
+                <div className="flex items-start justify-between gap-3">
+                  <h1 className="text-[26px] font-black tracking-tight text-slate-950 md:text-[30px]">{event.name}</h1>
+                  {canFavoriteEvent ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isLoggedIn()) {
+                          navigate('/login')
+                          return
+                        }
+                        favoriteToggleMutation.mutate()
+                      }}
+                      disabled={favoriteToggleMutation.isPending}
+                      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-[18px] transition-colors ${
+                        favoriteEntry
+                          ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
+                          : 'border-[var(--line)] bg-white text-slate-400 hover:bg-[var(--accent-soft)]/40 hover:text-rose-500'
+                      }`}
+                      title={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
+                      aria-label={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
+                    >
+                      {favoriteEntry ? '♥' : '♡'}
+                    </button>
+                  ) : (
+                    <div className="inline-flex h-11 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[11px] font-semibold text-slate-400">
+                      찜은 USER만 가능
+                    </div>
+                  )}
+                </div>
                 <p className="mt-2 text-[15px] leading-6 text-slate-600">{event.description ?? '행사 상세 소개가 준비되어 있습니다.'}</p>
               </div>
 

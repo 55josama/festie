@@ -88,9 +88,6 @@ export interface BlacklistItem {
   id: string
   userId: string
   status: BlacklistStatus
-  reason: string
-  createdAt: string
-  updatedAt: string
 }
 
 export interface BlacklistPage {

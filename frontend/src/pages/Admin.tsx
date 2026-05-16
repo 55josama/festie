@@ -261,7 +261,6 @@ export default function Admin() {
             const detail = item.userDetail
             return [
                 item.userId,
-                item.reason,
                 detail?.email,
                 detail?.name,
                 detail?.nickname,
@@ -277,6 +276,7 @@ export default function Admin() {
     const {data: eventRequests = []} = useQuery({
         queryKey: ['admin', 'event-requests', requestStatus],
         queryFn: () => getEventRequests({size: 12, status: requestStatus === 'ALL' ? undefined : requestStatus}),
+        enabled: showLegacyManageSection && activeTab === 'manage' && canViewEventRequests,
     })
 
     const {data: operationRequests = []} = useQuery({
@@ -285,12 +285,13 @@ export default function Admin() {
             size: 12,
             status: operationStatus === 'ALL' ? undefined : operationStatus
         }),
-        enabled: canViewOperationRequests,
+        enabled: showLegacyManageSection && activeTab === 'manage' && canViewOperationRequests,
     })
 
     const {data: reports = []} = useQuery({
         queryKey: ['admin', 'reports', reportStatus],
         queryFn: () => getReports({size: 12, status: reportStatus === 'ALL' ? undefined : reportStatus}),
+        enabled: activeTab === 'reports',
     })
 
     const eventCategoryMap = useMemo(
@@ -399,6 +400,9 @@ export default function Admin() {
             await queryClient.invalidateQueries({queryKey: ['admin', 'blacklists']})
             await queryClient.invalidateQueries({queryKey: ['admin', 'users']})
         },
+        onError: (error) => {
+            window.alert(getErrorMessage(error, '블랙리스트 등록에 실패했어요.'))
+        },
     })
 
     const blacklistReleaseMutation = useMutation({
@@ -406,6 +410,9 @@ export default function Admin() {
         onSuccess: async () => {
             await queryClient.invalidateQueries({queryKey: ['admin', 'blacklists']})
             await queryClient.invalidateQueries({queryKey: ['admin', 'users']})
+        },
+        onError: (error) => {
+            window.alert(getErrorMessage(error, '블랙리스트 해제에 실패했어요.'))
         },
     })
 
@@ -1466,7 +1473,7 @@ export default function Admin() {
                         </div>
                     </div>
 
-                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_0.85fr_0.85fr_1.15fr_0.95fr_0.9fr_1fr] lg:gap-3">
+                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[110px_minmax(0,0.78fr)_minmax(0,0.82fr)_minmax(0,1.12fr)_minmax(0,1.18fr)_minmax(0,1fr)] lg:gap-3">
                         <div>상태</div>
                         <div>이름</div>
                         <div>닉네임</div>
@@ -1580,13 +1587,12 @@ export default function Admin() {
                         </div>
                     </div>
 
-                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_1fr_180px] lg:gap-3">
+                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_180px] lg:gap-3">
                         <div>상태</div>
                         <div>UUID</div>
                         <div>이름</div>
                         <div>닉네임</div>
                         <div>이메일</div>
-                        <div>사유</div>
                         <div>처리</div>
                     </div>
 
@@ -1602,7 +1608,7 @@ export default function Admin() {
                                 }}
                                 className="w-full cursor-pointer rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100/80"
                             >
-                                <div className="grid gap-3 lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_1fr_180px] lg:items-center">
+                                <div className="grid gap-3 lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_180px] lg:items-center">
                                     <div>
                                         <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                                             item.status === 'ACTIVE'
@@ -1623,9 +1629,6 @@ export default function Admin() {
                                     </div>
                                     <div className="min-w-0 text-sm text-slate-600">
                                         <span className="block truncate">{item.userDetail?.email ?? '불러오는 중...'}</span>
-                                    </div>
-                                    <div className="min-w-0 text-sm text-slate-600">
-                                        <span className="block truncate">{item.reason}</span>
                                     </div>
                                     <div className="flex justify-start" onClick={(e) => e.stopPropagation()}>
                                         <button
@@ -1770,15 +1773,6 @@ export default function Admin() {
                             <DetailField label="닉네임" value={selectedBlacklistItem.userDetail?.nickname ?? '정보 없음'} />
                             <DetailField label="이메일" value={selectedBlacklistItem.userDetail?.email ?? '정보 없음'} />
                             <DetailField label="아이디 상태" value={labelUserStatus(selectedBlacklistItem.userDetail?.status ?? '')} />
-                            <DetailField label="생성일" value={formatDateTime(selectedBlacklistItem.createdAt)} />
-                            <DetailField label="수정일" value={formatDateTime(selectedBlacklistItem.updatedAt)} />
-                        </div>
-
-                        <div className="mt-5 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                            <div className="text-[11px] font-semibold text-slate-500">차단 사유</div>
-                            <div className="mt-1 text-sm font-medium text-slate-800">
-                                {selectedBlacklistItem.reason}
-                            </div>
                         </div>
 
                         <div className="mt-5 flex items-center justify-end gap-2">
@@ -1861,7 +1855,7 @@ function UserRow({
       }}
       className="w-full cursor-pointer rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100/80"
     >
-      <div className="grid gap-3 lg:grid-cols-[120px_0.85fr_0.85fr_1.15fr_0.95fr_0.9fr_1fr] lg:items-center">
+      <div className="grid gap-3 lg:grid-cols-[110px_minmax(0,0.78fr)_minmax(0,0.82fr)_minmax(0,1.12fr)_minmax(0,1.18fr)_minmax(0,1fr)] lg:items-center">
         <div className="flex items-center gap-2 lg:block">
           <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
               user.status === 'BLOCKED'
@@ -1898,14 +1892,14 @@ function UserRow({
             type="button"
             disabled={loading || role === user.role}
             onClick={() => onChangeRole(role)}
-            className="shrink-0 rounded-full bg-[var(--accent)] px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-70"
+            className="shrink-0 rounded-full bg-[var(--accent)] px-2.5 py-2 text-[11px] font-semibold text-white disabled:opacity-70"
           >
             {loading ? '저장 중...' : '권한 저장'}
           </button>
           <button
             type="button"
             onClick={onBlacklist}
-            className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-semibold text-rose-700 hover:bg-rose-100"
+            className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-2 text-[11px] font-semibold text-rose-700 hover:bg-rose-100"
           >
             블랙리스트 등록
           </button>
