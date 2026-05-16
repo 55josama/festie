@@ -356,6 +356,7 @@ export const handlers = [
       reporterId,
       reporterType,
       targetId: body.targetId,
+      targetUserId: body.targetUserId ?? 'u1',
       targetType: body.targetType,
       category: body.category ?? 'GENERAL',
       description: body.description ?? '신고',

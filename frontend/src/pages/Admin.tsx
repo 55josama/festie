@@ -364,6 +364,31 @@ export default function Admin() {
         return operationRequests as OperationRequestItem[]
     }, [canViewOperationRequests, operationRequests])
 
+    const groupedReports = useMemo(() => {
+        const groups = new Map<string, {
+            targetId: string
+            targetType: string
+            targetUserId?: string
+            targetContent?: string | null
+            reports: any[]
+        }>()
+
+        ;(reports as any[]).forEach((report) => {
+            const key = report.targetId ?? report.id
+            const current = groups.get(key)
+            const nextItem = {
+                targetId: report.targetId,
+                targetType: report.targetType,
+                targetUserId: report.targetUserId,
+                targetContent: report.targetContent,
+                reports: current ? [...current.reports, report] : [report],
+            }
+            groups.set(key, nextItem)
+        })
+
+        return Array.from(groups.values())
+    }, [reports])
+
     const approveMutation = useMutation({
         mutationFn: approveEventRequest,
         onSuccess: () => queryClient.invalidateQueries({queryKey: ['admin', 'event-requests']}),
@@ -1135,70 +1160,161 @@ export default function Admin() {
                         }
                     />
 
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {reports.map((report: any) => {
-                            const form = reportForms[report.id] ?? {
-                                status: report.status ?? 'RESOLVED',
-                                operatorMemo: ''
-                            }
-                            const muted = report.status === 'RESOLVED' || report.status === 'REJECTED'
+                    <div className="space-y-3">
+                        {groupedReports.map((group) => {
+                            const hasAutoBlinded = group.reports.some((report) => report.status === 'AUTO_BLINDED')
                             return (
-                                <div key={report.id}
-                                     className={`rounded-[20px] border border-[var(--line)] bg-slate-50 p-4 transition-opacity ${muted ? 'opacity-60' : ''}`}>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span
-                                            className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700">{report.status}</span>
-                                        <span className="text-xs text-slate-500">{report.targetType}</span>
-                                        <span className="text-xs text-slate-500">{report.category}</span>
-                                    </div>
-                                    <div
-                                        className="mt-2 text-sm font-semibold text-slate-950">{report.description}</div>
-                                    {report.targetContent && (
-                                        <div
-                                            className="mt-2 rounded-[16px] border border-[var(--line)] bg-white p-3 text-sm leading-6 text-slate-600">
-                                            <div className="mb-1 text-[11px] font-semibold text-slate-500">원문 스냅샷</div>
-                                            {report.targetContent}
+                                <section
+                                    key={group.targetId}
+                                    className={`rounded-[22px] border border-[var(--line)] bg-slate-50 p-4 ${hasAutoBlinded ? 'ring-1 ring-rose-200' : ''}`}
+                                >
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                                    hasAutoBlinded ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
+                                                }`}>
+                                                    {hasAutoBlinded ? '자동 블라인드' : '신고 묶음'}
+                                                </span>
+                                                <span className="text-xs text-slate-500">{group.targetType}</span>
+                                                <span className="text-xs text-slate-500">타겟 ID: {group.targetId}</span>
+                                                <span className="text-xs text-slate-500">{group.reports.length}건</span>
+                                                {group.targetUserId && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedUserId(group.targetUserId ?? null)}
+                                                        className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                                                    >
+                                                        대상 사용자 보기
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="mt-2 line-clamp-2 text-sm font-semibold text-slate-950">
+                                                {group.targetContent ?? '원문 스냅샷이 없는 신고 묶음입니다.'}
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className="mt-2 text-xs text-slate-500">대상 ID: {report.targetId}</div>
-                                    <div className="mt-2 grid gap-2">
-                                        <select
-                                            value={form.status}
-                                            onChange={(e) => setReportForms((prev) => ({
-                                                ...prev,
-                                                [report.id]: {...form, status: e.target.value},
-                                            }))}
-                                            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
-                                        >
-                                            <option value="RESOLVED">RESOLVED</option>
-                                            <option value="REJECTED">REJECTED</option>
-                                        </select>
-                                        <input
-                                            value={form.operatorMemo}
-                                            onChange={(e) => setReportForms((prev) => ({
-                                                ...prev,
-                                                [report.id]: {...form, operatorMemo: e.target.value},
-                                            }))}
-                                            placeholder="관리자 메모"
-                                            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
-                                        />
-                                        <button
-                                            onClick={() => reportMutation.mutate({
-                                                reportId: report.id,
-                                                status: form.status,
-                                                operatorMemo: form.operatorMemo.trim() || '처리 완료',
-                                            })}
-                                            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
-                                        >
-                                            처리 저장
-                                        </button>
                                     </div>
-                                    {report.operatorMemo &&
-                                        <div className="mt-2 text-xs text-slate-500">기존 메모: {report.operatorMemo}</div>}
-                                </div>
+
+                                    <div className="mt-3 overflow-x-auto pb-2">
+                                        <div className="flex min-w-max gap-3">
+                                            {group.reports.map((report) => {
+                                                const form = reportForms[report.id] ?? {
+                                                    status: report.status ?? 'RESOLVED',
+                                                    operatorMemo: ''
+                                                }
+                                                const muted = report.status === 'RESOLVED' || report.status === 'REJECTED'
+                                                const reporterLabel = report.reporterType === 'SYSTEM_AI' ? 'AI 신고' : '사용자 신고'
+                                                const reporterChipClass = report.reporterType === 'SYSTEM_AI'
+                                                    ? 'bg-sky-100 text-sky-700'
+                                                    : 'bg-emerald-100 text-emerald-700'
+                                                const statusChipClass = report.status === 'AUTO_BLINDED'
+                                                    ? 'bg-rose-100 text-rose-700'
+                                                    : report.status === 'RESOLVED'
+                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                        : 'bg-slate-100 text-slate-600'
+
+                                                return (
+                                                    <article
+                                                        key={report.id}
+                                                        className={`w-[330px] shrink-0 rounded-[18px] border border-[var(--line)] bg-white p-3 transition-opacity ${muted ? 'opacity-70' : ''}`}
+                                                    >
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusChipClass}`}>
+                                                                {report.status}
+                                                            </span>
+                                                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reporterChipClass}`}>
+                                                                {reporterLabel}
+                                                            </span>
+                                                            <span className="text-[11px] text-slate-500">{report.category}</span>
+                                                        </div>
+
+                                                        <div className="mt-2 flex items-center justify-between gap-2">
+                                                            <div className="min-w-0">
+                                                                <div className="truncate text-sm font-semibold text-slate-950">
+                                                                    {report.description}
+                                                                </div>
+                                                                <div className="truncate text-[11px] text-slate-500">
+                                                                    신고자 {report.reporterId}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {report.targetContent && (
+                                                            <div className="mt-2 rounded-[14px] border border-[var(--line)] bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+                                                                {report.targetContent}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="mt-3 grid gap-2">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className="text-[11px] text-slate-500">타겟</span>
+                                                                <span className="truncate text-[11px] font-semibold text-slate-700">
+                                                                    {report.targetType}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className="text-[11px] text-slate-500">타겟 사용자</span>
+                                                                {report.targetUserId ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setSelectedUserId(report.targetUserId ?? null)}
+                                                                        className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                                                                    >
+                                                                        조회
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className="text-[11px] text-slate-400">정보 없음</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="mt-3 grid gap-2">
+                                                            <select
+                                                                value={form.status}
+                                                                onChange={(e) => setReportForms((prev) => ({
+                                                                    ...prev,
+                                                                    [report.id]: {...form, status: e.target.value},
+                                                                }))}
+                                                                className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs outline-none"
+                                                            >
+                                                                <option value="RESOLVED">RESOLVED</option>
+                                                                <option value="REJECTED">REJECTED</option>
+                                                            </select>
+                                                            <input
+                                                                value={form.operatorMemo}
+                                                                onChange={(e) => setReportForms((prev) => ({
+                                                                    ...prev,
+                                                                    [report.id]: {...form, operatorMemo: e.target.value},
+                                                                }))}
+                                                                placeholder="메모"
+                                                                className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs outline-none"
+                                                            />
+                                                            <button
+                                                                onClick={() => reportMutation.mutate({
+                                                                    reportId: report.id,
+                                                                    status: form.status,
+                                                                    operatorMemo: form.operatorMemo.trim() || '처리 완료',
+                                                                })}
+                                                                className="rounded-full bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-white"
+                                                            >
+                                                                저장
+                                                            </button>
+                                                        </div>
+
+                                                        {report.operatorMemo && (
+                                                            <div className="mt-2 truncate text-[11px] text-slate-500">
+                                                                기존 메모: {report.operatorMemo}
+                                                            </div>
+                                                        )}
+                                                    </article>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </section>
                             )
                         })}
-                        {reports.length === 0 && <EmptyState text="신고 목록이 비어 있어요."/>}
+                        {groupedReports.length === 0 && <EmptyState text="신고 목록이 비어 있어요."/>}
                     </div>
                 </section>
             )}

@@ -29,6 +29,7 @@ export interface ReportItem {
   reporterId: string
   reporterType: string
   targetId: string
+  targetUserId?: string
   targetType: string
   category: string
   description: string
