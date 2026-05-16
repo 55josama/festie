@@ -1,7 +1,7 @@
 import client from './client'
-import { unwrap, unwrapPage } from '../lib/api'
+import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { ChatRoom, Event } from '../types'
-import type { EventRequestItem, OperationRequestItem, ReportItem } from '../types/admin'
+import type { AdminUserItem, AdminUserPage, EventRequestItem, OperationRequestItem, ReportItem } from '../types/admin'
 
 export const getEventRequests = async (params: Record<string, any> = {}) => {
   const res = await client.get('/event-service/v1/event-requests', { params })
@@ -43,6 +43,11 @@ export const getPopularChatRooms = async (limit = 6) => {
   return unwrapPage<ChatRoom & { currentViewerCount?: number }>(res.data)
 }
 
+export const getAdminChatRooms = async () => {
+  const res = await client.get('/chat-service/v1/chat/admin/rooms')
+  return unwrapPage<ChatRoom & { currentViewerCount?: number }>(res.data)
+}
+
 export const forceChatRoomStatus = async (chatRoomId: string, action: 'FORCE_OPEN' | 'FORCE_CLOSE') => {
   const res = await client.patch(`/chat-service/v1/chat/admin/rooms/${chatRoomId}/status`, { action })
   return unwrap<ChatRoom>(res.data)
@@ -51,4 +56,14 @@ export const forceChatRoomStatus = async (chatRoomId: string, action: 'FORCE_OPE
 export const getAdminEvents = async (params: Record<string, any> = {}) => {
   const res = await client.get('/event-service/v1/events', { params })
   return unwrapPage<Event>(res.data)
+}
+
+export const getAdminUsers = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/user-service/v1/users/admin', { params })
+  return unwrapPageResponse<AdminUserItem>(res.data) as AdminUserPage
+}
+
+export const changeAdminUserRole = async (userId: string, role: string) => {
+  const res = await client.patch(`/user-service/v1/users/admin/${userId}/role`, { role })
+  return unwrap<AdminUserItem>(res.data)
 }

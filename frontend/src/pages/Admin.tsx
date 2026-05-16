@@ -3,16 +3,18 @@ import {Link, useNavigate, useSearchParams} from 'react-router-dom'
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {
   approveEventRequest,
+  getAdminChatRooms,
+  getAdminUsers,
   forceChatRoomStatus,
   getEventRequests,
   getOperationRequests,
-  getPopularChatRooms,
   getReports,
   rejectEventRequest,
+  changeAdminUserRole,
   updateOperationRequestStatus,
   updateReportStatus,
 } from '../api/admin'
-import {createEvent} from '../api/events'
+import {createEvent, getEvent, updateEvent} from '../api/events'
 import {getAdminChatMessages, updateAdminChatMessageStatus} from '../api/chat'
 import {
   createCommunityCategory,
@@ -27,13 +29,15 @@ import {
 import {useAuthStore} from '../store/authStore'
 import {formatDateTime} from '../lib/format'
 import {searchAddressWithKakao} from '../lib/kakao'
-import type {AdminMessageItem, OperationRequestItem} from '../types/admin'
+import type {Event} from '../types'
+import type {AdminMessageItem, AdminUserItem, OperationRequestItem, AdminUserRole} from '../types/admin'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
 const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELED'] as const
 const OPERATION_STATUS_FILTERS = ['ALL', 'PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] as const
 const CHAT_STATUS_FILTERS = ['ALL', 'SCHEDULED', 'OPEN', 'CLOSED'] as const
-const ADMIN_TABS = ['requests', 'reports', 'chat'] as const
+const USER_ROLE_FILTERS = ['ALL', 'USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER'] as const
+const ADMIN_TABS = ['manage', 'reports', 'chat', 'users'] as const
 const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
     ADMIN: [],
     CONCERT_MANAGER: ['\uCF58\uC11C\uD2B8'],
@@ -43,6 +47,17 @@ const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
 }
 
 type AdminTab = (typeof ADMIN_TABS)[number]
+
+const USER_ROLE_OPTIONS: { value: AdminUserRole | 'ALL'; label: string }[] = [
+    {value: 'ALL', label: '전체'},
+    {value: 'USER', label: '일반 사용자'},
+    {value: 'ADMIN', label: '관리자'},
+    {value: 'CONCERT_MANAGER', label: '콘서트 매니저'},
+    {value: 'FESTIVAL_MANAGER', label: '축제 매니저'},
+    {value: 'FANMEETING_MANAGER', label: '팬미팅 매니저'},
+    {value: 'POPUP_MANAGER', label: '팝업 매니저'},
+    {value: 'COMMUNITY_MANAGER', label: '커뮤니티 매니저'},
+]
 
 interface AdminMessagePage {
     content: AdminMessageItem[]
@@ -66,19 +81,26 @@ export default function Admin() {
     const [searchParams, setSearchParams] = useSearchParams()
     const {user} = useAuthStore()
     const activeTab = normalizeAdminTab(searchParams.get('tab'))
+    const showLegacyManageSection = searchParams.get('legacyManage') === '1'
     const [reportStatus, setReportStatus] = useState<(typeof REPORT_STATUS_FILTERS)[number]>('ALL')
     const [requestStatus, setRequestStatus] = useState<(typeof REQUEST_STATUS_FILTERS)[number]>('ALL')
     const [operationStatus, setOperationStatus] = useState<(typeof OPERATION_STATUS_FILTERS)[number]>('ALL')
     const [chatStatus, setChatStatus] = useState<(typeof CHAT_STATUS_FILTERS)[number]>('ALL')
     const [messageStatus, setMessageStatus] = useState<'ALL' | 'ACTIVE' | 'BLINDED'>('ALL')
     const [messagePage, setMessagePage] = useState(0)
+    const [userSearchEmail, setUserSearchEmail] = useState('')
+    const [userSearchName, setUserSearchName] = useState('')
+    const [userSearchRole, setUserSearchRole] = useState<(typeof USER_ROLE_FILTERS)[number]>('ALL')
+    const [userPage, setUserPage] = useState(0)
     const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
     const [reportForms, setReportForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
     const [operationForms, setOperationForms] = useState<Record<string, { status: string; adminMemo: string }>>({})
     const [requestPanels, setRequestPanels] = useState<Record<string, boolean>>({})
     const [requestDrafts, setRequestDrafts] = useState<Record<string, EventDraft>>({})
-    const [generalCreateOpen, setGeneralCreateOpen] = useState(false)
+    const [generalCreateOpen, setGeneralCreateOpen] = useState(true)
     const [generalDraft, setGeneralDraft] = useState<EventDraft>(createBlankEventDraft())
+    const editingEventId = searchParams.get('eventId') ?? ''
+    const [prefilledEditingEventId, setPrefilledEditingEventId] = useState('')
     const [addressLookupLoading, setAddressLookupLoading] = useState(false)
     const [eventCategoryDraft, setEventCategoryDraft] = useState('')
     const [communityCategoryDraft, setCommunityCategoryDraft] = useState('')
@@ -101,10 +123,31 @@ export default function Admin() {
         }
     }, [searchParams])
 
+    const normalizedRole = normalizeRole(user?.role)
+
+    const {data: eventToEdit} = useQuery({
+        queryKey: ['admin', 'event-edit', editingEventId],
+        queryFn: () => getEvent(editingEventId),
+        enabled: Boolean(editingEventId) && (normalizedRole === 'ADMIN' || normalizedRole.endsWith('_MANAGER')),
+    })
+
+    useEffect(() => {
+        if (!editingEventId || !eventToEdit) {
+            setPrefilledEditingEventId('')
+            return
+        }
+        if (prefilledEditingEventId === editingEventId) {
+            return
+        }
+        setGeneralCreateOpen(true)
+        setGeneralDraft(buildEventDraftFromEvent(eventToEdit))
+        setPrefilledEditingEventId(editingEventId)
+    }, [editingEventId, eventToEdit, prefilledEditingEventId])
+
     useEffect(() => {
         if (!searchParams.get('tab')) {
             const next = new URLSearchParams(searchParams)
-            next.set('tab', 'requests')
+            next.set('tab', 'manage')
             setSearchParams(next, {replace: true})
         }
     }, [searchParams, setSearchParams])
@@ -119,12 +162,27 @@ export default function Admin() {
         queryFn: getCommunityCategories,
     })
 
-    const normalizedRole = normalizeRole(user?.role)
     const isAdmin = normalizedRole === 'ADMIN'
     const isManager = normalizedRole === 'MANAGER' || normalizedRole.endsWith('_MANAGER')
     const canViewEventRequests = isAdmin || isManager
     const canCreateCategories = normalizedRole === 'ADMIN'
     const canViewOperationRequests = normalizedRole === 'ADMIN'
+
+    const {
+        data: adminUsersPage = {content: [], totalElements: 0, totalPages: 0, size: 0, page: 0},
+        refetch: refetchAdminUsers,
+    } = useQuery({
+        queryKey: ['admin', 'users', userPage, userSearchEmail, userSearchName, userSearchRole],
+        queryFn: () =>
+            getAdminUsers({
+                page: userPage,
+                size: 12,
+                email: userSearchEmail.trim() || undefined,
+                name: userSearchName.trim() || undefined,
+                role: userSearchRole === 'ALL' ? undefined : userSearchRole,
+            }),
+        enabled: isAdmin,
+    })
 
     const {data: eventRequests = []} = useQuery({
         queryKey: ['admin', 'event-requests', requestStatus],
@@ -167,7 +225,7 @@ export default function Admin() {
 
     const {data: chatRooms = []} = useQuery({
         queryKey: ['admin', 'chat-rooms'],
-        queryFn: () => getPopularChatRooms(6),
+        queryFn: getAdminChatRooms,
     })
 
     const {
@@ -238,41 +296,18 @@ export default function Admin() {
         onSuccess: () => queryClient.invalidateQueries({queryKey: ['admin', 'messages']}),
     })
 
+    const userRoleMutation = useMutation({
+        mutationFn: ({userId, role}: { userId: string; role: string }) => changeAdminUserRole(userId, role),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['admin', 'users']})
+        },
+    })
+
     const createEventMutation = useMutation({
         mutationFn: ({requestId, draft}: { requestId?: string; draft: EventDraft }) =>
             createEvent({
                 requestId,
-                name: draft.eventName,
-                categoryId: draft.categoryId,
-                startAt: draft.startAt,
-                endAt: draft.endAt,
-                place: draft.place,
-                region: draft.region || null,
-                latitude: toRequiredNumber(draft.latitude),
-                longitude: toRequiredNumber(draft.longitude),
-                radius: toOptionalNumber(draft.radius),
-                minFee: toRequiredNumber(draft.minFee),
-                maxFee: toRequiredNumber(draft.maxFee),
-                hasTicketing: draft.hasTicketing,
-                ticketingOpenAt: normalizeDateTimeInput(draft.ticketingOpenAt),
-                ticketingCloseAt: normalizeDateTimeInput(draft.ticketingCloseAt),
-                ticketingLink: draft.ticketingLink || null,
-                officialLink: draft.officialLink || null,
-                performer: draft.performer || null,
-                description: draft.description || null,
-                img: draft.img,
-                schedules: (draft.schedules?.length
-                    ? draft.schedules
-                    : [{
-                        name: draft.eventName || '메인 일정',
-                        startAt: draft.startAt,
-                        endAt: draft.endAt
-                    }]).map((schedule, index) => ({
-                    name: schedule.name || `Day ${index + 1}`,
-                    startTime: normalizeDateTimeInput(schedule.startAt) ?? draft.startAt,
-                    endTime: normalizeDateTimeInput(schedule.endAt) ?? draft.endAt,
-                })),
-                status: 'SCHEDULED',
+                ...buildEventPayload(draft),
             }),
         onSuccess: async (createdEvent) => {
             await queryClient.invalidateQueries({queryKey: ['admin', 'event-requests']})
@@ -280,6 +315,29 @@ export default function Admin() {
             await queryClient.invalidateQueries({queryKey: ['admin', 'chat-rooms']})
             await queryClient.invalidateQueries({queryKey: ['admin', 'event-categories']})
             navigate(`/events/${createdEvent.id}`)
+        },
+    })
+
+    const saveGeneralEventMutation = useMutation({
+        mutationFn: ({draft}: { draft: EventDraft }) => {
+            const payload = buildEventPayload(draft)
+            if (editingEventId) {
+                return updateEvent(editingEventId, payload)
+            }
+            return createEvent(payload)
+        },
+        onSuccess: async (savedEvent) => {
+            await queryClient.invalidateQueries({queryKey: ['events']})
+            await queryClient.invalidateQueries({queryKey: ['event', savedEvent.id]})
+            await queryClient.invalidateQueries({queryKey: ['admin', 'chat-rooms']})
+            await queryClient.invalidateQueries({queryKey: ['admin', 'event-requests']})
+            const next = new URLSearchParams(searchParams)
+            next.delete('panel')
+            next.delete('eventId')
+            setSearchParams(next, {replace: true})
+            setGeneralCreateOpen(false)
+            setPrefilledEditingEventId('')
+            navigate(`/events/${savedEvent.id}`)
         },
     })
 
@@ -384,14 +442,6 @@ export default function Admin() {
         },
     })
 
-    const summary = useMemo(() => ({
-        eventRequests: scopedEventRequests.length,
-        operationRequests: scopedOperationRequests.length,
-        reports: reports.length,
-        rooms: scopedChatRooms.length,
-        messages: adminMessagePage.totalElements,
-    }), [adminMessagePage.totalElements, reports.length, scopedChatRooms.length, scopedEventRequests.length, scopedOperationRequests.length])
-
     const adminMessages = adminMessagePage.content
     const messageTotalPages = Math.max(adminMessagePage.totalPages || 0, 1)
 
@@ -421,55 +471,44 @@ export default function Admin() {
     const updateTab = (tab: AdminTab) => {
         const next = new URLSearchParams(searchParams)
         next.set('tab', tab)
-        if (tab !== 'requests') {
-            next.delete('panel')
-        }
+        next.delete('panel')
         setSearchParams(next, {replace: true})
     }
 
     const tabs: { value: AdminTab; label: string; description: string }[] = [
-        {value: 'requests', label: '요청', description: '행사/운영/카테고리생성'},
+        {value: 'manage', label: '행사/카테고리', description: '생성·수정'},
         {value: 'reports', label: '신고', description: '블라인드·처리'},
         {value: 'chat', label: '채팅', description: '메시지·방'},
+        {value: 'users', label: '사용자 조회', description: '이메일·이름·권한'},
     ]
+    const visibleTabs = useMemo(
+        () => tabs.filter((tab) => tab.value !== 'users' || isAdmin),
+        [isAdmin],
+    )
 
     return (
-        <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
-            {activeTab === 'requests' && (
-                <section
-                    className="rounded-[28px] bg-slate-950 px-5 py-3.5 text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] md:px-6 md:py-4">
-                    <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-                        <div className="space-y-2.5">
-                            <div
-                                className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">관리
-                            </div>
-                            <div className="text-[22px] font-black tracking-tight text-white md:text-[26px]">
-                                요청, 신고, 채팅 운영을 관리할 수 있습니다.
-                            </div>
-                            <div className="rounded-[20px] bg-white/5 p-3 text-xs leading-5 text-slate-300">
-                                <div className="text-xs font-semibold text-slate-400">접속 정보</div>
-                                <div className="mt-1.5 text-sm leading-6 text-slate-300">
-                                    {user?.nickname ?? '관리자'}로 접속 중입니다. 권한이 없는 계정에서는 운영 메뉴가 숨겨집니다.
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-3">
-                            <div
-                                className={`grid gap-2.5 ${isAdmin ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
-                                <MetricCard label="행사요청" value={String(summary.eventRequests)} dark/>
-                                <MetricCard label="신고" value={String(summary.reports)} dark/>
-                                <MetricCard label="채팅방" value={String(summary.rooms)} dark/>
-                                {isAdmin && <MetricCard label="운영요청" value={String(summary.operationRequests)} dark/>}
-                            </div>
+        <div className="mx-auto max-w-[1180px] space-y-6 px-5 py-5 md:px-8 md:py-7">
+            <section className="rounded-[28px] bg-slate-950 px-5 py-4 text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] md:px-6 md:py-5">
+                <div className="space-y-2.5">
+                    <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">
+                        관리
+                    </div>
+                    <div className="text-[22px] font-black tracking-tight text-white md:text-[26px]">
+                        운영과 관리를 한 곳에서 빠르게 처리합니다.
+                    </div>
+                    <div className="rounded-[20px] bg-white/5 p-3 text-xs leading-5 text-slate-300">
+                        <div className="text-xs font-semibold text-slate-400">접속 정보</div>
+                        <div className="mt-1.5 text-sm leading-6 text-slate-300">
+                            {user?.nickname ?? '관리자'}로 접속 중입니다. 권한에 따라 보이는 메뉴가 달라집니다.
                         </div>
                     </div>
-                </section>
-            )}
+                </div>
+            </section>
 
             <section
                 className="rounded-[22px] border border-[var(--line)] bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                 <div className="flex flex-wrap items-center gap-2">
-                    {tabs.map((tab) => (
+                    {visibleTabs.map((tab) => (
                         <button
                             key={tab.value}
                             type="button"
@@ -487,7 +526,86 @@ export default function Admin() {
                 </div>
             </section>
 
-            {activeTab === 'requests' && (
+            {activeTab === 'manage' && (
+                <section className="grid gap-5 lg:grid-cols-[6fr_4fr]">
+                    <div className="space-y-4">
+                        {generalCreateOpen ? (
+                            <div className="max-w-full overflow-x-hidden">
+                                <EventCreatePanel
+                                    title={editingEventId ? '행사 수정' : '일반 행사 생성'}
+                                    subtitle={editingEventId
+                                        ? '기존 행사 내용을 불러와서 필요한 부분만 수정할 수 있어요.'
+                                        : '관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다.'}
+                                    draft={generalDraftWithCategory}
+                                    setDraft={(patch) => setGeneralDraft((prev) => ({...prev, ...patch}))}
+                                    categoryOptions={eventCategories as any[]}
+                                    onSubmit={() => saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})}
+                                    onClose={() => setGeneralCreateOpen(false)}
+                                    loading={saveGeneralEventMutation.isPending}
+                                    onLookupPlace={() => {
+                                        void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
+                                    }}
+                                    placeLookupLoading={addressLookupLoading}
+                                    onAttachImage={(file) => {
+                                        void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
+                                    }}
+                                    submitLabel={editingEventId ? '행사 수정' : '행사 등록'}
+                                />
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setGeneralCreateOpen(true)}
+                                className="w-full rounded-[24px] border border-[var(--line)] bg-white px-4 py-5 text-left text-sm font-semibold text-slate-700 shadow-[0_12px_30px_rgba(15,23,42,0.04)]"
+                            >
+                                행사 생성 패널 열기
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        {canCreateCategories && (
+                            <>
+                                <CategoryAdminPanel
+                                    title="행사 카테고리 생성"
+                                    subtitle="행사 요청 승인이나 일반 행사 생성에서 바로 고를 수 있는 카테고리를 관리합니다."
+                                    items={eventCategories as any[]}
+                                    draft={eventCategoryDraft}
+                                    setDraft={setEventCategoryDraft}
+                                    drafts={categoryDrafts}
+                                    setDrafts={(value) => setCategoryDrafts(value)}
+                                    canCreate={canCreateCategories}
+                                    onCreate={() => createEventCategoryMutation.mutate(eventCategoryDraft.trim())}
+                                    onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({categoryId, name})}
+                                    onDelete={(categoryId) => deleteEventCategoryMutation.mutate(categoryId)}
+                                    helperMessage={categoryErrors.event}
+                                    loading={createEventCategoryMutation.isPending || updateEventCategoryMutation.isPending || deleteEventCategoryMutation.isPending}
+                                />
+                                <CategoryAdminPanel
+                                    title="커뮤니티 카테고리 생성"
+                                    subtitle="후기, 꿀팁, 자유, 요청 같은 게시판 카테고리를 운영합니다."
+                                    items={communityCategories as any[]}
+                                    draft={communityCategoryDraft}
+                                    setDraft={setCommunityCategoryDraft}
+                                    drafts={categoryDrafts}
+                                    setDrafts={(value) => setCategoryDrafts(value)}
+                                    canCreate={canCreateCategories}
+                                    onCreate={() => createCommunityCategoryMutation.mutate(communityCategoryDraft.trim())}
+                                    onUpdate={(categoryId, name) => updateCommunityCategoryMutation.mutate({
+                                        categoryId,
+                                        name
+                                    })}
+                                    onDelete={(categoryId) => deleteCommunityCategoryMutation.mutate(categoryId)}
+                                    helperMessage={categoryErrors.community}
+                                    loading={createCommunityCategoryMutation.isPending || updateCommunityCategoryMutation.isPending || deleteCommunityCategoryMutation.isPending}
+                                />
+                            </>
+                        )}
+                    </div>
+                </section>
+            )}
+
+            {showLegacyManageSection && activeTab === 'manage' && (
                 <div className="space-y-6">
                     <div
                         className={`grid gap-6 ${canViewOperationRequests ? 'lg:grid-cols-[1.1fr_0.9fr]' : 'lg:grid-cols-1'}`}>
@@ -500,10 +618,21 @@ export default function Admin() {
                                         <div className="flex flex-wrap items-center gap-2">
                                             <button
                                                 type="button"
-                                                onClick={() => setGeneralCreateOpen((prev) => !prev)}
+                                                onClick={() => {
+                                                    if (editingEventId && generalCreateOpen) {
+                                                        const next = new URLSearchParams(searchParams)
+                                                        next.delete('eventId')
+                                                        next.delete('panel')
+                                                        setSearchParams(next, {replace: true})
+                                                        setGeneralCreateOpen(false)
+                                                        setPrefilledEditingEventId('')
+                                                        return
+                                                    }
+                                                    setGeneralCreateOpen((prev) => !prev)
+                                                }}
                                                 className="rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[9px] font-semibold text-slate-700 hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[10px]"
                                             >
-                                                {generalCreateOpen ? '일반 생성 닫기' : '일반 행사 생성'}
+                                                {editingEventId ? '수정 닫기' : generalCreateOpen ? '일반 생성 닫기' : '일반 행사 생성'}
                                             </button>
                                             {REQUEST_STATUS_FILTERS.map((item) => (
                                                 <Pill key={item} active={requestStatus === item}
@@ -529,15 +658,25 @@ export default function Admin() {
                                 )}
 
                                 {generalCreateOpen && (
-                                    <EventCreatePanel
-                                        title="일반 행사 생성"
-                                        subtitle="관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다."
+                                    <div className="max-w-full overflow-x-hidden">
+                                        <EventCreatePanel
+                                        title={editingEventId ? '행사 수정' : '일반 행사 생성'}
+                                        subtitle={editingEventId
+                                            ? '기존 행사 내용을 불러와서 필요한 부분만 수정할 수 있어요.'
+                                            : '관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다.'}
                                         draft={generalDraftWithCategory}
                                         setDraft={(patch) => setGeneralDraft((prev) => ({...prev, ...patch}))}
                                         categoryOptions={eventCategories as any[]}
-                                        onSubmit={() => createEventMutation.mutate({draft: generalDraftWithCategory})}
-                                        onClose={() => setGeneralCreateOpen(false)}
-                                        loading={createEventMutation.isPending}
+                                        onSubmit={() => saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})}
+                                        onClose={() => {
+                                            const next = new URLSearchParams(searchParams)
+                                            next.delete('panel')
+                                            next.delete('eventId')
+                                            setSearchParams(next, {replace: true})
+                                            setGeneralCreateOpen(false)
+                                            setPrefilledEditingEventId('')
+                                        }}
+                                        loading={saveGeneralEventMutation.isPending}
                                         onLookupPlace={() => {
                                             void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
                                         }}
@@ -545,7 +684,9 @@ export default function Admin() {
                                         onAttachImage={(file) => {
                                             void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
                                         }}
-                                    />
+                                        submitLabel={editingEventId ? '행사 수정' : '행사 등록'}
+                                        />
+                                    </div>
                                 )}
 
                                 <div className="space-y-3">
@@ -566,7 +707,9 @@ export default function Admin() {
                                                     <div
                                                         className="text-sm font-semibold text-slate-950">{request.eventName}</div>
                                                     <div
-                                                        className="text-xs leading-5 text-slate-600">{request.description}</div>
+                                                        className="whitespace-pre-line break-words text-xs leading-5 text-slate-600">
+                                                        {renderTextWithLinks(request.description)}
+                                                    </div>
                                                     {request.rejectReason && <div className="text-xs text-rose-600">반려
                                                         사유: {request.rejectReason}</div>}
                                                 </div>
@@ -645,31 +788,36 @@ export default function Admin() {
                                             </div>
 
                                             {request.status === 'APPROVED' && requestPanels[request.id] && !request.createdEventId && (
-                                                <EventCreatePanel
-                                                    title="요청 정보로 행사 생성"
-                                                    subtitle="요청 글의 내용을 자동으로 이어받아 필요한 항목만 채우면 됩니다."
-                                                    draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
-                                                    setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
-                                                    categoryOptions={eventCategories as any[]}
-                                                    onSubmit={() =>
-                                                        createEventMutation.mutate({
-                                                            requestId: request.id,
-                                                            draft: requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap),
-                                                        })
-                                                    }
-                                                    onClose={() => setRequestPanels((prev) => ({
-                                                        ...prev,
-                                                        [request.id]: false
-                                                    }))}
-                                                    loading={createEventMutation.isPending}
-                                                    onLookupPlace={() => {
-                                                        void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
-                                                    }}
-                                                    placeLookupLoading={addressLookupLoading}
-                                                    onAttachImage={(file) => {
-                                                        void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
-                                                    }}
-                                                />
+                                                <div className="mt-4">
+                                                    <div className="max-w-full overflow-x-hidden">
+                                                        <EventCreatePanel
+                                                        title="요청 정보로 행사 생성"
+                                                        subtitle="요청 글의 내용을 자동으로 이어받아 필요한 항목만 채우면 됩니다."
+                                                        draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
+                                                        setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
+                                                        categoryOptions={eventCategories as any[]}
+                                                        onSubmit={() =>
+                                                            createEventMutation.mutate({
+                                                                requestId: request.id,
+                                                                draft: requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap),
+                                                            })
+                                                        }
+                                                        onClose={() => setRequestPanels((prev) => ({
+                                                            ...prev,
+                                                            [request.id]: false
+                                                        }))}
+                                                        loading={createEventMutation.isPending}
+                                                        onLookupPlace={() => {
+                                                            void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                                                        }}
+                                                        placeLookupLoading={addressLookupLoading}
+                                                        onAttachImage={(file) => {
+                                                            void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                                                        }}
+                                                        submitLabel="행사 생성"
+                                                        />
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     ))}
@@ -714,7 +862,7 @@ export default function Admin() {
                                                         <div
                                                             className="text-sm font-semibold text-slate-950">{request.title}</div>
                                                         <div
-                                                            className="text-sm leading-6 text-slate-600">{request.content}</div>
+                                                            className="whitespace-pre-line break-words text-sm leading-6 text-slate-600">{renderTextWithLinks(request.content)}</div>
                                                         <div className="text-xs text-slate-500">요청자
                                                             ID: {request.requesterId}</div>
                                                         {request.adminMemo && <div className="text-xs text-slate-500">관리
@@ -1089,20 +1237,208 @@ export default function Admin() {
                     </section>
                 </div>
             )}
+
+            {activeTab === 'users' && isAdmin && (
+                <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                    <SectionHeader
+                        title="사용자 조회"
+                        action={<span className="text-xs text-slate-500">{adminUsersPage.totalElements}명</span>}
+                    />
+                    <p className="text-sm leading-6 text-slate-600">
+                        이메일 또는 이름/닉네임으로 사용자를 찾고, 각 사용자 권한을 바로 바꿀 수 있어요.
+                    </p>
+
+                    <div className="grid gap-3 md:grid-cols-[1fr_1fr_0.8fr_auto_auto]">
+                        <input
+                            value={userSearchEmail}
+                            onChange={(e) => {
+                                setUserPage(0)
+                                setUserSearchEmail(e.target.value)
+                            }}
+                            placeholder="이메일 검색"
+                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
+                        />
+                        <input
+                            value={userSearchName}
+                            onChange={(e) => {
+                                setUserPage(0)
+                                setUserSearchName(e.target.value)
+                            }}
+                            placeholder="이름/닉네임 검색"
+                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
+                        />
+                        <select
+                            value={userSearchRole}
+                            onChange={(e) => {
+                                setUserPage(0)
+                                setUserSearchRole(e.target.value as typeof USER_ROLE_FILTERS[number])
+                            }}
+                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
+                        >
+                            {USER_ROLE_FILTERS.map((role) => (
+                                <option key={role} value={role}>
+                                    {role === 'ALL' ? '권한 전체' : labelUserRole(role)}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setUserSearchEmail('')
+                                setUserSearchName('')
+                                setUserSearchRole('ALL')
+                                setUserPage(0)
+                            }}
+                            className="rounded-full border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
+                        >
+                            초기화
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setUserPage(0)
+                                void refetchAdminUsers()
+                            }}
+                            className="rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white"
+                        >
+                            검색
+                        </button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {adminUsersPage.content.map((item: AdminUserItem) => (
+                            <UserRow
+                                key={item.userId}
+                                user={item}
+                                onChangeRole={(role) => userRoleMutation.mutate({userId: item.userId, role})}
+                                loading={userRoleMutation.isPending}
+                            />
+                        ))}
+                        {adminUsersPage.content.length === 0 && <EmptyState text="사용자가 없습니다."/>}
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                        <button
+                            type="button"
+                            disabled={adminUsersPage.page === 0}
+                            onClick={() => setUserPage((prev) => Math.max(prev - 1, 0))}
+                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                        >
+                            이전
+                        </button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({length: Math.max(adminUsersPage.totalPages || 0, 1)}, (_, index) => index).map((pageIndex) => (
+                                <button
+                                    key={pageIndex}
+                                    type="button"
+                                    onClick={() => setUserPage(pageIndex)}
+                                    className={`h-8 min-w-8 rounded-full px-2 text-xs font-semibold transition-colors ${
+                                        adminUsersPage.page === pageIndex ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {pageIndex + 1}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            disabled={adminUsersPage.page + 1 >= Math.max(adminUsersPage.totalPages || 0, 1)}
+                            onClick={() => setUserPage((prev) => prev + 1)}
+                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                        >
+                            다음
+                        </button>
+                    </div>
+                </section>
+            )}
         </div>
     )
 }
 
-function MetricCard({label, value, dark = false}: { label: string; value: string; dark?: boolean }) {
-    return (
-        <div
-            className={dark ? 'rounded-[18px] border border-white/10 bg-white/5 px-4 py-3' : 'rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3'}>
-            <div
-                className={dark ? 'text-xs font-medium text-slate-400' : 'text-xs font-medium text-slate-500'}>{label}</div>
-            <div
-                className={dark ? 'mt-1 text-[24px] font-black tracking-tight text-white' : 'mt-1 text-[24px] font-black tracking-tight text-slate-950'}>{value}</div>
+function renderTextWithLinks(text: string) {
+    const value = String(text ?? '')
+    const lines = value.split('\n')
+    return lines.map((line, lineIndex) => {
+        const parts = line.split(/(https?:\/\/[^\s]+)/g)
+        return (
+            <span key={`line-${lineIndex}`}>
+                {parts.map((part, partIndex) => {
+                    const isUrl = /^https?:\/\/[^\s]+$/.test(part)
+                    return isUrl ? (
+                        <a
+                            key={`part-${lineIndex}-${partIndex}`}
+                            href={part}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="break-all text-[var(--accent)] underline decoration-[var(--accent-soft)] decoration-2 underline-offset-4 transition-colors hover:text-[var(--accent-dark)]"
+                        >
+                            {part}
+                        </a>
+                    ) : (
+                        <span key={`part-${lineIndex}-${partIndex}`}>{part}</span>
+                    )
+                })}
+                {lineIndex < lines.length - 1 ? <br /> : null}
+            </span>
+        )
+    })
+}
+
+function UserRow({
+  user,
+  onChangeRole,
+  loading,
+}: {
+  user: AdminUserItem
+  onChangeRole: (role: AdminUserRole) => void
+  loading?: boolean
+}) {
+  const [role, setRole] = useState<AdminUserRole>(user.role)
+
+  useEffect(() => {
+    setRole(user.role)
+  }, [user.role])
+
+  return (
+    <div className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+              {labelUserRole(user.role)}
+            </span>
+            <span className="text-xs text-slate-500">{user.userId}</span>
+          </div>
+          <div className="text-sm font-semibold text-slate-950">{user.nickname} · {user.name}</div>
+          <div className="text-xs leading-5 text-slate-600">{user.email}</div>
+          <div className="text-[11px] text-slate-500">
+            생성: {formatDateTime(user.createdAt)} · 수정: {formatDateTime(user.updatedAt)}
+          </div>
         </div>
-    )
+        <div className="flex shrink-0 flex-col gap-2 lg:w-[240px]">
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as AdminUserRole)}
+            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+          >
+            {USER_ROLE_OPTIONS.filter((item) => item.value !== 'ALL').map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={loading || role === user.role}
+            onClick={() => onChangeRole(role)}
+            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+          >
+            {loading ? '저장 중...' : '권한 저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function SectionHeader({title, action}: { title: string; action?: ReactNode }) {
@@ -1204,6 +1540,81 @@ function buildRequestDraft(request: any, categoryMap: Map<string, string>): Even
     }
 }
 
+function buildEventDraftFromEvent(event: Event): EventDraft {
+    return {
+        eventName: event.name ?? '',
+        categoryId: event.categoryId ?? '',
+        startAt: toDateTimeLocalInput(event.startAt),
+        endAt: toDateTimeLocalInput(event.endAt),
+        place: event.place ?? '',
+        region: event.region ?? '',
+        latitude: event.latitude != null ? String(event.latitude) : '',
+        longitude: event.longitude != null ? String(event.longitude) : '',
+        radius: event.radius != null ? String(event.radius) : '',
+        minFee: event.minFee != null ? String(event.minFee) : '',
+        maxFee: event.maxFee != null ? String(event.maxFee) : '',
+        hasTicketing: Boolean(event.hasTicketing),
+        ticketingOpenAt: toDateTimeLocalInput(event.ticketingOpenAt),
+        ticketingCloseAt: toDateTimeLocalInput(event.ticketingCloseAt),
+        ticketingLink: event.ticketingLink ?? '',
+        officialLink: event.officialLink ?? '',
+        performer: event.performer ?? '',
+        description: event.description ?? '',
+        img: event.img ?? '',
+        imgFileName: '',
+        schedules: (event.schedules ?? []).map((schedule) => ({
+            name: schedule.name ?? schedule.title ?? schedule.memo ?? '',
+            startAt: toDateTimeLocalInput(schedule.startTime ?? schedule.startAt),
+            endAt: toDateTimeLocalInput(schedule.endTime ?? schedule.endAt),
+        })),
+    }
+}
+
+function buildEventPayload(draft: EventDraft) {
+    const schedules = (draft.schedules?.length
+        ? draft.schedules
+        : [{
+            name: draft.eventName || '메인 일정',
+            startAt: draft.startAt,
+            endAt: draft.endAt,
+        }]).map((schedule, index) => ({
+        name: schedule.name || `Day ${index + 1}`,
+        startTime: normalizeDateTimeInput(schedule.startAt) ?? draft.startAt,
+        endTime: normalizeDateTimeInput(schedule.endAt) ?? draft.endAt,
+    }))
+
+    if (schedules.length === 1) {
+        schedules[0] = {
+            ...schedules[0],
+            startTime: normalizeDateTimeInput(draft.startAt) ?? schedules[0].startTime,
+            endTime: normalizeDateTimeInput(draft.endAt) ?? schedules[0].endTime,
+        }
+    }
+
+    return {
+        name: draft.eventName,
+        categoryId: draft.categoryId,
+        startAt: draft.startAt,
+        endAt: draft.endAt,
+        place: draft.place,
+        region: draft.region || null,
+        latitude: toRequiredNumber(draft.latitude),
+        longitude: toRequiredNumber(draft.longitude),
+        radius: toOptionalNumber(draft.radius),
+        minFee: toRequiredNumber(draft.minFee),
+        maxFee: toRequiredNumber(draft.maxFee),
+        hasTicketing: draft.hasTicketing,
+        ticketingOpenAt: normalizeDateTimeInput(draft.ticketingOpenAt),
+        ticketingCloseAt: normalizeDateTimeInput(draft.ticketingCloseAt),
+        ticketingLink: draft.ticketingLink || null,
+        officialLink: draft.officialLink || null,
+        performer: draft.performer || null,
+        description: draft.description || null,
+        img: draft.img,
+        schedules,
+    }
+}
+
 function mergeDraft(drafts: Record<string, EventDraft>, requestId: string, patch: Partial<EventDraft>) {
     const current = drafts[requestId] ?? createBlankEventDraft()
     return {
@@ -1231,6 +1642,14 @@ function normalizeDateTimeInput(value: string) {
     if (!trimmed) return null
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) return `${trimmed}:00`
     return trimmed
+}
+
+function toDateTimeLocalInput(value?: string | null) {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 function readFileAsDataUrl(file: File) {
@@ -1286,6 +1705,7 @@ function EventCreatePanel({
                               onLookupPlace,
                               placeLookupLoading,
                               onAttachImage,
+                              submitLabel,
                           }: {
     title: string
     subtitle: string
@@ -1298,12 +1718,20 @@ function EventCreatePanel({
     onLookupPlace: () => void
     placeLookupLoading?: boolean
     onAttachImage: (file: File) => void
+    submitLabel: string
 }) {
     const categoryValue = draft.categoryId || categoryOptions[0]?.id || ''
+    const categoryLabel = categoryOptions.find((category) => category.id === categoryValue)?.name ?? '선택 안 됨'
     const imageInputRef = useRef<HTMLInputElement | null>(null)
+    const hasCoordinates = Boolean(draft.latitude.trim()) && Boolean(draft.longitude.trim())
+    const hasPlace = Boolean(draft.place.trim())
+    const hasLocationAttempt = Boolean(draft.place.trim() || draft.latitude.trim() || draft.longitude.trim())
+    const showLocationWarning = hasLocationAttempt && (!hasPlace || !hasCoordinates)
+    const canSubmit = hasPlace && hasCoordinates
+    const scheduleCount = draft.schedules?.length ?? 0
 
     return (
-        <div className="rounded-[22px] border border-[var(--line)] bg-white p-4">
+        <div className="w-full max-w-full overflow-x-hidden rounded-[22px] border border-[var(--line)] bg-white p-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <div className="text-sm font-semibold text-slate-950">{title}</div>
@@ -1315,7 +1743,7 @@ function EventCreatePanel({
                 </button>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="mt-4 grid gap-3 grid-cols-1 md:grid-cols-2">
                 <AdminInput label="행사명" value={draft.eventName} onChange={(value) => setDraft({eventName: value})}/>
                 <label className="block">
                     <div className="mb-1 text-[11px] font-semibold text-slate-500">카테고리</div>
@@ -1342,20 +1770,39 @@ function EventCreatePanel({
                         <span>장소</span>
                         <button
                             type="button"
-                            onClick={onLookupPlace}
-                            disabled={placeLookupLoading}
-                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[10px] font-semibold text-[var(--accent)] disabled:opacity-60"
+                            onClick={() => {
+                                if (placeLookupLoading) return
+                                onLookupPlace()
+                            }}
+                            aria-busy={placeLookupLoading}
+                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[10px] font-semibold text-[var(--accent)]"
                         >
                             {placeLookupLoading ? '검색 중...' : '카카오 주소검색'}
                         </button>
                     </div>
                     <input
                         value={draft.place}
-                        onChange={(e) => setDraft({place: e.target.value})}
+                        onChange={(e) =>
+                            setDraft({
+                                place: e.target.value,
+                                region: '',
+                                latitude: '',
+                                longitude: '',
+                            })
+                        }
                         placeholder="주소를 검색하거나 직접 입력하세요"
                         className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none"
                     />
-                    <div className="mt-1 text-[11px] leading-5 text-slate-400">선택한 주소로 지역, 위도, 경도가 자동 입력돼요.</div>
+                    <div className="mt-1 text-[11px] leading-5 text-slate-400">
+                        주소를 다시 바꾸면 지역, 위도, 경도는 비워져요. 다시 검색해서 자동 입력하면 돼요.
+                    </div>
+                    {showLocationWarning && (
+                        <div className="mt-2 rounded-[14px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-700">
+                            {!hasPlace
+                                ? '장소를 입력하거나 카카오 주소검색을 먼저 눌러주세요.'
+                                : '주소는 입력됐지만 위도/경도가 비어 있어요. 카카오 주소검색을 다시 눌러 자동 입력하거나, 위도/경도를 직접 채워주세요.'}
+                        </div>
+                    )}
                 </label>
                 <AdminInput label="지역" value={draft.region} onChange={(value) => setDraft({region: value})}
                             placeholder="자동 입력"/>
@@ -1384,7 +1831,7 @@ function EventCreatePanel({
                 {draft.hasTicketing && (
                     <div className="md:col-span-2 space-y-3 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
                         <div className="text-[11px] font-semibold text-slate-500">티켓팅 정보</div>
-                        <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <AdminInput label="티켓팅 오픈" value={draft.ticketingOpenAt}
                                         onChange={(value) => setDraft({ticketingOpenAt: value})} type="datetime-local"/>
                             <AdminInput label="티켓팅 종료" value={draft.ticketingCloseAt}
@@ -1432,7 +1879,7 @@ function EventCreatePanel({
                     </div>
                 </label>
 
-                <div className="md:col-span-2 flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 min-[700px]:col-span-2 min-[700px]:flex-row min-[700px]:items-center min-[700px]:justify-between">
                     <div className="text-[11px] font-semibold text-slate-500">일정</div>
                     <button
                         type="button"
@@ -1451,22 +1898,24 @@ function EventCreatePanel({
                     </button>
                 </div>
 
-                <div className="md:col-span-2 space-y-2">
+                    <div className="min-[700px]:col-span-2 space-y-2">
                     {(draft.schedules ?? []).map((schedule, index) => (
                         <div key={index}
-                             className="grid gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-end">
-                            <AdminInput
-                                label={`일정 제목 ${index + 1}`}
-                                value={schedule.name}
-                                onChange={(value) =>
-                                    setDraft({
-                                        schedules: (draft.schedules ?? []).map((item, itemIndex) => (itemIndex === index ? {
-                                            ...item,
-                                            name: value
-                                        } : item)),
-                                    })
-                                }
-                            />
+                             className="grid grid-cols-1 gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 min-[700px]:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_auto] xl:items-end">
+                            <div className="min-[700px]:col-span-2 xl:col-span-1">
+                                <AdminInput
+                                    label={`일정 제목 ${index + 1}`}
+                                    value={schedule.name}
+                                    onChange={(value) =>
+                                        setDraft({
+                                            schedules: (draft.schedules ?? []).map((item, itemIndex) => (itemIndex === index ? {
+                                                ...item,
+                                                name: value
+                                            } : item)),
+                                        })
+                                    }
+                                />
+                            </div>
                             <AdminInput
                                 label="일정 시작"
                                 value={schedule.startAt}
@@ -1500,7 +1949,7 @@ function EventCreatePanel({
                                         schedules: (draft.schedules ?? []).filter((_, itemIndex) => itemIndex !== index),
                                     })
                                 }
-                                className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"
+                                className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 min-[700px]:col-span-2 xl:col-span-1"
                             >
                                 삭제
                             </button>
@@ -1513,7 +1962,7 @@ function EventCreatePanel({
                         </div>
                     )}
                 </div>
-                <label className="md:col-span-2 block">
+                <label className="min-[700px]:col-span-2 block">
                     <div className="mb-1 text-[11px] font-semibold text-slate-500">설명</div>
                     <textarea
                         value={draft.description}
@@ -1523,7 +1972,24 @@ function EventCreatePanel({
                 </label>
             </div>
 
+            <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
+                <div className="text-[11px] font-semibold text-slate-500">등록 미리보기</div>
+                <div className="mt-3 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
+                    <PreviewField label="행사명" value={draft.eventName || '미입력'} />
+                    <PreviewField label="카테고리" value={categoryLabel} />
+                    <PreviewField label="기간" value={draft.startAt && draft.endAt ? `${draft.startAt} ~ ${draft.endAt}` : '미입력'} />
+                    <PreviewField label="장소" value={draft.place || '미입력'} />
+                    <PreviewField label="티켓팅" value={draft.hasTicketing ? '있음' : '없음'} />
+                    <PreviewField label="일정 개수" value={`${scheduleCount}개`} />
+                </div>
+            </div>
+
             <div className="mt-4 flex items-center justify-end gap-2">
+                {!canSubmit && (
+                    <div className="mr-auto rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                        장소와 위도/경도를 모두 채워야 행사 등록이 가능해요.
+                    </div>
+                )}
                 <button
                     type="button"
                     onClick={onClose}
@@ -1534,12 +2000,21 @@ function EventCreatePanel({
                 <button
                     type="button"
                     onClick={onSubmit}
-                    disabled={loading}
+                    disabled={loading || !canSubmit}
                     className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
                 >
-                    {loading ? '생성 중...' : '행사 등록'}
+                    {loading ? '처리 중...' : submitLabel}
                 </button>
             </div>
+        </div>
+    )
+}
+
+function PreviewField({label, value}: { label: string; value: string }) {
+    return (
+        <div className="rounded-[16px] border border-white/80 bg-white px-3 py-2">
+            <div className="text-[10px] font-semibold text-slate-500">{label}</div>
+            <div className="mt-1 text-sm font-medium text-slate-800">{value}</div>
         </div>
     )
 }
@@ -1656,8 +2131,8 @@ function normalizeRole(role?: string | null) {
 }
 
 function normalizeAdminTab(value: string | null): AdminTab {
-    if (value === 'reports' || value === 'chat' || value === 'requests') return value
-    return 'requests'
+    if (value === 'manage' || value === 'reports' || value === 'chat' || value === 'users') return value
+    return 'manage'
 }
 
 function normalizeEventCategoryKey(name: string) {
@@ -1666,6 +2141,20 @@ function normalizeEventCategoryKey(name: string) {
     if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
     if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
     return name.toLowerCase()
+}
+
+function labelUserRole(role: string) {
+    const normalized = String(role ?? '').trim()
+    const map: Record<string, string> = {
+        USER: '일반 사용자',
+        ADMIN: '관리자',
+        CONCERT_MANAGER: '콘서트 매니저',
+        FESTIVAL_MANAGER: '축제 매니저',
+        FANMEETING_MANAGER: '팬미팅 매니저',
+        POPUP_MANAGER: '팝업 매니저',
+        COMMUNITY_MANAGER: '커뮤니티 매니저',
+    }
+    return map[normalized] ?? (normalized || '알 수 없음')
 }
 
 function extractErrorMessage(error: any, fallback: string) {

@@ -10,13 +10,19 @@ import com.ojosama.chatservice.presentation.dto.request.ChatRoomStatusActionRequ
 import com.ojosama.chatservice.presentation.dto.request.CreateChatRoomRequest;
 import com.ojosama.chatservice.presentation.dto.response.ChatRoomResponse;
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,6 +52,15 @@ public class AdminChatRoomController {
                 )
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(ChatRoomResponse.from(result)));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<ChatRoomResponse>>> getAllChatRooms(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(ApiResponse.success(
+                PageResponse.from(chatRoomService.getAllChatRooms(pageable)
+                        .map(ChatRoomResponse::from))
+        ));
     }
 
     @PatchMapping("/{chatRoomId}/status")

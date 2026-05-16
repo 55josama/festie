@@ -24,6 +24,16 @@ type MockProfile = {
   role: 'ADMIN' | 'MANAGER' | 'USER'
 }
 
+type MockAdminUser = {
+  userId: string
+  email: string
+  nickname: string
+  name: string
+  role: 'USER' | 'ADMIN' | 'CONCERT_MANAGER' | 'FESTIVAL_MANAGER' | 'FANMEETING_MANAGER' | 'POPUP_MANAGER' | 'COMMUNITY_MANAGER'
+  createdAt: string
+  updatedAt: string
+}
+
 const mockProfiles = new Map<string, MockProfile>([
   ['mock-admin-token', {
     userId: 'admin-user',
@@ -50,6 +60,45 @@ const mockProfiles = new Map<string, MockProfile>([
     role: 'USER',
   }],
 ])
+
+const mockAdminUsers: MockAdminUser[] = [
+  {
+    userId: 'admin-user',
+    email: 'admin@festie.com',
+    nickname: '어드민',
+    name: '관리자',
+    role: 'ADMIN',
+    createdAt: '2026-05-01T09:00:00.000Z',
+    updatedAt: '2026-05-15T09:00:00.000Z',
+  },
+  {
+    userId: 'manager-user',
+    email: 'manager@festie.com',
+    nickname: '매니저',
+    name: '매니저',
+    role: 'CONCERT_MANAGER',
+    createdAt: '2026-05-02T09:00:00.000Z',
+    updatedAt: '2026-05-15T09:10:00.000Z',
+  },
+  {
+    userId: 'u-1001',
+    email: 'subin@festie.com',
+    nickname: '호잇호잇',
+    name: '수빈',
+    role: 'USER',
+    createdAt: '2026-05-03T09:00:00.000Z',
+    updatedAt: '2026-05-15T09:20:00.000Z',
+  },
+  {
+    userId: 'u-1002',
+    email: 'popup@example.com',
+    nickname: '팝업덕후',
+    name: '팝업덕후',
+    role: 'POPUP_MANAGER',
+    createdAt: '2026-05-04T09:00:00.000Z',
+    updatedAt: '2026-05-15T09:30:00.000Z',
+  },
+]
 
 function normalizeCategoryKey(name: string) {
   if (name === '\uCF58\uC11C\uD2B8') return 'concert'
@@ -133,6 +182,98 @@ export const handlers = [
         request.status = 'APPROVED'
       }
     }
+    return HttpResponse.json(wrap(created), { status: 201 })
+  }),
+
+  http.patch('/event-service/v1/events/:eventId', async ({ params, request }) => {
+    await delay(200)
+    const body = await request.json() as any
+    const event = mockEvents.find((item) => item.id === params.eventId) as any
+    if (!event) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    const categoryId = body.categoryId ?? event.categoryId
+    const categoryName = mockEventCategories.find((item) => item.id === categoryId)?.name ?? event.categoryName
+    event.name = body.name ?? event.name
+    event.categoryId = categoryId
+    event.categoryName = categoryName
+    event.startAt = body.startAt ?? event.startAt
+    event.endAt = body.endAt ?? event.endAt
+    event.place = body.place ?? event.place
+    event.region = body.region ?? event.region
+    event.latitude = body.latitude ?? event.latitude
+    event.longitude = body.longitude ?? event.longitude
+    event.radius = body.radius ?? event.radius
+    event.minFee = body.minFee ?? event.minFee
+    event.maxFee = body.maxFee ?? event.maxFee
+    event.hasTicketing = body.hasTicketing ?? event.hasTicketing
+    event.ticketingOpenAt = body.ticketingOpenAt ?? event.ticketingOpenAt
+    event.ticketingCloseAt = body.ticketingCloseAt ?? event.ticketingCloseAt
+    event.ticketingLink = body.ticketingLink ?? event.ticketingLink
+    event.officialLink = body.officialLink ?? event.officialLink
+    event.description = body.description ?? event.description
+    event.performer = body.performer ?? event.performer
+    event.img = body.img ?? event.img
+    event.schedules = body.schedules ?? event.schedules
+    const room = mockChatRooms.find((item) => item.eventId === event.id) as any
+    if (room) {
+      room.eventName = event.name
+      room.category = categoryName.toUpperCase()
+      room.scheduledOpenAt = body.schedules?.[0]?.startTime ?? room.scheduledOpenAt
+      room.scheduledCloseAt = body.schedules?.[0]?.endTime ?? room.scheduledCloseAt
+    }
+    return HttpResponse.json(wrap(event))
+  }),
+
+  http.post('/event-service/v1/event-requests', async ({ request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const requesterId = request.headers.get('x-user-id') ?? 'me'
+    const title = String(body.title ?? '').trim()
+    const categoryId = String(body.categoryId ?? '').trim()
+    const link = String(body.link ?? '').trim()
+    const description = String(body.description ?? '').trim()
+    if (!title || !categoryId || !link) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    const category = mockEventCategories.find((item) => item.id === categoryId)
+    if (!category) {
+      return HttpResponse.json({ status: 'error', message: '카테고리를 찾을 수 없습니다.' }, { status: 404 })
+    }
+    const created = {
+      id: `req-${crypto.randomUUID()}`,
+      requesterId,
+      requesterNickname: requesterId === 'admin-user' ? '관리자' : requesterId === 'manager-user' ? '매니저' : '테스트유저',
+      createdAt: new Date().toISOString(),
+      eventName: title,
+      categoryId,
+      category: category.name,
+      link,
+      description,
+      rejectReason: null,
+      status: 'PENDING',
+      createdEventId: null,
+    }
+    mockEventRequests.unshift(created as any)
+    return HttpResponse.json(wrap(created), { status: 201 })
+  }),
+
+  http.post('/operation-service/v1/operation-requests', async ({ request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const requesterId = request.headers.get('x-user-id') ?? 'me'
+    const title = String(body.title ?? '').trim()
+    const content = String(body.content ?? '').trim()
+    if (!title || !content) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    const created = {
+      id: `op-${crypto.randomUUID()}`,
+      requesterId,
+      title,
+      content,
+      status: 'PENDING',
+      adminMemo: null,
+    }
+    mockOperationRequests.unshift(created as any)
     return HttpResponse.json(wrap(created), { status: 201 })
   }),
 
@@ -329,6 +470,21 @@ export const handlers = [
     return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
   }),
 
+  http.get('/event-service/v1/event-requests/me', async ({ request }) => {
+    await delay(180)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const filtered = mockEventRequests.filter((item) => item.requesterId === userId)
+    return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
+  }),
+
+  http.get('/event-service/v1/event-requests/me/:requestId', async ({ params, request }) => {
+    await delay(180)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const eventRequest = mockEventRequests.find((item) => item.id === params.requestId && item.requesterId === userId)
+    if (!eventRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap(eventRequest))
+  }),
+
   http.post('/event-service/v1/event-requests/:requestId/approval', async ({ params }) => {
     await delay(150)
     const request = mockEventRequests.find((item) => item.id === params.requestId)
@@ -354,6 +510,51 @@ export const handlers = [
     const status = url.searchParams.get('status')
     const filtered = status ? mockOperationRequests.filter((item) => item.status === status) : mockOperationRequests
     return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
+  }),
+
+  http.get('/operation-service/v1/operation-requests/me', async ({ request }) => {
+    await delay(180)
+    const url = new URL(request.url)
+    const status = url.searchParams.get('status')
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    let filtered = mockOperationRequests.filter((item) => item.requesterId === userId)
+    if (status) {
+      filtered = filtered.filter((item) => item.status === status)
+    }
+    return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
+  }),
+
+  http.get('/operation-service/v1/operation-requests/me/:requestId', async ({ params, request }) => {
+    await delay(180)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const operationRequest = mockOperationRequests.find((item) => item.id === params.requestId && item.requesterId === userId)
+    if (!operationRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap(operationRequest))
+  }),
+
+  http.get('/operation-service/v1/operation-requests/:requestId', async ({ params }) => {
+    await delay(180)
+    const operationRequest = mockOperationRequests.find((item) => item.id === params.requestId)
+    if (!operationRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap(operationRequest))
+  }),
+
+  http.patch('/operation-service/v1/operation-requests/:requestId', async ({ params, request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const operationRequest = mockOperationRequests.find((item) => item.id === params.requestId)
+    if (!operationRequest) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    operationRequest.title = body.title ?? operationRequest.title
+    operationRequest.content = body.content ?? operationRequest.content
+    return HttpResponse.json(wrap(operationRequest))
+  }),
+
+  http.delete('/operation-service/v1/operation-requests/:requestId', async ({ params }) => {
+    await delay(180)
+    const index = mockOperationRequests.findIndex((item) => item.id === params.requestId)
+    if (index === -1) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    mockOperationRequests.splice(index, 1)
+    return HttpResponse.json(wrap({}))
   }),
 
   http.patch('/operation-service/v1/operation-requests/:requestId/status', async ({ params, request }) => {
@@ -393,6 +594,37 @@ export const handlers = [
     return HttpResponse.json(wrap(room))
   }),
 
+  http.post('/chat-service/v1/chat/admin/rooms', async ({ request }) => {
+    await delay(140)
+    const body = await request.json() as any
+    const eventId = String(body.eventId ?? '')
+    const eventName = String(body.eventName ?? '').trim()
+    const category = String(body.category ?? '').trim().toUpperCase()
+    const scheduledOpenAt = body.scheduledOpenAt ?? null
+    const scheduledCloseAt = body.scheduledCloseAt ?? null
+    if (!eventId || !eventName || !category || !scheduledOpenAt || !scheduledCloseAt) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    if (mockChatRooms.some((item) => item.eventId === eventId)) {
+      return HttpResponse.json({ status: 'error', message: '채팅방이 이미 존재합니다.' }, { status: 409 })
+    }
+    const chatRoomId = `room-${crypto.randomUUID()}`
+    const room = {
+      chatRoomId,
+      eventId,
+      eventName,
+      category,
+      status: 'SCHEDULED',
+      scheduledOpenAt,
+      scheduledCloseAt,
+      openedAt: null,
+      closedAt: null,
+      currentViewerCount: 0,
+    }
+    mockChatRooms.push(room as any)
+    return HttpResponse.json(wrap(room), { status: 201 })
+  }),
+
   http.get('/chat-service/v1/chat/rooms/:chatRoomId/messages', async ({ params }) => {
     await delay(120)
     const messages = mockMessages.filter((item) => item.chatRoomId === params.chatRoomId)
@@ -404,6 +636,16 @@ export const handlers = [
     const url = new URL(request.url)
     const limit = Number(url.searchParams.get('limit') ?? 3)
     return HttpResponse.json(wrap(mockChatRooms.slice(0, limit)))
+  }),
+
+  http.get('/chat-service/v1/chat/admin/rooms', async () => {
+    await delay(140)
+    return HttpResponse.json(wrap(
+      mockChatRooms.map((room) => ({
+        ...room,
+        currentViewerCount: room.currentViewerCount ?? 0,
+      })),
+    ))
   }),
 
   http.patch('/chat-service/v1/chat/admin/rooms/:chatRoomId/status', async ({ params, request }) => {
@@ -470,6 +712,20 @@ export const handlers = [
     return HttpResponse.json(wrap(message), { status: 201 })
   }),
 
+  http.delete('/chat-service/v1/chat/messages/:messageId', async ({ params, request }) => {
+    await delay(120)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const role = request.headers.get('x-user-role')
+    const index = mockMessages.findIndex((item) => item.messageId === params.messageId)
+    if (index === -1) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    const message = mockMessages[index]
+    if (role !== 'ADMIN' && message.userId !== userId) {
+      return HttpResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 })
+    }
+    mockMessages.splice(index, 1)
+    return HttpResponse.json(wrap(null))
+  }),
+
   http.get('/calendar-service/v1/calendars', async ({ request }) => {
     await delay(120)
     const url = new URL(request.url)
@@ -529,6 +785,42 @@ export const handlers = [
     }
     mockCalendars.splice(index, 1)
     return HttpResponse.json(wrap({}))
+  }),
+
+  http.get('/user-service/v1/users/admin', async ({ request }) => {
+    await delay(180)
+    const url = new URL(request.url)
+    const email = (url.searchParams.get('email') ?? '').trim().toLowerCase()
+    const name = (url.searchParams.get('name') ?? '').trim().toLowerCase()
+    const role = (url.searchParams.get('role') ?? '').trim().toUpperCase()
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 20)
+    let users = [...mockAdminUsers]
+    if (email || name) {
+      users = users.filter((item) => {
+        const emailMatch = email ? item.email.toLowerCase().includes(email) : false
+        const nameMatch = name ? item.name.toLowerCase().includes(name) || item.nickname.toLowerCase().includes(name) : false
+        return emailMatch || nameMatch
+      })
+    }
+    if (role && role !== 'ALL') {
+      users = users.filter((item) => item.role === role)
+    }
+    const totalElements = users.length
+    const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
+    const start = Math.max(page, 0) * Math.max(size, 1)
+    const content = users.slice(start, start + Math.max(size, 1))
+    return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
+  }),
+
+  http.patch('/user-service/v1/users/admin/:userId/role', async ({ params, request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const user = mockAdminUsers.find((item) => item.userId === params.userId)
+    if (!user) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    user.role = body.role ?? user.role
+    user.updatedAt = new Date().toISOString()
+    return HttpResponse.json(wrap(user))
   }),
 
   http.post('/user-service/v1/auth/login', async ({ request }) => {

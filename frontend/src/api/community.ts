@@ -1,4 +1,4 @@
-import client from './client'
+import client, { publicClient } from './client'
 import { unwrap, unwrapPage } from '../lib/api'
 import type { Category, Comment, Post } from '../types'
 
@@ -9,7 +9,7 @@ export const getPosts = async (params: {
   page?: number
   size?: number
 }) => {
-  const res = await client.get('/community-service/v1/posts', { params })
+  const res = await publicClient.get('/community-service/v1/posts', { params })
   return unwrapPage<Post>(res.data)
 }
 
@@ -26,6 +26,19 @@ export const createPost = async (data: {
   visibility?: 'PUBLIC' | 'PRIVATE'
 }) => {
   const res = await client.post('/community-service/v1/posts', data)
+  return unwrap<Post>(res.data)
+}
+
+export const updatePost = async (
+  postId: string,
+  data: {
+    title: string
+    content: string
+    categoryId: string
+    visibility?: 'PUBLIC' | 'PRIVATE'
+  }
+) => {
+  const res = await client.patch(`/community-service/v1/posts/${postId}`, data)
   return unwrap<Post>(res.data)
 }
 
@@ -51,5 +64,15 @@ export const deleteComment = async (commentId: string) => {
 
 export const deletePost = async (postId: string) => {
   const res = await client.delete(`/community-service/v1/posts/${postId}`)
+  return unwrap<void>(res.data)
+}
+
+export const likePost = async (postId: string) => {
+  const res = await client.post(`/community-service/v1/posts/${postId}/likes`)
+  return unwrap<void>(res.data)
+}
+
+export const unlikePost = async (postId: string) => {
+  const res = await client.delete(`/community-service/v1/posts/${postId}/likes`)
   return unwrap<void>(res.data)
 }

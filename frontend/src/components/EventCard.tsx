@@ -3,10 +3,17 @@ import type { Event } from '../types'
 import { formatDateRange, formatPrice, getDDay } from '../lib/format'
 
 const CATEGORY_ACCENT: Record<string, string> = {
-  concert: 'from-sky-100 to-sky-50 text-sky-700',
-  festival: 'from-emerald-100 to-emerald-50 text-emerald-700',
-  fanmeeting: 'from-fuchsia-100 to-fuchsia-50 text-fuchsia-700',
+  concert: 'from-violet-100 to-violet-50 text-violet-700',
+  festival: 'from-fuchsia-100 to-fuchsia-50 text-fuchsia-700',
+  fanmeeting: 'from-pink-100 to-pink-50 text-pink-700',
   popup: 'from-sky-100 to-sky-50 text-sky-700',
+}
+
+const CATEGORY_CHIP_CLASS: Record<string, string> = {
+  concert: 'bg-violet-100 text-violet-700',
+  festival: 'bg-fuchsia-100 text-fuchsia-700',
+  fanmeeting: 'bg-pink-100 text-pink-700',
+  popup: 'bg-sky-100 text-sky-700',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -17,9 +24,11 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export default function EventCard({ event }: { event: Event }) {
-  const dDay = getDDay(event.ticketingOpenAt ?? event.startAt)
+  const dDay = getDDay(event.startAt)
   const price = formatPrice(event.minFee, event.maxFee)
+  const categoryKey = normalizeCategoryKey(event.categoryName)
   const accent = CATEGORY_ACCENT[normalizeCategoryKey(event.categoryName)] ?? 'from-slate-100 to-slate-50 text-slate-700'
+  const chipClass = CATEGORY_CHIP_CLASS[categoryKey] ?? 'bg-violet-100 text-violet-700'
 
   return (
     <Link
@@ -28,8 +37,8 @@ export default function EventCard({ event }: { event: Event }) {
     >
       <div className={`bg-gradient-to-br ${accent} flex h-44 items-end justify-between px-5 pb-4`}>
         <div>
-          <div className="mb-2 inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700">
-            {event.categoryName}
+          <div className={`mb-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${chipClass}`}>
+            {displayEventCategoryLabel(event.categoryName)}
           </div>
           <div className="text-xs text-slate-500">{STATUS_LABEL[event.status] ?? event.status}</div>
         </div>
@@ -51,9 +60,21 @@ export default function EventCard({ event }: { event: Event }) {
 }
 
 function normalizeCategoryKey(name: string) {
-  if (name === '\uCF58\uC11C\uD2B8') return 'concert'
-  if (name === '\uCD95\uC81C') return 'festival'
-  if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
-  if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
-  return name.toLowerCase()
+  const normalized = String(name ?? '').trim().toLowerCase()
+  const compact = normalized.replace(/[\s_-]+/g, '')
+  if (compact.includes('concert') || compact.includes('콘서트')) return 'concert'
+  if (compact.includes('festival') || compact.includes('페스티벌') || compact.includes('축제')) return 'festival'
+  if (compact.includes('fanmeeting') || compact.includes('팬미팅') || compact.includes('팬 미팅')) return 'fanmeeting'
+  if (compact.includes('popup') || compact.includes('팝업스토어') || compact.includes('팝업') || compact.includes('pop-up') || compact.includes('pop up')) return 'popup'
+  return normalized
+}
+
+function displayEventCategoryLabel(name: string) {
+  const key = normalizeCategoryKey(name)
+  return {
+    concert: '콘서트',
+    festival: '축제',
+    fanmeeting: '팬미팅',
+    popup: '팝업스토어',
+  }[key] ?? (String(name ?? '').trim().toUpperCase() || 'EVENT')
 }

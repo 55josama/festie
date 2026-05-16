@@ -129,9 +129,12 @@ export interface User {
 
 export interface EventSchedule {
   id?: string
+  name?: string
   title?: string
-  startAt: string
-  endAt: string
+  startTime?: string
+  endTime?: string
+  startAt?: string
+  endAt?: string
   venue?: string
   memo?: string
 }
