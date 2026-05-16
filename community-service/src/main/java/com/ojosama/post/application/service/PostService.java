@@ -17,6 +17,8 @@ import com.ojosama.post.domain.exception.PostException;
 import com.ojosama.post.domain.model.Post;
 import com.ojosama.post.domain.model.PostStatus;
 import com.ojosama.post.domain.repository.PostRepository;
+import com.ojosama.post.infrastructure.cache.PostViewCountExecutor;
+import com.ojosama.post.infrastructure.cache.ViewCountCacheService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +34,8 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final OutboxEventPublisher outbox;
+    private final ViewCountCacheService viewCountCache;
+    private final PostViewCountExecutor postViewCountExecutor;
 
     @Value("${spring.kafka.topic.community-moderation-requested}")
     private String moderationRequestedTopic;
@@ -101,18 +105,24 @@ public class PostService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResult getDetail(UUID postId) {
         Post post = loadAlive(postId);
-        // BLINDED 게시글도 200으로 응답한다 (PostResponse에서 마스킹 처리).
-        // 단, 조회수는 증가시키지 않음 — 차단된 게시글에 어뷰징성 조회수 발생 방지.
+        // BLINDED 게시글도 200으로 응답한다 (PostResponse 에서 마스킹 처리).
+        // 블라인드 상태에서는 조회수를 올리지 않음.
         if (post.isBlinded()) {
             return PostResult.from(post);
         }
-        int affected = postRepository.incrementViewCount(postId);
-        if (affected == 0) {
-            throw new PostException(PostErrorCode.POST_NOT_FOUND);
+
+        // Write-Behind: Redis INCR 만 하고 DB flush 는 스케줄러가 일괄 처리.
+        // Redis 장애 시 fallback 으로 DB 직접 UPDATE.
+        // class-level readOnly 트랜잭션 안에서 UPDATE 하면 JPA 예외가 발생할 수 있어
+        // REQUIRES_NEW 로 분리된 executor 에 위임한다.
+        boolean cached = viewCountCache.increment(postId);
+        if (!cached) {
+            postViewCountExecutor.incrementViewCountFallback(postId);
         }
+
         return adjustViewCountForResponse(post, 1);
     }
 

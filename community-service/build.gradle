@@ -19,6 +19,11 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.16'
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
+    // Redis (viewCount Write-Behind 캐시용)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    // Lettuce connection pool 활성화 필수 (application.yml 의 lettuce.pool 설정이 이 의존성 없으면 무시됨)
+    implementation 'org.apache.commons:commons-pool2'
+
     implementation project(':common')
 }
 
