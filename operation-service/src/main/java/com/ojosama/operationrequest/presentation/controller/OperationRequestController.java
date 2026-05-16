@@ -53,7 +53,8 @@ public class OperationRequestController {
             @Valid @RequestBody CreateOperationRequest request,
             @AuthenticationPrincipal UUID currentUserId
     ) {
-        OperationRequestResult result = operationRequestService.createOperationRequest(request.toCommand(currentUserId));
+        OperationRequestResult result = operationRequestService.createOperationRequest(
+                request.toCommand(currentUserId));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(FindOperationResponse.from(result)));
     }
 
@@ -71,10 +72,16 @@ public class OperationRequestController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         ListOperationRequestQuery query = new ListOperationRequestQuery(status);
+        PageResponse<OperationRequestResult> serviceResult = operationRequestService.getOperationRequestList(query, pageable);
 
-        PageResponse<ListOperationResponse> response = PageResponse.from(
-                operationRequestService.getOperationRequestList(query, pageable)
+        PageResponse<ListOperationResponse> response = new PageResponse<>(
+                serviceResult.content().stream()
                         .map(ListOperationResponse::from)
+                        .toList(),
+                serviceResult.page(),
+                serviceResult.size(),
+                serviceResult.totalElements(),
+                serviceResult.totalPages()
         );
 
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -157,7 +164,8 @@ public class OperationRequestController {
             @PathVariable UUID requestId,
             @Valid @RequestBody UpdateOperationStatusRequest request
     ) {
-        OperationRequestResult result = operationRequestService.updateOperationRequestStatus(requestId, request.toCommand());
+        OperationRequestResult result = operationRequestService.updateOperationRequestStatus(requestId,
+                request.toCommand());
         return ResponseEntity.ok(ApiResponse.success(FindOperationResponse.from(result)));
     }
 
