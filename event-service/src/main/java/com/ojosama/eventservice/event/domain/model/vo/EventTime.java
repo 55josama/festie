@@ -21,12 +21,20 @@ public class EventTime {
     private LocalDateTime endAt;
 
     public EventTime(LocalDateTime startAt, LocalDateTime endAt) {
-        validateEventTime(startAt, endAt);
+        this(startAt, endAt, true);
+    }
+
+    public static EventTime forUpdate(LocalDateTime startAt, LocalDateTime endAt) {
+        return new EventTime(startAt, endAt, false);
+    }
+
+    private EventTime(LocalDateTime startAt, LocalDateTime endAt, boolean validatePastStartTime) {
+        validateEventTime(startAt, endAt, validatePastStartTime);
         this.startAt = startAt;
         this.endAt = endAt;
     }
 
-    private void validateEventTime(LocalDateTime startAt, LocalDateTime endAt) {
+    private void validateEventTime(LocalDateTime startAt, LocalDateTime endAt, boolean validatePastStartTime) {
         if (startAt == null || endAt == null) {
             throw new EventException(EventErrorCode.EVENT_INVALID_TIME);
         }
@@ -36,7 +44,7 @@ public class EventTime {
         if (startAt.equals(endAt)) {
             throw new EventException(EventErrorCode.EVENT_INVALID_TIME);
         }
-        if (startAt.isBefore(LocalDateTime.now())) {
+        if (validatePastStartTime && startAt.isBefore(LocalDateTime.now())) {
             throw new EventException(EventErrorCode.EVENT_PAST_START_TIME);
         }
     }
