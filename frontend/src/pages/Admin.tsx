@@ -1,14 +1,17 @@
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react'
 import {Link, useNavigate, useSearchParams} from 'react-router-dom'
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
+import {useMutation, useQueries, useQuery, useQueryClient} from '@tanstack/react-query'
 import {
     approveEventRequest,
     getAdminChatRooms,
     getAdminUsers,
     getAdminUserDetail,
+    createBlacklist,
+    getBlacklists,
     forceChatRoomStatus,
     getEventRequests,
     getOperationRequests,
+    releaseBlacklist,
   getReports,
   rejectEventRequest,
   changeAdminUserRole,
@@ -32,14 +35,14 @@ import {formatDateTime} from '../lib/format'
 import {getErrorMessage} from '../lib/error'
 import {searchAddressWithKakao} from '../lib/kakao'
 import type {Event} from '../types'
-import type {AdminMessageItem, AdminUserDetailItem, AdminUserItem, OperationRequestItem, AdminUserRole, AdminUserStatus} from '../types/admin'
+import type {AdminMessageItem, AdminUserDetailItem, AdminUserItem, BlacklistPage, OperationRequestItem, AdminUserRole, AdminUserStatus, BlacklistStatus} from '../types/admin'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
 const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELED'] as const
 const OPERATION_STATUS_FILTERS = ['ALL', 'PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] as const
 const CHAT_STATUS_FILTERS = ['ALL', 'SCHEDULED', 'OPEN', 'CLOSED'] as const
 const USER_ROLE_FILTERS = ['ALL', 'USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER'] as const
-const ADMIN_TABS = ['manage', 'reports', 'chat', 'users'] as const
+const ADMIN_TABS = ['manage', 'reports', 'chat', 'users', 'blacklist'] as const
 const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
     ADMIN: [],
     CONCERT_MANAGER: ['\uCF58\uC11C\uD2B8'],
@@ -119,6 +122,11 @@ export default function Admin() {
     const [submittedUserSearchRole, setSubmittedUserSearchRole] = useState<(typeof USER_ROLE_FILTERS)[number]>('ALL')
     const [userPage, setUserPage] = useState(0)
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+    const [blacklistStatus, setBlacklistStatus] = useState<'ALL' | BlacklistStatus>('ALL')
+    const [blacklistSearch, setBlacklistSearch] = useState('')
+    const [blacklistSubmittedSearch, setBlacklistSubmittedSearch] = useState('')
+    const [blacklistPage, setBlacklistPage] = useState(0)
+    const [selectedBlacklistId, setSelectedBlacklistId] = useState<string | null>(null)
     const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
     const [reportForms, setReportForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
     const [operationForms, setOperationForms] = useState<Record<string, { status: string; adminMemo: string }>>({})
@@ -217,6 +225,54 @@ export default function Admin() {
         queryFn: () => getAdminUserDetail(selectedUserId ?? ''),
         enabled: Boolean(selectedUserId),
     })
+
+    const {
+        data: blacklistPageData = {content: [], totalElements: 0, totalPages: 0, size: 0, page: 0},
+    } = useQuery<BlacklistPage>({
+        queryKey: ['admin', 'blacklists', blacklistPage, blacklistStatus],
+        queryFn: () =>
+            getBlacklists({
+                page: blacklistPage,
+                size: 10,
+                status: blacklistStatus === 'ALL' ? undefined : blacklistStatus,
+            }),
+        enabled: isAdmin && activeTab === 'blacklist',
+    })
+
+    const blacklistUserDetails = useQueries({
+        queries: blacklistPageData.content.map((item) => ({
+            queryKey: ['admin', 'blacklist-user-detail', item.userId],
+            queryFn: () => getAdminUserDetail(item.userId),
+            enabled: isAdmin && activeTab === 'blacklist',
+        })),
+    })
+
+    const enrichedBlacklistRows = useMemo(() => {
+        return blacklistPageData.content.map((item, index) => ({
+            ...item,
+            userDetail: blacklistUserDetails[index]?.data,
+        }))
+    }, [blacklistPageData.content, blacklistUserDetails])
+
+    const visibleBlacklistRows = useMemo(() => {
+        const keyword = blacklistSubmittedSearch.trim().toLowerCase()
+        if (!keyword) return enrichedBlacklistRows
+        return enrichedBlacklistRows.filter((item) => {
+            const detail = item.userDetail
+            return [
+                item.userId,
+                item.reason,
+                detail?.email,
+                detail?.name,
+                detail?.nickname,
+            ].some((value) => String(value ?? '').toLowerCase().includes(keyword))
+        })
+    }, [blacklistSubmittedSearch, enrichedBlacklistRows])
+
+    const selectedBlacklistItem = useMemo(
+        () => enrichedBlacklistRows.find((item) => item.id === selectedBlacklistId) ?? null,
+        [enrichedBlacklistRows, selectedBlacklistId],
+    )
 
     const {data: eventRequests = []} = useQuery({
         queryKey: ['admin', 'event-requests', requestStatus],
@@ -333,6 +389,22 @@ export default function Admin() {
     const userRoleMutation = useMutation({
         mutationFn: ({userId, role}: { userId: string; role: string }) => changeAdminUserRole(userId, role),
         onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['admin', 'users']})
+        },
+    })
+
+    const blacklistCreateMutation = useMutation({
+        mutationFn: ({userId, reason}: { userId: string; reason: string }) => createBlacklist(userId, reason),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['admin', 'blacklists']})
+            await queryClient.invalidateQueries({queryKey: ['admin', 'users']})
+        },
+    })
+
+    const blacklistReleaseMutation = useMutation({
+        mutationFn: ({blacklistId, reason}: { blacklistId: string; reason: string }) => releaseBlacklist(blacklistId, reason),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['admin', 'blacklists']})
             await queryClient.invalidateQueries({queryKey: ['admin', 'users']})
         },
     })
@@ -538,9 +610,10 @@ export default function Admin() {
         {value: 'reports', label: '신고', description: '블라인드·처리'},
         {value: 'chat', label: '채팅', description: '메시지·방'},
         {value: 'users', label: '사용자 조회', description: '이메일·이름·권한'},
+        {value: 'blacklist', label: '블랙리스트', description: '차단·해제'},
     ]
     const visibleTabs = useMemo(
-        () => tabs.filter((tab) => tab.value !== 'users' || isAdmin),
+        () => tabs.filter((tab) => (tab.value === 'users' || tab.value === 'blacklist') ? isAdmin : true),
         [isAdmin],
     )
 
@@ -1393,12 +1466,13 @@ export default function Admin() {
                         </div>
                     </div>
 
-                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_1fr_1fr_1.6fr_220px] lg:gap-3">
+                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_0.85fr_0.85fr_1.15fr_0.95fr_0.9fr_1fr] lg:gap-3">
                         <div>상태</div>
                         <div>이름</div>
                         <div>닉네임</div>
                         <div>이메일</div>
                         <div>권한변경</div>
+                        <div>블랙리스트등록</div>
                     </div>
 
                     <div className="space-y-3">
@@ -1408,6 +1482,11 @@ export default function Admin() {
                                 user={item}
                                 onSelect={() => setSelectedUserId(item.userId)}
                                 onChangeRole={(role) => userRoleMutation.mutate({userId: item.userId, role})}
+                                onBlacklist={() => {
+                                    const reason = window.prompt(`블랙리스트 등록 사유를 입력해주세요.\n대상: ${item.name} (${item.email})`)
+                                    if (!reason?.trim()) return
+                                    blacklistCreateMutation.mutate({userId: item.userId, reason: reason.trim()})
+                                }}
                                 loading={userRoleMutation.isPending}
                             />
                         ))}
@@ -1441,6 +1520,160 @@ export default function Admin() {
                             type="button"
                             disabled={adminUsersPage.page + 1 >= Math.max(adminUsersPage.totalPages || 0, 1)}
                             onClick={() => setUserPage((prev) => prev + 1)}
+                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                        >
+                            다음
+                        </button>
+                    </div>
+                </section>
+            )}
+
+            {activeTab === 'blacklist' && isAdmin && (
+                <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                    <SectionHeader
+                        title="블랙리스트"
+                        action={<span className="text-xs text-slate-500">{blacklistPageData.totalElements}명</span>}
+                    />
+                    <p className="text-sm leading-6 text-slate-600">
+                        블랙리스트 사용자 목록을 확인하고, 상태를 필터링하거나 해제할 수 있어요.
+                    </p>
+
+                    <div className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                        <div className="grid gap-3 lg:grid-cols-[1fr_0.7fr_auto_auto]">
+                            <input
+                                value={blacklistSearch}
+                                onChange={(e) => setBlacklistSearch(e.target.value)}
+                                placeholder="UUID / 이름 / 이메일 검색"
+                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                            />
+                            <select
+                                value={blacklistStatus}
+                                onChange={(e) => setBlacklistStatus(e.target.value as 'ALL' | BlacklistStatus)}
+                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                            >
+                                <option value="ALL">상태 전체</option>
+                                <option value="ACTIVE">차단 중</option>
+                                <option value="INACTIVE">차단 해제됨</option>
+                            </select>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBlacklistSearch('')
+                                    setBlacklistSubmittedSearch('')
+                                    setBlacklistStatus('ALL')
+                                    setBlacklistPage(0)
+                                }}
+                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                            >
+                                초기화
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBlacklistSubmittedSearch(blacklistSearch)
+                                    setBlacklistPage(0)
+                                }}
+                                className="rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white"
+                            >
+                                검색
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_1fr_180px] lg:gap-3">
+                        <div>상태</div>
+                        <div>UUID</div>
+                        <div>이름</div>
+                        <div>닉네임</div>
+                        <div>이메일</div>
+                        <div>사유</div>
+                        <div>처리</div>
+                    </div>
+
+                    <div className="space-y-3">
+                        {visibleBlacklistRows.map((item) => (
+                            <div
+                                key={item.id}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setSelectedBlacklistId(item.id)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') setSelectedBlacklistId(item.id)
+                                }}
+                                className="w-full cursor-pointer rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100/80"
+                            >
+                                <div className="grid gap-3 lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_1fr_180px] lg:items-center">
+                                    <div>
+                                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                            item.status === 'ACTIVE'
+                                                ? 'bg-rose-100 text-rose-700'
+                                                : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                            {labelBlacklistStatus(item.status)}
+                                        </span>
+                                    </div>
+                                    <div className="min-w-0 text-sm font-semibold text-slate-950">
+                                        <span className="block truncate">{item.userId}</span>
+                                    </div>
+                                    <div className="min-w-0 text-sm text-slate-700">
+                                        <span className="block truncate">{item.userDetail?.name ?? '불러오는 중...'}</span>
+                                    </div>
+                                    <div className="min-w-0 text-sm text-slate-700">
+                                        <span className="block truncate">{item.userDetail?.nickname ?? '불러오는 중...'}</span>
+                                    </div>
+                                    <div className="min-w-0 text-sm text-slate-600">
+                                        <span className="block truncate">{item.userDetail?.email ?? '불러오는 중...'}</span>
+                                    </div>
+                                    <div className="min-w-0 text-sm text-slate-600">
+                                        <span className="block truncate">{item.reason}</span>
+                                    </div>
+                                    <div className="flex justify-start" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                            type="button"
+                                            disabled={item.status !== 'ACTIVE' || blacklistReleaseMutation.isPending}
+                                            onClick={() => {
+                                                const reason = window.prompt(`블랙리스트 해제 사유를 입력해주세요.\n대상: ${item.userDetail?.name ?? item.userId}`)
+                                                if (!reason?.trim()) return
+                                                blacklistReleaseMutation.mutate({blacklistId: item.id, reason: reason.trim()})
+                                            }}
+                                            className="rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-40"
+                                        >
+                                            해제
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {visibleBlacklistRows.length === 0 && <EmptyState text="블랙리스트 사용자가 없습니다."/>}
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                        <button
+                            type="button"
+                            disabled={blacklistPageData.page === 0}
+                            onClick={() => setBlacklistPage((prev) => Math.max(prev - 1, 0))}
+                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                        >
+                            이전
+                        </button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({length: Math.max(blacklistPageData.totalPages || 0, 1)}, (_, index) => index).map((pageIndex) => (
+                                <button
+                                    key={pageIndex}
+                                    type="button"
+                                    onClick={() => setBlacklistPage(pageIndex)}
+                                    className={`h-8 min-w-8 rounded-full px-2 text-xs font-semibold transition-colors ${
+                                        blacklistPageData.page === pageIndex ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {pageIndex + 1}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            disabled={blacklistPageData.page + 1 >= Math.max(blacklistPageData.totalPages || 0, 1)}
+                            onClick={() => setBlacklistPage((prev) => prev + 1)}
                             className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                         >
                             다음
@@ -1499,6 +1732,73 @@ export default function Admin() {
                     </div>
                 </div>
             )}
+
+            {selectedBlacklistItem && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8"
+                    onClick={() => setSelectedBlacklistId(null)}
+                >
+                    <div
+                        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.24)] md:p-6"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+                                    블랙리스트 상세
+                                </div>
+                                <div className="mt-2 text-[22px] font-black tracking-tight text-slate-950">
+                                    {selectedBlacklistItem.userDetail?.name ?? selectedBlacklistItem.userId}
+                                </div>
+                                <div className="mt-1 text-sm text-slate-500">
+                                    {selectedBlacklistItem.userDetail?.nickname ?? '정보 없음'} · {selectedBlacklistItem.userDetail?.email ?? '정보 없음'}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedBlacklistId(null)}
+                                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600"
+                            >
+                                닫기
+                            </button>
+                        </div>
+
+                        <div className="mt-5 grid gap-3 md:grid-cols-2">
+                            <DetailField label="UUID" value={selectedBlacklistItem.userId} />
+                            <DetailField label="블랙리스트 상태" value={labelBlacklistStatus(selectedBlacklistItem.status)} />
+                            <DetailField label="이름" value={selectedBlacklistItem.userDetail?.name ?? '정보 없음'} />
+                            <DetailField label="닉네임" value={selectedBlacklistItem.userDetail?.nickname ?? '정보 없음'} />
+                            <DetailField label="이메일" value={selectedBlacklistItem.userDetail?.email ?? '정보 없음'} />
+                            <DetailField label="아이디 상태" value={labelUserStatus(selectedBlacklistItem.userDetail?.status ?? '')} />
+                            <DetailField label="생성일" value={formatDateTime(selectedBlacklistItem.createdAt)} />
+                            <DetailField label="수정일" value={formatDateTime(selectedBlacklistItem.updatedAt)} />
+                        </div>
+
+                        <div className="mt-5 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                            <div className="text-[11px] font-semibold text-slate-500">차단 사유</div>
+                            <div className="mt-1 text-sm font-medium text-slate-800">
+                                {selectedBlacklistItem.reason}
+                            </div>
+                        </div>
+
+                        <div className="mt-5 flex items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const reason = window.prompt(`블랙리스트 해제 사유를 입력해주세요.\n대상: ${selectedBlacklistItem.userDetail?.name ?? selectedBlacklistItem.userId}`)
+                                    if (!reason?.trim()) return
+                                    blacklistReleaseMutation.mutate({blacklistId: selectedBlacklistItem.id, reason: reason.trim()})
+                                    setSelectedBlacklistId(null)
+                                }}
+                                disabled={selectedBlacklistItem.status !== 'ACTIVE'}
+                                className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-40"
+                            >
+                                해제
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -1536,11 +1836,13 @@ function UserRow({
   user,
   onSelect,
   onChangeRole,
+  onBlacklist,
   loading,
 }: {
   user: AdminUserItem
   onSelect: () => void
   onChangeRole: (role: AdminUserRole) => void
+  onBlacklist: () => void
   loading?: boolean
 }) {
   const [role, setRole] = useState<AdminUserRole>(user.role)
@@ -1559,9 +1861,13 @@ function UserRow({
       }}
       className="w-full cursor-pointer rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100/80"
     >
-      <div className="grid gap-3 lg:grid-cols-[120px_1fr_1fr_1.6fr_220px] lg:items-center">
+      <div className="grid gap-3 lg:grid-cols-[120px_0.85fr_0.85fr_1.15fr_0.95fr_0.9fr_1fr] lg:items-center">
         <div className="flex items-center gap-2 lg:block">
-          <span className="inline-flex rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+          <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              user.status === 'BLOCKED'
+                  ? 'bg-rose-100 text-rose-700'
+                  : 'bg-[var(--accent-soft)] text-[var(--accent)]'
+          }`}>
             {labelUserStatus(user.status)}
           </span>
         </div>
@@ -1574,11 +1880,11 @@ function UserRow({
         <div className="min-w-0 text-sm text-slate-600">
           <span className="block truncate">{user.email}</span>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center" onClick={(e) => e.stopPropagation()}>
+        <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as AdminUserRole)}
-            className="min-w-0 flex-1 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+            className="w-full rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none"
           >
             {USER_ROLE_OPTIONS.filter((item) => item.value !== 'ALL').map((item) => (
               <option key={item.value} value={item.value}>
@@ -1586,13 +1892,22 @@ function UserRow({
               </option>
             ))}
           </select>
+        </div>
+        <div className="flex items-center justify-end gap-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             disabled={loading || role === user.role}
             onClick={() => onChangeRole(role)}
-            className="shrink-0 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+            className="shrink-0 rounded-full bg-[var(--accent)] px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-70"
           >
             {loading ? '저장 중...' : '권한 저장'}
+          </button>
+          <button
+            type="button"
+            onClick={onBlacklist}
+            className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-semibold text-rose-700 hover:bg-rose-100"
+          >
+            블랙리스트 등록
           </button>
         </div>
       </div>
@@ -2446,7 +2761,7 @@ function normalizeRole(role?: string | null) {
 }
 
 function normalizeAdminTab(value: string | null): AdminTab {
-    if (value === 'manage' || value === 'reports' || value === 'chat' || value === 'users') return value
+    if (value === 'manage' || value === 'reports' || value === 'chat' || value === 'users' || value === 'blacklist') return value
     return 'manage'
 }
 
@@ -2473,10 +2788,19 @@ function labelUserRole(role: string) {
 }
 
 function labelUserStatus(status: AdminUserStatus | string) {
-    const normalized = String(status ?? '').trim()
+    const normalized = String(status ?? '').trim().toUpperCase()
     const map: Record<string, string> = {
-        ACTIVE: '활성',
-        BLOCKED: '차단',
+        ACTIVE: 'ACTIVE',
+        BLOCKED: 'BLOCKED',
+    }
+    return map[normalized] ?? (normalized || '알 수 없음')
+}
+
+function labelBlacklistStatus(status: BlacklistStatus | string) {
+    const normalized = String(status ?? '').trim().toUpperCase()
+    const map: Record<string, string> = {
+        ACTIVE: '차단 중',
+        INACTIVE: '차단 해제됨',
     }
     return map[normalized] ?? (normalized || '알 수 없음')
 }

@@ -10,6 +10,7 @@ import {
   mockCalendars,
   mockEventRequests,
   mockOperationRequests,
+  mockBlacklists,
   mockReports,
 } from './data'
 
@@ -29,7 +30,9 @@ type MockAdminUser = {
   email: string
   nickname: string
   name: string
+  phoneNumber: string
   role: 'USER' | 'ADMIN' | 'CONCERT_MANAGER' | 'FESTIVAL_MANAGER' | 'FANMEETING_MANAGER' | 'POPUP_MANAGER' | 'COMMUNITY_MANAGER'
+  status: 'ACTIVE' | 'BLOCKED'
   createdAt: string
   updatedAt: string
 }
@@ -67,7 +70,9 @@ const mockAdminUsers: MockAdminUser[] = [
     email: 'admin@festie.com',
     nickname: '어드민',
     name: '관리자',
+    phoneNumber: '010-1111-1111',
     role: 'ADMIN',
+    status: 'ACTIVE',
     createdAt: '2026-05-01T09:00:00.000Z',
     updatedAt: '2026-05-15T09:00:00.000Z',
   },
@@ -76,7 +81,9 @@ const mockAdminUsers: MockAdminUser[] = [
     email: 'manager@festie.com',
     nickname: '매니저',
     name: '매니저',
+    phoneNumber: '010-2222-2222',
     role: 'CONCERT_MANAGER',
+    status: 'ACTIVE',
     createdAt: '2026-05-02T09:00:00.000Z',
     updatedAt: '2026-05-15T09:10:00.000Z',
   },
@@ -85,7 +92,9 @@ const mockAdminUsers: MockAdminUser[] = [
     email: 'subin@festie.com',
     nickname: '호잇호잇',
     name: '수빈',
+    phoneNumber: '010-3333-3333',
     role: 'USER',
+    status: 'ACTIVE',
     createdAt: '2026-05-03T09:00:00.000Z',
     updatedAt: '2026-05-15T09:20:00.000Z',
   },
@@ -94,7 +103,9 @@ const mockAdminUsers: MockAdminUser[] = [
     email: 'popup@example.com',
     nickname: '팝업덕후',
     name: '팝업덕후',
+    phoneNumber: '010-4444-4444',
     role: 'POPUP_MANAGER',
+    status: 'BLOCKED',
     createdAt: '2026-05-04T09:00:00.000Z',
     updatedAt: '2026-05-15T09:30:00.000Z',
   },
@@ -106,6 +117,14 @@ function normalizeCategoryKey(name: string) {
   if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
   if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
   return String(name).toLowerCase()
+}
+
+function syncMockUserStatus(userId: string, status: 'ACTIVE' | 'BLOCKED') {
+  const user = mockAdminUsers.find((item) => item.userId === userId)
+  if (user) {
+    user.status = status
+    user.updatedAt = new Date().toISOString()
+  }
 }
 
 export const handlers = [
@@ -814,6 +833,23 @@ export const handlers = [
     return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
   }),
 
+  http.get('/user-service/v1/users/admin/:userId', async ({ params }) => {
+    await delay(160)
+    const user = mockAdminUsers.find((item) => item.userId === params.userId)
+    if (!user) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap({
+      userId: user.userId,
+      email: user.email,
+      nickname: user.nickname,
+      name: user.name,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }))
+  }),
+
   http.patch('/user-service/v1/users/admin/:userId/role', async ({ params, request }) => {
     await delay(180)
     const body = await request.json() as any
@@ -822,6 +858,64 @@ export const handlers = [
     user.role = body.role ?? user.role
     user.updatedAt = new Date().toISOString()
     return HttpResponse.json(wrap(user))
+  }),
+
+  http.get('/operation-service/v1/blacklists', async ({ request }) => {
+    await delay(180)
+    const url = new URL(request.url)
+    const status = (url.searchParams.get('status') ?? '').trim().toUpperCase()
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 20)
+    let blacklists = [...mockBlacklists]
+    if (status && status !== 'ALL') {
+      blacklists = blacklists.filter((item) => item.status === status)
+    }
+    const totalElements = blacklists.length
+    const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
+    const start = Math.max(page, 0) * Math.max(size, 1)
+    const content = blacklists.slice(start, start + Math.max(size, 1))
+    return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
+  }),
+
+  http.post('/operation-service/v1/blacklists', async ({ request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const userId = String(body.userId ?? '').trim()
+    const reason = String(body.reason ?? '').trim()
+    if (!userId || !reason) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    const existing = mockBlacklists.find((item) => item.userId === userId && item.status === 'ACTIVE')
+    if (existing) {
+      return HttpResponse.json({ status: 'error', message: '이미 차단된 사용자입니다.' }, { status: 409 })
+    }
+    const created = {
+      id: `bl-${crypto.randomUUID()}`,
+      userId,
+      status: 'ACTIVE',
+      reason,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    mockBlacklists.unshift(created as any)
+    syncMockUserStatus(userId, 'BLOCKED')
+    return HttpResponse.json(wrap(created), { status: 201 })
+  }),
+
+  http.patch('/operation-service/v1/blacklists/:blacklistId/status', async ({ params, request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const reason = String(body.reason ?? '').trim()
+    const blacklist = mockBlacklists.find((item) => item.id === params.blacklistId) as any
+    if (!blacklist) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    if (!reason) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    blacklist.status = 'INACTIVE'
+    blacklist.reason = reason
+    blacklist.updatedAt = new Date().toISOString()
+    syncMockUserStatus(blacklist.userId, 'ACTIVE')
+    return HttpResponse.json(wrap(blacklist))
   }),
 
   http.post('/user-service/v1/auth/login', async ({ request }) => {

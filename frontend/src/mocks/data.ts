@@ -165,6 +165,25 @@ export const mockReports = [
   },
 ]
 
+export const mockBlacklists = [
+  {
+    id: 'bl-1',
+    userId: 'u-1002',
+    status: 'ACTIVE',
+    reason: '허위 신고 누적',
+    createdAt: '2026-05-15T10:00:00.000Z',
+    updatedAt: '2026-05-15T10:00:00.000Z',
+  },
+  {
+    id: 'bl-2',
+    userId: 'u-1001',
+    status: 'INACTIVE',
+    reason: '차단 해제됨',
+    createdAt: '2026-05-14T10:00:00.000Z',
+    updatedAt: '2026-05-15T08:00:00.000Z',
+  },
+]
+
 export const mockComments = [
   { id: 'c1', postId: '1', userId: 'u2', parentId: null, content: '시야가 좋았다니 기대되네요!', status: 'CLEAN', likeCount: 4, createdAt: '2026-05-13T18:20:00', updatedAt: '2026-05-13T18:20:00', replies: [] },
   { id: 'c2', postId: '1', userId: 'u3', parentId: null, content: '사진도 올려주시면 더 좋을 것 같아요.', status: 'CLEAN', likeCount: 2, createdAt: '2026-05-13T18:30:00', updatedAt: '2026-05-13T18:30:00', replies: [] },

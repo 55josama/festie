@@ -81,3 +81,22 @@ export interface AdminUserPage {
   totalPages: number
   size: number
 }
+
+export type BlacklistStatus = 'ACTIVE' | 'INACTIVE'
+
+export interface BlacklistItem {
+  id: string
+  userId: string
+  status: BlacklistStatus
+  reason: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BlacklistPage {
+  content: BlacklistItem[]
+  page: number
+  totalElements: number
+  totalPages: number
+  size: number
+}

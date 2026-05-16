@@ -1,7 +1,7 @@
 import client from './client'
 import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { ChatRoom, Event } from '../types'
-import type { AdminUserDetailItem, AdminUserItem, AdminUserPage, EventRequestItem, OperationRequestItem, ReportItem } from '../types/admin'
+import type { AdminUserDetailItem, AdminUserItem, AdminUserPage, BlacklistItem, BlacklistPage, EventRequestItem, OperationRequestItem, ReportItem } from '../types/admin'
 
 export const getEventRequests = async (params: Record<string, any> = {}) => {
   const res = await client.get('/event-service/v1/event-requests', { params })
@@ -71,4 +71,19 @@ export const getAdminUserDetail = async (userId: string) => {
 export const changeAdminUserRole = async (userId: string, role: string) => {
   const res = await client.patch(`/user-service/v1/users/admin/${userId}/role`, { role })
   return unwrap<AdminUserItem>(res.data)
+}
+
+export const getBlacklists = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/operation-service/v1/blacklists', { params })
+  return unwrapPageResponse<BlacklistItem>(res.data) as BlacklistPage
+}
+
+export const createBlacklist = async (userId: string, reason: string) => {
+  const res = await client.post('/operation-service/v1/blacklists', { userId, reason })
+  return unwrap<BlacklistItem>(res.data)
+}
+
+export const releaseBlacklist = async (blacklistId: string, reason: string) => {
+  const res = await client.patch(`/operation-service/v1/blacklists/${blacklistId}/status`, { reason })
+  return unwrap<BlacklistItem>(res.data)
 }
