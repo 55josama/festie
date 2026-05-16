@@ -398,8 +398,8 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                       key={item.id}
                       className={`overflow-hidden rounded-[18px] border p-2.5 ${
                         isEnded
-                          ? 'border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.96))] opacity-85'
-                          : 'border-[rgba(111,84,255,0.14)] bg-[linear-gradient(180deg,rgba(242,238,255,0.96),rgba(255,255,255,0.98))]'
+                          ? 'border-[rgba(168,139,255,0.18)] bg-[linear-gradient(180deg,rgba(250,247,255,0.98),rgba(240,233,255,0.9))] opacity-95 shadow-[0_8px_20px_rgba(111,84,255,0.05)]'
+                          : 'border-[rgba(168,139,255,0.24)] bg-[linear-gradient(180deg,rgba(247,243,255,0.99),rgba(236,229,255,0.92))] shadow-[0_10px_24px_rgba(111,84,255,0.08)]'
                       }`}
                     >
                       <Link to={item.eventId ? `/events/${item.eventId}` : '#'} className="flex gap-2.5 rounded-[16px] p-1 transition-colors hover:bg-white/55">
