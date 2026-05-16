@@ -81,6 +81,7 @@ export default function Admin() {
     const [searchParams, setSearchParams] = useSearchParams()
     const {user} = useAuthStore()
     const activeTab = normalizeAdminTab(searchParams.get('tab'))
+    const showLegacyManageSection = searchParams.get('legacyManage') === '1'
     const [reportStatus, setReportStatus] = useState<(typeof REPORT_STATUS_FILTERS)[number]>('ALL')
     const [requestStatus, setRequestStatus] = useState<(typeof REQUEST_STATUS_FILTERS)[number]>('ALL')
     const [operationStatus, setOperationStatus] = useState<(typeof OPERATION_STATUS_FILTERS)[number]>('ALL')
@@ -604,7 +605,7 @@ export default function Admin() {
                 </section>
             )}
 
-            {false && activeTab === 'manage' && (
+            {showLegacyManageSection && activeTab === 'manage' && (
                 <div className="space-y-6">
                     <div
                         className={`grid gap-6 ${canViewOperationRequests ? 'lg:grid-cols-[1.1fr_0.9fr]' : 'lg:grid-cols-1'}`}>
