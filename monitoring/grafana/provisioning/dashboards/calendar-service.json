@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "chat-service Spring Boot 모니터링",
+  "description": "calendar-service Spring Boot 모니터링",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -74,7 +74,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"chat-service\"}[1m]))",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"calendar-service\"}[1m]))",
           "legendFormat": "RPS",
           "refId": "A"
         }
@@ -144,7 +144,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"chat-service\",status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{job=\"chat-service\"}[1m]))",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"calendar-service\",status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{job=\"calendar-service\"}[1m]))",
           "legendFormat": "5xx Rate",
           "refId": "A"
         }
@@ -212,7 +212,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(http_server_requests_seconds_max{job=\"chat-service\",uri=~\"/v1/.*\"})",
+          "expr": "max(http_server_requests_seconds_max{job=\"calendar-service\",uri=~\"/v1/.*\"})",
           "legendFormat": "Max",
           "refId": "A"
         }
@@ -272,7 +272,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(http_server_requests_active_seconds_max{job=\"chat-service\"} > 0) or vector(0)",
+          "expr": "sum(http_server_requests_active_seconds_max{job=\"calendar-service\"} > 0) or vector(0)",
           "legendFormat": "Active",
           "refId": "A"
         }
@@ -342,7 +342,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "process_cpu_usage{job=\"chat-service\"}",
+          "expr": "process_cpu_usage{job=\"calendar-service\"}",
           "legendFormat": "CPU",
           "refId": "A"
         }
@@ -412,7 +412,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(jvm_memory_used_bytes{job=\"chat-service\",area=\"heap\"}) / sum(jvm_memory_max_bytes{job=\"chat-service\",area=\"heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{job=\"calendar-service\",area=\"heap\"}) / sum(jvm_memory_max_bytes{job=\"calendar-service\",area=\"heap\"})",
           "legendFormat": "Heap",
           "refId": "A"
         }
@@ -484,7 +484,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"chat-service\"}[1m])) by (uri, method)",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"calendar-service\"}[1m])) by (uri, method)",
           "legendFormat": "{{method}} {{uri}}",
           "refId": "A"
         }
@@ -543,7 +543,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"chat-service\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"calendar-service\"}[5m])) by (le))",
           "legendFormat": "P50",
           "refId": "A"
         },
@@ -552,7 +552,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"chat-service\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"calendar-service\"}[5m])) by (le))",
           "legendFormat": "P95",
           "refId": "B"
         },
@@ -561,7 +561,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=\"chat-service\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=\"calendar-service\"}[5m])) by (le))",
           "legendFormat": "P99",
           "refId": "C"
         }
@@ -666,7 +666,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"chat-service\"}[1m])) by (status)",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"calendar-service\"}[1m])) by (status)",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -725,7 +725,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"chat-service\",status=~\"[45]..\"}[1m])) by (uri, status)",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"calendar-service\",status=~\"[45]..\"}[1m])) by (uri, status)",
           "legendFormat": "{{status}} {{uri}}",
           "refId": "A"
         }
@@ -813,7 +813,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(jvm_memory_used_bytes{job=\"chat-service\",area=\"heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{job=\"calendar-service\",area=\"heap\"})",
           "legendFormat": "Used",
           "refId": "A"
         },
@@ -822,7 +822,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(jvm_memory_committed_bytes{job=\"chat-service\",area=\"heap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{job=\"calendar-service\",area=\"heap\"})",
           "legendFormat": "Committed",
           "refId": "B"
         },
@@ -831,7 +831,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(jvm_memory_max_bytes{job=\"chat-service\",area=\"heap\"})",
+          "expr": "sum(jvm_memory_max_bytes{job=\"calendar-service\",area=\"heap\"})",
           "legendFormat": "Max",
           "refId": "C"
         }
@@ -890,7 +890,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(jvm_memory_used_bytes{job=\"chat-service\",area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_used_bytes{job=\"calendar-service\",area=\"nonheap\"})",
           "legendFormat": "Used",
           "refId": "A"
         },
@@ -899,7 +899,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(jvm_memory_committed_bytes{job=\"chat-service\",area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{job=\"calendar-service\",area=\"nonheap\"})",
           "legendFormat": "Committed",
           "refId": "B"
         }
@@ -971,7 +971,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "hikaricp_connections_active{job=\"chat-service\"}",
+          "expr": "hikaricp_connections_active{job=\"calendar-service\"}",
           "legendFormat": "Active",
           "refId": "A"
         },
@@ -980,7 +980,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "hikaricp_connections_idle{job=\"chat-service\"}",
+          "expr": "hikaricp_connections_idle{job=\"calendar-service\"}",
           "legendFormat": "Idle",
           "refId": "B"
         },
@@ -989,7 +989,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "hikaricp_connections_pending{job=\"chat-service\"}",
+          "expr": "hikaricp_connections_pending{job=\"calendar-service\"}",
           "legendFormat": "Pending",
           "refId": "C"
         },
@@ -998,7 +998,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "hikaricp_connections_max{job=\"chat-service\"}",
+          "expr": "hikaricp_connections_max{job=\"calendar-service\"}",
           "legendFormat": "Max",
           "refId": "D"
         }
@@ -1072,7 +1072,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "process_cpu_usage{job=\"chat-service\"}",
+          "expr": "process_cpu_usage{job=\"calendar-service\"}",
           "legendFormat": "Process CPU",
           "refId": "A"
         },
@@ -1081,7 +1081,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "system_cpu_usage{job=\"chat-service\"}",
+          "expr": "system_cpu_usage{job=\"calendar-service\"}",
           "legendFormat": "System CPU",
           "refId": "B"
         }
@@ -1171,7 +1171,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "rate(logback_events_total{job=\"chat-service\"}[1m])",
+          "expr": "rate(logback_events_total{job=\"calendar-service\"}[1m])",
           "legendFormat": "{{level}}",
           "refId": "A"
         }
@@ -1183,7 +1183,7 @@
   "refresh": "10s",
   "schemaVersion": 40,
   "tags": [
-    "chat-service",
+    "calendar-service",
     "spring-boot"
   ],
   "templating": {
@@ -1209,7 +1209,7 @@
   },
   "timepicker": {},
   "timezone": "Asia/Seoul",
-  "title": "chat Service",
-  "uid": "chat-service-v1",
+  "title": "Calendar Service",
+  "uid": "calendar-service-v1",
   "version": 1
 }

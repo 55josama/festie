@@ -2,6 +2,7 @@ package com.ojosama.report.application.service;
 
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.report.application.dto.command.CreateReportCommand;
 import com.ojosama.report.application.dto.command.UpdateReportCommand;
 import com.ojosama.report.application.dto.query.ListReportQuery;
@@ -19,11 +20,12 @@ import com.ojosama.report.domain.repository.ReportRepository;
 import com.ojosama.report.infrastructure.client.ChatClient;
 import com.ojosama.report.infrastructure.lock.RedissonDistributedLock;
 import com.ojosama.report.infrastructure.lock.config.DistributedLockProperties;
-import com.ojosama.report.infrastructure.lock.metrics.LockMetrics;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,6 +52,7 @@ public class ReportService {
 
     // 신고 생성
     @Transactional
+    @CacheEvict(cacheNames = {"report", "reportList"}, allEntries = true)
     public ReportInfoResult createReport(CreateReportCommand command, ReporterType reporterType) {
         boolean lockAcquired = acquireDistributedLock(command.targetId());
 
@@ -68,12 +71,19 @@ public class ReportService {
     }
 
     // 신고 목록 조회
-    public Page<ReportResult> getReportList(ListReportQuery listReportQuery, Pageable pageable) {
+    @Cacheable(
+            cacheNames = "reportList",
+            key = "(#listReportQuery.status() != null ? #listReportQuery.status().name() : 'ALL') + "
+                    + "':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize + ':sort:' + #pageable.sort.toString()"
+    )
+    public PageResponse<ReportResult> getReportList(ListReportQuery listReportQuery, Pageable pageable) {
         Page<Report> reports = fetchReportsByQuery(listReportQuery, pageable);
-        return reports.map(ReportResult::from);
+
+        return PageResponse.from(reports.map(ReportResult::from));
     }
 
     // 신고 상세 조회
+    @Cacheable(cacheNames = "report", key = "#reportId")
     public ReportInfoResult getReportInfo(UUID reportId) {
         Report report = findReportById(reportId);
         return ReportInfoResult.from(report);
@@ -81,6 +91,7 @@ public class ReportService {
 
     // 신고 상태 변경 및 운영진 메모 추가
     @Transactional
+    @CacheEvict(cacheNames = {"report", "reportList"}, allEntries = true)
     public ReportInfoResult updateReport(UUID reportId, UpdateReportCommand command) {
         Report report = findReportById(reportId);
         validateReportIsAutoBlinded(report);

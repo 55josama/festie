@@ -39,7 +39,26 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             new PublicEndpoint(HttpMethod.GET, "/community-service/v1/posts/**"),
             new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/event"),
             new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/popular"),
-            new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/**")
+            new PublicEndpoint(HttpMethod.GET, "/chat-service/v1/chat/rooms/**"),
+
+            // Swagger
+            new PublicEndpoint(HttpMethod.GET, "/swagger-ui.html"),
+            new PublicEndpoint(HttpMethod.GET, "/swagger-ui/**"),
+            new PublicEndpoint(HttpMethod.GET, "/v3/api-docs/**"),
+            new PublicEndpoint(HttpMethod.GET, "/docs/**"),
+            new PublicEndpoint(HttpMethod.GET, "/swagger-resources/**"),
+            new PublicEndpoint(HttpMethod.GET, "/webjars/**"),
+
+            new PublicEndpoint(HttpMethod.GET, "/ai-service/actuator/prometheus"),
+            new PublicEndpoint(HttpMethod.GET, "/calendar-service/actuator/prometheus"),
+            new PublicEndpoint(HttpMethod.GET, "/chat-service/actuator/prometheus"),
+            new PublicEndpoint(HttpMethod.GET, "/community-service/actuator/prometheus"),
+            new PublicEndpoint(HttpMethod.GET, "/event-service/actuator/prometheus"),
+            new PublicEndpoint(HttpMethod.GET, "/favorite-service/actuator/prometheus"),
+            new PublicEndpoint(HttpMethod.GET, "/notification-service/actuator/prometheus"),
+            new PublicEndpoint(HttpMethod.GET, "/operation-service/actuator/prometheus"),
+            new PublicEndpoint(HttpMethod.GET, "/user-service/actuator/prometheus")
+
     );
 
     @Override

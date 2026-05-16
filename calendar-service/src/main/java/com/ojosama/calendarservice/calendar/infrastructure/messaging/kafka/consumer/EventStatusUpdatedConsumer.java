@@ -2,7 +2,6 @@ package com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.cons
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ojosama.calendarservice.calendar.application.CalendarRedisService;
 import com.ojosama.calendarservice.calendar.application.CalendarService;
 import com.ojosama.calendarservice.calendar.application.dto.command.UpdateStatusEventCommand;
 import com.ojosama.calendarservice.calendar.domain.event.payload.CalendarEventStatusUpdatedMessage;
@@ -10,6 +9,7 @@ import com.ojosama.calendarservice.calendar.domain.exception.CalendarErrorCode;
 import com.ojosama.calendarservice.calendar.domain.exception.CalendarException;
 import com.ojosama.calendarservice.calendar.domain.model.EventStatus;
 import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consumer.dto.EventStatusUpdatedMessage;
+import com.ojosama.calendarservice.calendar.infrastructure.redis.CalendarRedisService;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import java.util.List;
