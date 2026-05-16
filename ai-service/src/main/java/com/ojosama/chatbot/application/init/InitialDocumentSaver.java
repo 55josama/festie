@@ -3,7 +3,6 @@ package com.ojosama.chatbot.application.init;
 import com.ojosama.chatbot.application.service.DocumentIndexer;
 import com.ojosama.chatbot.infrastructure.client.EventClient;
 import com.ojosama.chatbot.infrastructure.client.dto.EventClientResponse;
-import com.ojosama.common.response.ApiResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,8 +65,10 @@ public class InitialDocumentSaver {
     private void loadSystemGuides() {
         // 플랫폼 개요 및 기본 사용법
         documentIndexer.indexGuide("intro_festie", "Festie는 축제, 콘서트, 팬미팅, 팝업스토어 정보를 통합 제공하고 사용자들이 실시간으로 소통하는 플랫폼입니다.");
-        documentIndexer.indexGuide("event_search", "행사 목록 조회 시 카테고리 필터(축제, 콘서트, 팬미팅, 팝업스토어)와 검색 기능을 통해 원하는 정보를 쉽게 찾을 수 있습니다.");
-        documentIndexer.indexGuide("event_request_guide", "찾으시는 행사가 없다면 '행사 추가 요청'을 통해 제보할 수 있습니다. 관리자 승인 후 플랫폼에 정식 등록됩니다.");
+        documentIndexer.indexGuide("event_search",
+                "행사 목록 조회 시 카테고리 필터(축제, 콘서트, 팬미팅, 팝업스토어)와 검색 기능을 통해 원하는 정보를 쉽게 찾을 수 있습니다.");
+        documentIndexer.indexGuide("event_request_guide",
+                "찾으시는 행사가 없다면 '행사 추가 요청'을 통해 제보할 수 있습니다. 관리자 승인 후 플랫폼에 정식 등록됩니다.");
 
         // 찜하기 및 캘린더 기능
         documentIndexer.indexGuide("favorite_calendar", "행사 상세 페이지에서 '찜하기'를 누르면 내 개인 캘린더에 해당 일정이 자동으로 등록됩니다.");
@@ -83,17 +84,29 @@ public class InitialDocumentSaver {
         documentIndexer.indexGuide("post_interaction", "게시글에 댓글과 답글을 달 수 있으며, 유익한 글에는 '좋아요'를 눌러 응원할 수 있습니다.");
 
         // 신고 및 제재 시스템
-        documentIndexer.indexGuide("forbidden_word_policy", "Festie는 쾌적한 환경을 위해 Redis 기반 금지어 필터링을 적용합니다. 부적절한 단어가 포함된 글은 저장 및 노출이 제한됩니다.");
-        documentIndexer.indexGuide("auto_blind_policy", "유저 신고가 3회 누적되거나 AI가 명백한 악성 콘텐츠로 판단할 경우, 해당 게시글이나 채팅은 즉시 자동 블라인드(숨김) 처리됩니다.");
-        documentIndexer.indexGuide("manager_review", "블라인드된 콘텐츠는 카테고리 매니저의 사후 검토를 거쳐 제재 유지(RESOLVED) 또는 복구(REJECTED) 처리가 결정됩니다.");
-        documentIndexer.indexGuide("blacklist_criteria", "유효한 제재(블라인드 유지) 횟수가 총 5회 누적된 사용자는 관리자 검토 후 블랙리스트에 등록되어 서비스 이용이 영구 제한될 수 있습니다.");
+        documentIndexer.indexGuide("forbidden_word_policy",
+                "Festie는 쾌적한 환경을 위해 Redis 기반 금지어 필터링을 적용합니다. 부적절한 단어가 포함된 글은 저장 및 노출이 제한됩니다.");
+        documentIndexer.indexGuide("auto_blind_policy",
+                "유저 신고가 3회 누적되거나 AI가 명백한 악성 콘텐츠로 판단할 경우, 해당 게시글이나 채팅은 즉시 자동 블라인드(숨김) 처리됩니다.");
+        documentIndexer.indexGuide("manager_review",
+                "블라인드된 콘텐츠는 카테고리 매니저의 사후 검토를 거쳐 제재 유지(RESOLVED) 또는 복구(REJECTED) 처리가 결정됩니다.");
+        documentIndexer.indexGuide("blacklist_criteria",
+                "유효한 제재(블라인드 유지) 횟수가 총 5회 누적된 사용자는 관리자 검토 후 블랙리스트에 등록되어 서비스 이용이 영구 제한될 수 있습니다.");
 
         // 알림 서비스 이용 안내
-        documentIndexer.indexGuide("noti_types", "찜한 행사의 티켓팅 임박 알림, 행사 D-7, D-1, 당일 알림을 제공하며 내 글의 댓글/좋아요 알림도 실시간으로 발송됩니다.");
+        documentIndexer.indexGuide("noti_types",
+                "찜한 행사의 티켓팅 임박 알림, 행사 D-7, D-1, 당일 알림을 제공하며 내 글의 댓글/좋아요 알림도 실시간으로 발송됩니다.");
         documentIndexer.indexGuide("noti_box", "모든 알림은 웹 내부 알림함에서 확인 가능하며, 중요한 소식은 실시간 토스트 알림으로 알려드립니다.");
 
         // AI 챗봇 이용 및 한계
         documentIndexer.indexGuide("chatbot_function", "챗봇 '페스티'는 사이트 이용 방법 안내, 행사 정보 요약, 비슷한 행사 추천 기능을 제공합니다.");
-        documentIndexer.indexGuide("chatbot_routing", "챗봇이 제공하는 정보는 요약본이므로, 정확한 출연진 정보나 티켓팅 링크는 반드시 행사 상세 페이지에서 확인해야 합니다.");
+        documentIndexer.indexGuide("chatbot_routing",
+                "챗봇이 제공하는 정보는 요약본이므로, 행사명과 날짜를 우선 확인하고 꼭 필요한 경우에만 장소, 출연진, 티켓팅을 덧붙입니다.");
+        documentIndexer.indexGuide("chatbot_intent",
+                "사용자가 '이번주 행사', '인기많은 행사', '지역행사', '이용방법'처럼 짧게 말해도 챗봇은 의도를 알아서 파악해 간결하게 답합니다.");
+        documentIndexer.indexGuide("chatbot_intent_examples",
+                "예시: '이번 주 뭐 있어?'는 이번주 행사, '요즘 인기 있는 행사'는 인기 많은 행사, '부산 행사 알려줘'는 지역 행사, '어떻게 써?'는 이용 방법으로 해석합니다. 질문이 애매하면 한 번만 되묻습니다.");
+        documentIndexer.indexGuide("chatbot_answer_style",
+                "답변은 한두 문장으로 짧게 말하고, 행사명과 날짜를 먼저 알려줍니다. 장소, 출연진, 티켓팅은 사용자가 원할 때만 추가합니다. 여러 행사를 추천할 때는 줄바꿈으로 항목을 나누고, 하나의 행사만 물을 때만 상세 페이지 링크를 제공합니다.");
     }
 }

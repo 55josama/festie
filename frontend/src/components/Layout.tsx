@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuthStore } from '../store/authStore'
 import Header from './Header'
+import ChatbotWidget from './ChatbotWidget'
 
 export default function Layout() {
   const syncUserFromAccessToken = useAuthStore((state) => state.syncUserFromAccessToken)
@@ -17,6 +18,7 @@ export default function Layout() {
         <main className="bg-[var(--page-bg)]">
           <Outlet />
         </main>
+        <ChatbotWidget />
       </div>
     </div>
   )

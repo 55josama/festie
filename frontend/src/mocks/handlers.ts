@@ -128,6 +128,70 @@ function syncMockUserStatus(userId: string, status: 'ACTIVE' | 'BLOCKED') {
   }
 }
 
+function buildChatbotReply(question: string) {
+  const q = question.trim().toLowerCase()
+  const matchedEvent = mockEvents.find((event) => {
+    const name = String(event.name ?? '').toLowerCase()
+    const category = String(event.categoryName ?? '').toLowerCase()
+    const place = String(event.place ?? '').toLowerCase()
+    return q.includes(name) || q.includes(category) || q.includes(place)
+  })
+
+  if (q.includes('이용') || q.includes('사용') || q.includes('어떻게') || q.includes('방법')) {
+    return 'Festie에서는 행사 목록에서 원하는 행사를 찾고, 행사 상세에서 찜하기와 채팅방을 이용할 수 있어요. 커뮤니티에서는 후기와 꿀팁을, MY에서는 내 일정과 관심 목록을 확인할 수 있어요.'
+  }
+
+  if (q.includes('이번주') || q.includes('이번 주') || q.includes('이주') || q.includes('이번달')) {
+    const now = new Date()
+    const in7Days = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 7)
+    const upcoming = mockEvents
+      .filter((event) => new Date(event.startAt) >= now && new Date(event.startAt) <= in7Days)
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+      .slice(0, 3)
+    if (upcoming.length > 0) {
+      return `이번 주 추천 행사: ${upcoming.map((event) => event.name).join(' · ')}`
+    }
+    return '이번 주에 바로 보이는 행사는 많지 않아요. 지역이나 카테고리를 알려주시면 더 좁혀서 찾아드릴게요.'
+  }
+
+  if (q.includes('인기') || q.includes('찜') || q.includes('많은 행사') || q.includes('인기많은')) {
+    return '찜 수 기반 인기 순위는 아직 직접 연결하지 않았어요. 대신 지금 주목할 만한 행사나 비슷한 행사를 추천해드릴게요.'
+  }
+
+  if (q.includes('요약') || q.includes('정리')) {
+    if (matchedEvent) {
+      return `${matchedEvent.name}는 ${matchedEvent.categoryName} 행사예요. ${matchedEvent.place}에서 ${matchedEvent.startAt?.slice(0, 10) ?? '미정'}부터 ${matchedEvent.endAt?.slice(0, 10) ?? '미정'}까지 진행돼요. ${matchedEvent.hasTicketing ? '티켓팅이 있어요.' : '티켓팅 없이 관람할 수 있어요.'}`
+    }
+    return '원하는 행사 이름을 함께 알려주시면 행사명, 장소, 일정, 티켓팅 여부를 중심으로 짧게 요약해드릴게요.'
+  }
+
+  if (q.includes('비슷') || q.includes('추천') || q.includes('비교')) {
+    const category = matchedEvent?.categoryName
+    const candidates = mockEvents.filter((event) => !matchedEvent || event.id !== matchedEvent.id)
+      .filter((event) => !category || event.categoryName === category)
+      .slice(0, 3)
+    if (candidates.length > 0) {
+      return `비슷한 행사 추천: ${candidates.map((event) => `${event.name} · ${event.place}`).join(' / ')}`
+    }
+    return '비슷한 행사를 찾지 못했어요. 행사 이름이나 카테고리를 조금 더 자세히 알려주세요.'
+  }
+
+  if (q.includes('지역') || q.includes('서울') || q.includes('부산') || q.includes('대구') || q.includes('인천') || q.includes('광주') || q.includes('대전') || q.includes('울산')) {
+    const region = ['서울', '부산', '대구', '인천', '광주', '대전', '울산'].find((item) => q.includes(item))
+    const regionEvents = mockEvents.filter((event) => String(event.region ?? '').includes(region ?? ''))
+    if (regionEvents.length > 0) {
+      return `${region} 지역 행사: ${regionEvents.slice(0, 3).map((event) => event.name).join(' · ')}`
+    }
+    return '어느 지역을 원하세요? 서울, 부산, 대구, 인천처럼 지역을 알려주시면 찾아드릴게요.'
+  }
+
+  if (matchedEvent) {
+    return `${matchedEvent.name}는 ${matchedEvent.categoryName} 행사이고, ${matchedEvent.place}에서 열려요. ${matchedEvent.hasTicketing ? '티켓팅이 있는 행사예요.' : '티켓팅 없이 진행되는 행사예요.'}`
+  }
+
+  return 'Festie 이용 방법, 이번 주 행사, 비슷한 행사 추천, 지역 행사 정보까지 도와드릴 수 있어요. 궁금한 행사가 있으면 이름이나 지역을 알려주세요.'
+}
+
 export const handlers = [
   http.get('/event-service/v1/events', async ({ request }) => {
     await delay(250)
@@ -1036,6 +1100,18 @@ export const handlers = [
     }
     mockProfiles.set(token.replace('Bearer ', ''), updated)
     return HttpResponse.json(wrap(updated))
+  }),
+
+  http.post('/ai-service/v1/chatbot', async ({ request }) => {
+    await delay(220)
+    const body = await request.json() as any
+    const question = String(body.question ?? '').trim()
+    if (!question) {
+      return HttpResponse.json({ status: 'error', message: '질문을 입력해주세요.' }, { status: 400 })
+    }
+    return HttpResponse.json(wrap({
+      answer: buildChatbotReply(question),
+    }))
   }),
 
   http.post('/user-service/v1/users', async () => {
