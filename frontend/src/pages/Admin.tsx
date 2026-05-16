@@ -176,13 +176,38 @@ export default function Admin() {
     useEffect(() => {
         if (!editingEventId || !eventToEdit) {
             setPrefilledEditingEventId('')
+            setGeneralEventErrors((prev) => {
+                if (!prev.startAt) return prev
+                const next = { ...prev }
+                delete next.startAt
+                return next
+            })
             return
         }
         if (prefilledEditingEventId === editingEventId) {
+            if (new Date(eventToEdit.startAt).getTime() < Date.now()) {
+                setGeneralEventErrors((prev) => ({
+                    ...prev,
+                    startAt: '이미 시작된 행사는 시작일을 바꾸지 말고 종료일만 수정해 주세요.',
+                }))
+            }
             return
         }
         setGeneralCreateOpen(true)
         setGeneralDraft(buildEventDraftFromEvent(eventToEdit))
+        if (new Date(eventToEdit.startAt).getTime() < Date.now()) {
+            setGeneralEventErrors((prev) => ({
+                ...prev,
+                startAt: '이미 시작된 행사는 시작일을 바꾸지 말고 종료일만 수정해 주세요.',
+            }))
+        } else {
+            setGeneralEventErrors((prev) => {
+                if (!prev.startAt) return prev
+                const next = { ...prev }
+                delete next.startAt
+                return next
+            })
+        }
         setPrefilledEditingEventId(editingEventId)
     }, [editingEventId, eventToEdit, prefilledEditingEventId])
 
@@ -2434,8 +2459,12 @@ function mapEventFormErrors(message: string): EventFormErrors {
     if (/장소|주소/.test(text)) errors.place = text
     if (/위도/.test(text)) errors.latitude = text
     if (/경도/.test(text)) errors.longitude = text
-    if (/시작/.test(text)) errors.startAt = text
-    if (/종료/.test(text)) errors.endAt = text
+    if (/현재 시간 이후/.test(text)) {
+        errors.startAt = '이미 시작한 행사는 시작일은 그대로 두고 종료일만 수정할 수 있어요.'
+    } else if (/시작/.test(text)) {
+        errors.startAt = '시작일과 종료일을 다시 확인해 주세요.'
+    }
+    if (/종료/.test(text)) errors.endAt = '종료일은 시작일보다 뒤여야 해요.'
     if (/티켓팅.*오픈/.test(text)) errors.ticketingOpenAt = text
     if (/티켓팅.*종료/.test(text)) errors.ticketingCloseAt = text
     if (/티켓팅.*링크/.test(text)) errors.ticketingLink = text
