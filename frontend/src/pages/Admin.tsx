@@ -35,7 +35,7 @@ import {formatDateTime} from '../lib/format'
 import {getErrorMessage} from '../lib/error'
 import {searchAddressWithKakao} from '../lib/kakao'
 import type {Event} from '../types'
-import type {AdminMessageItem, AdminUserDetailItem, AdminUserItem, BlacklistPage, OperationRequestItem, AdminUserRole, AdminUserStatus, BlacklistStatus} from '../types/admin'
+import type {AdminMessageItem, AdminUserDetailItem, AdminUserItem, BlacklistPage, OperationRequestItem, AdminUserRole, AdminUserStatus, BlacklistStatus, ReportPage, ReportItem} from '../types/admin'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
 const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELED'] as const
@@ -114,6 +114,7 @@ export default function Admin() {
     const [chatStatus, setChatStatus] = useState<(typeof CHAT_STATUS_FILTERS)[number]>('ALL')
     const [messageStatus, setMessageStatus] = useState<'ALL' | 'ACTIVE' | 'BLINDED'>('ALL')
     const [messagePage, setMessagePage] = useState(0)
+    const [reportPage, setReportPage] = useState(0)
     const [userSearchEmail, setUserSearchEmail] = useState('')
     const [userSearchName, setUserSearchName] = useState('')
     const [userSearchRole, setUserSearchRole] = useState<(typeof USER_ROLE_FILTERS)[number]>('ALL')
@@ -128,7 +129,7 @@ export default function Admin() {
     const [blacklistPage, setBlacklistPage] = useState(0)
     const [selectedBlacklistId, setSelectedBlacklistId] = useState<string | null>(null)
     const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
-    const [reportForms, setReportForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
+    const [reportReviewForms, setReportReviewForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
     const [operationForms, setOperationForms] = useState<Record<string, { status: string; adminMemo: string }>>({})
     const [requestPanels, setRequestPanels] = useState<Record<string, boolean>>({})
     const [requestDrafts, setRequestDrafts] = useState<Record<string, EventDraft>>({})
@@ -159,6 +160,10 @@ export default function Admin() {
             })
         }
     }, [searchParams])
+
+    useEffect(() => {
+        setReportPage(0)
+    }, [reportStatus])
 
     const normalizedRole = normalizeRole(user?.role)
 
@@ -288,9 +293,15 @@ export default function Admin() {
         enabled: showLegacyManageSection && activeTab === 'manage' && canViewOperationRequests,
     })
 
-    const {data: reports = []} = useQuery({
-        queryKey: ['admin', 'reports', reportStatus],
-        queryFn: () => getReports({size: 12, status: reportStatus === 'ALL' ? undefined : reportStatus}),
+    const {
+        data: reportPageData = {content: [], totalElements: 0, totalPages: 0, size: 0, page: 0},
+    } = useQuery<ReportPage>({
+        queryKey: ['admin', 'reports', reportStatus, reportPage],
+        queryFn: () => getReports({
+            page: reportPage,
+            size: 6,
+            status: reportStatus === 'ALL' ? undefined : reportStatus,
+        }),
         enabled: activeTab === 'reports',
     })
 
@@ -370,10 +381,10 @@ export default function Admin() {
             targetType: string
             targetUserId?: string
             targetContent?: string | null
-            reports: any[]
+            reports: ReportItem[]
         }>()
 
-        ;(reports as any[]).forEach((report) => {
+        ;(reportPageData.content as ReportItem[]).forEach((report) => {
             const key = report.targetId ?? report.id
             const current = groups.get(key)
             const nextItem = {
@@ -387,7 +398,7 @@ export default function Admin() {
         })
 
         return Array.from(groups.values())
-    }, [reports])
+    }, [reportPageData.content])
 
     const approveMutation = useMutation({
         mutationFn: approveEventRequest,
@@ -400,10 +411,24 @@ export default function Admin() {
         onSuccess: () => queryClient.invalidateQueries({queryKey: ['admin', 'event-requests']}),
     })
 
-    const reportMutation = useMutation({
-        mutationFn: ({reportId, status, operatorMemo}: { reportId: string; status: string; operatorMemo: string }) =>
-            updateReportStatus(reportId, status, operatorMemo),
-        onSuccess: () => queryClient.invalidateQueries({queryKey: ['admin', 'reports']}),
+    const reportBlindMutation = useMutation({
+        mutationFn: async ({targetId}: { targetId: string }) => updateAdminChatMessageStatus(targetId, 'BLINDED'),
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({queryKey: ['admin', 'reports']}),
+                queryClient.invalidateQueries({queryKey: ['admin', 'messages']}),
+            ])
+        },
+    })
+
+    const reportReviewMutation = useMutation({
+        mutationFn: async ({reportIds, status, operatorMemo}: { reportIds: string[]; status: string; operatorMemo: string }) => {
+            await Promise.all(reportIds.map((reportId) => updateReportStatus(reportId, status, operatorMemo)))
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['admin', 'reports']})
+            await queryClient.invalidateQueries({queryKey: ['admin', 'blacklists']})
+        },
     })
 
     const messageMutation = useMutation({
@@ -1144,177 +1169,254 @@ export default function Admin() {
             )}
 
             {activeTab === 'reports' && (
-                <section
-                    className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                     <SectionHeader
                         title="신고"
                         action={
                             <div className="flex flex-wrap gap-2">
                                 {REPORT_STATUS_FILTERS.map((item) => (
-                                    <Pill key={item} active={reportStatus === item}
-                                          onClick={() => setReportStatus(item)}>
-                                        {item}
+                                    <Pill key={item} active={reportStatus === item} onClick={() => setReportStatus(item)}>
+                                        {labelReportFilter(item)}
                                     </Pill>
                                 ))}
                             </div>
                         }
                     />
+                    <div className="text-xs leading-5 text-slate-500">
+                        왼쪽은 원문 스냅샷과 처리, 오른쪽은 같은 타겟에 들어온 신고 기록이에요.
+                    </div>
 
                     <div className="space-y-3">
                         {groupedReports.map((group) => {
                             const hasAutoBlinded = group.reports.some((report) => report.status === 'AUTO_BLINDED')
+                            const targetStatus = hasAutoBlinded ? 'AUTO_BLINDED' : group.reports[0]?.status ?? 'PENDING'
+                            const blindLabel = '채팅 블라인드'
+                            const targetUserId = group.targetUserId
+                            const targetContent = group.targetContent ?? '원문을 불러오지 못했어요.'
+                            const reviewForm = reportReviewForms[group.targetId] ?? {status: 'RESOLVED', operatorMemo: ''}
+                            const reporterSystemId = '00000000-0000-0000-0000-000000000000'
+
                             return (
                                 <section
                                     key={group.targetId}
-                                    className={`rounded-[22px] border border-[var(--line)] bg-slate-50 p-4 ${hasAutoBlinded ? 'ring-1 ring-rose-200' : ''}`}
+                                    className={`rounded-[22px] border border-[var(--line)] bg-slate-50 p-3 ${hasAutoBlinded ? 'ring-1 ring-rose-200' : ''}`}
                                 >
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div className="min-w-0 flex-1">
+                                    <div className="grid gap-3 lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)]">
+                                        <article className="rounded-[18px] border border-[var(--line)] bg-white p-3">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                                                     hasAutoBlinded ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
                                                 }`}>
-                                                    {hasAutoBlinded ? '자동 블라인드' : '신고 묶음'}
+                                                    {hasAutoBlinded ? labelReportStatus('AUTO_BLINDED') : '묶음'}
                                                 </span>
-                                                <span className="text-xs text-slate-500">{group.targetType}</span>
-                                                <span className="text-xs text-slate-500">타겟 ID: {group.targetId}</span>
-                                                <span className="text-xs text-slate-500">{group.reports.length}건</span>
-                                                {group.targetUserId && (
+                                                <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                                                    {labelReportTargetType(group.targetType)}
+                                                </span>
+                                                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                                    targetStatus === 'AUTO_BLINDED'
+                                                        ? 'bg-rose-100 text-rose-700'
+                                                        : targetStatus === 'RESOLVED'
+                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                            : targetStatus === 'REJECTED'
+                                                                ? 'bg-slate-200 text-slate-700'
+                                                                : 'bg-slate-100 text-slate-600'
+                                                }`}>
+                                                    {labelReportStatus(targetStatus)}
+                                                </span>
+                                                <span className="text-[11px] text-slate-500">{group.reports.length}건</span>
+                                            </div>
+
+                                            <div className="mt-3 rounded-[16px] border border-[var(--line)] bg-slate-50 px-3 py-3">
+                                                <div className="text-[11px] font-bold text-slate-700">타겟 카드</div>
+                                                <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                                    {targetContent}
+                                                </div>
+                                                <div className="mt-3 grid gap-1 text-[11px] text-slate-500">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span>타겟 유저</span>
+                                                        <span className="break-all font-semibold text-slate-700">{targetUserId ?? '정보 없음'}</span>
+                                                    </div>
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span>타겟 ID</span>
+                                                        <span className="break-all font-semibold text-slate-700">{group.targetId ?? '정보 없음'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {group.targetType === 'CHAT' && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => setSelectedUserId(group.targetUserId ?? null)}
-                                                        className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                                                        disabled={reportBlindMutation.isPending || !group.targetId}
+                                                        onClick={() => reportBlindMutation.mutate({targetId: group.targetId})}
+                                                        className="rounded-full bg-slate-950 px-3 py-2 text-xs font-semibold text-white disabled:opacity-70"
                                                     >
-                                                        대상 사용자 보기
+                                                        {blindLabel}
                                                     </button>
                                                 )}
+                                                <button
+                                                    type="button"
+                                                    disabled={!targetUserId}
+                                                    onClick={() => {
+                                                        const reason = window.prompt('블랙리스트 등록 사유를 입력하세요.')
+                                                        if (!reason?.trim() || !targetUserId) return
+                                                        blacklistCreateMutation.mutate({userId: targetUserId, reason: reason.trim()})
+                                                    }}
+                                                    className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 disabled:opacity-60"
+                                                >
+                                                    블랙리스트 등록
+                                                </button>
                                             </div>
-                                            <div className="mt-2 line-clamp-2 text-sm font-semibold text-slate-950">
-                                                {group.targetContent ?? '원문 스냅샷이 없는 신고 묶음입니다.'}
+
+                                            {hasAutoBlinded && (
+                                                <div className="mt-3 rounded-[16px] border border-[var(--line)] bg-white p-3">
+                                                    <div className="text-[11px] font-semibold text-slate-500">검토 처리</div>
+                                                    <div className="mt-2 space-y-2">
+                                                        <select
+                                                            value={reviewForm.status}
+                                                            onChange={(e) => setReportReviewForms((prev) => ({
+                                                                ...prev,
+                                                                [group.targetId]: {...reviewForm, status: e.target.value},
+                                                            }))}
+                                                            className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-xs outline-none"
+                                                        >
+                                                            <option value="RESOLVED">RESOLVED</option>
+                                                            <option value="REJECTED">REJECTED</option>
+                                                        </select>
+                                                        <input
+                                                            value={reviewForm.operatorMemo}
+                                                            onChange={(e) => setReportReviewForms((prev) => ({
+                                                                ...prev,
+                                                                [group.targetId]: {...reviewForm, operatorMemo: e.target.value},
+                                                            }))}
+                                                            placeholder="설명 / 메모"
+                                                            className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-xs outline-none"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => reportReviewMutation.mutate({
+                                                                reportIds: group.reports.map((report) => report.id),
+                                                                status: reviewForm.status,
+                                                                operatorMemo: reviewForm.operatorMemo.trim() || '처리 완료',
+                                                            })}
+                                                            className="w-full rounded-full bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-white"
+                                                        >
+                                                            저장
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </article>
+
+                                        <div className="min-w-0">
+                                            <div className="mb-2 flex items-center justify-between gap-2">
+                                                <div className="text-[11px] font-semibold text-slate-500">
+                                                    신고 {group.reports.length}건
+                                                </div>
+                                                <div className="text-[11px] text-slate-400">
+                                                    타겟별 신고 목록
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
+                                            <div className="overflow-x-auto pb-2">
+                                                <div className="flex min-w-max gap-3">
+                                                    {group.reports.map((report) => {
+                                                        const reporterChipClass = report.reporterType === 'SYSTEM_AI'
+                                                            ? 'bg-sky-100 text-sky-700'
+                                                            : 'bg-emerald-100 text-emerald-700'
+                                                        const statusChipClass = report.status === 'AUTO_BLINDED'
+                                                            ? 'bg-rose-100 text-rose-700'
+                                                            : report.status === 'RESOLVED'
+                                                                ? 'bg-emerald-100 text-emerald-700'
+                                                                : 'bg-slate-100 text-slate-600'
 
-                                    <div className="mt-3 overflow-x-auto pb-2">
-                                        <div className="flex min-w-max gap-3">
-                                            {group.reports.map((report) => {
-                                                const form = reportForms[report.id] ?? {
-                                                    status: report.status ?? 'RESOLVED',
-                                                    operatorMemo: ''
-                                                }
-                                                const muted = report.status === 'RESOLVED' || report.status === 'REJECTED'
-                                                const reporterLabel = report.reporterType === 'SYSTEM_AI' ? 'AI 신고' : '사용자 신고'
-                                                const reporterChipClass = report.reporterType === 'SYSTEM_AI'
-                                                    ? 'bg-sky-100 text-sky-700'
-                                                    : 'bg-emerald-100 text-emerald-700'
-                                                const statusChipClass = report.status === 'AUTO_BLINDED'
-                                                    ? 'bg-rose-100 text-rose-700'
-                                                    : report.status === 'RESOLVED'
-                                                        ? 'bg-emerald-100 text-emerald-700'
-                                                        : 'bg-slate-100 text-slate-600'
-
-                                                return (
-                                                    <article
-                                                        key={report.id}
-                                                        className={`w-[330px] shrink-0 rounded-[18px] border border-[var(--line)] bg-white p-3 transition-opacity ${muted ? 'opacity-70' : ''}`}
-                                                    >
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusChipClass}`}>
-                                                                {report.status}
-                                                            </span>
-                                                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reporterChipClass}`}>
-                                                                {reporterLabel}
-                                                            </span>
-                                                            <span className="text-[11px] text-slate-500">{report.category}</span>
-                                                        </div>
-
-                                                        <div className="mt-2 flex items-center justify-between gap-2">
-                                                            <div className="min-w-0">
-                                                                <div className="truncate text-sm font-semibold text-slate-950">
-                                                                    {report.description}
-                                                                </div>
-                                                                <div className="truncate text-[11px] text-slate-500">
-                                                                    신고자 {report.reporterId}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {report.targetContent && (
-                                                            <div className="mt-2 rounded-[14px] border border-[var(--line)] bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-                                                                {report.targetContent}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="mt-3 grid gap-2">
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <span className="text-[11px] text-slate-500">타겟</span>
-                                                                <span className="truncate text-[11px] font-semibold text-slate-700">
-                                                                    {report.targetType}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <span className="text-[11px] text-slate-500">타겟 사용자</span>
-                                                                {report.targetUserId ? (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setSelectedUserId(report.targetUserId ?? null)}
-                                                                        className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600"
-                                                                    >
-                                                                        조회
-                                                                    </button>
-                                                                ) : (
-                                                                    <span className="text-[11px] text-slate-400">정보 없음</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="mt-3 grid gap-2">
-                                                            <select
-                                                                value={form.status}
-                                                                onChange={(e) => setReportForms((prev) => ({
-                                                                    ...prev,
-                                                                    [report.id]: {...form, status: e.target.value},
-                                                                }))}
-                                                                className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs outline-none"
+                                                        return (
+                                                            <article
+                                                                key={report.id}
+                                                                className={`shrink-0 rounded-[18px] border border-[var(--line)] bg-white p-3 ${report.status === 'AUTO_BLINDED' ? 'w-[320px]' : 'w-[290px]'}`}
                                                             >
-                                                                <option value="RESOLVED">RESOLVED</option>
-                                                                <option value="REJECTED">REJECTED</option>
-                                                            </select>
-                                                            <input
-                                                                value={form.operatorMemo}
-                                                                onChange={(e) => setReportForms((prev) => ({
-                                                                    ...prev,
-                                                                    [report.id]: {...form, operatorMemo: e.target.value},
-                                                                }))}
-                                                                placeholder="메모"
-                                                                className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs outline-none"
-                                                            />
-                                                            <button
-                                                                onClick={() => reportMutation.mutate({
-                                                                    reportId: report.id,
-                                                                    status: form.status,
-                                                                    operatorMemo: form.operatorMemo.trim() || '처리 완료',
-                                                                })}
-                                                                className="rounded-full bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-white"
-                                                            >
-                                                                저장
-                                                            </button>
-                                                        </div>
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusChipClass}`}>
+                                                                        {labelReportStatus(report.status)}
+                                                                    </span>
+                                                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reporterChipClass}`}>
+                                                                        {labelReporterType(report.reporterType)}
+                                                                    </span>
+                                                                    <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                                                        {report.category}
+                                                                    </span>
+                                                                </div>
 
-                                                        {report.operatorMemo && (
-                                                            <div className="mt-2 truncate text-[11px] text-slate-500">
-                                                                기존 메모: {report.operatorMemo}
-                                                            </div>
-                                                        )}
-                                                    </article>
-                                                )
-                                            })}
+                                                                <div className="mt-3 space-y-1">
+                                                                    <div className="text-sm font-semibold text-slate-950">
+                                                                        {report.description}
+                                                                    </div>
+                                                                    <div className="text-[11px] text-slate-500">
+                                                                        리포터{' '}
+                                                                        <span className="font-semibold text-slate-700">
+                                                                            {report.reporterId === reporterSystemId ? 'SYSTEM' : report.reporterId}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="text-[11px] text-slate-500">
+                                                                        신고 타입{' '}
+                                                                        <span className="font-semibold text-slate-700">
+                                                                            {labelReportTargetType(report.targetType)}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="mt-3 grid gap-1.5 text-[11px] text-slate-500">
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <span>타겟 ID</span>
+                                                                        <span className="break-all font-semibold text-slate-700">{report.targetId}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </article>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </section>
                             )
                         })}
                         {groupedReports.length === 0 && <EmptyState text="신고 목록이 비어 있어요."/>}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
+                        <div className="text-xs text-slate-500">
+                            총 {reportPageData.totalElements}건
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                disabled={reportPageData.page === 0}
+                                onClick={() => setReportPage((prev) => Math.max(prev - 1, 0))}
+                                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 disabled:opacity-60"
+                            >
+                                이전
+                            </button>
+                            {Array.from({length: Math.max(reportPageData.totalPages || 0, 1)}, (_, index) => index).slice(0, 5).map((pageIndex) => (
+                                <button
+                                    key={pageIndex}
+                                    type="button"
+                                    onClick={() => setReportPage(pageIndex)}
+                                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                                        reportPageData.page === pageIndex ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {pageIndex + 1}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                disabled={reportPageData.page + 1 >= Math.max(reportPageData.totalPages || 0, 1)}
+                                onClick={() => setReportPage((prev) => prev + 1)}
+                                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 disabled:opacity-60"
+                            >
+                                다음
+                            </button>
+                        </div>
                     </div>
                 </section>
             )}
@@ -1525,33 +1627,39 @@ export default function Admin() {
                         action={<span className="text-xs text-slate-500">{adminUsersPage.totalElements}명</span>}
                     />
                     <p className="text-sm leading-6 text-slate-600">
-                        이메일 또는 이름/닉네임으로 사용자를 찾을 수 있어요. 둘 다 넣으면 두 조건이 모두 부분 일치해야 해요.
+                        이메일, 이름은 각각 부분 일치로 찾을 수 있어요. 권한만으로도 조회할 수 있고, 조건이 없으면 전체 목록으로 보여줘요.
                     </p>
 
                     <div className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                        <div className="grid gap-3 lg:grid-cols-[1fr_1fr_0.8fr_auto_auto]">
-                            <input
-                                value={userSearchEmail}
-                                onChange={(e) => {
-                                    setUserSearchEmail(e.target.value)
-                                }}
-                                placeholder="이메일 검색"
-                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
-                            />
-                            <input
-                                value={userSearchName}
-                                onChange={(e) => {
-                                    setUserSearchName(e.target.value)
-                                }}
-                                placeholder="이름/닉네임 검색"
-                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
-                            />
+                        <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(132px,0.72fr)_auto_auto] lg:items-end">
+                            <label className="grid gap-1">
+                                <span className="text-[11px] font-semibold text-slate-500">이메일</span>
+                                <input
+                                    value={userSearchEmail}
+                                    onChange={(e) => {
+                                        setUserSearchEmail(e.target.value)
+                                    }}
+                                    placeholder="이메일"
+                                    className="h-[42px] rounded-full border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none"
+                                />
+                            </label>
+                            <label className="grid gap-1">
+                                <span className="text-[11px] font-semibold text-slate-500">이름</span>
+                                <input
+                                    value={userSearchName}
+                                    onChange={(e) => {
+                                        setUserSearchName(e.target.value)
+                                    }}
+                                    placeholder="이름"
+                                    className="h-[42px] rounded-full border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none"
+                                />
+                            </label>
                             <select
                                 value={userSearchRole}
                                 onChange={(e) => {
                                     setUserSearchRole(e.target.value as typeof USER_ROLE_FILTERS[number])
                                 }}
-                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                                className="h-[42px] rounded-full border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none"
                             >
                                 {USER_ROLE_FILTERS.map((role) => (
                                     <option key={role} value={role}>
@@ -1570,7 +1678,7 @@ export default function Admin() {
                                     setSubmittedUserSearchRole('ALL')
                                     setUserPage(0)
                                 }}
-                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                                className="h-[42px] self-end rounded-full border border-[var(--line)] bg-white px-3 py-2.5 text-sm font-semibold text-slate-700"
                             >
                                 초기화
                             </button>
@@ -1582,7 +1690,7 @@ export default function Admin() {
                                     setSubmittedUserSearchRole(userSearchRole)
                                     setUserPage(0)
                                 }}
-                                className="rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white"
+                                className="h-[42px] self-end rounded-full bg-[var(--accent)] px-3 py-2.5 text-sm font-semibold text-white"
                             >
                                 검색
                             </button>
@@ -2913,6 +3021,39 @@ function labelBlacklistStatus(status: BlacklistStatus | string) {
         INACTIVE: '차단 해제됨',
     }
     return map[normalized] ?? (normalized || '알 수 없음')
+}
+
+function labelReportStatus(status: string) {
+    const normalized = String(status ?? '').trim().toUpperCase()
+    const map: Record<string, string> = {
+        PENDING: '접수됨',
+        AUTO_BLINDED: '자동 블라인드',
+        RESOLVED: '제재 확정',
+        REJECTED: '반려',
+    }
+    return map[normalized] ?? (normalized || '알 수 없음')
+}
+
+function labelReportTargetType(targetType: string) {
+    const normalized = String(targetType ?? '').trim().toUpperCase()
+    const map: Record<string, string> = {
+        POST: '게시글',
+        COMMENT: '댓글',
+        CHAT: '채팅',
+    }
+    return map[normalized] ?? (normalized || '알 수 없음')
+}
+
+function labelReporterType(reporterType: string) {
+    const normalized = String(reporterType ?? '').trim().toUpperCase()
+    if (normalized === 'SYSTEM_AI') return 'AI 신고'
+    return '사용자 신고'
+}
+
+function labelReportFilter(value: string) {
+    const normalized = String(value ?? '').trim().toUpperCase()
+    if (normalized === 'ALL') return '전체'
+    return labelReportStatus(normalized)
 }
 
 function extractErrorMessage(error: any, fallback: string) {

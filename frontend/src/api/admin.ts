@@ -1,7 +1,7 @@
 import client from './client'
 import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { ChatRoom, Event } from '../types'
-import type { AdminUserDetailItem, AdminUserItem, AdminUserPage, BlacklistItem, BlacklistPage, EventRequestItem, OperationRequestItem, ReportItem } from '../types/admin'
+import type { AdminUserDetailItem, AdminUserItem, AdminUserPage, BlacklistItem, BlacklistPage, EventRequestItem, OperationRequestItem, ReportItem, ReportPage } from '../types/admin'
 
 export const getEventRequests = async (params: Record<string, any> = {}) => {
   const res = await client.get('/event-service/v1/event-requests', { params })
@@ -30,7 +30,7 @@ export const updateOperationRequestStatus = async (requestId: string, status: st
 
 export const getReports = async (params: Record<string, any> = {}) => {
   const res = await client.get('/operation-service/v1/reports', { params })
-  return unwrapPage<ReportItem>(res.data)
+  return unwrapPageResponse<ReportItem>(res.data) as ReportPage
 }
 
 export const updateReportStatus = async (reportId: string, status: string, operatorMemo: string) => {

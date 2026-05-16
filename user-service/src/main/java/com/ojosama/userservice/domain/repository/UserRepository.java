@@ -21,11 +21,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             from User u
             where u.deletedAt is null
               and (:email is null or :email = '' or lower(u.email) like lower(concat('%', :email, '%')))
-              and (
-                    :name is null or :name = ''
-                    or lower(u.name) like lower(concat('%', :name, '%'))
-                    or lower(u.nickname) like lower(concat('%', :name, '%'))
-                  )
+              and (:name is null or :name = '' or lower(u.name) like lower(concat('%', :name, '%')))
               and (:role is null or u.role = :role)
             """)
     Page<User> findAllByDeletedAtIsNullAndSearch(

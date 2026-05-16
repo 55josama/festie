@@ -38,6 +38,18 @@ export interface ReportItem {
   operatorMemo: string | null
 }
 
+export interface ReportPage {
+  content: ReportItem[]
+  page: number
+  totalElements: number
+  totalPages: number
+  size: number
+}
+
+export interface ReportDetailItem extends ReportItem {
+  content: string
+}
+
 export interface AdminMessageItem {
   messageId: string
   chatRoomId: string
