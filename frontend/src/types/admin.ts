@@ -3,6 +3,7 @@ export interface EventRequestItem {
   requesterId: string
   requesterNickname?: string
   createdAt?: string
+  title: string
   eventName: string
   categoryId: string
   category: string

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import type { Notification } from '../types'
 import {
@@ -67,6 +68,7 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
   const hasMore = page + 1 < totalPages
   const isMockDev = import.meta.env.DEV && String(import.meta.env.VITE_USE_MSW ?? 'true') === 'true'
   const canUseLiveStream = shouldRender && !isMockDev
+  const isAdmin = user?.role === 'ADMIN'
 
   const syncInitialNotifications = async () => {
     if (!isLoggedIn() || !user?.userId) {
@@ -270,6 +272,15 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
             <div className="flex items-center justify-between gap-2">
               <div className="text-[12px] font-semibold text-slate-500">받은 알림 {notifications.length}건</div>
               <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <Link
+                    to="/admin?tab=notifications"
+                    onClick={() => setOpen(false)}
+                    className="rounded-full border border-[var(--accent-soft)] bg-[var(--accent-soft)]/50 px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent-soft)]/70"
+                  >
+                    전체 알림 보기
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={() => void syncInitialNotifications()}

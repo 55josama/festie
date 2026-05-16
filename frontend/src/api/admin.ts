@@ -18,6 +18,16 @@ export const rejectEventRequest = async (requestId: string, rejectReason: string
   return unwrap<EventRequestItem>(res.data)
 }
 
+export const getEventRequest = async (requestId: string) => {
+  const res = await client.get(`/event-service/v1/event-requests/${requestId}`)
+  return unwrap<EventRequestItem>(res.data)
+}
+
+export const deleteEventRequest = async (requestId: string) => {
+  const res = await client.delete(`/event-service/v1/event-requests/admin/${requestId}`)
+  return unwrap<void>(res.data)
+}
+
 export const getOperationRequests = async (params: Record<string, any> = {}) => {
   const res = await client.get('/operation-service/v1/operation-requests', { params })
   return unwrapPage<OperationRequestItem>(res.data)
