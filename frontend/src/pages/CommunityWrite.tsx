@@ -137,7 +137,7 @@ export default function CommunityWrite() {
             title: form.title,
             content: form.content,
           })
-          navigate('/community')
+          navigate('/community?tab=requests&requestKind=operation')
           return
         }
         await createOperationRequest({
