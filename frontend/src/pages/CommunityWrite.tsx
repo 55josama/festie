@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createPost, getCategories, getPost, updatePost } from '../api/community'
 import { createEventRequest, getEvents } from '../api/events'
 import { createOperationRequest, getMyOperationRequest, getOperationRequest, updateOperationRequest } from '../api/requests'
+import { getErrorMessage } from '../lib/error'
 import { useAuthStore } from '../store/authStore'
 
 export default function CommunityWrite() {
@@ -166,7 +167,7 @@ export default function CommunityWrite() {
         setError('행사 카테고리를 선택해주세요.')
         return
       }
-      setError(err?.response?.data?.message ?? '글을 저장하지 못했습니다.')
+      setError(getErrorMessage(err, '글을 저장하지 못했습니다.'))
     } finally {
       setLoading(false)
     }

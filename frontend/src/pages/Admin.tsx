@@ -28,6 +28,7 @@ import {
 } from '../api/categories'
 import {useAuthStore} from '../store/authStore'
 import {formatDateTime} from '../lib/format'
+import {getErrorMessage} from '../lib/error'
 import {searchAddressWithKakao} from '../lib/kakao'
 import type {Event} from '../types'
 import type {AdminMessageItem, AdminUserItem, OperationRequestItem, AdminUserRole} from '../types/admin'
@@ -47,6 +48,27 @@ const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
 }
 
 type AdminTab = (typeof ADMIN_TABS)[number]
+type EventFormFieldErrorKey =
+    | 'eventName'
+    | 'categoryId'
+    | 'startAt'
+    | 'endAt'
+    | 'place'
+    | 'region'
+    | 'latitude'
+    | 'longitude'
+    | 'radius'
+    | 'minFee'
+    | 'maxFee'
+    | 'ticketingOpenAt'
+    | 'ticketingCloseAt'
+    | 'ticketingLink'
+    | 'officialLink'
+    | 'performer'
+    | 'description'
+    | 'img'
+
+type EventFormErrors = Partial<Record<EventFormFieldErrorKey, string>>
 
 const USER_ROLE_OPTIONS: { value: AdminUserRole | 'ALL'; label: string }[] = [
     {value: 'ALL', label: '전체'},
@@ -109,6 +131,8 @@ export default function Admin() {
         event: '',
         community: '',
     })
+    const [generalEventErrors, setGeneralEventErrors] = useState<EventFormErrors>(createEmptyEventFormErrors())
+    const [requestEventErrors, setRequestEventErrors] = useState<Record<string, EventFormErrors>>({})
     const categoriesSectionRef = useRef<HTMLDivElement | null>(null)
 
     useEffect(() => {
@@ -309,12 +333,32 @@ export default function Admin() {
                 requestId,
                 ...buildEventPayload(draft),
             }),
-        onSuccess: async (createdEvent) => {
+        onSuccess: async (createdEvent, variables) => {
+            if (variables?.requestId) {
+                setRequestEventErrors((prev) => {
+                    const next = {...prev}
+                    delete next[variables.requestId ?? '']
+                    return next
+                })
+            } else {
+                setGeneralEventErrors(createEmptyEventFormErrors())
+            }
             await queryClient.invalidateQueries({queryKey: ['admin', 'event-requests']})
             await queryClient.invalidateQueries({queryKey: ['events']})
             await queryClient.invalidateQueries({queryKey: ['admin', 'chat-rooms']})
             await queryClient.invalidateQueries({queryKey: ['admin', 'event-categories']})
             navigate(`/events/${createdEvent.id}`)
+        },
+        onError: (error: unknown, variables) => {
+            const fieldErrors = mapEventFormErrors(getErrorMessage(error, '행사를 생성하지 못했어요.'))
+            if (variables?.requestId) {
+                setRequestEventErrors((prev) => ({
+                    ...prev,
+                    [variables.requestId ?? '']: fieldErrors,
+                }))
+                return
+            }
+            setGeneralEventErrors(fieldErrors)
         },
     })
 
@@ -327,6 +371,7 @@ export default function Admin() {
             return createEvent(payload)
         },
         onSuccess: async (savedEvent) => {
+            setGeneralEventErrors(createEmptyEventFormErrors())
             await queryClient.invalidateQueries({queryKey: ['events']})
             await queryClient.invalidateQueries({queryKey: ['event', savedEvent.id]})
             await queryClient.invalidateQueries({queryKey: ['admin', 'chat-rooms']})
@@ -338,6 +383,9 @@ export default function Admin() {
             setGeneralCreateOpen(false)
             setPrefilledEditingEventId('')
             navigate(`/events/${savedEvent.id}`)
+        },
+        onError: (error: unknown) => {
+            setGeneralEventErrors(mapEventFormErrors(getErrorMessage(error, '행사를 저장하지 못했어요.')))
         },
     })
 
@@ -539,7 +587,14 @@ export default function Admin() {
                                     draft={generalDraftWithCategory}
                                     setDraft={(patch) => setGeneralDraft((prev) => ({...prev, ...patch}))}
                                     categoryOptions={eventCategories as any[]}
-                                    onSubmit={() => saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})}
+                                    onSubmit={() => {
+                                        const errors = validateEventDraft(generalDraftWithCategory)
+                                        if (Object.keys(errors).length > 0) {
+                                            setGeneralEventErrors(errors)
+                                            return
+                                        }
+                                        saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})
+                                    }}
                                     onClose={() => setGeneralCreateOpen(false)}
                                     loading={saveGeneralEventMutation.isPending}
                                     onLookupPlace={() => {
@@ -550,6 +605,7 @@ export default function Admin() {
                                         void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
                                     }}
                                     submitLabel={editingEventId ? '행사 수정' : '행사 등록'}
+                                    fieldErrors={generalEventErrors}
                                 />
                             </div>
                         ) : (
@@ -667,7 +723,14 @@ export default function Admin() {
                                         draft={generalDraftWithCategory}
                                         setDraft={(patch) => setGeneralDraft((prev) => ({...prev, ...patch}))}
                                         categoryOptions={eventCategories as any[]}
-                                        onSubmit={() => saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})}
+                                        onSubmit={() => {
+                                            const errors = validateEventDraft(generalDraftWithCategory)
+                                            if (Object.keys(errors).length > 0) {
+                                                setGeneralEventErrors(errors)
+                                                return
+                                            }
+                                            saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})
+                                        }}
                                         onClose={() => {
                                             const next = new URLSearchParams(searchParams)
                                             next.delete('panel')
@@ -685,6 +748,7 @@ export default function Admin() {
                                             void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
                                         }}
                                         submitLabel={editingEventId ? '행사 수정' : '행사 등록'}
+                                        fieldErrors={generalEventErrors}
                                         />
                                     </div>
                                 )}
@@ -796,12 +860,21 @@ export default function Admin() {
                                                         draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
                                                         setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
                                                         categoryOptions={eventCategories as any[]}
-                                                        onSubmit={() =>
+                                                        onSubmit={() => {
+                                                            const currentDraft = requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)
+                                                            const errors = validateEventDraft(currentDraft)
+                                                            if (Object.keys(errors).length > 0) {
+                                                                setRequestEventErrors((prev) => ({
+                                                                    ...prev,
+                                                                    [request.id]: errors,
+                                                                }))
+                                                                return
+                                                            }
                                                             createEventMutation.mutate({
                                                                 requestId: request.id,
-                                                                draft: requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap),
+                                                                draft: currentDraft,
                                                             })
-                                                        }
+                                                        }}
                                                         onClose={() => setRequestPanels((prev) => ({
                                                             ...prev,
                                                             [request.id]: false
@@ -815,6 +888,7 @@ export default function Admin() {
                                                             void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
                                                         }}
                                                         submitLabel="행사 생성"
+                                                        fieldErrors={requestEventErrors[request.id] ?? undefined}
                                                         />
                                                     </div>
                                                 </div>
@@ -1667,21 +1741,33 @@ function AdminInput({
                         onChange,
                         placeholder,
                         type = 'text',
+                        error,
+                        required = false,
                     }: {
     label: string
     value: string
     onChange: (value: string) => void
     placeholder?: string
     type?: string
+    error?: string
+    required?: boolean
 }) {
+    const hasError = Boolean(error?.trim())
     const inputClassName =
         type === 'datetime-local'
-            ? 'w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm text-slate-500 outline-none [color-scheme:light]'
-            : 'w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none'
+            ? `w-full rounded-full border bg-slate-50 px-3 py-2 text-sm text-slate-500 outline-none [color-scheme:light] ${
+                hasError ? 'border-rose-300 bg-rose-50/40' : 'border-[var(--line)]'
+            }`
+            : `w-full rounded-full border bg-slate-50 px-3 py-2 text-sm outline-none ${
+                hasError ? 'border-rose-300 bg-rose-50/40' : 'border-[var(--line)]'
+            }`
 
     return (
         <label className="block">
-            <div className="mb-1 text-[11px] font-semibold text-slate-500">{label}</div>
+            <div className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                <span>{label}</span>
+                {required && <span className="text-rose-500">*</span>}
+            </div>
             <input
                 value={value}
                 type={type}
@@ -1689,8 +1775,58 @@ function AdminInput({
                 placeholder={placeholder}
                 className={inputClassName}
             />
+            {error && <div className="mt-1 text-[11px] leading-5 text-rose-600">{error}</div>}
         </label>
     )
+}
+
+function createEmptyEventFormErrors(): EventFormErrors {
+    return {}
+}
+
+function validateEventDraft(draft: EventDraft): EventFormErrors {
+    const errors: EventFormErrors = {}
+
+    if (!draft.eventName.trim()) errors.eventName = '행사명은 필수입니다.'
+    if (!draft.categoryId.trim()) errors.categoryId = '카테고리는 필수입니다.'
+    if (!draft.startAt.trim()) errors.startAt = '시작일은 필수입니다.'
+    if (!draft.endAt.trim()) errors.endAt = '종료일은 필수입니다.'
+    if (!draft.place.trim()) errors.place = '장소는 필수입니다.'
+    if (!draft.latitude.trim()) errors.latitude = '위도는 필수입니다.'
+    if (!draft.longitude.trim()) errors.longitude = '경도는 필수입니다.'
+    if (!draft.minFee.trim()) errors.minFee = '최소 금액은 필수입니다.'
+    if (!draft.maxFee.trim()) errors.maxFee = '최대 금액은 필수입니다.'
+    if (!draft.description.trim()) errors.description = '설명은 필수입니다.'
+
+    if (draft.hasTicketing) {
+        if (!draft.ticketingOpenAt.trim()) errors.ticketingOpenAt = '티켓팅 오픈은 필수입니다.'
+        if (!draft.ticketingCloseAt.trim()) errors.ticketingCloseAt = '티켓팅 종료는 필수입니다.'
+    }
+
+    return errors
+}
+
+function mapEventFormErrors(message: string): EventFormErrors {
+    const text = message.trim()
+    const errors: EventFormErrors = {}
+
+    if (/설명/.test(text)) errors.description = text
+    if (/행사명|제목|이름/.test(text)) errors.eventName = text
+    if (/카테고리/.test(text)) errors.categoryId = text
+    if (/장소|주소/.test(text)) errors.place = text
+    if (/위도/.test(text)) errors.latitude = text
+    if (/경도/.test(text)) errors.longitude = text
+    if (/시작/.test(text)) errors.startAt = text
+    if (/종료/.test(text)) errors.endAt = text
+    if (/티켓팅.*오픈/.test(text)) errors.ticketingOpenAt = text
+    if (/티켓팅.*종료/.test(text)) errors.ticketingCloseAt = text
+    if (/티켓팅.*링크/.test(text)) errors.ticketingLink = text
+    if (/공식.*링크/.test(text)) errors.officialLink = text
+    if (/출연|아티스트|가수|performer/i.test(text)) errors.performer = text
+    if (/이미지|사진/.test(text)) errors.img = text
+    if (/반경/.test(text)) errors.radius = text
+
+    return errors
 }
 
 function EventCreatePanel({
@@ -1706,6 +1842,7 @@ function EventCreatePanel({
                               placeLookupLoading,
                               onAttachImage,
                               submitLabel,
+                              fieldErrors,
                           }: {
     title: string
     subtitle: string
@@ -1719,16 +1856,16 @@ function EventCreatePanel({
     placeLookupLoading?: boolean
     onAttachImage: (file: File) => void
     submitLabel: string
+    fieldErrors?: EventFormErrors
 }) {
     const categoryValue = draft.categoryId || categoryOptions[0]?.id || ''
     const categoryLabel = categoryOptions.find((category) => category.id === categoryValue)?.name ?? '선택 안 됨'
     const imageInputRef = useRef<HTMLInputElement | null>(null)
     const hasCoordinates = Boolean(draft.latitude.trim()) && Boolean(draft.longitude.trim())
     const hasPlace = Boolean(draft.place.trim())
-    const hasLocationAttempt = Boolean(draft.place.trim() || draft.latitude.trim() || draft.longitude.trim())
-    const showLocationWarning = hasLocationAttempt && (!hasPlace || !hasCoordinates)
     const canSubmit = hasPlace && hasCoordinates
     const scheduleCount = draft.schedules?.length ?? 0
+    const mergedErrors = fieldErrors ?? {}
 
     return (
         <div className="w-full max-w-full overflow-x-hidden rounded-[22px] border border-[var(--line)] bg-white p-4">
@@ -1736,6 +1873,7 @@ function EventCreatePanel({
                 <div>
                     <div className="text-sm font-semibold text-slate-950">{title}</div>
                     <div className="mt-1 text-xs leading-5 text-slate-500">{subtitle}</div>
+                    <div className="mt-1 text-[11px] leading-5 text-slate-400">* 표시가 있는 항목은 필수예요.</div>
                 </div>
                 <button type="button" onClick={onClose}
                         className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">
@@ -1744,30 +1882,55 @@ function EventCreatePanel({
             </div>
 
             <div className="mt-4 grid gap-3 grid-cols-1 md:grid-cols-2">
-                <AdminInput label="행사명" value={draft.eventName} onChange={(value) => setDraft({eventName: value})}/>
+                <AdminInput
+                    label="행사명"
+                    value={draft.eventName}
+                    onChange={(value) => setDraft({eventName: value})}
+                    error={mergedErrors.eventName}
+                    required
+                />
                 <label className="block">
-                    <div className="mb-1 text-[11px] font-semibold text-slate-500">카테고리</div>
+                    <div className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                        <span>카테고리</span>
+                        <span className="text-rose-500">*</span>
+                    </div>
                     <select
                         value={categoryValue}
                         onChange={(e) => setDraft({categoryId: e.target.value})}
                         className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                    >
-                        <option value="">선택하세요</option>
-                        {categoryOptions.map((category) => (
-                            <option key={category.id} value={category.id}>
-                                {category.name}
-                            </option>
-                        ))}
+                        >
+                            <option value="">선택하세요</option>
+                            {categoryOptions.map((category) => (
+                                <option key={category.id} value={category.id}>
+                                    {category.name}
+                                </option>
+                            ))}
                     </select>
+                    {mergedErrors.categoryId && (
+                        <div className="mt-1 text-[11px] leading-5 text-rose-600">{mergedErrors.categoryId}</div>
+                    )}
                 </label>
-                <AdminInput label="시작일" value={draft.startAt} onChange={(value) => setDraft({startAt: value})}
-                            type="datetime-local"/>
-                <AdminInput label="종료일" value={draft.endAt} onChange={(value) => setDraft({endAt: value})}
-                            type="datetime-local"/>
+                <AdminInput
+                    label="시작일"
+                    value={draft.startAt}
+                    onChange={(value) => setDraft({startAt: value})}
+                    type="datetime-local"
+                    error={mergedErrors.startAt}
+                    required
+                />
+                <AdminInput
+                    label="종료일"
+                    value={draft.endAt}
+                    onChange={(value) => setDraft({endAt: value})}
+                    type="datetime-local"
+                    error={mergedErrors.endAt}
+                    required
+                />
                 <label className="md:col-span-2 block">
                     <div
                         className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
                         <span>장소</span>
+                        <span className="text-rose-500">*</span>
                         <button
                             type="button"
                             onClick={() => {
@@ -1796,29 +1959,75 @@ function EventCreatePanel({
                     <div className="mt-1 text-[11px] leading-5 text-slate-400">
                         주소를 다시 바꾸면 지역, 위도, 경도는 비워져요. 다시 검색해서 자동 입력하면 돼요.
                     </div>
-                    {showLocationWarning && (
-                        <div className="mt-2 rounded-[14px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-700">
-                            {!hasPlace
-                                ? '장소를 입력하거나 카카오 주소검색을 먼저 눌러주세요.'
-                                : '주소는 입력됐지만 위도/경도가 비어 있어요. 카카오 주소검색을 다시 눌러 자동 입력하거나, 위도/경도를 직접 채워주세요.'}
-                        </div>
+                    {mergedErrors.place && (
+                        <div className="mt-1 text-[11px] leading-5 text-rose-600">{mergedErrors.place}</div>
                     )}
                 </label>
-                <AdminInput label="지역" value={draft.region} onChange={(value) => setDraft({region: value})}
-                            placeholder="자동 입력"/>
-                <AdminInput label="위도" value={draft.latitude} onChange={(value) => setDraft({latitude: value})}
-                            placeholder="37.5665" type="number"/>
-                <AdminInput label="경도" value={draft.longitude} onChange={(value) => setDraft({longitude: value})}
-                            placeholder="126.9780" type="number"/>
-                <AdminInput label="반경" value={draft.radius} onChange={(value) => setDraft({radius: value})}
-                            placeholder="500" type="number"/>
-                <AdminInput label="최소 금액" value={draft.minFee} onChange={(value) => setDraft({minFee: value})}
-                            placeholder="0" type="number"/>
-                <AdminInput label="최대 금액" value={draft.maxFee} onChange={(value) => setDraft({maxFee: value})}
-                            placeholder="150000" type="number"/>
-                <AdminInput label="공식 링크" value={draft.officialLink}
-                            onChange={(value) => setDraft({officialLink: value})}/>
-                <AdminInput label="출연" value={draft.performer} onChange={(value) => setDraft({performer: value})}/>
+                <div className="md:col-span-2 grid gap-3 min-[900px]:grid-cols-4">
+                    <AdminInput
+                        label="지역"
+                        value={draft.region}
+                        onChange={(value) => setDraft({region: value})}
+                        placeholder="자동 입력"
+                        error={mergedErrors.region}
+                    />
+                    <AdminInput
+                        label="위도"
+                        value={draft.latitude}
+                        onChange={(value) => setDraft({latitude: value})}
+                        placeholder="37.5665"
+                        type="number"
+                        error={mergedErrors.latitude}
+                        required
+                    />
+                    <AdminInput
+                        label="경도"
+                        value={draft.longitude}
+                        onChange={(value) => setDraft({longitude: value})}
+                        placeholder="126.9780"
+                        type="number"
+                        error={mergedErrors.longitude}
+                        required
+                    />
+                    <AdminInput
+                        label="반경"
+                        value={draft.radius}
+                        onChange={(value) => setDraft({radius: value})}
+                        placeholder="500"
+                        type="number"
+                        error={mergedErrors.radius}
+                    />
+                </div>
+                <AdminInput
+                    label="최소 금액"
+                    value={draft.minFee}
+                    onChange={(value) => setDraft({minFee: value})}
+                    placeholder="0"
+                    type="number"
+                    error={mergedErrors.minFee}
+                    required
+                />
+                <AdminInput
+                    label="최대 금액"
+                    value={draft.maxFee}
+                    onChange={(value) => setDraft({maxFee: value})}
+                    placeholder="150000"
+                    type="number"
+                    error={mergedErrors.maxFee}
+                    required
+                />
+                <AdminInput
+                    label="공식 링크"
+                    value={draft.officialLink}
+                    onChange={(value) => setDraft({officialLink: value})}
+                    error={mergedErrors.officialLink}
+                />
+                <AdminInput
+                    label="출연"
+                    value={draft.performer}
+                    onChange={(value) => setDraft({performer: value})}
+                    error={mergedErrors.performer}
+                />
                 <div className="md:col-span-2">
                     <div className="mb-1 text-[11px] font-semibold text-slate-500">티켓팅 여부</div>
                     <div className="flex flex-wrap gap-2">
@@ -1833,13 +2042,16 @@ function EventCreatePanel({
                         <div className="text-[11px] font-semibold text-slate-500">티켓팅 정보</div>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <AdminInput label="티켓팅 오픈" value={draft.ticketingOpenAt}
-                                        onChange={(value) => setDraft({ticketingOpenAt: value})} type="datetime-local"/>
+                                        onChange={(value) => setDraft({ticketingOpenAt: value})} type="datetime-local"
+                                        error={mergedErrors.ticketingOpenAt} required={draft.hasTicketing}/>
                             <AdminInput label="티켓팅 종료" value={draft.ticketingCloseAt}
                                         onChange={(value) => setDraft({ticketingCloseAt: value})}
-                                        type="datetime-local"/>
+                                        type="datetime-local"
+                                        error={mergedErrors.ticketingCloseAt} required={draft.hasTicketing}/>
                             <div className="md:col-span-2">
                                 <AdminInput label="티켓팅 링크" value={draft.ticketingLink}
-                                            onChange={(value) => setDraft({ticketingLink: value})}/>
+                                            onChange={(value) => setDraft({ticketingLink: value})}
+                                            error={mergedErrors.ticketingLink}/>
                             </div>
                         </div>
                     </div>
@@ -1871,12 +2083,15 @@ function EventCreatePanel({
                             value={draft.img}
                             onChange={(e) => setDraft({img: e.target.value, imgFileName: ''})}
                             placeholder="https://... 또는 파일 첨부"
-                            className="min-w-0 flex-1 rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-sm outline-none"
+                            className={`min-w-0 flex-1 rounded-full border bg-slate-50 px-3 py-2 text-sm outline-none ${
+                                mergedErrors.img ? 'border-rose-300 bg-rose-50/40' : 'border-[var(--line)]'
+                            }`}
                         />
                     </div>
                     <div className="mt-1 text-[11px] leading-5 text-slate-400">
                         {draft.imgFileName ? `첨부 파일: ${draft.imgFileName}` : 'URL 또는 파일 첨부 둘 다 사용할 수 있어요.'}
                     </div>
+                    {mergedErrors.img && <div className="mt-1 text-[11px] leading-5 text-rose-600">{mergedErrors.img}</div>}
                 </label>
 
                 <div className="flex flex-col gap-3 min-[700px]:col-span-2 min-[700px]:flex-row min-[700px]:items-center min-[700px]:justify-between">
@@ -1914,6 +2129,7 @@ function EventCreatePanel({
                                             } : item)),
                                         })
                                     }
+                                    error={mergedErrors.eventName}
                                 />
                             </div>
                             <AdminInput
@@ -1928,6 +2144,7 @@ function EventCreatePanel({
                                     })
                                 }
                                 type="datetime-local"
+                                error={mergedErrors.startAt}
                             />
                             <AdminInput
                                 label="일정 종료"
@@ -1941,6 +2158,7 @@ function EventCreatePanel({
                                     })
                                 }
                                 type="datetime-local"
+                                error={mergedErrors.endAt}
                             />
                             <button
                                 type="button"
@@ -1963,12 +2181,20 @@ function EventCreatePanel({
                     )}
                 </div>
                 <label className="min-[700px]:col-span-2 block">
-                    <div className="mb-1 text-[11px] font-semibold text-slate-500">설명</div>
+                    <div className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                        <span>설명</span>
+                        <span className="text-rose-500">*</span>
+                    </div>
                     <textarea
                         value={draft.description}
                         onChange={(e) => setDraft({description: e.target.value})}
-                        className="min-h-24 w-full rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 text-sm outline-none"
+                        className={`min-h-24 w-full rounded-[18px] border bg-slate-50 p-3 text-sm outline-none ${
+                            mergedErrors.description ? 'border-rose-300 bg-rose-50/40' : 'border-[var(--line)]'
+                        }`}
                     />
+                    {mergedErrors.description && (
+                        <div className="mt-1 text-[11px] leading-5 text-rose-600">{mergedErrors.description}</div>
+                    )}
                 </label>
             </div>
 
@@ -1985,11 +2211,6 @@ function EventCreatePanel({
             </div>
 
             <div className="mt-4 flex items-center justify-end gap-2">
-                {!canSubmit && (
-                    <div className="mr-auto rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
-                        장소와 위도/경도를 모두 채워야 행사 등록이 가능해요.
-                    </div>
-                )}
                 <button
                     type="button"
                     onClick={onClose}

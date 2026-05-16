@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getMe, login } from '../api/auth'
 import { buildUserFromToken } from '../lib/jwt'
+import { getErrorMessage } from '../lib/error'
 import { useAuthStore } from '../store/authStore'
 
 export default function Login() {
@@ -29,7 +30,7 @@ export default function Login() {
       else syncUserFromAccessToken()
       navigate('/')
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? '로그인에 실패했습니다.')
+      setError(getErrorMessage(err, '로그인에 실패했습니다.'))
     } finally {
       setLoading(false)
     }

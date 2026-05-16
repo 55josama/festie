@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { register } from '../api/auth'
+import { getErrorMessage } from '../lib/error'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -22,7 +23,7 @@ export default function Register() {
       await register(form)
       navigate('/login')
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? '회원가입에 실패했습니다.')
+      setError(getErrorMessage(err, '회원가입에 실패했습니다.'))
     } finally {
       setLoading(false)
     }
