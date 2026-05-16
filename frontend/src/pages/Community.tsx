@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCategories, getPosts } from '../api/community'
 import { approveEventRequest, rejectEventRequest, updateOperationRequestStatus } from '../api/admin'
-import { deleteOperationRequest, getEventRequests, getMyEventRequests, getMyOperationRequests, getOperationRequests } from '../api/requests'
+import { deleteEventRequest, deleteOperationRequest, getEventRequests, getMyEventRequests, getMyOperationRequests, getOperationRequests } from '../api/requests'
+import { deleteEventRequest as adminDeleteEventRequest } from '../api/admin'
 import PostCard from '../components/PostCard'
 import RequestCard from '../components/RequestCard'
 import { useAuthStore } from '../store/authStore'
@@ -98,6 +99,13 @@ export default function Community() {
         },
     })
 
+    const deleteEventMutation = useMutation({
+        mutationFn: (requestId: string) => isAdmin ? adminDeleteEventRequest(requestId) : deleteEventRequest(requestId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['community', 'event-requests']})
+        },
+    })
+
     const categoryNameById = useMemo(() => {
         return new Map(categories.map((category: any) => [category.id, category.name]))
     }, [categories])
@@ -119,34 +127,34 @@ export default function Community() {
     const requestItems = useMemo<RequestFeedItem[]>(() => {
         const eventRequestCards = (eventRequests ?? []).map((request: any, index: number) => ({
             id: request.id,
-            requesterId: request.requesterId,
+            requesterId: request.requesterId ?? request.requester_id ?? '',
             kind: 'event' as const,
             kindLabel: '요청',
             metaLabel: '이벤트 요청',
             title: request.eventName ?? '',
             body: request.description ?? '',
-            authorNickname: request.requesterNickname ?? null,
+            authorNickname: request.requesterNickname ?? request.requester_nickname ?? null,
             createdAt: request.createdAt ?? null,
             status: request.status ?? 'PENDING',
-            rejectReason: request.rejectReason,
-            statusClassName: requestStatusClass(request.status),
+            rejectReason: request.rejectReason ?? request.reject_reason ?? null,
+            statusClassName: requestStatusClass(request.status ?? request.status_name),
             sortAt: request.createdAt ? new Date(request.createdAt).getTime() : 0,
             sortIndex: index,
         }))
 
         const operationRequestCards = (operationRequests ?? []).map((request: any, index: number) => ({
             id: request.id,
-            requesterId: request.requesterId,
+            requesterId: request.requesterId ?? request.requester_id ?? '',
             kind: 'operation' as const,
             kindLabel: '요청',
             metaLabel: '운영 요청',
             title: request.title ?? '운영 요청',
             body: request.content ?? '',
-            authorNickname: request.requesterNickname ?? null,
+            authorNickname: request.requesterNickname ?? request.requester_nickname ?? null,
             createdAt: null,
             status: request.status ?? 'PENDING',
-            rejectReason: request.adminMemo,
-            statusClassName: requestStatusClass(request.status),
+            rejectReason: request.adminMemo ?? request.admin_memo ?? null,
+            statusClassName: requestStatusClass(request.status ?? request.status_name),
             sortAt: 0,
             sortIndex: index,
         }))
@@ -316,12 +324,14 @@ export default function Community() {
                             </div>
                         ) : (
                             requestItems.map((request) => {
-                                const reason = requestRejectReasons[request.id] ?? ''
-                                const canModerateOperation = isAdmin
-                                const isOperationOwner = !!user && request.requesterId === user.userId
-                                const canEditOperationRequest = request.kind === 'operation' && (isAdmin || (isOperationOwner && request.status === 'PENDING'))
-                                const canDeleteOperationRequest = request.kind === 'operation' && (isAdmin || isOperationOwner) && (request.status === 'PENDING' || isAdmin)
-                                const operationActions = (() => {
+                            const reason = requestRejectReasons[request.id] ?? ''
+                            const canModerateOperation = isAdmin
+                            const isOperationOwner = !!user && request.requesterId === user.userId
+                            const isEventOwner = !!user && request.requesterId === user.userId
+                            const canDeleteEventRequest = request.kind === 'event' && (isAdmin || isEventOwner)
+                            const canEditOperationRequest = request.kind === 'operation' && (isAdmin || (isOperationOwner && request.status === 'PENDING'))
+                            const canDeleteOperationRequest = request.kind === 'operation' && (isAdmin || isOperationOwner) && (request.status === 'PENDING' || isAdmin)
+                            const operationActions = (() => {
                                     const moderationBlock = canModerateOperation && request.status === 'PENDING' ? (
                                         <>
                                             <input
@@ -401,42 +411,63 @@ export default function Community() {
                                         </div>
                                     )
                                 })()
-                                const actions = request.kind === 'event'
-                                    ? (canModerateEventRequests && request.status === 'PENDING' ? (
+                                const eventActions = request.kind === 'event'
+                                    ? (
                                         <div className="space-y-2 border-t border-slate-200 pt-3">
-                                            <input
-                                                value={reason}
-                                                onChange={(e) => setRequestRejectReasons((prev) => ({
-                                                    ...prev,
-                                                    [request.id]: e.target.value,
-                                                }))}
-                                                placeholder="반려 사유"
-                                                className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
-                                            />
-                                            <div className="flex flex-wrap gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        approveEventMutation.mutate(request.id)
-                                                    }}
-                                                    className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
-                                                >
-                                                    승인
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const rejectReason = reason.trim()
-                                                        if (!rejectReason) return
-                                                        rejectEventMutation.mutate({requestId: request.id, reason: rejectReason})
-                                                    }}
-                                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
-                                                >
-                                                    거절
-                                                </button>
-                                            </div>
+                                            {canModerateEventRequests && request.status === 'PENDING' && (
+                                                <>
+                                                    <input
+                                                        value={reason}
+                                                        onChange={(e) => setRequestRejectReasons((prev) => ({
+                                                            ...prev,
+                                                            [request.id]: e.target.value,
+                                                        }))}
+                                                        placeholder="반려 사유"
+                                                        className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
+                                                    />
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => approveEventMutation.mutate(request.id)}
+                                                            className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
+                                                        >
+                                                            승인
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const rejectReason = reason.trim()
+                                                                if (!rejectReason) return
+                                                                rejectEventMutation.mutate({requestId: request.id, reason: rejectReason})
+                                                            }}
+                                                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                                                        >
+                                                            거절
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {canDeleteEventRequest && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (window.confirm('이벤트 요청을 삭제할까요?')) {
+                                                                deleteEventMutation.mutate(request.id)
+                                                            }
+                                                        }}
+                                                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700"
+                                                        disabled={deleteEventMutation.isPending}
+                                                    >
+                                                        삭제
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    ) : null)
+                                    )
+                                    : null
+                                const actions = request.kind === 'event'
+                                    ? eventActions
                                     : operationActions
 
                                 return (

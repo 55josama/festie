@@ -198,7 +198,9 @@ export default function CommunityWrite() {
           <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-sm font-semibold text-[var(--accent)]">글쓰기</div>
           <h1 className="mt-4 text-[32px] font-black tracking-tight text-slate-950">
             {requestMode === 'event'
-              ? '이벤트 요청을 남겨보세요'
+              ? requestEditId
+                ? '이벤트 요청을 수정해보세요'
+                : '이벤트 요청을 남겨보세요'
               : requestMode === 'operation'
                 ? requestEditId
                   ? '운영 요청을 수정해보세요'
@@ -209,7 +211,9 @@ export default function CommunityWrite() {
           </h1>
           <p className="mt-2 text-sm text-slate-500">
             {requestMode === 'event'
-              ? '행사 카테고리와 요청 내용을 함께 정리할 수 있어요.'
+              ? requestEditId
+                ? '기존 요청을 불러와 수정한 뒤 다시 제출할 수 있어요.'
+                : '행사 카테고리와 요청 내용을 함께 정리할 수 있어요.'
               : requestMode === 'operation'
                 ? requestEditId
                   ? '운영 요청 내용을 다시 정리할 수 있어요.'
