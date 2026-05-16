@@ -24,9 +24,6 @@ dependencies {
     // Redis - Redisson
     implementation 'org.redisson:redisson-spring-boot-starter:3.51.0'
 
-    // Monitoring
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
     // Swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.16'
 

@@ -49,6 +49,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             new PublicEndpoint(HttpMethod.GET, "/swagger-resources/**"),
             new PublicEndpoint(HttpMethod.GET, "/webjars/**"),
 
+            // Prometheus
             new PublicEndpoint(HttpMethod.GET, "/ai-service/actuator/prometheus"),
             new PublicEndpoint(HttpMethod.GET, "/calendar-service/actuator/prometheus"),
             new PublicEndpoint(HttpMethod.GET, "/chat-service/actuator/prometheus"),
