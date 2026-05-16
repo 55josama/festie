@@ -70,24 +70,18 @@ public class OperationRequestController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ListOperationResponse>>> getOperationRequestList(
-            @RequestParam(required = false) OperationRequestStatus status,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+        @RequestParam(required = false) OperationRequestStatus status,
+        @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        ListOperationRequestQuery query = new ListOperationRequestQuery(status);
-        PageResponse<OperationRequestResult> serviceResult = PageResponse.from(
-                operationRequestService.getOperationRequestList(query, pageable)
-        );
+    ListOperationRequestQuery query = new ListOperationRequestQuery(status);
 
-        PageResponse<ListOperationResponse> response = new PageResponse<>(
-                serviceResult.content().stream()
-                        .map(ListOperationResponse::from)
-                        .toList(),
-                serviceResult.page(),
-                serviceResult.size(),
-                serviceResult.totalElements(),
-                serviceResult.totalPages()
-        );
+    PageResponse<ListOperationResponse> response = PageResponse.from(
+            operationRequestService.getOperationRequestList(query, pageable)
+                    .map(ListOperationResponse::from)
+    );
+
     return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
     }
 
@@ -100,19 +94,12 @@ public class OperationRequestController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         ListOperationRequestQuery query = new ListOperationRequestQuery(status);
-        PageResponse<OperationRequestResult> serviceResult = PageResponse.from(
-                operationRequestService.getMyOperationRequestList(currentUserId, query, pageable)
-        );
 
-        PageResponse<ListOperationResponse> response = new PageResponse<>(
-                serviceResult.content().stream()
+        PageResponse<ListOperationResponse> response = PageResponse.from(
+                operationRequestService.getMyOperationRequestList(currentUserId, query, pageable)
                         .map(ListOperationResponse::from)
-                        .toList(),
-                serviceResult.page(),
-                serviceResult.size(),
-                serviceResult.totalElements(),
-                serviceResult.totalPages()
-        );
+    );
+
     return ResponseEntity.ok(ApiResponse.success(response));
 
     }
