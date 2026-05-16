@@ -14,11 +14,8 @@ import com.ojosama.operationrequest.presentation.dto.UpdateOperationStatusReques
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -70,25 +67,23 @@ public class OperationRequestController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ListOperationResponse>>> getOperationRequestList(
-        @RequestParam(required = false) OperationRequestStatus status,
-        @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @RequestParam(required = false) OperationRequestStatus status,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-    ListOperationRequestQuery query = new ListOperationRequestQuery(status);
+        ListOperationRequestQuery query = new ListOperationRequestQuery(status);
 
-    PageResponse<ListOperationResponse> response = PageResponse.from(
-            operationRequestService.getOperationRequestList(query, pageable)
-                    .map(ListOperationResponse::from)
-    );
+        PageResponse<ListOperationResponse> response = PageResponse.from(
+                operationRequestService.getOperationRequestList(query, pageable)
+                        .map(ListOperationResponse::from)
+        );
 
-    return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 운영 요청 목록 조회 (작성자 본인)
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<Page<ListOperationResponse>>> getMyOperationRequestList(
+    public ResponseEntity<ApiResponse<PageResponse<ListOperationResponse>>> getMyOperationRequestList(
             @AuthenticationPrincipal UUID currentUserId,
             @RequestParam(required = false) OperationRequestStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
@@ -98,10 +93,9 @@ public class OperationRequestController {
         PageResponse<ListOperationResponse> response = PageResponse.from(
                 operationRequestService.getMyOperationRequestList(currentUserId, query, pageable)
                         .map(ListOperationResponse::from)
-    );
+        );
 
-    return ResponseEntity.ok(ApiResponse.success(response));
-
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // 운영 요청 상세 조회
