@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { logout as logoutApi } from '../api/auth'
+import NotificationBell from './NotificationBell'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `border-b-2 px-1 py-2 text-[15px] font-medium transition-colors ${
@@ -34,6 +35,7 @@ export default function Header() {
           <div className="flex shrink-0 items-center gap-2">
             {user ? (
               <>
+                <NotificationBell variant="mobile" />
                 <Link
                   to="/my"
                   className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
@@ -94,6 +96,7 @@ export default function Header() {
                 로그인
               </Link>
             )}
+            {user && <NotificationBell variant="desktop" />}
             {isLoggedIn() ? (
               <button
                 onClick={handleLogout}

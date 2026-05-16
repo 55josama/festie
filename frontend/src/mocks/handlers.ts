@@ -13,6 +13,7 @@ import {
   mockBlacklists,
   mockFavorites,
   mockReports,
+  mockNotifications,
 } from './data'
 
 const wrap = (data: any) => ({ status: 'success', data })
@@ -192,6 +193,18 @@ function buildChatbotReply(question: string) {
   return 'Festie 이용 방법, 이번 주 행사, 비슷한 행사 추천, 지역 행사 정보까지 도와드릴 수 있어요. 궁금한 행사가 있으면 이름이나 지역을 알려주세요.'
 }
 
+function wrapNotificationPage(page: number, size: number) {
+  const start = page * size
+  const content = mockNotifications.slice(start, start + size)
+  return {
+    content,
+    page,
+    size,
+    totalElements: mockNotifications.length,
+    totalPages: Math.max(1, Math.ceil(mockNotifications.length / size)),
+  }
+}
+
 export const handlers = [
   http.get('/event-service/v1/events', async ({ request }) => {
     await delay(250)
@@ -211,6 +224,36 @@ export const handlers = [
     const event = mockEvents.find(e => e.id === params.eventId)
     if (!event) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
     return HttpResponse.json(wrap(event))
+  }),
+
+  http.get('/notification-service/v1/notifications', async ({ request }) => {
+    await delay(120)
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 10)
+    return HttpResponse.json(wrap(wrapNotificationPage(page, size)))
+  }),
+
+  http.patch('/notification-service/v1/notifications', async () => {
+    await delay(100)
+    const unread = mockNotifications.filter((notification) => !notification.readAt)
+    const now = new Date().toISOString()
+    mockNotifications.forEach((notification) => {
+      if (!notification.readAt) {
+        notification.readAt = now
+      }
+    })
+    return HttpResponse.json(wrap(unread.map((notification) => ({ ...notification, readAt: now }))))
+  }),
+
+  http.delete('/notification-service/v1/notifications/:notificationId', async ({ params }) => {
+    await delay(80)
+    const index = mockNotifications.findIndex((item) => item.id === params.notificationId)
+    if (index === -1) {
+      return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    }
+    mockNotifications.splice(index, 1)
+    return HttpResponse.json(wrap({}))
   }),
 
   http.post('/event-service/v1/events', async ({ request }) => {

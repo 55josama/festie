@@ -210,3 +210,24 @@ export const mockFavorites = [
     eventImg: null,
   },
 ]
+
+export const mockNotifications = [
+  {
+    id: 'nt-1',
+    title: '새 행사 알림',
+    content: '2026 불빛축제가 곧 시작돼요.',
+    readAt: null as string | null,
+  },
+  {
+    id: 'nt-2',
+    title: '행사 요청 결과',
+    content: '요청하신 행사 등록이 승인되었습니다.',
+    readAt: '2026-05-16T09:30:00.000Z',
+  },
+  {
+    id: 'nt-3',
+    title: '블랙리스트 알림',
+    content: '신고한 유저가 관리자 검토 대상에 올랐습니다.',
+    readAt: null as string | null,
+  },
+]
