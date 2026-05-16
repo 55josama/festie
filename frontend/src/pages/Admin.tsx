@@ -2,12 +2,13 @@ import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react'
 import {Link, useNavigate, useSearchParams} from 'react-router-dom'
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {
-  approveEventRequest,
-  getAdminChatRooms,
-  getAdminUsers,
-  forceChatRoomStatus,
-  getEventRequests,
-  getOperationRequests,
+    approveEventRequest,
+    getAdminChatRooms,
+    getAdminUsers,
+    getAdminUserDetail,
+    forceChatRoomStatus,
+    getEventRequests,
+    getOperationRequests,
   getReports,
   rejectEventRequest,
   changeAdminUserRole,
@@ -31,7 +32,7 @@ import {formatDateTime} from '../lib/format'
 import {getErrorMessage} from '../lib/error'
 import {searchAddressWithKakao} from '../lib/kakao'
 import type {Event} from '../types'
-import type {AdminMessageItem, AdminUserItem, OperationRequestItem, AdminUserRole} from '../types/admin'
+import type {AdminMessageItem, AdminUserDetailItem, AdminUserItem, OperationRequestItem, AdminUserRole, AdminUserStatus} from '../types/admin'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
 const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELED'] as const
@@ -113,7 +114,11 @@ export default function Admin() {
     const [userSearchEmail, setUserSearchEmail] = useState('')
     const [userSearchName, setUserSearchName] = useState('')
     const [userSearchRole, setUserSearchRole] = useState<(typeof USER_ROLE_FILTERS)[number]>('ALL')
+    const [submittedUserSearchEmail, setSubmittedUserSearchEmail] = useState('')
+    const [submittedUserSearchName, setSubmittedUserSearchName] = useState('')
+    const [submittedUserSearchRole, setSubmittedUserSearchRole] = useState<(typeof USER_ROLE_FILTERS)[number]>('ALL')
     const [userPage, setUserPage] = useState(0)
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
     const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
     const [reportForms, setReportForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
     const [operationForms, setOperationForms] = useState<Record<string, { status: string; adminMemo: string }>>({})
@@ -194,18 +199,23 @@ export default function Admin() {
 
     const {
         data: adminUsersPage = {content: [], totalElements: 0, totalPages: 0, size: 0, page: 0},
-        refetch: refetchAdminUsers,
     } = useQuery({
-        queryKey: ['admin', 'users', userPage, userSearchEmail, userSearchName, userSearchRole],
+        queryKey: ['admin', 'users', userPage, submittedUserSearchEmail, submittedUserSearchName, submittedUserSearchRole],
         queryFn: () =>
             getAdminUsers({
                 page: userPage,
                 size: 12,
-                email: userSearchEmail.trim() || undefined,
-                name: userSearchName.trim() || undefined,
-                role: userSearchRole === 'ALL' ? undefined : userSearchRole,
+                email: submittedUserSearchEmail.trim() || undefined,
+                name: submittedUserSearchName.trim() || undefined,
+                role: submittedUserSearchRole === 'ALL' ? undefined : submittedUserSearchRole,
             }),
         enabled: isAdmin,
+    })
+
+    const {data: selectedUserDetail} = useQuery<AdminUserDetailItem>({
+        queryKey: ['admin', 'user-detail', selectedUserId],
+        queryFn: () => getAdminUserDetail(selectedUserId ?? ''),
+        enabled: Boolean(selectedUserId),
     })
 
     const {data: eventRequests = []} = useQuery({
@@ -1319,64 +1329,76 @@ export default function Admin() {
                         action={<span className="text-xs text-slate-500">{adminUsersPage.totalElements}명</span>}
                     />
                     <p className="text-sm leading-6 text-slate-600">
-                        이메일 또는 이름/닉네임으로 사용자를 찾고, 각 사용자 권한을 바로 바꿀 수 있어요.
+                        이메일 또는 이름/닉네임으로 사용자를 찾을 수 있어요. 둘 다 넣으면 두 조건이 모두 부분 일치해야 해요.
                     </p>
 
-                    <div className="grid gap-3 md:grid-cols-[1fr_1fr_0.8fr_auto_auto]">
-                        <input
-                            value={userSearchEmail}
-                            onChange={(e) => {
-                                setUserPage(0)
-                                setUserSearchEmail(e.target.value)
-                            }}
-                            placeholder="이메일 검색"
-                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
-                        />
-                        <input
-                            value={userSearchName}
-                            onChange={(e) => {
-                                setUserPage(0)
-                                setUserSearchName(e.target.value)
-                            }}
-                            placeholder="이름/닉네임 검색"
-                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
-                        />
-                        <select
-                            value={userSearchRole}
-                            onChange={(e) => {
-                                setUserPage(0)
-                                setUserSearchRole(e.target.value as typeof USER_ROLE_FILTERS[number])
-                            }}
-                            className="rounded-full border border-[var(--line)] bg-slate-50 px-4 py-2.5 text-sm outline-none"
-                        >
-                            {USER_ROLE_FILTERS.map((role) => (
-                                <option key={role} value={role}>
-                                    {role === 'ALL' ? '권한 전체' : labelUserRole(role)}
-                                </option>
-                            ))}
-                        </select>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setUserSearchEmail('')
-                                setUserSearchName('')
-                                setUserSearchRole('ALL')
-                                setUserPage(0)
-                            }}
-                            className="rounded-full border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
-                        >
-                            초기화
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setUserPage(0)
-                                void refetchAdminUsers()
-                            }}
-                            className="rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white"
-                        >
-                            검색
-                        </button>
+                    <div className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                        <div className="grid gap-3 lg:grid-cols-[1fr_1fr_0.8fr_auto_auto]">
+                            <input
+                                value={userSearchEmail}
+                                onChange={(e) => {
+                                    setUserSearchEmail(e.target.value)
+                                }}
+                                placeholder="이메일 검색"
+                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                            />
+                            <input
+                                value={userSearchName}
+                                onChange={(e) => {
+                                    setUserSearchName(e.target.value)
+                                }}
+                                placeholder="이름/닉네임 검색"
+                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                            />
+                            <select
+                                value={userSearchRole}
+                                onChange={(e) => {
+                                    setUserSearchRole(e.target.value as typeof USER_ROLE_FILTERS[number])
+                                }}
+                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                            >
+                                {USER_ROLE_FILTERS.map((role) => (
+                                    <option key={role} value={role}>
+                                        {role === 'ALL' ? '권한 전체' : labelUserRole(role)}
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setUserSearchEmail('')
+                                    setUserSearchName('')
+                                    setUserSearchRole('ALL')
+                                    setSubmittedUserSearchEmail('')
+                                    setSubmittedUserSearchName('')
+                                    setSubmittedUserSearchRole('ALL')
+                                    setUserPage(0)
+                                }}
+                                className="rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                            >
+                                초기화
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSubmittedUserSearchEmail(userSearchEmail)
+                                    setSubmittedUserSearchName(userSearchName)
+                                    setSubmittedUserSearchRole(userSearchRole)
+                                    setUserPage(0)
+                                }}
+                                className="rounded-full bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white"
+                            >
+                                검색
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_1fr_1fr_1.6fr_220px] lg:gap-3">
+                        <div>상태</div>
+                        <div>이름</div>
+                        <div>닉네임</div>
+                        <div>이메일</div>
+                        <div>권한변경</div>
                     </div>
 
                     <div className="space-y-3">
@@ -1384,6 +1406,7 @@ export default function Admin() {
                             <UserRow
                                 key={item.userId}
                                 user={item}
+                                onSelect={() => setSelectedUserId(item.userId)}
                                 onChangeRole={(role) => userRoleMutation.mutate({userId: item.userId, role})}
                                 loading={userRoleMutation.isPending}
                             />
@@ -1425,6 +1448,57 @@ export default function Admin() {
                     </div>
                 </section>
             )}
+
+            {selectedUserId && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8"
+                    onClick={() => setSelectedUserId(null)}
+                >
+                    <div
+                        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.24)] md:p-6"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+                                    사용자 상세
+                                </div>
+                                <div className="mt-2 text-[22px] font-black tracking-tight text-slate-950">
+                                    {selectedUserDetail?.name ?? '불러오는 중...'}
+                                </div>
+                                <div className="mt-1 text-sm text-slate-500">
+                                    {selectedUserDetail?.nickname ?? ''}{selectedUserDetail?.nickname ? ' · ' : ''}{selectedUserDetail?.email ?? ''}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedUserId(null)}
+                                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600"
+                            >
+                                닫기
+                            </button>
+                        </div>
+
+                        <div className="mt-5 grid gap-3 md:grid-cols-2">
+                            <DetailField label="UUID" value={selectedUserDetail?.userId ?? '정보 없음'} />
+                            <DetailField label="이름" value={selectedUserDetail?.name ?? '정보 없음'} />
+                            <DetailField label="상태" value={labelUserStatus(selectedUserDetail?.status ?? '')} />
+                            <DetailField label="닉네임" value={selectedUserDetail?.nickname ?? '정보 없음'} />
+                            <DetailField label="이메일" value={selectedUserDetail?.email ?? '정보 없음'} />
+                            <DetailField label="권한" value={labelUserRole(selectedUserDetail?.role ?? '')} />
+                            <DetailField label="생성일" value={formatDateTime(selectedUserDetail?.createdAt)} />
+                            <DetailField label="수정일" value={formatDateTime(selectedUserDetail?.updatedAt)} />
+                        </div>
+
+                        <div className="mt-5 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                            <div className="text-[11px] font-semibold text-slate-500">전화번호</div>
+                            <div className="mt-1 text-sm font-medium text-slate-800">
+                                {selectedUserDetail?.phoneNumber ?? '정보 없음'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -1460,10 +1534,12 @@ function renderTextWithLinks(text: string) {
 
 function UserRow({
   user,
+  onSelect,
   onChangeRole,
   loading,
 }: {
   user: AdminUserItem
+  onSelect: () => void
   onChangeRole: (role: AdminUserRole) => void
   loading?: boolean
 }) {
@@ -1474,26 +1550,35 @@ function UserRow({
   }, [user.role])
 
   return (
-    <div className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
-              {labelUserRole(user.role)}
-            </span>
-            <span className="text-xs text-slate-500">{user.userId}</span>
-          </div>
-          <div className="text-sm font-semibold text-slate-950">{user.nickname} · {user.name}</div>
-          <div className="text-xs leading-5 text-slate-600">{user.email}</div>
-          <div className="text-[11px] text-slate-500">
-            생성: {formatDateTime(user.createdAt)} · 수정: {formatDateTime(user.updatedAt)}
-          </div>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onSelect()
+      }}
+      className="w-full cursor-pointer rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100/80"
+    >
+      <div className="grid gap-3 lg:grid-cols-[120px_1fr_1fr_1.6fr_220px] lg:items-center">
+        <div className="flex items-center gap-2 lg:block">
+          <span className="inline-flex rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+            {labelUserStatus(user.status)}
+          </span>
         </div>
-        <div className="flex shrink-0 flex-col gap-2 lg:w-[240px]">
+        <div className="min-w-0 text-sm font-semibold text-slate-950">
+          <span className="block truncate">{user.name}</span>
+        </div>
+        <div className="min-w-0 text-sm text-slate-700">
+          <span className="block truncate">{user.nickname}</span>
+        </div>
+        <div className="min-w-0 text-sm text-slate-600">
+          <span className="block truncate">{user.email}</span>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center" onClick={(e) => e.stopPropagation()}>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as AdminUserRole)}
-            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+            className="min-w-0 flex-1 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
           >
             {USER_ROLE_OPTIONS.filter((item) => item.value !== 'ALL').map((item) => (
               <option key={item.value} value={item.value}>
@@ -1505,7 +1590,7 @@ function UserRow({
             type="button"
             disabled={loading || role === user.role}
             onClick={() => onChangeRole(role)}
-            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+            className="shrink-0 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
           >
             {loading ? '저장 중...' : '권한 저장'}
           </button>
@@ -2240,6 +2325,15 @@ function PreviewField({label, value}: { label: string; value: string }) {
     )
 }
 
+function DetailField({label, value}: { label: string; value: string }) {
+    return (
+        <div className="rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3">
+            <div className="text-[11px] font-semibold text-slate-500">{label}</div>
+            <div className="mt-1 break-words text-sm font-medium text-slate-900">{value}</div>
+        </div>
+    )
+}
+
 function CategoryAdminPanel({
                                 title,
                                 subtitle,
@@ -2374,6 +2468,15 @@ function labelUserRole(role: string) {
         FANMEETING_MANAGER: '팬미팅 매니저',
         POPUP_MANAGER: '팝업 매니저',
         COMMUNITY_MANAGER: '커뮤니티 매니저',
+    }
+    return map[normalized] ?? (normalized || '알 수 없음')
+}
+
+function labelUserStatus(status: AdminUserStatus | string) {
+    const normalized = String(status ?? '').trim()
+    const map: Record<string, string> = {
+        ACTIVE: '활성',
+        BLOCKED: '차단',
     }
     return map[normalized] ?? (normalized || '알 수 없음')
 }

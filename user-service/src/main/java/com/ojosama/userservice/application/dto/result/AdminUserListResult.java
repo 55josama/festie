@@ -2,6 +2,7 @@ package com.ojosama.userservice.application.dto.result;
 
 import com.ojosama.userservice.domain.model.User;
 import com.ojosama.userservice.domain.model.UserRole;
+import com.ojosama.userservice.domain.model.UserStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -11,6 +12,7 @@ public record AdminUserListResult(
         String nickname,
         String name,
         UserRole role,
+        UserStatus status,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -21,6 +23,7 @@ public record AdminUserListResult(
                 user.getNickname(),
                 user.getName(),
                 user.getRole(),
+                user.getStatus(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );

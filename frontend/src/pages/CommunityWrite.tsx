@@ -127,7 +127,7 @@ export default function CommunityWrite() {
           link: requestForm.eventLink,
           description: requestDescription,
         })
-        navigate('/community')
+        navigate('/community?tab=requests&requestKind=event')
         return
       }
 
@@ -144,7 +144,7 @@ export default function CommunityWrite() {
           title: form.title,
           content: form.content,
         })
-        navigate('/community')
+        navigate('/community?tab=requests&requestKind=operation')
         return
       }
 

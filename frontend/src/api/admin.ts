@@ -1,7 +1,7 @@
 import client from './client'
 import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { ChatRoom, Event } from '../types'
-import type { AdminUserItem, AdminUserPage, EventRequestItem, OperationRequestItem, ReportItem } from '../types/admin'
+import type { AdminUserDetailItem, AdminUserItem, AdminUserPage, EventRequestItem, OperationRequestItem, ReportItem } from '../types/admin'
 
 export const getEventRequests = async (params: Record<string, any> = {}) => {
   const res = await client.get('/event-service/v1/event-requests', { params })
@@ -61,6 +61,11 @@ export const getAdminEvents = async (params: Record<string, any> = {}) => {
 export const getAdminUsers = async (params: Record<string, any> = {}) => {
   const res = await client.get('/user-service/v1/users/admin', { params })
   return unwrapPageResponse<AdminUserItem>(res.data) as AdminUserPage
+}
+
+export const getAdminUserDetail = async (userId: string) => {
+  const res = await client.get(`/user-service/v1/users/admin/${userId}`)
+  return unwrap<AdminUserDetailItem>(res.data)
 }
 
 export const changeAdminUserRole = async (userId: string, role: string) => {

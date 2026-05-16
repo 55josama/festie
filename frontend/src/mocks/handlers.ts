@@ -796,14 +796,15 @@ export const handlers = [
     const page = Number(url.searchParams.get('page') ?? 0)
     const size = Number(url.searchParams.get('size') ?? 20)
     let users = [...mockAdminUsers]
+    const hasRoleFilter = Boolean(role && role !== 'ALL')
     if (email || name) {
       users = users.filter((item) => {
-        const emailMatch = email ? item.email.toLowerCase().includes(email) : false
-        const nameMatch = name ? item.name.toLowerCase().includes(name) || item.nickname.toLowerCase().includes(name) : false
-        return emailMatch || nameMatch
+        const emailMatch = email ? item.email.toLowerCase().includes(email) : true
+        const nameMatch = name ? item.name.toLowerCase().includes(name) || item.nickname.toLowerCase().includes(name) : true
+        return emailMatch && nameMatch
       })
     }
-    if (role && role !== 'ALL') {
+    if (hasRoleFilter) {
       users = users.filter((item) => item.role === role)
     }
     const totalElements = users.length

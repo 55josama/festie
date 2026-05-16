@@ -45,6 +45,7 @@ public class UserAdminService {
                 user.getName(),
                 user.getPhoneNumber(),
                 user.getRole(),
+                user.getStatus(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );

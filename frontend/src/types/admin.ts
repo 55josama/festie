@@ -57,14 +57,21 @@ export type AdminUserRole =
   | 'POPUP_MANAGER'
   | 'COMMUNITY_MANAGER'
 
+export type AdminUserStatus = 'ACTIVE' | 'BLOCKED'
+
 export interface AdminUserItem {
   userId: string
   email: string
   nickname: string
   name: string
   role: AdminUserRole
+  status: AdminUserStatus
   createdAt: string
   updatedAt: string
+}
+
+export interface AdminUserDetailItem extends AdminUserItem {
+  phoneNumber: string
 }
 
 export interface AdminUserPage {
