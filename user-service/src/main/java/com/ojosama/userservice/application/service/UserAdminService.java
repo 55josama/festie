@@ -24,14 +24,16 @@ public class UserAdminService {
 
     @Transactional(readOnly = true)
     public Page<AdminUserListResult> getUsers(AdminUserListQuery query) {
+        String email = normalize(query.email());
+        String name = normalize(query.name());
         PageRequest pageRequest = PageRequest.of(query.page(), query.size());
-        if (isBlank(query.email()) && isBlank(query.name()) && query.role() == null) {
+        if (email == null && name == null && query.role() == null) {
             return userRepository.findAllByDeletedAtIsNull(pageRequest)
                     .map(AdminUserListResult::from);
         }
         return userRepository.findAllByDeletedAtIsNullAndSearch(
-                        query.email(),
-                        query.name(),
+                        email,
+                        name,
                         query.role(),
                         pageRequest
                 )
@@ -68,6 +70,10 @@ public class UserAdminService {
                 user.getRole(),
                 user.getUpdatedAt()
         );
+    }
+
+    private String normalize(String value) {
+        return isBlank(value) ? null : value.trim();
     }
 
     private boolean isBlank(String value) { return value == null || value.isBlank(); }
