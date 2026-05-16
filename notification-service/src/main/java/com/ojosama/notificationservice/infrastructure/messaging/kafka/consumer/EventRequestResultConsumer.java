@@ -63,7 +63,11 @@ public class EventRequestResultConsumer {
     }
 
     private void dispatch(EventRequestResultMessage event) {
-        if (event == null) {
+        if (event == null
+                || event.targetId() == null
+                || event.receiverId() == null
+                || isBlank(event.resultStatus())
+                || isBlank(event.eventName())) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
         notificationService.createEventRequestResultNotification(
@@ -73,5 +77,9 @@ public class EventRequestResultConsumer {
                         event.resultStatus(),
                         event.eventName()
                 ));
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
