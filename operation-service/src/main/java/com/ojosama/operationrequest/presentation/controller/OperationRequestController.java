@@ -74,9 +74,21 @@ public class OperationRequestController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         ListOperationRequestQuery query = new ListOperationRequestQuery(status);
-        Page<ListOperationResponse> response = operationRequestService.getOperationRequestList(query, pageable)
-                .map(ListOperationResponse::from);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        PageResponse<OperationRequestResult> serviceResult = PageResponse.from(
+                operationRequestService.getOperationRequestList(query, pageable)
+        );
+
+        PageResponse<ListOperationResponse> response = new PageResponse<>(
+                serviceResult.content().stream()
+                        .map(ListOperationResponse::from)
+                        .toList(),
+                serviceResult.page(),
+                serviceResult.size(),
+                serviceResult.totalElements(),
+                serviceResult.totalPages()
+        );
+    return ResponseEntity.ok(ApiResponse.success(response));
+
     }
 
     // 운영 요청 목록 조회 (작성자 본인)
@@ -88,10 +100,21 @@ public class OperationRequestController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         ListOperationRequestQuery query = new ListOperationRequestQuery(status);
-        Page<ListOperationResponse> response = operationRequestService
-                .getMyOperationRequestList(currentUserId, query, pageable)
-                .map(ListOperationResponse::from);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        PageResponse<OperationRequestResult> serviceResult = PageResponse.from(
+                operationRequestService.getMyOperationRequestList(currentUserId, query, pageable)
+        );
+
+        PageResponse<ListOperationResponse> response = new PageResponse<>(
+                serviceResult.content().stream()
+                        .map(ListOperationResponse::from)
+                        .toList(),
+                serviceResult.page(),
+                serviceResult.size(),
+                serviceResult.totalElements(),
+                serviceResult.totalPages()
+        );
+    return ResponseEntity.ok(ApiResponse.success(response));
+
     }
 
     // 운영 요청 상세 조회
