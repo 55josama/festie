@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createPost, getCategories, getPost, updatePost } from '../api/community'
 import { createEventRequest, getEvents } from '../api/events'
 import { createOperationRequest, getMyOperationRequest, getOperationRequest, updateOperationRequest } from '../api/requests'
-import { getErrorMessage } from '../lib/error'
+import { getErrorMessage, normalizeBannedWordError } from '../lib/error'
 import { useAuthStore } from '../store/authStore'
 
 export default function CommunityWrite() {
@@ -56,6 +56,12 @@ export default function CommunityWrite() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    if (!error) return
+    const timer = window.setTimeout(() => setError(''), 2500)
+    return () => window.clearTimeout(timer)
+  }, [error])
 
   const requestEventCategories = useMemo(() => {
     const seen = new Map<string, { id: string; name: string }>()
@@ -167,7 +173,7 @@ export default function CommunityWrite() {
         setError('행사 카테고리를 선택해주세요.')
         return
       }
-      setError(getErrorMessage(err, '글을 저장하지 못했습니다.'))
+      setError(normalizeBannedWordError(getErrorMessage(err, '글을 저장하지 못했습니다.')))
     } finally {
       setLoading(false)
     }

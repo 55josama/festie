@@ -15,3 +15,10 @@ export function getErrorMessage(error: unknown, fallback: string) {
     ?? err?.message
     ?? fallback
 }
+
+export function normalizeBannedWordError(message: string) {
+  if (/금지어|금칙어/i.test(message)) {
+    return '금칙어가 포함되어 있습니다.'
+  }
+  return message
+}

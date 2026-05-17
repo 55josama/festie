@@ -11,6 +11,7 @@ import { useAuthStore } from '../store/authStore'
 import { formatPrice, formatDateTime } from '../lib/format'
 import { getErrorMessage } from '../lib/error'
 import { getDDay as calcDDay } from '../lib/format'
+import { normalizeBannedWordError } from '../lib/error'
 import type { ChatRoom } from '../types'
 import { Stomp, type IMessage } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
@@ -22,6 +23,7 @@ export default function EventDetail() {
   const { user, isLoggedIn } = useAuthStore()
   const canFavoriteEvent = !user || user.role === 'USER'
   const [message, setMessage] = useState('')
+  const [chatMessageError, setChatMessageError] = useState('')
   const [isChatEntered, setIsChatEntered] = useState(false)
   const [chatConnectionStatus, setChatConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const [calendarDate, setCalendarDate] = useState('')
@@ -29,6 +31,12 @@ export default function EventDetail() {
   const stompClientRef = useRef<any>(null)
   const chatConnectionStatusRef = useRef<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const chatMessagesScrollRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!chatMessageError) return
+    const timer = window.setTimeout(() => setChatMessageError(''), 2500)
+    return () => window.clearTimeout(timer)
+  }, [chatMessageError])
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', eventId],
@@ -195,7 +203,7 @@ export default function EventDetail() {
         const stompClient = Stomp.over(socket)
         stompClient.debug = () => undefined
 
-        stompClient.connect({}, () => {
+          stompClient.connect({}, () => {
           if (cancelled) return
           setChatConnectionStatus('connected')
           chatConnectionStatusRef.current = 'connected'
@@ -203,6 +211,11 @@ export default function EventDetail() {
             const nextMessage = parseChatMessage(frame)
             if (!nextMessage) return
             queryClient.setQueryData<any[]>(['chat-messages', chatRoomId], (prev = []) => [...prev, nextMessage])
+          })
+          stompClient.subscribe('/user/queue/errors', (frame: IMessage) => {
+            const nextError = parseWebSocketError(frame)
+            if (!nextError) return
+            setChatMessageError(normalizeBannedWordError(nextError.message ?? '채팅 메시지를 보낼 수 없어요.'))
           })
         }, () => {
           if (cancelled) return
@@ -544,7 +557,12 @@ export default function EventDetail() {
                 <div className="flex gap-2">
                   <input
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                      setMessage(e.target.value)
+                      if (chatMessageError) {
+                        setChatMessageError('')
+                      }
+                    }}
                     placeholder="메시지를 입력하세요"
                     disabled={chatConnectionStatus !== 'connected'}
                     onKeyDown={(e) => {
@@ -576,6 +594,11 @@ export default function EventDetail() {
                     전송
                   </button>
                 </div>
+                {chatMessageError && (
+                  <div className="text-[12px] font-medium text-rose-600">
+                    {chatMessageError}
+                  </div>
+                )}
               </>
             ) : (
               <div className={`rounded-[18px] border p-3.5 text-sm ${chatTheme.noticeClass} ${chatTheme.noticeTextClass}`}>
@@ -908,6 +931,14 @@ function compareChatMessages(left: any, right: any) {
 function parseChatMessage(frame: IMessage) {
   try {
     return JSON.parse(frame.body)
+  } catch {
+    return undefined
+  }
+}
+
+function parseWebSocketError(frame: IMessage) {
+  try {
+    return JSON.parse(frame.body) as { status?: number; message?: string; timestamp?: string }
   } catch {
     return undefined
   }
