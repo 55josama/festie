@@ -531,36 +531,41 @@ function BannerCard({ banner }: { banner: HomeBanner }) {
   const internalPath = resolveInternalBannerPath(banner.link)
   const isInternalLink = Boolean(internalPath)
   const content = (
-    <div className="relative h-full min-h-[88px] w-full overflow-hidden rounded-[20px] border border-[var(--line)] bg-white text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.08)] md:min-h-[220px] md:rounded-[24px] md:bg-slate-950 md:text-white">
-      <div className="absolute inset-0 hidden md:block">
+    <div className="relative h-full min-h-[88px] w-full overflow-hidden rounded-[20px] border border-[var(--line)] bg-white text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.08)] md:rounded-[24px] md:bg-white md:text-slate-950">
+      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[20px] bg-[#ece8ff] md:rounded-[24px]">
         {banner.imageUrl ? (
-          <img
-            src={banner.imageUrl}
-            alt={banner.title}
-            className="h-full w-full object-cover"
-          />
+          <>
+            <img
+              src={banner.imageUrl}
+              alt={banner.title}
+              className="absolute inset-0 h-full w-full object-cover object-center blur-[14px] scale-110 opacity-35 saturate-125"
+            />
+            <img
+              src={banner.imageUrl}
+              alt={banner.title}
+              className="absolute inset-5 h-[calc(100%-2.5rem)] w-[calc(100%-2.5rem)] rounded-[18px] object-cover object-center md:inset-6 md:h-[calc(100%-3rem)] md:w-[calc(100%-3rem)] md:rounded-[20px] opacity-95 shadow-[0_0_0_1px_rgba(255,255,255,0.4)]"
+            />
+          </>
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-[#8b5cf6] via-[#a78bfa] to-[#f5d0fe]" />
+          <>
+            <div className="absolute inset-0 bg-gradient-to-br from-[#dcd2ff] via-[#cbbcff] to-[#efe2ff] opacity-95" />
+            <div className="absolute inset-5 rounded-[18px] border border-white/75 bg-white/25 md:inset-6 md:rounded-[20px]" />
+            <div className="absolute inset-0 flex items-center justify-center text-[16px] font-semibold text-slate-500/80">
+              행사 이미지
+            </div>
+          </>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
-      </div>
-
-      <div className="relative flex h-full flex-col justify-between p-3 md:justify-end md:p-4">
-        <div className="md:hidden">
-          <div className="text-[11px] font-semibold text-[var(--accent)]">배너</div>
-          <div className="mt-1 line-clamp-1 text-[14px] font-black leading-5 tracking-tight text-slate-950">
-            {banner.title || '배너 제목'}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(194,163,255,0.07)_48%,rgba(15,23,42,0.10)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(196,164,255,0.12),transparent_34%)]" />
+        <div className="absolute inset-x-4 bottom-4 md:inset-x-6 md:bottom-6">
+          <div className="max-w-[78%]">
+            <div className="text-[14px] font-black leading-5 tracking-tight text-white drop-shadow-[0_2px_10px_rgba(15,23,42,0.55)] md:text-[17px] md:leading-6">
+              {banner.title || '배너 제목'}
+            </div>
+            <div className="mt-2 inline-flex w-fit items-center rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-[var(--accent)] shadow-[0_8px_22px_rgba(15,23,42,0.12)] backdrop-blur md:mt-3 md:px-3 md:py-1.5 md:text-[11px]">
+              바로가기
+            </div>
           </div>
-        </div>
-
-        <div className="hidden md:block">
-          <div className="mt-2 text-[17px] font-black leading-6 tracking-tight text-white">
-            {banner.title || '배너 제목'}
-          </div>
-        </div>
-
-        <div className="mt-2 inline-flex w-fit items-center rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[10px] font-semibold text-[var(--accent)] md:mt-3 md:px-3 md:py-1.5 md:text-[11px] md:bg-white md:text-slate-950">
-          바로가기
         </div>
       </div>
     </div>
