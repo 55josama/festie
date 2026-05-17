@@ -14,7 +14,7 @@ export default function Header() {
   const navigate = useNavigate()
   const { user, isLoggedIn, logout } = useAuthStore()
   const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
-  const canShowMy = !!user && !isManager
+  const showMyNav = !!user && !isManager
 
   const handleLogout = async () => {
     try {
@@ -37,18 +37,12 @@ export default function Header() {
             {user ? (
               <>
                 <NotificationBell variant="mobile" />
-                {canShowMy ? (
-                  <Link
-                    to="/my"
-                    className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                  >
-                    {user.nickname}
-                  </Link>
-                ) : (
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-                    {user.nickname}
-                  </div>
-                )}
+                <Link
+                  to="/my"
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  {user.nickname}
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
@@ -69,7 +63,7 @@ export default function Header() {
           <NavLink to="/events" className={navClass}>행사</NavLink>
           <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
           <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
-          {canShowMy && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
+          {showMyNav && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
           {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
         </nav>
 
@@ -83,30 +77,21 @@ export default function Header() {
             <NavLink to="/events" className={navClass}>행사</NavLink>
             <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
             <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
-            {canShowMy && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
-            {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
+            {showMyNav && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
+          {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
           </nav>
 
           <div className="flex shrink-0 items-center gap-3">
             {user ? (
-              canShowMy ? (
-                <Link
-                  to="/my"
-                  className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                >
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                    {user.nickname?.[0] ?? 'U'}
-                  </span>
-                  {user.nickname}
-                </Link>
-              ) : (
-                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                    {user.nickname?.[0] ?? 'U'}
-                  </span>
-                  {user.nickname}
-                </div>
-              )
+              <Link
+                to="/my"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+                  {user.nickname?.[0] ?? 'U'}
+                </span>
+                {user.nickname}
+              </Link>
             ) : (
               <Link to="/login" className="rounded-full border border-[var(--line)] px-4 py-2 text-sm font-medium text-slate-700">
                 로그인
