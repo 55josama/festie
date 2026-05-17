@@ -8,12 +8,8 @@ export const getPosts = async (params: {
   sort?: string
   page?: number
   size?: number
-  mine?: boolean
 }) => {
-  const { mine, ...query } = params
-  const res = mine
-    ? await client.get('/community-service/v1/posts', { params: query })
-    : await publicClient.get('/community-service/v1/posts', { params: query })
+  const res = await publicClient.get('/community-service/v1/posts', { params })
   return unwrapPage<Post>(res.data)
 }
 

@@ -13,7 +13,6 @@ import type { EventRequestItem, OperationRequestItem } from '../types/admin'
 type FeedTab = 'posts' | 'requests'
 type RequestKind = 'event' | 'operation'
 type RequestStatusFilter = 'all' | 'PENDING' | 'APPROVED' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED'
-type PostScope = 'all' | 'mine'
 
 type RequestFeedItem = {
     id: string
@@ -35,13 +34,12 @@ type RequestFeedItem = {
 
 export default function Community() {
     const { user } = useAuthStore()
-    const [searchParams, setSearchParams] = useSearchParams()
+    const [searchParams] = useSearchParams()
     const queryClient = useQueryClient()
     const [feedTab, setFeedTab] = useState<FeedTab>(() => searchParams.get('tab') === 'requests' ? 'requests' : 'posts')
     const [requestKind, setRequestKind] = useState<RequestKind>(() => searchParams.get('requestKind') === 'operation' ? 'operation' : 'event')
     const [categoryId, setCategoryId] = useState<string | undefined>()
     const [sort, setSort] = useState<'latest' | 'popular'>('latest')
-    const [postScope, setPostScope] = useState<PostScope>(() => searchParams.get('scope') === 'mine' ? 'mine' : 'all')
     const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatusFilter>('all')
     const [requestRejectReasons, setRequestRejectReasons] = useState<Record<string, string>>({})
     const [operationRejectReasons, setOperationRejectReasons] = useState<Record<string, string>>({})
@@ -53,11 +51,9 @@ export default function Community() {
     useEffect(() => {
         const nextFeedTab = searchParams.get('tab') === 'requests' ? 'requests' : 'posts'
         const nextRequestKind = searchParams.get('requestKind') === 'operation' ? 'operation' : 'event'
-        const nextPostScope = user && searchParams.get('scope') === 'mine' ? 'mine' : 'all'
         setFeedTab(nextFeedTab)
         setRequestKind(nextRequestKind)
-        setPostScope(nextPostScope)
-    }, [searchParams, user])
+    }, [searchParams])
 
     const {data: categories = []} = useQuery({
         queryKey: ['categories'],
@@ -65,14 +61,9 @@ export default function Community() {
     })
 
     const {data: rawPosts = []} = useQuery({
-        queryKey: ['posts', categoryId, sort, postScope, user?.userId ?? null],
-        queryFn: () => getPosts({
-            categoryId,
-            sort: sort === 'popular' ? 'likeCount,desc' : 'createdAt,desc',
-            size: 100,
-            mine: postScope === 'mine' && !!user,
-        }),
-        enabled: feedTab === 'posts' && (postScope !== 'mine' || !!user),
+        queryKey: ['posts', categoryId, sort],
+        queryFn: () => getPosts({categoryId, sort: sort === 'popular' ? 'likeCount,desc' : 'createdAt,desc', size: 100}),
+        enabled: feedTab === 'posts',
     })
 
     const {data: eventRequests = []} = useQuery<EventRequestItem[]>({
@@ -217,14 +208,6 @@ export default function Community() {
         setRequestStatusFilter('all')
     }, [requestKind])
 
-    useEffect(() => {
-        if (postScope !== 'mine' || user) return
-        setPostScope('all')
-        const next = new URLSearchParams(searchParams)
-        next.delete('scope')
-        setSearchParams(next, { replace: true })
-    }, [postScope, searchParams, setSearchParams, user])
-
     return (
         <div className="space-y-5 px-5 py-5 md:px-8 md:py-7">
             <section
@@ -291,26 +274,6 @@ export default function Community() {
                     <div className="flex flex-wrap items-center gap-1.5">
                         {feedTab === 'posts' && (
                             <>
-                                <span className="text-[10px] font-semibold text-slate-500">조회</span>
-                                <FilterChip active={postScope === 'all'} tone="violet" onClick={() => {
-                                    setPostScope('all')
-                                    const next = new URLSearchParams(searchParams)
-                                    next.delete('scope')
-                                    setSearchParams(next, { replace: true })
-                                }}>
-                                    전체
-                                </FilterChip>
-                                {!!user && (
-                                    <FilterChip active={postScope === 'mine'} tone="violet" onClick={() => {
-                                        setPostScope('mine')
-                                        const next = new URLSearchParams(searchParams)
-                                        next.set('scope', 'mine')
-                                        next.set('tab', 'posts')
-                                        setSearchParams(next, { replace: true })
-                                    }}>
-                                        내 글
-                                    </FilterChip>
-                                )}
                                 <span className="text-[10px] font-semibold text-slate-500">정렬</span>
                                 <FilterChip active={sort === 'latest'} tone="sky" onClick={() => setSort('latest')}>
                                     최신글

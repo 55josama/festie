@@ -15,7 +15,7 @@ export default function Home() {
   const { data: categories = [] } = useQuery({ queryKey: ['categories', 'home'], queryFn: getCategories })
   const { data: popularRooms = [] } = useQuery({ queryKey: ['popular-chat-rooms', 'home'], queryFn: () => getPopularChatRooms(3) })
 
-  const featuredPosts = useMemo(() => pickRecentPopularPosts(posts as Post[], 24), [posts])
+  const featuredPosts = useMemo(() => pickTodayPopularPosts(posts as Post[]), [posts])
   const upcomingEvents = useMemo(() => getCurrentEventWindow(allEvents as Event[]), [allEvents])
   const upcomingTicketing = useMemo(() => getCurrentTicketingWindow(ticketingEvents as Event[]), [ticketingEvents])
   const categoryNameById = useMemo(() => {
@@ -99,25 +99,18 @@ export default function Home() {
       </section>
 
       <section className="rounded-[24px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-5">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-[18px] font-black tracking-tight text-slate-950">인기글</h2>
-            <p className="mt-1 text-xs text-slate-500">24시간 내 인기글만 보여줘요.</p>
-          </div>
-          <Link to="/community" className="hidden text-sm font-medium text-[var(--accent)] md:inline">전체보기</Link>
-        </div>
+        <SectionHeading
+          title="오늘 인기글"
+          action={<Link to="/community" className="hidden text-sm font-medium text-[var(--accent)] md:inline">전체보기</Link>}
+        />
         <div className="mt-4 grid gap-3">
-          {featuredPosts.length ? featuredPosts.map((post) => (
+          {featuredPosts.map((post) => (
             <PostRow
               key={post.id}
               post={post}
               categoryLabel={categoryNameById.get(post.categoryId) ?? post.categoryName}
             />
-          )) : (
-            <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-              아직 24시간 내 인기글이 없어요.
-            </div>
-          )}
+          ))}
         </div>
       </section>
     </div>
@@ -134,12 +127,14 @@ function sortUpcomingTicketing(events: Event[]) {
     .sort((a, b) => String(a.ticketingOpenAt ?? '').localeCompare(String(b.ticketingOpenAt ?? '')))
 }
 
-function pickRecentPopularPosts(posts: Post[], hours = 24) {
-  const cutoff = Date.now() - hours * 60 * 60 * 1000
-  return posts
-    .filter((post) => new Date(post.createdAt).getTime() >= cutoff)
+function pickTodayPopularPosts(posts: Post[]) {
+  const today = new Date().toLocaleDateString('ko-KR')
+  const todayPosts = posts
+    .filter((post) => new Date(post.createdAt).toLocaleDateString('ko-KR') === today)
     .sort((a, b) => (b.likeCount + b.commentCount) - (a.likeCount + a.commentCount))
-    .slice(0, 4)
+
+  const ranked = todayPosts.length ? todayPosts : [...posts].sort((a, b) => (b.likeCount + b.commentCount) - (a.likeCount + a.commentCount))
+  return ranked.slice(0, 4)
 }
 
 function countdownLabel(dateValue?: string | null, mode: 'event' | 'ticketing' = 'event') {
@@ -155,7 +150,7 @@ function startOfToday() {
 }
 
 function getCurrentEventWindow(events: Event[]) {
-  return sortUpcomingEvents(events.filter((event) => isWithinDays(event.startAt, 7)))
+  return sortUpcomingEvents(events.filter((event) => isOngoingEvent(event) || isWithinDays(event.startAt, 7)))
 }
 
 function getCurrentTicketingWindow(events: Event[]) {
@@ -165,6 +160,13 @@ function getCurrentTicketingWindow(events: Event[]) {
       return isWithinDays(event.ticketingOpenAt, 7) || (isTicketingOpen(event) && isWithinDays(event.startAt, 7))
     })
   )
+}
+
+function isOngoingEvent(event: Event) {
+  const now = new Date()
+  const start = new Date(event.startAt)
+  const end = new Date(event.endAt)
+  return start <= now && now <= end
 }
 
 function isTicketingOpen(event: Event) {

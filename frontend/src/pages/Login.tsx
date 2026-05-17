@@ -8,8 +8,8 @@ import { useAuthStore } from '../store/authStore'
 export default function Login() {
   const navigate = useNavigate()
   const { setAccessToken, setRefreshToken, setUser, syncUserFromAccessToken } = useAuthStore()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('test@festie.kr')
+  const [password, setPassword] = useState('password')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -53,8 +53,8 @@ export default function Login() {
             <p className="mt-2 text-sm text-slate-500">서비스를 계속 사용하려면 계정으로 들어오세요.</p>
           </div>
 
-          <Input label="이메일" value={email} onChange={setEmail} type="email" placeholder="example@festie.kr" />
-          <Input label="비밀번호" value={password} onChange={setPassword} type="password" placeholder="비밀번호를 입력하세요" />
+          <Input label="이메일" value={email} onChange={setEmail} type="email" />
+          <Input label="비밀번호" value={password} onChange={setPassword} type="password" />
 
           {error && <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
@@ -79,13 +79,11 @@ function Input({
   value,
   onChange,
   type,
-  placeholder,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   type: string
-  placeholder?: string
 }) {
   return (
     <label className="block">
@@ -94,7 +92,6 @@ function Input({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
         className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
       />
     </label>

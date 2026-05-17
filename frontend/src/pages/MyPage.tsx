@@ -111,14 +111,7 @@ export default function MyPage() {
         </section>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <InfoCard title="내가 쓴 글" description="커뮤니티에서 내가 쓴 글만 바로 볼 수 있어요.">
-            <Link
-              to="/community?tab=posts&scope=mine"
-              className="mt-4 inline-flex rounded-full border border-[var(--line)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)]"
-            >
-              쓴 글 보기
-            </Link>
-          </InfoCard>
+          <InfoCard title="내가 쓴 글 / 댓글" description="지금은 영역만 남겨두고, 목록 API가 생기면 바로 붙이기 좋습니다." />
           <InfoCard
             title="내가 저장한 일정"
             description="내 일정 캘린더로 바로 연결해서 추가한 행사만 따로 볼 수 있어요."
