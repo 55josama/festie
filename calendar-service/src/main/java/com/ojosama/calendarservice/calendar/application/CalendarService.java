@@ -34,6 +34,13 @@ public class CalendarService {
 
     public CalendarResponseDto createCalendar(CreateCalendarCommand command) {
 
+        boolean exists = calendarRepository.findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(
+                command.eventId(), command.eventDate(), command.userId()).isPresent();
+
+        if (exists) {
+            throw new CalendarException(CalendarErrorCode.EXISTS_CALENDAR);
+        }
+
         EventInfoResponseDto info = eventClient.getEvents(command.eventId());
 
         Calendar calendar = Calendar.create(command.userId(), command.memo(),
