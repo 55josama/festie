@@ -49,7 +49,7 @@ public class TargetInfo {
         return TargetInfo.builder()
                 .targetId(targetId)
                 .target(Target.OPERATION)
-                .targetType(TargetType.OPERATION_REQUEST)
+                .targetType(TargetType.REPORT_CREATED)
                 .build();
     }
 
@@ -95,7 +95,6 @@ public class TargetInfo {
                             TargetType.EVENT_REQUEST_RESULT)
                     .contains(targetType);
             case OPERATION -> EnumSet.of(
-                            TargetType.OPERATION_REQUEST,
                             TargetType.REPORT_CREATED,
                             TargetType.BLACKLIST_REGISTERED,
                             TargetType.BLIND_REGISTERED)
