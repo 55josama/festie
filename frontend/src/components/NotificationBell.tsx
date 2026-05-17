@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import type { Notification } from '../types'
 import {
@@ -13,7 +12,7 @@ type NotificationBellProps = {
   variant: 'mobile' | 'desktop'
 }
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 5
 
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
@@ -27,17 +26,6 @@ function useMediaQuery(query: string) {
   }, [query])
 
   return matches
-}
-
-function mergeUnique(existing: Notification[], incoming: Notification[]) {
-  const map = new Map<string, Notification>()
-  existing.forEach((item) => map.set(item.id, item))
-  incoming.forEach((item) => {
-    if (!map.has(item.id)) {
-      map.set(item.id, item)
-    }
-  })
-  return Array.from(map.values())
 }
 
 function BellIcon() {
@@ -69,10 +57,10 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
   const buttonRef = useRef<HTMLButtonElement | null>(null)
 
   const unreadCount = useMemo(() => notifications.filter((item) => item.readAt === null).length, [notifications])
-  const hasMore = page + 1 < totalPages
+  const hasPrev = page > 0
+  const hasNext = page + 1 < totalPages
   const isMockDev = import.meta.env.DEV && String(import.meta.env.VITE_USE_MSW ?? 'true') === 'true'
   const canUseLiveStream = shouldRender && !isMockDev
-  const isAdmin = user?.role === 'ADMIN'
 
   const syncInitialNotifications = async () => {
     if (!isLoggedIn() || !user?.userId) {
@@ -110,13 +98,12 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
     setNotifications((prev) => prev.filter((item) => item.id !== notificationId))
   }
 
-  const handleLoadMore = async () => {
-    if (loadingMore || !hasMore) return
+  const handleLoadPage = async (nextPage: number) => {
+    if (loadingMore || nextPage < 0 || nextPage >= totalPages || nextPage === page) return
     setLoadingMore(true)
     try {
-      const nextPage = page + 1
       const pageResponse = await getNotifications({ page: nextPage, size: PAGE_SIZE })
-      setNotifications((prev) => mergeUnique(prev, pageResponse.content))
+      setNotifications(pageResponse.content)
       setPage(nextPage)
       setTotalPages(pageResponse.totalPages)
     } finally {
@@ -239,11 +226,7 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
         aria-label="알림 열기"
       >
         <BellIcon />
-        {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
+        {unreadCount > 0 && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-rose-500 shadow-sm" />}
       </button>
 
       {open && (
@@ -278,15 +261,6 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
             <div className="flex items-center justify-between gap-2">
               <div className="text-[12px] font-semibold text-slate-500">받은 알림 {notifications.length}건</div>
               <div className="flex items-center gap-2">
-                {isAdmin && (
-                  <Link
-                    to="/admin?tab=notifications"
-                    onClick={() => setOpen(false)}
-                    className="rounded-full border border-[var(--accent-soft)] bg-[var(--accent-soft)]/50 px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent-soft)]/70"
-                  >
-                    전체 알림 보기
-                  </Link>
-                )}
                 <button
                   type="button"
                   onClick={() => void syncInitialNotifications()}
@@ -351,16 +325,39 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
               )}
             </div>
 
-            {hasMore && (
+            <div className="mt-3 flex items-center justify-center gap-2">
               <button
                 type="button"
-                onClick={() => void handleLoadMore()}
-                disabled={loadingMore}
-                className="mt-3 w-full rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60"
+                onClick={() => void handleLoadPage(page - 1)}
+                disabled={!hasPrev || loadingMore}
+                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
               >
-                {loadingMore ? '불러오는 중...' : '더 보기'}
+                이전
               </button>
-            )}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.max(totalPages, 1) }, (_, index) => index).map((pageIndex) => (
+                  <button
+                    key={pageIndex}
+                    type="button"
+                    onClick={() => void handleLoadPage(pageIndex)}
+                    disabled={loadingMore}
+                    className={`h-8 min-w-8 rounded-full px-2 text-xs font-semibold transition-colors ${
+                      page === pageIndex ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {pageIndex + 1}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleLoadPage(page + 1)}
+                disabled={!hasNext || loadingMore}
+                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+              >
+                다음
+              </button>
+            </div>
           </div>
         </div>
       )}

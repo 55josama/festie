@@ -14,6 +14,7 @@ export default function Header() {
   const navigate = useNavigate()
   const { user, isLoggedIn, logout } = useAuthStore()
   const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
+  const showMyNav = !!user && !isManager
 
   const handleLogout = async () => {
     try {
@@ -62,7 +63,7 @@ export default function Header() {
           <NavLink to="/events" className={navClass}>행사</NavLink>
           <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
           <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
-          <NavLink to="/my/calendars" className={navClass}>MY</NavLink>
+          {showMyNav && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
           {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
         </nav>
 
@@ -76,8 +77,8 @@ export default function Header() {
             <NavLink to="/events" className={navClass}>행사</NavLink>
             <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
             <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
-            <NavLink to="/my/calendars" className={navClass}>MY</NavLink>
-            {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
+            {showMyNav && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
+          {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
           </nav>
 
           <div className="flex shrink-0 items-center gap-3">

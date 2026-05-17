@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Events from './pages/Events'
@@ -12,6 +12,7 @@ import Admin from './pages/Admin'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import MyPage from './pages/MyPage'
+import { useAuthStore } from './store/authStore'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,7 +37,7 @@ export default function App() {
             <Route path="/community/new" element={<CommunityWrite />} />
             <Route path="/community/:postId/edit" element={<CommunityWrite />} />
             <Route path="/community/:postId" element={<PostDetail />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin" element={<AdminRouteGuard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/my" element={<MyPage />} />
@@ -46,4 +47,14 @@ export default function App() {
       </BrowserRouter>
     </QueryClientProvider>
   )
+}
+
+function AdminRouteGuard() {
+  const { user } = useAuthStore()
+  if (!user) return <Navigate to="/login" replace />
+  const normalizedRole = String(user.role ?? '').replace(/^ROLE_/, '')
+  const canAccessAdmin =
+    normalizedRole === 'ADMIN' || normalizedRole === 'MANAGER' || normalizedRole.endsWith('_MANAGER')
+  if (!canAccessAdmin) return <Navigate to="/" replace />
+  return <Admin />
 }

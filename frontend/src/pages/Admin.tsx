@@ -18,7 +18,6 @@ import {
     updateOperationRequestStatus,
     updateReportStatus,
 } from '../api/admin'
-import { deleteNotification, getNotifications, markAllNotificationsAsRead } from '../api/notifications'
 import {createEvent, getEvent, updateEvent} from '../api/events'
 import {getAdminChatMessages, updateAdminChatMessageStatus} from '../api/chat'
 import {
@@ -43,7 +42,7 @@ const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCE
 const OPERATION_STATUS_FILTERS = ['ALL', 'PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] as const
 const CHAT_STATUS_FILTERS = ['ALL', 'SCHEDULED', 'OPEN', 'CLOSED'] as const
 const USER_ROLE_FILTERS = ['ALL', 'USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER'] as const
-const ADMIN_TABS = ['manage', 'reports', 'chat', 'users', 'blacklist', 'notifications'] as const
+const ADMIN_TABS = ['manage', 'reports', 'chat', 'users', 'blacklist'] as const
 const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
     ADMIN: [],
     CONCERT_MANAGER: ['\uCF58\uC11C\uD2B8'],
@@ -129,7 +128,6 @@ export default function Admin() {
     const [blacklistSubmittedSearch, setBlacklistSubmittedSearch] = useState('')
     const [blacklistPage, setBlacklistPage] = useState(0)
     const [selectedBlacklistId, setSelectedBlacklistId] = useState<string | null>(null)
-    const [adminNotificationPage, setAdminNotificationPage] = useState(0)
     const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
     const [reportReviewForms, setReportReviewForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
     const [operationAdminMemos, setOperationAdminMemos] = useState<Record<string, string>>({})
@@ -270,14 +268,6 @@ export default function Admin() {
                 status: blacklistStatus === 'ALL' ? undefined : blacklistStatus,
             }),
         enabled: isAdmin && activeTab === 'blacklist',
-    })
-
-    const {
-        data: adminNotificationsPage = {content: [], totalElements: 0, totalPages: 0, size: 0, page: 0},
-    } = useQuery({
-        queryKey: ['admin', 'notifications', adminNotificationPage],
-        queryFn: () => getNotifications({page: adminNotificationPage, size: 10}),
-        enabled: isAdmin && activeTab === 'notifications',
     })
 
     const blacklistUserDetails = useQueries({
@@ -512,20 +502,6 @@ export default function Admin() {
         },
     })
 
-    const notificationMarkAllMutation = useMutation({
-        mutationFn: markAllNotificationsAsRead,
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({queryKey: ['admin', 'notifications']})
-        },
-    })
-
-    const notificationDeleteMutation = useMutation({
-        mutationFn: deleteNotification,
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({queryKey: ['admin', 'notifications']})
-        },
-    })
-
     const createEventMutation = useMutation({
         mutationFn: ({requestId, draft}: { requestId?: string; draft: EventDraft }) =>
             createEvent({
@@ -728,10 +704,9 @@ export default function Admin() {
         {value: 'chat', label: '채팅', description: '메시지·방'},
         {value: 'users', label: '사용자 조회', description: '이메일·이름·권한'},
         {value: 'blacklist', label: '블랙리스트', description: '차단·해제'},
-        {value: 'notifications', label: '알림', description: '전체 조회'},
     ]
     const visibleTabs = useMemo(
-        () => tabs.filter((tab) => (tab.value === 'users' || tab.value === 'blacklist' || tab.value === 'notifications') ? isAdmin : true),
+        () => tabs.filter((tab) => (tab.value === 'users' || tab.value === 'blacklist') ? isAdmin : true),
         [isAdmin],
     )
 
@@ -2014,101 +1989,6 @@ export default function Admin() {
                 </section>
             )}
 
-            {activeTab === 'notifications' && isAdmin && (
-                <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
-                    <SectionHeader
-                        title="알림"
-                        action={
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-slate-500">{adminNotificationsPage.totalElements}건</span>
-                                <button
-                                    type="button"
-                                    disabled={adminNotificationsPage.content.every((item) => item.readAt !== null) || notificationMarkAllMutation.isPending}
-                                    onClick={() => notificationMarkAllMutation.mutate()}
-                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
-                                >
-                                    모두 읽음
-                                </button>
-                            </div>
-                        }
-                    />
-                    <p className="text-sm leading-6 text-slate-600">
-                        실시간으로 들어온 알림과 DB에 저장된 알림을 함께 확인할 수 있어요.
-                    </p>
-
-                    <div className="space-y-3">
-                        {adminNotificationsPage.content.map((notification) => (
-                            <article
-                                key={notification.id}
-                                className={`rounded-[18px] border p-3 shadow-sm transition-colors ${
-                                    notification.readAt
-                                        ? 'border-slate-100 bg-white'
-                                        : 'border-[var(--accent-soft)]/60 bg-[var(--accent-soft)]/35'
-                                }`}
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">
-                                                {notification.readAt ? '읽음' : '새 알림'}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 text-[13px] font-semibold leading-5 text-slate-950">
-                                            {notification.title}
-                                        </div>
-                                        <div className="mt-1 text-[12px] leading-5 text-slate-600">
-                                            {notification.content}
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => notificationDeleteMutation.mutate(notification.id)}
-                                        className="rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600"
-                                        aria-label="알림 삭제"
-                                    >
-                                        삭제
-                                    </button>
-                                </div>
-                            </article>
-                        ))}
-                        {adminNotificationsPage.content.length === 0 && <EmptyState text="알림이 없습니다."/>}
-                    </div>
-
-                    <div className="flex items-center justify-center gap-2 pt-2">
-                        <button
-                            type="button"
-                            disabled={adminNotificationsPage.page === 0}
-                            onClick={() => setAdminNotificationPage((prev) => Math.max(prev - 1, 0))}
-                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
-                        >
-                            이전
-                        </button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({length: Math.max(adminNotificationsPage.totalPages || 0, 1)}, (_, index) => index).map((pageIndex) => (
-                                <button
-                                    key={pageIndex}
-                                    type="button"
-                                    onClick={() => setAdminNotificationPage(pageIndex)}
-                                    className={`h-8 min-w-8 rounded-full px-2 text-xs font-semibold transition-colors ${
-                                        adminNotificationsPage.page === pageIndex ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                    }`}
-                                >
-                                    {pageIndex + 1}
-                                </button>
-                            ))}
-                        </div>
-                        <button
-                            type="button"
-                            disabled={adminNotificationsPage.page + 1 >= Math.max(adminNotificationsPage.totalPages || 0, 1)}
-                            onClick={() => setAdminNotificationPage((prev) => prev + 1)}
-                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
-                        >
-                            다음
-                        </button>
-                    </div>
-                </section>
-            )}
-
             {selectedUserId && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8"
@@ -2619,6 +2499,8 @@ function validateEventDraft(draft: EventDraft): EventFormErrors {
     if (draft.hasTicketing) {
         if (!draft.ticketingOpenAt.trim()) errors.ticketingOpenAt = '티켓팅 오픈은 필수입니다.'
         if (!draft.ticketingCloseAt.trim()) errors.ticketingCloseAt = '티켓팅 종료는 필수입니다.'
+        if (!draft.ticketingLink.trim()) errors.ticketingLink = '티켓팅 링크는 필수입니다.'
+        if (!draft.img.trim()) errors.img = '대표 이미지는 필수입니다.'
     }
 
     return errors
@@ -2873,7 +2755,7 @@ function EventCreatePanel({
                             <div className="md:col-span-2">
                                 <AdminInput label="티켓팅 링크" value={draft.ticketingLink}
                                             onChange={(value) => setDraft({ticketingLink: value})}
-                                            error={mergedErrors.ticketingLink}/>
+                                            error={mergedErrors.ticketingLink} required={draft.hasTicketing}/>
                             </div>
                         </div>
                     </div>
@@ -2881,7 +2763,10 @@ function EventCreatePanel({
                 <label className="md:col-span-2 block">
                     <div
                         className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
-                        <span>대표 이미지</span>
+                        <span className="flex items-center gap-1">
+                            <span>대표 이미지</span>
+                            {draft.hasTicketing && <span className="text-rose-500">*</span>}
+                        </span>
                         <button
                             type="button"
                             onClick={() => imageInputRef.current?.click()}
@@ -3183,7 +3068,7 @@ function normalizeRole(role?: string | null) {
 }
 
 function normalizeAdminTab(value: string | null): AdminTab {
-    if (value === 'manage' || value === 'reports' || value === 'chat' || value === 'users' || value === 'blacklist' || value === 'notifications') return value
+    if (value === 'manage' || value === 'reports' || value === 'chat' || value === 'users' || value === 'blacklist') return value
     return 'manage'
 }
 

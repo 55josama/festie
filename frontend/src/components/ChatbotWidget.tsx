@@ -23,6 +23,7 @@ const QUICK_PROMPTS = [
 
 export default function ChatbotWidget() {
     const {user, accessToken} = useAuthStore()
+    const userStorageKey = useMemo(() => `festie-chatbot:${user?.userId ?? 'guest'}`, [user?.userId])
     const defaultMessages = useMemo<ChatMessage[]>(() => ([
         {
             id: 'welcome',
@@ -32,6 +33,7 @@ export default function ChatbotWidget() {
     ]), [])
     const [open, setOpen] = useState(false)
     const [input, setInput] = useState('')
+    const [storageKey, setStorageKey] = useState(userStorageKey)
     const {data: eventCatalog = []} = useQuery({
         queryKey: ['chatbot-event-catalog'],
         queryFn: () => getEvents({size: 200}),
@@ -41,9 +43,28 @@ export default function ChatbotWidget() {
     const bottomRef = useRef<HTMLDivElement | null>(null)
     const inputRef = useRef<HTMLTextAreaElement | null>(null)
     const hydratedRef = useRef(false)
-    const storageKey = useMemo(() => `festie-chatbot:${user?.userId ?? 'guest'}`, [user?.userId])
 
     const greetingName = useMemo(() => user?.nickname ?? '방문자', [user?.nickname])
+
+    useEffect(() => {
+        const guestKey = 'festie-chatbot:guest'
+        if (user?.userId) {
+            const nextKey = `festie-chatbot:${user.userId}`
+            if (storageKey !== nextKey) {
+                if (window.localStorage.getItem(nextKey) == null) {
+                    const guestRaw = window.localStorage.getItem(guestKey)
+                    if (guestRaw) {
+                        window.localStorage.setItem(nextKey, guestRaw)
+                    }
+                }
+                setStorageKey(nextKey)
+            }
+            return
+        }
+        if (storageKey !== guestKey) {
+            setStorageKey(guestKey)
+        }
+    }, [storageKey, user?.userId])
 
     useEffect(() => {
         hydratedRef.current = false
