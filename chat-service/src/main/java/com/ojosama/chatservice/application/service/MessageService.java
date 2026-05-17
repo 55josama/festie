@@ -22,6 +22,7 @@ import com.ojosama.chatservice.infrastructure.client.UserClient;
 import com.ojosama.common.exception.CommonErrorCode;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.OutboxEventPublisher;
+import com.ojosama.common.text.BannedWordValidator;
 import feign.FeignException;
 import java.util.EnumSet;
 import java.util.List;
@@ -67,6 +68,7 @@ public class MessageService {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
         validateContent(command.content());
+        validateBannedWords(command.content());
 
         ChatRoom chatRoom = findChatRoom(command.chatRoomId());
         if (!chatRoom.isOpen()) {
@@ -228,6 +230,12 @@ public class MessageService {
         }
         if (content.trim().length() > MAX_MESSAGE_CONTENT_LENGTH) {
             throw new ChatException(ChatErrorCode.MESSAGE_CONTENT_TOO_LONG);
+        }
+    }
+
+    private void validateBannedWords(String content) {
+        if (BannedWordValidator.containsBannedWord(content)) {
+            throw new ChatException(ChatErrorCode.MESSAGE_BANNED_WORD_DETECTED);
         }
     }
 

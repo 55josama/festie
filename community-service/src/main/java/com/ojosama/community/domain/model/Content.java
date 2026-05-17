@@ -1,8 +1,8 @@
 package com.ojosama.community.domain.model;
 
-import com.ojosama.comment.domain.model.BannedWordConstants;
 import com.ojosama.community.domain.exception.CommunityErrorCode;
 import com.ojosama.community.domain.exception.CommunityException;
+import com.ojosama.common.text.BannedWordValidator;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
@@ -44,12 +44,8 @@ public class Content {
             throw new CommunityException(CommunityErrorCode.CONTENT_TOO_LONG);
         }
 
-        String normalized = value.replaceAll("[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]", "");
-
-        for (String bannedWord : BannedWordConstants.BANNED_WORDS) {
-            if (value.contains(bannedWord) || normalized.contains(bannedWord)) {
-                throw new CommunityException(CommunityErrorCode.BANNED_WORD_DETECTED);
-            }
+        if (BannedWordValidator.containsBannedWord(value)) {
+            throw new CommunityException(CommunityErrorCode.BANNED_WORD_DETECTED);
         }
     }
     //게시글이 BLOCKED 처리됐을 때 응답에서 마스킹용으로 사용.
