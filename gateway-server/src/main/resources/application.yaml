@@ -43,6 +43,7 @@ spring:
                 - Path=/chat-service/**
               filters:
                 - StripPrefix=1
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
             - id: operation-service
               uri: lb://operation-service
