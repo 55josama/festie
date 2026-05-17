@@ -94,7 +94,7 @@ public class EventHandler {
     }
 
     public void handleEventRequestResult(EventRequestResultCommand command) {
-        String content = "요청하신 " + command.eventName() + " 결과가 " + command.status() + "되었습니다.";
+        String content = "요청하신 '" + command.eventName() + "' 결과가 " + command.status() + " 되었습니다.";
 
         Notification notification = notificationRepository.save(
                 Notification.of(command.receiverId(), "행사 요청 결과", content,

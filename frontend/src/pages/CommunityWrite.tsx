@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createPost, getCategories, getPost, updatePost } from '../api/community'
 import { createEventRequest, getEvents } from '../api/events'
 import { createOperationRequest, getMyOperationRequest, getOperationRequest, updateOperationRequest } from '../api/requests'
+import { getErrorMessage } from '../lib/error'
 import { useAuthStore } from '../store/authStore'
 
 export default function CommunityWrite() {
@@ -126,7 +127,7 @@ export default function CommunityWrite() {
           link: requestForm.eventLink,
           description: requestDescription,
         })
-        navigate('/community')
+        navigate('/community?tab=requests&requestKind=event')
         return
       }
 
@@ -136,14 +137,14 @@ export default function CommunityWrite() {
             title: form.title,
             content: form.content,
           })
-          navigate('/community')
+          navigate('/community?tab=requests&requestKind=operation')
           return
         }
         await createOperationRequest({
           title: form.title,
           content: form.content,
         })
-        navigate('/community')
+        navigate('/community?tab=requests&requestKind=operation')
         return
       }
 
@@ -166,7 +167,7 @@ export default function CommunityWrite() {
         setError('행사 카테고리를 선택해주세요.')
         return
       }
-      setError(err?.response?.data?.message ?? '글을 저장하지 못했습니다.')
+      setError(getErrorMessage(err, '글을 저장하지 못했습니다.'))
     } finally {
       setLoading(false)
     }
@@ -197,7 +198,9 @@ export default function CommunityWrite() {
           <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-sm font-semibold text-[var(--accent)]">글쓰기</div>
           <h1 className="mt-4 text-[32px] font-black tracking-tight text-slate-950">
             {requestMode === 'event'
-              ? '이벤트 요청을 남겨보세요'
+              ? requestEditId
+                ? '이벤트 요청을 수정해보세요'
+                : '이벤트 요청을 남겨보세요'
               : requestMode === 'operation'
                 ? requestEditId
                   ? '운영 요청을 수정해보세요'
@@ -208,7 +211,9 @@ export default function CommunityWrite() {
           </h1>
           <p className="mt-2 text-sm text-slate-500">
             {requestMode === 'event'
-              ? '행사 카테고리와 요청 내용을 함께 정리할 수 있어요.'
+              ? requestEditId
+                ? '기존 요청을 불러와 수정한 뒤 다시 제출할 수 있어요.'
+                : '행사 카테고리와 요청 내용을 함께 정리할 수 있어요.'
               : requestMode === 'operation'
                 ? requestEditId
                   ? '운영 요청 내용을 다시 정리할 수 있어요.'

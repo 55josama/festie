@@ -144,6 +144,7 @@ export const mockReports = [
     reporterId: 'u1',
     reporterType: 'USER',
     targetId: 'm-3',
+    targetUserId: 'u3',
     targetType: 'CHAT',
     category: 'PROFANITY',
     description: '욕설 및 비방',
@@ -156,12 +157,26 @@ export const mockReports = [
     reporterId: 'u2',
     reporterType: 'USER',
     targetId: 'c1',
+    targetUserId: 'u2',
     targetType: 'COMMENT',
     category: 'UNAUTHORIZED_TRADE',
     description: '티켓 재판매 유도',
     targetContent: '시야가 좋았다니 기대되네요!',
     status: 'RESOLVED',
     operatorMemo: '게시물 삭제 및 계정 경고 처리',
+  },
+]
+
+export const mockBlacklists = [
+  {
+    id: 'bl-1',
+    userId: 'u-1002',
+    status: 'ACTIVE',
+  },
+  {
+    id: 'bl-2',
+    userId: 'u-1001',
+    status: 'INACTIVE',
   },
 ]
 
@@ -173,4 +188,46 @@ export const mockComments = [
 export const mockCalendars = [
   { id: 'cal-1', userId: 'me', eventDate: '2026-05-01T18:00:00', ticketingDate: '2026-04-25T20:00:00', memo: '1일차 입장 30분 전에 도착', eventName: '2026 봄 콘서트', eventId: '1', eventStatus: 'SCHEDULED' },
   { id: 'cal-2', userId: 'me', eventDate: '2026-05-10T15:00:00', ticketingDate: '2026-05-01T20:00:00', memo: '친구랑 같이 가기', eventName: '아이돌 팬미팅 2026', eventId: '3', eventStatus: 'SCHEDULED' },
+]
+
+export const mockFavorites = [
+  {
+    id: 'fav-1',
+    favoriteId: 'fav-1',
+    eventId: '1',
+    categoryId: 'c1',
+    userId: 'me',
+    eventName: '2026 봄 콘서트',
+    eventImg: null,
+  },
+  {
+    id: 'fav-2',
+    favoriteId: 'fav-2',
+    eventId: '4',
+    categoryId: 'c4',
+    userId: 'me',
+    eventName: '브랜드 팝업 성수',
+    eventImg: null,
+  },
+]
+
+export const mockNotifications = [
+  {
+    id: 'nt-1',
+    title: '새 행사 알림',
+    content: '2026 불빛축제가 곧 시작돼요.',
+    readAt: null as string | null,
+  },
+  {
+    id: 'nt-2',
+    title: '행사 요청 결과',
+    content: '요청하신 행사 등록이 승인되었습니다.',
+    readAt: '2026-05-16T09:30:00.000Z',
+  },
+  {
+    id: 'nt-3',
+    title: '블랙리스트 알림',
+    content: '신고한 유저가 관리자 검토 대상에 올랐습니다.',
+    readAt: null as string | null,
+  },
 ]

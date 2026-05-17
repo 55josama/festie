@@ -3,6 +3,7 @@ export interface EventRequestItem {
   requesterId: string
   requesterNickname?: string
   createdAt?: string
+  title: string
   eventName: string
   categoryId: string
   category: string
@@ -29,12 +30,25 @@ export interface ReportItem {
   reporterId: string
   reporterType: string
   targetId: string
+  targetUserId?: string
   targetType: string
   category: string
   description: string
   targetContent?: string | null
   status: string
   operatorMemo: string | null
+}
+
+export interface ReportPage {
+  content: ReportItem[]
+  page: number
+  totalElements: number
+  totalPages: number
+  size: number
+}
+
+export interface ReportDetailItem extends ReportItem {
+  content: string
 }
 
 export interface AdminMessageItem {
@@ -57,18 +71,41 @@ export type AdminUserRole =
   | 'POPUP_MANAGER'
   | 'COMMUNITY_MANAGER'
 
+export type AdminUserStatus = 'ACTIVE' | 'BLOCKED'
+
 export interface AdminUserItem {
   userId: string
   email: string
   nickname: string
   name: string
   role: AdminUserRole
+  status: AdminUserStatus
   createdAt: string
   updatedAt: string
 }
 
+export interface AdminUserDetailItem extends AdminUserItem {
+  phoneNumber: string
+}
+
 export interface AdminUserPage {
   content: AdminUserItem[]
+  page: number
+  totalElements: number
+  totalPages: number
+  size: number
+}
+
+export type BlacklistStatus = 'ACTIVE' | 'INACTIVE'
+
+export interface BlacklistItem {
+  id: string
+  userId: string
+  status: BlacklistStatus
+}
+
+export interface BlacklistPage {
+  content: BlacklistItem[]
   page: number
   totalElements: number
   totalPages: number

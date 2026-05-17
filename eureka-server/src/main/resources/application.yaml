@@ -15,4 +15,4 @@ eureka:
     hostname: localhost
   server:
     enable-self-preservation: false
-    eviction-interval-timer-in-ms: 5000
+    eviction-interval-timer-in-ms: 15000  # 5초보다 안전, 60초보다 빠른 제거

@@ -10,7 +10,10 @@ import {
   mockCalendars,
   mockEventRequests,
   mockOperationRequests,
+  mockBlacklists,
+  mockFavorites,
   mockReports,
+  mockNotifications,
 } from './data'
 
 const wrap = (data: any) => ({ status: 'success', data })
@@ -29,7 +32,9 @@ type MockAdminUser = {
   email: string
   nickname: string
   name: string
+  phoneNumber: string
   role: 'USER' | 'ADMIN' | 'CONCERT_MANAGER' | 'FESTIVAL_MANAGER' | 'FANMEETING_MANAGER' | 'POPUP_MANAGER' | 'COMMUNITY_MANAGER'
+  status: 'ACTIVE' | 'BLOCKED'
   createdAt: string
   updatedAt: string
 }
@@ -67,7 +72,9 @@ const mockAdminUsers: MockAdminUser[] = [
     email: 'admin@festie.com',
     nickname: '어드민',
     name: '관리자',
+    phoneNumber: '010-1111-1111',
     role: 'ADMIN',
+    status: 'ACTIVE',
     createdAt: '2026-05-01T09:00:00.000Z',
     updatedAt: '2026-05-15T09:00:00.000Z',
   },
@@ -76,7 +83,9 @@ const mockAdminUsers: MockAdminUser[] = [
     email: 'manager@festie.com',
     nickname: '매니저',
     name: '매니저',
+    phoneNumber: '010-2222-2222',
     role: 'CONCERT_MANAGER',
+    status: 'ACTIVE',
     createdAt: '2026-05-02T09:00:00.000Z',
     updatedAt: '2026-05-15T09:10:00.000Z',
   },
@@ -85,7 +94,9 @@ const mockAdminUsers: MockAdminUser[] = [
     email: 'subin@festie.com',
     nickname: '호잇호잇',
     name: '수빈',
+    phoneNumber: '010-3333-3333',
     role: 'USER',
+    status: 'ACTIVE',
     createdAt: '2026-05-03T09:00:00.000Z',
     updatedAt: '2026-05-15T09:20:00.000Z',
   },
@@ -94,7 +105,9 @@ const mockAdminUsers: MockAdminUser[] = [
     email: 'popup@example.com',
     nickname: '팝업덕후',
     name: '팝업덕후',
+    phoneNumber: '010-4444-4444',
     role: 'POPUP_MANAGER',
+    status: 'BLOCKED',
     createdAt: '2026-05-04T09:00:00.000Z',
     updatedAt: '2026-05-15T09:30:00.000Z',
   },
@@ -106,6 +119,90 @@ function normalizeCategoryKey(name: string) {
   if (name === '\uD32C\uBBF8\uD305') return 'fanmeeting'
   if (name === '\uD31D\uC5C5\uC2A4\uD1A0\uC5B4') return 'popup'
   return String(name).toLowerCase()
+}
+
+function syncMockUserStatus(userId: string, status: 'ACTIVE' | 'BLOCKED') {
+  const user = mockAdminUsers.find((item) => item.userId === userId)
+  if (user) {
+    user.status = status
+    user.updatedAt = new Date().toISOString()
+  }
+}
+
+function buildChatbotReply(question: string) {
+  const q = question.trim().toLowerCase()
+  const matchedEvent = mockEvents.find((event) => {
+    const name = String(event.name ?? '').toLowerCase()
+    const category = String(event.categoryName ?? '').toLowerCase()
+    const place = String(event.place ?? '').toLowerCase()
+    return q.includes(name) || q.includes(category) || q.includes(place)
+  })
+
+  if (q.includes('이용') || q.includes('사용') || q.includes('어떻게') || q.includes('방법')) {
+    return 'Festie에서는 행사 목록에서 원하는 행사를 찾고, 행사 상세에서 찜하기와 채팅방을 이용할 수 있어요. 커뮤니티에서는 후기와 꿀팁을, MY에서는 내 일정과 관심 목록을 확인할 수 있어요.'
+  }
+
+  if (q.includes('이번주') || q.includes('이번 주') || q.includes('이주') || q.includes('이번달')) {
+    const now = new Date()
+    const in7Days = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 7)
+    const upcoming = mockEvents
+      .filter((event) => new Date(event.startAt) >= now && new Date(event.startAt) <= in7Days)
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+      .slice(0, 3)
+    if (upcoming.length > 0) {
+      return `이번 주 추천 행사: ${upcoming.map((event) => event.name).join(' · ')}`
+    }
+    return '이번 주에 바로 보이는 행사는 많지 않아요. 지역이나 카테고리를 알려주시면 더 좁혀서 찾아드릴게요.'
+  }
+
+  if (q.includes('인기') || q.includes('찜') || q.includes('많은 행사') || q.includes('인기많은')) {
+    return '찜 수 기반 인기 순위는 아직 직접 연결하지 않았어요. 대신 지금 주목할 만한 행사나 비슷한 행사를 추천해드릴게요.'
+  }
+
+  if (q.includes('요약') || q.includes('정리')) {
+    if (matchedEvent) {
+      return `${matchedEvent.name}는 ${matchedEvent.categoryName} 행사예요. ${matchedEvent.place}에서 ${matchedEvent.startAt?.slice(0, 10) ?? '미정'}부터 ${matchedEvent.endAt?.slice(0, 10) ?? '미정'}까지 진행돼요. ${matchedEvent.hasTicketing ? '티켓팅이 있어요.' : '티켓팅 없이 관람할 수 있어요.'}`
+    }
+    return '원하는 행사 이름을 함께 알려주시면 행사명, 장소, 일정, 티켓팅 여부를 중심으로 짧게 요약해드릴게요.'
+  }
+
+  if (q.includes('비슷') || q.includes('추천') || q.includes('비교')) {
+    const category = matchedEvent?.categoryName
+    const candidates = mockEvents.filter((event) => !matchedEvent || event.id !== matchedEvent.id)
+      .filter((event) => !category || event.categoryName === category)
+      .slice(0, 3)
+    if (candidates.length > 0) {
+      return `비슷한 행사 추천: ${candidates.map((event) => `${event.name} · ${event.place}`).join(' / ')}`
+    }
+    return '비슷한 행사를 찾지 못했어요. 행사 이름이나 카테고리를 조금 더 자세히 알려주세요.'
+  }
+
+  if (q.includes('지역') || q.includes('서울') || q.includes('부산') || q.includes('대구') || q.includes('인천') || q.includes('광주') || q.includes('대전') || q.includes('울산')) {
+    const region = ['서울', '부산', '대구', '인천', '광주', '대전', '울산'].find((item) => q.includes(item))
+    const regionEvents = mockEvents.filter((event) => String(event.region ?? '').includes(region ?? ''))
+    if (regionEvents.length > 0) {
+      return `${region} 지역 행사: ${regionEvents.slice(0, 3).map((event) => event.name).join(' · ')}`
+    }
+    return '어느 지역을 원하세요? 서울, 부산, 대구, 인천처럼 지역을 알려주시면 찾아드릴게요.'
+  }
+
+  if (matchedEvent) {
+    return `${matchedEvent.name}는 ${matchedEvent.categoryName} 행사이고, ${matchedEvent.place}에서 열려요. ${matchedEvent.hasTicketing ? '티켓팅이 있는 행사예요.' : '티켓팅 없이 진행되는 행사예요.'}`
+  }
+
+  return 'Festie 이용 방법, 이번 주 행사, 비슷한 행사 추천, 지역 행사 정보까지 도와드릴 수 있어요. 궁금한 행사가 있으면 이름이나 지역을 알려주세요.'
+}
+
+function wrapNotificationPage(page: number, size: number) {
+  const start = page * size
+  const content = mockNotifications.slice(start, start + size)
+  return {
+    content,
+    page,
+    size,
+    totalElements: mockNotifications.length,
+    totalPages: Math.max(1, Math.ceil(mockNotifications.length / size)),
+  }
 }
 
 export const handlers = [
@@ -127,6 +224,36 @@ export const handlers = [
     const event = mockEvents.find(e => e.id === params.eventId)
     if (!event) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
     return HttpResponse.json(wrap(event))
+  }),
+
+  http.get('/notification-service/v1/notifications', async ({ request }) => {
+    await delay(120)
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 10)
+    return HttpResponse.json(wrap(wrapNotificationPage(page, size)))
+  }),
+
+  http.patch('/notification-service/v1/notifications', async () => {
+    await delay(100)
+    const unread = mockNotifications.filter((notification) => !notification.readAt)
+    const now = new Date().toISOString()
+    mockNotifications.forEach((notification) => {
+      if (!notification.readAt) {
+        notification.readAt = now
+      }
+    })
+    return HttpResponse.json(wrap(unread.map((notification) => ({ ...notification, readAt: now }))))
+  }),
+
+  http.delete('/notification-service/v1/notifications/:notificationId', async ({ params }) => {
+    await delay(80)
+    const index = mockNotifications.findIndex((item) => item.id === params.notificationId)
+    if (index === -1) {
+      return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    }
+    mockNotifications.splice(index, 1)
+    return HttpResponse.json(wrap({}))
   }),
 
   http.post('/event-service/v1/events', async ({ request }) => {
@@ -336,6 +463,7 @@ export const handlers = [
       reporterId,
       reporterType,
       targetId: body.targetId,
+      targetUserId: body.targetUserId ?? 'u1',
       targetType: body.targetType,
       category: body.category ?? 'GENERAL',
       description: body.description ?? '신고',
@@ -787,6 +915,60 @@ export const handlers = [
     return HttpResponse.json(wrap({}))
   }),
 
+  http.get('/favorite-service/v1/favorites', async ({ request }) => {
+    await delay(120)
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 10)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const favorites = mockFavorites.filter((item) => item.userId === userId)
+    const totalElements = favorites.length
+    const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
+    const start = Math.max(page, 0) * Math.max(size, 1)
+    const content = favorites.slice(start, start + Math.max(size, 1))
+    return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
+  }),
+
+  http.post('/favorite-service/v1/favorites', async ({ request }) => {
+    await delay(120)
+    const body = await request.json() as any
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const event = mockEvents.find((item) => item.id === body.eventId)
+    if (!event) {
+      return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    }
+    const exists = mockFavorites.find((item) => item.userId === userId && item.eventId === body.eventId)
+    if (exists) {
+      return HttpResponse.json({ status: 'error', message: '이미 찜한 행사입니다.' }, { status: 409 })
+    }
+    const created = {
+      id: `fav-${Date.now()}`,
+      favoriteId: `fav-${Date.now()}`,
+      eventId: body.eventId,
+      categoryId: body.categoryId,
+      userId,
+      eventName: event.name,
+      eventImg: event.img,
+    }
+    mockFavorites.push(created as any)
+    return HttpResponse.json(wrap({
+      eventId: created.eventId,
+      eventName: created.eventName,
+      userId: created.userId,
+    }), { status: 201 })
+  }),
+
+  http.delete('/favorite-service/v1/favorites/:favoriteId', async ({ params, request }) => {
+    await delay(120)
+    const userId = request.headers.get('x-user-id') ?? 'me'
+    const index = mockFavorites.findIndex((item) => item.favoriteId === params.favoriteId && item.userId === userId)
+    if (index === -1) {
+      return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    }
+    mockFavorites.splice(index, 1)
+    return HttpResponse.json(wrap({}))
+  }),
+
   http.get('/user-service/v1/users/admin', async ({ request }) => {
     await delay(180)
     const url = new URL(request.url)
@@ -796,14 +978,15 @@ export const handlers = [
     const page = Number(url.searchParams.get('page') ?? 0)
     const size = Number(url.searchParams.get('size') ?? 20)
     let users = [...mockAdminUsers]
+    const hasRoleFilter = Boolean(role && role !== 'ALL')
     if (email || name) {
       users = users.filter((item) => {
-        const emailMatch = email ? item.email.toLowerCase().includes(email) : false
-        const nameMatch = name ? item.name.toLowerCase().includes(name) || item.nickname.toLowerCase().includes(name) : false
-        return emailMatch || nameMatch
+        const emailMatch = email ? item.email.toLowerCase().includes(email) : true
+        const nameMatch = name ? item.name.toLowerCase().includes(name) || item.nickname.toLowerCase().includes(name) : true
+        return emailMatch && nameMatch
       })
     }
-    if (role && role !== 'ALL') {
+    if (hasRoleFilter) {
       users = users.filter((item) => item.role === role)
     }
     const totalElements = users.length
@@ -811,6 +994,23 @@ export const handlers = [
     const start = Math.max(page, 0) * Math.max(size, 1)
     const content = users.slice(start, start + Math.max(size, 1))
     return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
+  }),
+
+  http.get('/user-service/v1/users/admin/:userId', async ({ params }) => {
+    await delay(160)
+    const user = mockAdminUsers.find((item) => item.userId === params.userId)
+    if (!user) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap({
+      userId: user.userId,
+      email: user.email,
+      nickname: user.nickname,
+      name: user.name,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }))
   }),
 
   http.patch('/user-service/v1/users/admin/:userId/role', async ({ params, request }) => {
@@ -821,6 +1021,64 @@ export const handlers = [
     user.role = body.role ?? user.role
     user.updatedAt = new Date().toISOString()
     return HttpResponse.json(wrap(user))
+  }),
+
+  http.get('/operation-service/v1/blacklists', async ({ request }) => {
+    await delay(180)
+    const url = new URL(request.url)
+    const status = (url.searchParams.get('status') ?? '').trim().toUpperCase()
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 20)
+    let blacklists = [...mockBlacklists]
+    if (status && status !== 'ALL') {
+      blacklists = blacklists.filter((item) => item.status === status)
+    }
+    const totalElements = blacklists.length
+    const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
+    const start = Math.max(page, 0) * Math.max(size, 1)
+    const content = blacklists.slice(start, start + Math.max(size, 1)).map(({ id, userId, status }) => ({ id, userId, status }))
+    return HttpResponse.json(wrap({ content, page, size, totalElements, totalPages }))
+  }),
+
+  http.post('/operation-service/v1/blacklists', async ({ request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const userId = String(body.userId ?? '').trim()
+    const reason = String(body.reason ?? '').trim()
+    if (!userId || !reason) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    const existing = mockBlacklists.find((item) => item.userId === userId && item.status === 'ACTIVE')
+    if (existing) {
+      return HttpResponse.json({ status: 'error', message: '이미 차단된 사용자입니다.' }, { status: 409 })
+    }
+    const created = {
+      id: `bl-${crypto.randomUUID()}`,
+      userId,
+      status: 'ACTIVE',
+      reason,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    mockBlacklists.unshift(created as any)
+    syncMockUserStatus(userId, 'BLOCKED')
+    return HttpResponse.json(wrap({ id: created.id, userId: created.userId, status: created.status }), { status: 201 })
+  }),
+
+  http.patch('/operation-service/v1/blacklists/:blacklistId/status', async ({ params, request }) => {
+    await delay(180)
+    const body = await request.json() as any
+    const reason = String(body.reason ?? '').trim()
+    const blacklist = mockBlacklists.find((item) => item.id === params.blacklistId) as any
+    if (!blacklist) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    if (!reason) {
+      return HttpResponse.json({ status: 'error', message: 'Invalid request' }, { status: 400 })
+    }
+    blacklist.status = 'INACTIVE'
+    blacklist.reason = reason
+    blacklist.updatedAt = new Date().toISOString()
+    syncMockUserStatus(blacklist.userId, 'ACTIVE')
+    return HttpResponse.json(wrap({ id: blacklist.id, userId: blacklist.userId, status: blacklist.status }))
   }),
 
   http.post('/user-service/v1/auth/login', async ({ request }) => {
@@ -885,6 +1143,18 @@ export const handlers = [
     }
     mockProfiles.set(token.replace('Bearer ', ''), updated)
     return HttpResponse.json(wrap(updated))
+  }),
+
+  http.post('/ai-service/v1/chatbot', async ({ request }) => {
+    await delay(220)
+    const body = await request.json() as any
+    const question = String(body.question ?? '').trim()
+    if (!question) {
+      return HttpResponse.json({ status: 'error', message: '질문을 입력해주세요.' }, { status: 400 })
+    }
+    return HttpResponse.json(wrap({
+      answer: buildChatbotReply(question),
+    }))
   }),
 
   http.post('/user-service/v1/users', async () => {

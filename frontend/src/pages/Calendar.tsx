@@ -1,22 +1,32 @@
-import { useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteCalendar, getCalendars, updateCalendar } from '../api/calendar'
+import { deleteFavorite, getFavorites } from '../api/favorites'
 import { getEvents } from '../api/events'
 import { useAuthStore } from '../store/authStore'
 import { formatDateTime, getMonthKey } from '../lib/format'
+import { getErrorMessage } from '../lib/error'
 
 export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
   const today = new Date()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
   const [selectedAllDay, setSelectedAllDay] = useState(today.getDate())
   const [selectedMineDay, setSelectedMineDay] = useState<number | null>(null)
+  const [mineTab, setMineTab] = useState<'schedule' | 'favorites'>(() => searchParams.get('tab') === 'favorites' ? 'favorites' : 'schedule')
   const [mineSort, setMineSort] = useState<'oldest' | 'latest'>('latest')
   const [mineCategory, setMineCategory] = useState('전체')
   const [memoDrafts, setMemoDrafts] = useState<Record<string, string>>({})
   const { isLoggedIn } = useAuthStore()
+
+  useEffect(() => {
+    if (mode !== 'mine') return
+    const nextTab = searchParams.get('tab') === 'favorites' ? 'favorites' : 'schedule'
+    setMineTab(nextTab)
+  }, [mode, searchParams])
 
   const { data: events = [] } = useQuery({
     queryKey: ['events', 'calendar', year, month],
@@ -36,10 +46,26 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
     enabled: mode === 'mine' && isLoggedIn(),
   })
 
+  const { data: favoritesPage = { content: [], page: 0, size: 0, totalElements: 0, totalPages: 0 } } = useQuery({
+    queryKey: ['favorites', 'mine', mineTab, year, month],
+    queryFn: () => getFavorites({ size: 100 }),
+    enabled: mode === 'mine' && isLoggedIn() && mineTab === 'favorites',
+  })
+
   const deleteMutation = useMutation({
     mutationFn: (calendarId: string) => deleteCalendar(calendarId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['calendars', year, month] })
+    },
+  })
+
+  const deleteFavoriteMutation = useMutation({
+    mutationFn: (favoriteId: string) => deleteFavorite(favoriteId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    },
+    onError: (error) => {
+      window.alert(getErrorMessage(error, '찜을 삭제하지 못했어요.'))
     },
   })
 
@@ -118,6 +144,8 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
     return mineCards.filter((item: any) => mineCategory === '전체' || item.categoryKey === mineCategory)
   }, [mineCards, mineCategory])
 
+  const favoriteItems = favoritesPage.content ?? []
+
   const selectedMineDateKey = selectedMineDay ? getMonthKey(year, month, selectedMineDay) : null
   const visibleMineCards = useMemo(() => {
     if (!selectedMineDateKey) return filteredMineCards
@@ -152,13 +180,52 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
 
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
-      <section className="rounded-[24px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-6">
-        <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
-          {mode === 'all' ? '캘린더' : '내 일정'}
+      {mode === 'all' ? (
+        <section className="rounded-[24px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-6">
+          <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+            캘린더
+          </div>
+          <h1 className="mt-2 text-[22px] font-black tracking-tight text-slate-950 md:mt-3 md:text-[28px]">{title}</h1>
+          <p className="mt-1 hidden max-w-xl text-sm leading-6 text-slate-600 md:mt-2 md:block">{description}</p>
+        </section>
+      ) : (
+        <div className="flex items-center justify-center">
+          <div className="inline-flex rounded-full border border-[var(--line)] bg-white p-1 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+            <button
+              type="button"
+              onClick={() => {
+                setMineTab('schedule')
+                const next = new URLSearchParams(searchParams)
+                next.set('tab', 'schedule')
+                setSearchParams(next, { replace: true })
+              }}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                mineTab === 'schedule'
+                  ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              일정
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMineTab('favorites')
+                const next = new URLSearchParams(searchParams)
+                next.set('tab', 'favorites')
+                setSearchParams(next, { replace: true })
+              }}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                mineTab === 'favorites'
+                  ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              관심 목록
+            </button>
+          </div>
         </div>
-        <h1 className="mt-2 text-[22px] font-black tracking-tight text-slate-950 md:mt-3 md:text-[28px]">{title}</h1>
-        <p className="mt-1 hidden max-w-xl text-sm leading-6 text-slate-600 md:mt-2 md:block">{description}</p>
-      </section>
+      )}
 
       {mode === 'all' ? (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
@@ -290,7 +357,7 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
             </section>
           </aside>
         </div>
-      ) : (
+      ) : mineTab === 'schedule' ? (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <section className="min-w-0 space-y-3 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
             <div className="flex items-center justify-between gap-3">
@@ -331,8 +398,8 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                       key={item.id}
                       className={`overflow-hidden rounded-[18px] border p-2.5 ${
                         isEnded
-                          ? 'border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.96))] opacity-85'
-                          : 'border-[rgba(111,84,255,0.14)] bg-[linear-gradient(180deg,rgba(242,238,255,0.96),rgba(255,255,255,0.98))]'
+                          ? 'border-[rgba(168,139,255,0.18)] bg-[linear-gradient(180deg,rgba(250,247,255,0.98),rgba(240,233,255,0.9))] opacity-95 shadow-[0_8px_20px_rgba(111,84,255,0.05)]'
+                          : 'border-[rgba(168,139,255,0.24)] bg-[linear-gradient(180deg,rgba(247,243,255,0.99),rgba(236,229,255,0.92))] shadow-[0_10px_24px_rgba(111,84,255,0.08)]'
                       }`}
                     >
                       <Link to={item.eventId ? `/events/${item.eventId}` : '#'} className="flex gap-2.5 rounded-[16px] p-1 transition-colors hover:bg-white/55">
@@ -470,6 +537,74 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                   <div key={`mine-tail-blank-${idx}`} className="min-h-14 bg-slate-50" />
                 ))}
               </div>
+            </section>
+          </aside>
+        </div>
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,1.25fr)]">
+          <section className="space-y-3 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-[18px] font-black tracking-tight text-slate-950">관심 목록</h2>
+                <div className="mt-1 text-xs text-slate-500">{favoriteItems.length}개</div>
+              </div>
+              <div className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+                찜한 행사
+              </div>
+            </div>
+
+            {isLoggedIn() ? (
+              <div className="space-y-2">
+                {favoriteItems.length === 0 ? (
+                  <div className="rounded-[18px] border border-dashed border-[var(--line)] bg-slate-50 p-4 text-sm text-slate-500">
+                    아직 찜한 행사가 없어요.
+                  </div>
+                ) : (
+                  favoriteItems.map((item: any) => (
+                    <div
+                      key={item.favoriteId}
+                      className="group flex items-center gap-3 rounded-[18px] border border-[var(--line)] bg-white p-3 transition-colors hover:bg-[var(--accent-soft)]/30"
+                    >
+                      <Link to={`/events/${item.eventId}`} className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="flex h-12 w-12 shrink-0 overflow-hidden rounded-[14px] bg-[var(--accent-soft)] shadow-[0_0_0_1px_rgba(111,84,255,0.12)]">
+                          {item.eventImg ? (
+                            <img src={item.eventImg} alt={item.eventName} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-[var(--accent)]">
+                              찜
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-slate-950">{item.eventName}</div>
+                          <div className="mt-0.5 text-[11px] text-slate-500">행사 상세로 이동</div>
+                        </div>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => deleteFavoriteMutation.mutate(item.favoriteId)}
+                        disabled={deleteFavoriteMutation.isPending}
+                        className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700 disabled:opacity-70"
+                      >
+                        찜 취소
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="rounded-[18px] border border-[var(--line)] bg-slate-50 p-4 text-sm text-slate-500">
+                로그인하면 관심 목록을 확인할 수 있어요.
+              </div>
+            )}
+          </section>
+
+          <aside className="hidden min-w-0 space-y-4 xl:block">
+            <section className="rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+              <h2 className="text-[18px] font-black tracking-tight text-slate-950">관심 목록 안내</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                찜한 행사는 여기에서 빠르게 확인하고, 다시 상세 페이지로 이동할 수 있어요.
+              </p>
             </section>
           </aside>
         </div>
