@@ -722,6 +722,18 @@ export const handlers = [
     return HttpResponse.json(wrap(room))
   }),
 
+  http.post('/chat-service/v1/chat/events/:eventId/location/verify', async ({ params, request }) => {
+    await delay(120)
+    const body = await request.json() as any
+    if (body.currentLatitude == null || body.currentLongitude == null) {
+      return HttpResponse.json({ status: 'error', message: '현재 위치 정보는 필수입니다.' }, { status: 400 })
+    }
+    return HttpResponse.json(wrap({
+      eventId: params.eventId,
+      isNearEvent: true,
+    }))
+  }),
+
   http.post('/chat-service/v1/chat/admin/rooms', async ({ request }) => {
     await delay(140)
     const body = await request.json() as any

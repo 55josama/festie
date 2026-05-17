@@ -19,6 +19,14 @@ export const getChatRoomByEventId = async (eventId: string) => {
   return unwrap<ChatRoom>(res.data)
 }
 
+export const verifyEventLocation = async (eventId: string, currentLatitude: number, currentLongitude: number) => {
+  const res = await client.post(`/chat-service/v1/chat/events/${eventId}/location/verify`, {
+    currentLatitude,
+    currentLongitude,
+  })
+  return unwrap<{ eventId: string; isNearEvent: boolean }>(res.data)
+}
+
 export const getChatMessages = async (chatRoomId: string) => {
   const res = await client.get(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, { params: { page: 0, size: 30 } })
   const data = unwrap<any>(res.data)

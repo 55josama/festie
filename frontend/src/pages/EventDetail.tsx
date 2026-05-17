@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteEvent, getEvent } from '../api/events'
-import { createChatRoom, deleteChatMessage, getChatMessages, getChatRoomByEventId } from '../api/chat'
+import { createChatRoom, deleteChatMessage, getChatMessages, getChatRoomByEventId, verifyEventLocation } from '../api/chat'
 import { createCalendar } from '../api/calendar'
 import { createFavorite, deleteFavorite, getFavorites } from '../api/favorites'
 import { reissueAccessToken } from '../api/client'
@@ -28,15 +28,36 @@ export default function EventDetail() {
   const [chatConnectionStatus, setChatConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const [calendarDate, setCalendarDate] = useState('')
   const [scheduleCalendarDates, setScheduleCalendarDates] = useState<Record<string, string>>({})
+  const [showLocationPolicy, setShowLocationPolicy] = useState(false)
+  const [locationVerified, setLocationVerified] = useState(false)
+  const [locationError, setLocationError] = useState('')
+  const [locationErrorPhase, setLocationErrorPhase] = useState<'idle' | 'visible' | 'fading'>('idle')
   const stompClientRef = useRef<any>(null)
   const chatConnectionStatusRef = useRef<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const chatMessagesScrollRef = useRef<HTMLDivElement | null>(null)
+  const isMessageComposingRef = useRef(false)
 
   useEffect(() => {
     if (!chatMessageError) return
     const timer = window.setTimeout(() => setChatMessageError(''), 2500)
     return () => window.clearTimeout(timer)
   }, [chatMessageError])
+
+  useEffect(() => {
+    if (!locationError) return
+    setLocationErrorPhase('visible')
+    const fadeTimer = window.setTimeout(() => setLocationErrorPhase('fading'), 5000)
+    const clearTimer = window.setTimeout(() => setLocationError(''), 5700)
+    return () => {
+      window.clearTimeout(fadeTimer)
+      window.clearTimeout(clearTimer)
+    }
+  }, [locationError])
+
+  useEffect(() => {
+    if (locationError) return
+    setLocationErrorPhase('idle')
+  }, [locationError])
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', eventId],
@@ -51,6 +72,12 @@ export default function EventDetail() {
     retry: false,
   })
   const chatRoomId = chatRoom?.chatRoomId
+
+  useEffect(() => {
+    setShowLocationPolicy(false)
+    setLocationVerified(false)
+    setLocationError('')
+  }, [chatRoomId, eventId])
 
   const { data: favoritePage = { content: [], page: 0, size: 0, totalElements: 0, totalPages: 0 } } = useQuery({
     queryKey: ['favorites', 'mine', eventId],
@@ -142,6 +169,28 @@ export default function EventDetail() {
     },
     onError: (error) => {
       window.alert(getErrorMessage(error, '관심 목록 처리에 실패했어요.'))
+    },
+  })
+
+  const locationVerifyMutation = useMutation({
+    mutationFn: async () => {
+      if (!eventId) throw new Error('eventId is missing')
+      const position = await getCurrentPosition()
+      return verifyEventLocation(eventId, position.latitude, position.longitude)
+    },
+    onSuccess: (result) => {
+      if (result.isNearEvent) {
+        setLocationVerified(true)
+        setLocationError('')
+        setShowLocationPolicy(false)
+        return
+      }
+      setLocationVerified(false)
+      setLocationError('해당 위치가 아닙니다. 행사 반경 안에서 다시 시도해 주세요.')
+      setShowLocationPolicy(false)
+    },
+    onError: (error) => {
+      setLocationError(getErrorMessage(error, '위치 인증에 실패했어요.'))
     },
   })
 
@@ -510,6 +559,7 @@ export default function EventDetail() {
                       key={msg.messageId}
                       message={msg}
                       me={user?.userId}
+                      locationVerified={locationVerified}
                       onDelete={(messageId) => deleteMessageMutation.mutate(messageId)}
                     />
                   ))}
@@ -563,10 +613,16 @@ export default function EventDetail() {
                         setChatMessageError('')
                       }
                     }}
+                    onCompositionStart={() => {
+                      isMessageComposingRef.current = true
+                    }}
+                    onCompositionEnd={() => {
+                      isMessageComposingRef.current = false
+                    }}
                     placeholder="메시지를 입력하세요"
                     disabled={chatConnectionStatus !== 'connected'}
                     onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return
+                      if (e.key !== 'Enter' || e.nativeEvent.isComposing || isMessageComposingRef.current) return
                       e.preventDefault()
                       sendChatOverSocket({
                         chatRoomId,
@@ -599,6 +655,11 @@ export default function EventDetail() {
                     {chatMessageError}
                   </div>
                 )}
+                {locationError && (
+                  <div className={`rounded-[14px] border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-medium text-rose-600 transition-all duration-700 ease-out ${locationErrorPhase === 'fading' ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'}`}>
+                    {locationError}
+                  </div>
+                )}
               </>
             ) : (
               <div className={`rounded-[18px] border p-3.5 text-sm ${chatTheme.noticeClass} ${chatTheme.noticeTextClass}`}>
@@ -607,20 +668,71 @@ export default function EventDetail() {
             )}
 
             {isChatEntered && (
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
+              <div className="flex items-center justify-between gap-2 text-[11px] text-slate-400">
                 <span>실시간 연결: {chatConnectionStatus === 'connected' ? '연결됨' : chatConnectionStatus === 'connecting' ? '연결 중' : chatConnectionStatus === 'error' ? '오류' : '대기 중'}</span>
-                <button
-                  type="button"
-                  onClick={() => setIsChatEntered(false)}
-                  className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600"
-                >
-                  나가기
-                </button>
+                <div className="flex items-center gap-2">
+                  {isLoggedIn() && !locationVerified && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLocationError('')
+                        setShowLocationPolicy(true)
+                      }}
+                      className="inline-flex items-center rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                    >
+                      위치 동의
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsChatEntered(false)}
+                    className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                  >
+                    나가기
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </aside>
       </div>
+
+      {showLocationPolicy && isLoggedIn() && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6">
+          <div className="w-full max-w-md rounded-[28px] bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.18)]">
+            <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">
+              위치 정보 동의
+            </div>
+            <h2 className="mt-3 text-[22px] font-black tracking-tight text-slate-950">
+              위치 인증을 진행할까요?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              현재 위치를 서버로 전송해 행사 반경 안에 있는지 확인합니다.
+              동의하면 위치 정보는 인증 목적에만 사용되고, 저장되지 않으며 확인 후에는 배지로 표시됩니다.
+            </p>
+            <div className="mt-4 rounded-[20px] bg-slate-50 p-4 text-[12px] leading-5 text-slate-500">
+              위치 정보는 채팅 참여 인증을 위해서만 사용되며, 행사 반경 확인 외의 용도로는 사용되지 않고 저장되지 않습니다.
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowLocationPolicy(false)}
+                className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => locationVerifyMutation.mutate()}
+                disabled={locationVerifyMutation.isPending}
+                className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+              >
+                {locationVerifyMutation.isPending ? '확인 중...' : '동의하고 인증'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -872,7 +984,17 @@ function DetailMeta({ label, value }: { label: string; value: string }) {
   )
 }
 
-function MessageBubble({ message, me, onDelete }: { message: any; me?: string; onDelete?: (messageId: string) => void }) {
+function MessageBubble({
+  message,
+  me,
+  locationVerified,
+  onDelete,
+}: {
+  message: any
+  me?: string
+  locationVerified?: boolean
+  onDelete?: (messageId: string) => void
+}) {
   const mine = me && message.userId === me
   if (message.messageType === 'SYSTEM') {
     return (
@@ -884,8 +1006,16 @@ function MessageBubble({ message, me, onDelete }: { message: any; me?: string; o
 
   return (
     <div className={`flex flex-col gap-1 ${mine ? 'items-end' : 'items-start'}`}>
-      <div className="text-[11px] font-semibold text-slate-500">
-        {message.writerNickname}
+      <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+        <span>{message.writerNickname}</span>
+        {mine && locationVerified && (
+          <img
+            src="/locationIcon.svg"
+            alt=""
+            aria-hidden="true"
+            className="h-[18px] w-[18px] shrink-0"
+          />
+        )}
       </div>
       <div className={`max-w-[68%] rounded-[16px] px-3 py-2 text-[13px] leading-5 shadow-sm ${mine ? 'bg-[var(--accent)] text-white' : 'bg-slate-100 text-slate-800'}`}>
         {message.content}
@@ -896,7 +1026,7 @@ function MessageBubble({ message, me, onDelete }: { message: any; me?: string; o
           <button
             type="button"
             onClick={() => onDelete?.(message.messageId)}
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-[10px] text-rose-600"
+            className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-[9px] text-rose-600"
             aria-label="메시지 삭제"
             title="삭제"
           >
@@ -942,6 +1072,31 @@ function parseWebSocketError(frame: IMessage) {
   } catch {
     return undefined
   }
+}
+
+function getCurrentPosition() {
+  return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('브라우저에서 위치 정보를 지원하지 않습니다.'))
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        })
+      },
+      (error) => {
+        reject(new Error(error.message || '위치 정보를 가져오지 못했습니다.'))
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    )
+  })
 }
 
 async function ensureFreshAccessToken() {
