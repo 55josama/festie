@@ -92,6 +92,14 @@ export default function Notices() {
 }
 
 function NoticeRow({ notice }: { notice: NoticeItem }) {
+  const previewText = typeof window === 'undefined'
+    ? notice.content
+    : (() => {
+        const div = document.createElement('div')
+        div.innerHTML = notice.content ?? ''
+        return (div.textContent ?? '').replace(/\s+/g, ' ').trim()
+      })()
+
   return (
     <Link
       to={`/notices/${notice.noticeId}`}
@@ -102,7 +110,7 @@ function NoticeRow({ notice }: { notice: NoticeItem }) {
           <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">공지</span>
         </div>
         <div className="truncate text-[15px] font-semibold leading-6 text-slate-950">{notice.title}</div>
-        <div className="line-clamp-2 whitespace-pre-wrap break-words text-[13px] leading-6 text-slate-600">{notice.content}</div>
+        <div className="line-clamp-2 whitespace-pre-wrap break-words text-[13px] leading-6 text-slate-600">{previewText}</div>
       </div>
       <div className="shrink-0 text-right text-[11px] text-slate-400">
         <div>상세 보기</div>
