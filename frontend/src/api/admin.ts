@@ -33,7 +33,7 @@ export const getOperationRequests = async (params: Record<string, any> = {}) => 
   return unwrapPage<OperationRequestItem>(res.data)
 }
 
-export const updateOperationRequestStatus = async (requestId: string, status: string, adminMemo: string) => {
+export const updateOperationRequestStatus = async (requestId: string, status: string, adminMemo?: string | null) => {
   const res = await client.patch(`/operation-service/v1/operation-requests/${requestId}/status`, { status, adminMemo })
   return unwrap<OperationRequestItem>(res.data)
 }
