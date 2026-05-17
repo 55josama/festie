@@ -870,7 +870,7 @@ function MessageBubble({ message, me, onDelete }: { message: any; me?: string; o
           </button>
         ) : (
           <ReportButton
-            targetType="CHAT_MESSAGE"
+            targetType="CHAT"
             targetId={message.messageId}
             label="신고"
             className="inline-flex items-center rounded-full border border-[var(--line)] bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
