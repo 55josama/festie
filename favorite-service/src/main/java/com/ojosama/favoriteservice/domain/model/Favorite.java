@@ -17,7 +17,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Getter
 @Entity
 @Table(name = "p_favorite", indexes = {
-        @Index(name = "idx_favorite_user_id", columnList = "user_id")
+        @Index(name = "idx_favorite_user_deleted", columnList = "user_id, deleted_at")
 })
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Favorite extends BaseUserEntity {
