@@ -16,7 +16,7 @@ public class AuditorAwareImpl implements AuditorAware<UUID> {
     public Optional<UUID> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        log.info("### authentication: {}", authentication);
+        log.info("authentication: {}", authentication);
 
         if (authentication == null || !authentication.isAuthenticated()) {
             return Optional.empty();
@@ -24,7 +24,7 @@ public class AuditorAwareImpl implements AuditorAware<UUID> {
 
         Object principal = authentication.getPrincipal();
 
-        log.info("### principal: {}", principal);
+        log.info("principal: {}", principal);
 
         if (principal instanceof UUID uuid) {
             return Optional.of(uuid);
