@@ -358,7 +358,7 @@ export default function Community() {
                                                         updateOperationStatusMutation.mutate({
                                                             requestId: request.id,
                                                             status: 'IN_PROGRESS',
-                                                            reason: reason.trim(),
+                                                            reason: reason.trim() || '승인 처리',
                                                         })
                                                     }}
                                                     className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
