@@ -187,10 +187,11 @@ public class ReportService {
     // ============= 블라인드 처리 관련 메서드 =============
 
     private void checkAndProcessAutomaticBlind(CreateReportCommand command, Report report) {
-        // saveReportSafely 이후 호출되므로 현재 신고가 이미 포함된 카운트
-        long reportCount = reportRepository.countByTargetId(command.targetId());
+        long reportCountBefore = reportRepository.countByTargetId(command.targetId());
 
-        if (reportCount == 3) {
+        long reportCountAfter = reportCountBefore + 1;
+
+        if (reportCountAfter >= 3 && reportCountBefore < 3) {
             report.blind();
             publishBlindEvent(command);
         }
