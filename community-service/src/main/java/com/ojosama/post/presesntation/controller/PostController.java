@@ -1,6 +1,7 @@
 package com.ojosama.post.presesntation.controller;
 
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.post.application.dto.command.CreatePostCommand;
 import com.ojosama.post.application.dto.command.DeletePostCommand;
 import com.ojosama.post.application.dto.command.UpdatePostCommand;
@@ -75,7 +76,7 @@ public class PostController {
     }
 
     @GetMapping
-    public ApiResponse<Page<PostResponse>> list(
+    public ApiResponse<PageResponse<PostResponse>> list(
             @RequestParam(required = false) UUID categoryId,
             @RequestHeader(value = USER_ID_HEADER, required = false) UUID userId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
@@ -88,7 +89,7 @@ public class PostController {
             query = PostListQuery.all(pageable);
         }
         Page<PostResult> page = postService.list(query);
-        return ApiResponse.success(page.map(PostResponse::from));
+        return ApiResponse.success(PageResponse.from(page.map(PostResponse::from)));
     }
 
     @PostMapping("/{postId}/likes")

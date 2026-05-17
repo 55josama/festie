@@ -18,23 +18,17 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :id")
     int incrementViewCount(@Param("id") UUID id);
 
-    /**
-     * 조회수를 N 만큼 한 번에 증가 (Redis flush 용).
-     * 동일 row 에 100번 조회됐다면 UPDATE 1번으로 처리 → row lock 점유 시간 폭감.
-     */
+//    조회수를 N 만큼 한 번에 증가 (Redis flush 용). 동일 row 에 100번 조회됐다면 UPDATE 1번으로 처리 → row lock 점유 시간 폭감.
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + :delta WHERE p.id = :id")
     int incrementViewCountBy(@Param("id") UUID id, @Param("delta") long delta);
 
-    /** 특정 유저가 쓴 게시글 (소프트 삭제/BLOCKED 제외). */
     Page<Post> findByUserIdAndDeletedAtIsNullAndStatusNot(
             UUID userId, PostStatus excludedStatus, Pageable pageable);
 
-    /** 카테고리별 게시글 (소프트 삭제/BLOCKED 제외). */
     Page<Post> findByCategoryIdAndDeletedAtIsNullAndStatusNot(
             UUID categoryId, PostStatus excludedStatus, Pageable pageable);
 
-    /** 전체 목록 (소프트 삭제/BLOCKED 제외). */
     Page<Post> findByDeletedAtIsNullAndStatusNot(
             PostStatus excludedStatus, Pageable pageable);
 

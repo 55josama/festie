@@ -23,9 +23,12 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "p_post",
         indexes = {
-                @Index(name = "idx_post_user", columnList = "user_id"),
-                @Index(name = "idx_post_category", columnList = "category_id"),
-                @Index(name = "idx_post_status_created", columnList = "status, created_at")
+                // 전체 목록: WHERE deleted_at IS NULL AND status <> ? ORDER BY created_at
+                @Index(name = "idx_post_deleted_created",          columnList = "deleted_at, created_at"),
+                // 유저별 목록: WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at
+                @Index(name = "idx_post_user_deleted_created",     columnList = "user_id, deleted_at, created_at"),
+                // 카테고리별 목록: WHERE category_id = ? AND deleted_at IS NULL ORDER BY created_at
+                @Index(name = "idx_post_category_deleted_created", columnList = "category_id, deleted_at, created_at")
         }
 )
 @Getter
