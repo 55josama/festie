@@ -72,11 +72,11 @@ export const mockPosts = [
 ]
 
 export const mockMessages = [
-  { messageId: '1', chatRoomId: 'room-1', userId: 'u1', writerNickname: '페스티유저', messageType: 'USER', content: '줄이 엄청 길어요 ㅠㅠ', status: 'ACTIVE', createdAt: '2026-05-01T17:32:00' },
-  { messageId: '2', chatRoomId: 'room-1', userId: 'u2', writerNickname: '콘서트고수', messageType: 'USER', content: '저는 방금 입장했어요! 빠르게 오세요', status: 'ACTIVE', createdAt: '2026-05-01T17:33:00' },
-  { messageId: '3', chatRoomId: 'room-1', userId: 'system', writerNickname: '', messageType: 'SYSTEM', content: '채팅방이 오픈되었습니다', status: 'ACTIVE', createdAt: '2026-05-01T17:33:30' },
-  { messageId: '4', chatRoomId: 'room-1', userId: 'me', writerNickname: '나', messageType: 'USER', content: '굿즈 어디서 팔아요?', status: 'ACTIVE', createdAt: '2026-05-01T17:34:00' },
-  { messageId: '5', chatRoomId: 'room-1', userId: 'u3', writerNickname: '팬심가득', messageType: 'USER', content: '2번 게이트 앞쪽에 있어요!', status: 'ACTIVE', createdAt: '2026-05-01T17:34:30' },
+  { messageId: '1', chatRoomId: 'room-1', eventId: '1', userId: 'u1', writerNickname: '페스티유저', messageType: 'USER', content: '줄이 엄청 길어요 ㅠㅠ', status: 'ACTIVE', createdAt: '2026-05-01T17:32:00' },
+  { messageId: '2', chatRoomId: 'room-1', eventId: '1', userId: 'u2', writerNickname: '콘서트고수', messageType: 'USER', content: '저는 방금 입장했어요! 빠르게 오세요', status: 'ACTIVE', createdAt: '2026-05-01T17:33:00' },
+  { messageId: '3', chatRoomId: 'room-1', eventId: '1', userId: 'system', writerNickname: '', messageType: 'SYSTEM', content: '채팅방이 오픈되었습니다', status: 'ACTIVE', createdAt: '2026-05-01T17:33:30' },
+  { messageId: '4', chatRoomId: 'room-1', eventId: '1', userId: 'me', writerNickname: '나', messageType: 'USER', content: '굿즈 어디서 팔아요?', status: 'ACTIVE', createdAt: '2026-05-01T17:34:00' },
+  { messageId: '5', chatRoomId: 'room-1', eventId: '1', userId: 'u3', writerNickname: '팬심가득', messageType: 'USER', content: '2번 게이트 앞쪽에 있어요!', status: 'ACTIVE', createdAt: '2026-05-01T17:34:30' },
 ]
 
 export const mockChatRooms = [

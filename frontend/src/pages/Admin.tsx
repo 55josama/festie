@@ -34,7 +34,7 @@ import {useAuthStore} from '../store/authStore'
 import {formatDateTime} from '../lib/format'
 import {getErrorMessage} from '../lib/error'
 import {searchAddressWithKakao} from '../lib/kakao'
-import type {Event} from '../types'
+import type {ChatRoom, Event} from '../types'
 import type {
     AdminMessageItem,
     AdminUserDetailItem,
@@ -104,6 +104,14 @@ interface AdminMessagePage {
     number: number
 }
 
+interface AdminChatRoomPage {
+    content: ChatRoom[]
+    totalElements: number
+    totalPages: number
+    size: number
+    page: number
+}
+
 const EMPTY_ADMIN_MESSAGE_PAGE: AdminMessagePage = {
     content: [],
     totalElements: 0,
@@ -123,6 +131,9 @@ export default function Admin() {
     const [requestStatus, setRequestStatus] = useState<(typeof REQUEST_STATUS_FILTERS)[number]>('ALL')
     const [operationStatus, setOperationStatus] = useState<(typeof OPERATION_STATUS_FILTERS)[number]>('ALL')
     const [chatStatus, setChatStatus] = useState<(typeof CHAT_STATUS_FILTERS)[number]>('ALL')
+    const [chatRoomScheduledFrom, setChatRoomScheduledFrom] = useState('')
+    const [chatRoomScheduledTo, setChatRoomScheduledTo] = useState('')
+    const [chatRoomPage, setChatRoomPage] = useState(0)
     const [messageStatus, setMessageStatus] = useState<'ALL' | 'ACTIVE' | 'BLINDED'>('ALL')
     const [messagePage, setMessagePage] = useState(0)
     const [reportPage, setReportPage] = useState(0)
@@ -179,6 +190,16 @@ export default function Admin() {
     useEffect(() => {
         setReportPage(0)
     }, [reportStatus])
+
+    useEffect(() => {
+        setChatRoomPage(0)
+    }, [chatStatus])
+
+    useEffect(() => {
+        if (chatRoomScheduledFrom && (!chatRoomScheduledTo || chatRoomScheduledTo < chatRoomScheduledFrom)) {
+            setChatRoomScheduledTo(chatRoomScheduledFrom)
+        }
+    }, [chatRoomScheduledFrom, chatRoomScheduledTo])
 
     const normalizedRole = normalizeRole(user?.role)
 
@@ -365,9 +386,16 @@ export default function Admin() {
         return managedChatCategories.values().next().value as string | undefined
     }, [isAdmin, managedChatCategories])
 
-    const {data: chatRooms = []} = useQuery({
-        queryKey: ['admin', 'chat-rooms'],
-        queryFn: getAdminChatRooms,
+    const {
+        data: adminChatRoomPage = {content: [], totalElements: 0, totalPages: 0, size: 0, page: 0},
+    } = useQuery<AdminChatRoomPage>({
+        queryKey: ['admin', 'chat-rooms', chatStatus, chatRoomPage, chatRoomScheduledFrom, chatRoomScheduledTo],
+        queryFn: () => getAdminChatRooms({
+            page: chatRoomPage,
+            size: 7,
+            scheduledOpenAtFrom: chatRoomScheduledFrom || undefined,
+            scheduledOpenAtTo: chatRoomScheduledTo || undefined,
+        }),
     })
 
     const {
@@ -378,7 +406,7 @@ export default function Admin() {
         queryFn: () =>
             getAdminChatMessages({
                 page: messagePage,
-                size: 8,
+                size: 10,
                 status: messageStatus === 'ALL' ? undefined : messageStatus,
                 category: managedMessageCategory,
             }),
@@ -401,15 +429,36 @@ export default function Admin() {
     }, [requestedEventId, scopedEventRequests])
 
     const scopedChatRooms = useMemo(() => {
-        let rooms = isAdmin || isManager ? chatRooms : []
+        let rooms = isAdmin || isManager ? adminChatRoomPage.content : []
         if (!isAdmin && !isManager && managedChatCategories.size > 0) {
             rooms = rooms.filter((room: any) => managedChatCategories.has(room.category))
         }
         if (chatStatus !== 'ALL') {
             rooms = rooms.filter((room: any) => room.status === chatStatus)
         }
+        if (chatRoomScheduledFrom) {
+            const fromKey = chatRoomScheduledFrom
+            rooms = rooms.filter((room: any) => {
+                const scheduledOpenAt = toLocalDateKey(room.scheduledOpenAt)
+                return scheduledOpenAt != null && scheduledOpenAt >= fromKey
+            })
+        }
+        if (chatRoomScheduledTo) {
+            const toKey = chatRoomScheduledTo
+            rooms = rooms.filter((room: any) => {
+                const scheduledOpenAt = toLocalDateKey(room.scheduledOpenAt)
+                return scheduledOpenAt != null && scheduledOpenAt <= toKey
+            })
+        }
+        rooms = [...rooms].sort((a: any, b: any) => {
+            const left = a.scheduledOpenAt ? new Date(a.scheduledOpenAt).getTime() : 0
+            const right = b.scheduledOpenAt ? new Date(b.scheduledOpenAt).getTime() : 0
+            return right - left
+        })
         return rooms
-    }, [chatRooms, chatStatus, managedChatCategories, isAdmin, isManager])
+    }, [adminChatRoomPage.content, chatStatus, managedChatCategories, isAdmin, isManager, chatRoomScheduledFrom, chatRoomScheduledTo])
+
+    const chatRoomTotalPages = Math.max(adminChatRoomPage.totalPages || 0, 1)
 
     const generalDraftWithCategory = useMemo(() => {
         if (generalDraft.categoryId) return generalDraft
@@ -692,6 +741,11 @@ export default function Admin() {
 
     const adminMessages = adminMessagePage.content
     const messageTotalPages = Math.max(adminMessagePage.totalPages || 0, 1)
+    useEffect(() => {
+        if (chatRoomPage > 0 && chatRoomPage >= chatRoomTotalPages) {
+            setChatRoomPage(0)
+        }
+    }, [chatRoomPage, chatRoomTotalPages])
 
     const lookupPlaceForDraft = async (setDraft: (patch: Partial<EventDraft>) => void) => {
         setAddressLookupLoading(true)
@@ -1580,6 +1634,47 @@ export default function Admin() {
                                     </div>
                                 }
                             />
+                            <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-dashed border-[var(--line)] bg-slate-50 px-3 py-3 text-xs text-slate-500">
+                                <span className="text-[11px] font-semibold text-slate-500">범위</span>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="date"
+                                        value={chatRoomScheduledFrom}
+                                        onChange={(e) => {
+                                            const nextFrom = e.target.value
+                                            setChatRoomScheduledFrom(nextFrom)
+                                            setChatRoomPage(0)
+                                            if (!chatRoomScheduledTo || chatRoomScheduledTo < nextFrom) {
+                                                setChatRoomScheduledTo(nextFrom)
+                                            }
+                                        }}
+                                        className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs outline-none"
+                                    />
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="date"
+                                        value={chatRoomScheduledTo}
+                                        min={chatRoomScheduledFrom || undefined}
+                                        onChange={(e) => {
+                                            setChatRoomScheduledTo(e.target.value)
+                                            setChatRoomPage(0)
+                                        }}
+                                        className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs outline-none"
+                                    />
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setChatRoomScheduledFrom('')
+                                        setChatRoomScheduledTo('')
+                                        setChatRoomPage(0)
+                                    }}
+                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                                >
+                                    🔄
+                                </button>
+                            </div>
                             <div className="space-y-3">
                                 {scopedChatRooms.map((room: any) => (
                                     <div key={room.chatRoomId}
@@ -1627,6 +1722,38 @@ export default function Admin() {
                                     </div>
                                 ))}
                                 {scopedChatRooms.length === 0 && <EmptyState text="조회할 채팅방이 없습니다."/>}
+                            </div>
+                            <div className="flex items-center justify-center gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={chatRoomPage === 0}
+                                    onClick={() => setChatRoomPage((prev) => Math.max(prev - 1, 0))}
+                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                                >
+                                    이전
+                                </button>
+                                <div className="flex items-center gap-1">
+                                    {Array.from({length: chatRoomTotalPages}, (_, index) => index).slice(0, 5).map((pageIndex) => (
+                                        <button
+                                            key={pageIndex}
+                                            type="button"
+                                            onClick={() => setChatRoomPage(pageIndex)}
+                                            className={`h-8 min-w-8 rounded-full px-2 text-xs font-semibold transition-colors ${
+                                                chatRoomPage === pageIndex ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            {pageIndex + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={chatRoomPage + 1 >= chatRoomTotalPages}
+                                    onClick={() => setChatRoomPage((prev) => prev + 1)}
+                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+                                >
+                                    다음
+                                </button>
                             </div>
                         </div>
 
@@ -1692,8 +1819,21 @@ export default function Admin() {
                                                 </div>
                                                 <div
                                                     className="mt-2 text-sm leading-6 text-slate-800">{message.content}</div>
-                                                <div className="mt-2 text-[11px] text-slate-500">
-                                                    채팅방 ID: {message.chatRoomId} · {formatDateTime(message.createdAt)}
+                                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                                    <span>채팅방 ID: {message.chatRoomId}</span>
+                                                    <span className="text-slate-300">·</span>
+                                                    <span>{formatDateTime(message.createdAt)}</span>
+                                                    {message.eventId ? (
+                                                        <>
+                                                            <span className="text-slate-300">·</span>
+                                                            <Link
+                                                                to={`/events/${message.eventId}`}
+                                                                className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 transition-colors hover:bg-violet-100"
+                                                            >
+                                                                행사보기
+                                                            </Link>
+                                                        </>
+                                                    ) : null}
                                                 </div>
                                             </div>
                                             <div className="flex shrink-0 flex-col gap-2">
@@ -3148,6 +3288,16 @@ function TogglePill({active, onClick, children}: { active?: boolean; onClick: ()
 function normalizeRole(role?: string | null) {
     if (!role) return ''
     return role.replace(/^ROLE_/, '')
+}
+
+function toLocalDateKey(value?: string | null) {
+    if (!value) return null
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
 }
 
 function normalizeAdminTab(value: string | null): AdminTab {

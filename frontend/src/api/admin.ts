@@ -53,9 +53,9 @@ export const getPopularChatRooms = async (limit = 6) => {
   return unwrapPage<ChatRoom & { currentViewerCount?: number }>(res.data)
 }
 
-export const getAdminChatRooms = async () => {
-  const res = await client.get('/chat-service/v1/chat/admin/rooms')
-  return unwrapPage<ChatRoom & { currentViewerCount?: number }>(res.data)
+export const getAdminChatRooms = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/chat-service/v1/chat/admin/rooms', { params })
+  return unwrapPageResponse<ChatRoom & { currentViewerCount?: number }>(res.data)
 }
 
 export const forceChatRoomStatus = async (chatRoomId: string, action: 'FORCE_OPEN' | 'FORCE_CLOSE') => {

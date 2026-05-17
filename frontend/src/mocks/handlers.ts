@@ -768,12 +768,23 @@ export const handlers = [
 
   http.get('/chat-service/v1/chat/admin/rooms', async () => {
     await delay(140)
-    return HttpResponse.json(wrap(
-      mockChatRooms.map((room) => ({
+    const rooms = [...mockChatRooms]
+      .map((room) => ({
         ...room,
         currentViewerCount: room.currentViewerCount ?? 0,
-      })),
-    ))
+      }))
+      .sort((a, b) => {
+        const left = a.scheduledOpenAt ? new Date(a.scheduledOpenAt).getTime() : 0
+        const right = b.scheduledOpenAt ? new Date(b.scheduledOpenAt).getTime() : 0
+        return right - left
+      })
+    return HttpResponse.json(wrap({
+      content: rooms,
+      totalElements: rooms.length,
+      totalPages: 1,
+      size: rooms.length,
+      page: 0,
+    }))
   }),
 
   http.patch('/chat-service/v1/chat/admin/rooms/:chatRoomId/status', async ({ params, request }) => {

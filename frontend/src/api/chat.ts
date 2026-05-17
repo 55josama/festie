@@ -1,5 +1,5 @@
 import client from './client'
-import { unwrap, unwrapPage } from '../lib/api'
+import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { ChatMessage, ChatRoom } from '../types'
 import type { AdminMessageItem } from '../types/admin'
 
@@ -41,25 +41,14 @@ export const getPopularChatRooms = async (limit = 3) => {
   return unwrapPage<ChatRoom>(res.data)
 }
 
+export const getAdminChatRooms = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/chat-service/v1/chat/admin/rooms', { params })
+  return unwrapPageResponse<ChatRoom & { currentViewerCount?: number }>(res.data)
+}
+
 export const getAdminChatMessages = async (params: Record<string, any> = {}) => {
   const res = await client.get('/chat-service/v1/chat/admin/messages', { params })
-  const data = unwrap<any>(res.data)
-  if (Array.isArray(data)) {
-    return {
-      content: data,
-      totalElements: data.length,
-      totalPages: 1,
-      size: data.length,
-      number: 0,
-    }
-  }
-  return {
-    content: data?.content ?? [],
-    totalElements: data?.totalElements ?? data?.content?.length ?? 0,
-    totalPages: data?.totalPages ?? 1,
-    size: data?.size ?? data?.content?.length ?? 0,
-    number: data?.number ?? 0,
-  }
+  return unwrapPageResponse<AdminMessageItem>(res.data)
 }
 
 export const updateAdminChatMessageStatus = async (messageId: string, status: 'ACTIVE' | 'BLINDED') => {
