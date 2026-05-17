@@ -1,6 +1,7 @@
 package com.ojosama.eventservice.eventrequest.presentation.controller;
 
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.eventservice.eventrequest.application.dto.command.CreateEventRequestCommand;
 import com.ojosama.eventservice.eventrequest.application.dto.command.EventRequestListCommand;
 import com.ojosama.eventservice.eventrequest.application.dto.result.EventRequestResult;
@@ -100,24 +101,24 @@ public class EventRequestController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER')")
     @Operation(summary = "요청 목록 조회 (관리자)", description = "매니저/관리자 전용 API입니다. 전체 행사 등록 요청 목록을 조회합니다. 상태(status), 카테고리명(categoryName), 행사명(eventName), 신청자 ID(requesterId), 생성일 범위(createdStart, createdEnd)로 필터링할 수 있습니다. 기본 정렬은 생성일 내림차순이며 페이지당 10건입니다.")
-    public ResponseEntity<ApiResponse<Page<EventRequestResponse>>> getEventRequests(
+    public ResponseEntity<ApiResponse<PageResponse<EventRequestResponse>>> getEventRequests(
             @ModelAttribute EventRequestListCommand query,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<EventRequestResult> result = eventRequestQueryService.getEventRequests(query, pageable);
-        return ResponseEntity.ok(ApiResponse.success(result.map(EventRequestResponse::from)));
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(result.map(EventRequestResponse::from))));
     }
 
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('USER')")
     @Operation(summary = "내 요청 목록 조회", description = "본인이 신청한 행사 등록 요청 목록을 조회합니다. 인증 헤더(X-User-Id)를 기준으로 본인 요청만 반환되며, 타인의 요청은 조회되지 않습니다.")
-    public ResponseEntity<ApiResponse<Page<EventRequestResponse>>> getMyEventRequests(
+    public ResponseEntity<ApiResponse<PageResponse<EventRequestResponse>>> getMyEventRequests(
             @Parameter(hidden = true) @AuthenticationPrincipal String userId,
             @ModelAttribute EventRequestListCommand query,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<EventRequestResult> result = eventRequestQueryService.getMyEventRequests(UUID.fromString(userId), query, pageable);
-        return ResponseEntity.ok(ApiResponse.success(result.map(EventRequestResponse::from)));
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(result.map(EventRequestResponse::from))));
     }
 
     @GetMapping("/{requestId}")

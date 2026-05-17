@@ -1,6 +1,7 @@
 package com.ojosama.eventservice.event.presentation.controller;
 
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.eventservice.event.application.dto.command.CreateEventCommand;
 import com.ojosama.eventservice.event.application.dto.command.EventListCommand;
 import com.ojosama.eventservice.event.application.dto.command.UpdateEventCommand;
@@ -63,7 +64,7 @@ public class EventController {
 
     @GetMapping
     @Operation(summary = "행사 목록 조회", description = "카테고리(category), 상태(status), 날짜 범위(startAt, endAt), 연도/월(year, month)로 필터링할 수 있습니다. 필터를 여러 개 조합할 수 있으며, 기본 정렬은 시작일 오름차순입니다. 삭제된 행사는 목록에 포함되지 않습니다.")
-    public ResponseEntity<ApiResponse<Page<EventListResponse>>> getEvents(
+    public ResponseEntity<ApiResponse<PageResponse<EventListResponse>>> getEvents(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) EventStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startAt,
@@ -74,7 +75,7 @@ public class EventController {
 
         EventListCommand command = new EventListCommand(category, status, startAt, endAt, year, month);
         Page<EventListResult> result = eventQueryService.getEvents(command, pageable);
-        return ResponseEntity.ok(ApiResponse.success(result.map(EventListResponse::from)));
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(result.map(EventListResponse::from))));
     }
 
     @GetMapping("/{eventId}")
