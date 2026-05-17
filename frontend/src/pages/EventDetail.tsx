@@ -548,6 +548,18 @@ export default function EventDetail() {
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="메시지를 입력하세요"
                     disabled={chatConnectionStatus !== 'connected'}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return
+                      e.preventDefault()
+                      sendChatOverSocket({
+                        chatRoomId,
+                        content: message,
+                        client: stompClientRef.current,
+                        isConnected: chatConnectionStatusRef.current === 'connected' || stompClientRef.current?.connected === true,
+                        onSent: () => setMessage(''),
+                        onInvalid: () => window.alert('채팅방에 먼저 들어가 주세요.'),
+                      })
+                    }}
                     className={`min-w-0 flex-1 rounded-full border bg-white px-3 py-2.5 text-sm outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${chatTheme.inputClass}`}
                   />
                   <button
