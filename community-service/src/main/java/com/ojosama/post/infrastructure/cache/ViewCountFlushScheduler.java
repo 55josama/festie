@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ViewCountFlushScheduler {
 
-    @Value("${community.view-count.batch-size:500}")
+    @Value("${community.view-count.batch-size:100}")
     private int batchSize;
 
     private final ViewCountCacheService viewCountCache;
