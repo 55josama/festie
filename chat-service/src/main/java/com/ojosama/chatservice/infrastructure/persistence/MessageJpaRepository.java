@@ -6,6 +6,7 @@ import com.ojosama.chatservice.domain.model.EventCategory;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,7 +27,7 @@ public interface MessageJpaRepository extends JpaRepository<Message, UUID> {
               and (:category is null or c.category = :category)
             order by m.createdAt desc, m.id desc
             """)
-    Slice<Message> findByStatusInAndCategoryOrderByCreatedAtDescIdDesc(
+    Page<Message> findByStatusInAndCategoryOrderByCreatedAtDescIdDesc(
             @Param("statuses") List<MessageStatus> statuses,
             @Param("category") EventCategory category,
             Pageable pageable

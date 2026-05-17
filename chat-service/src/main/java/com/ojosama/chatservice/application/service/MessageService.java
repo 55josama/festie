@@ -25,10 +25,12 @@ import com.ojosama.common.kafka.domain.OutboxEventPublisher;
 import feign.FeignException;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -90,7 +92,7 @@ public class MessageService {
                 from(savedMessage) // ai 검증 dto 의 from
         );
 
-        return MessageResult.from(savedMessage);
+        return MessageResult.from(savedMessage, chatRoom.getEventId());
     }
 
     public MessageResult createSystemNotice(UUID chatRoomId, String content) {
@@ -108,7 +110,8 @@ public class MessageService {
                 .content(content.trim())
                 .build();
 
-        return MessageResult.from(messageRepository.save(message));
+        ChatRoom chatRoom = findChatRoom(chatRoomId);
+        return MessageResult.from(messageRepository.save(message), chatRoom.getEventId());
     }
 
     @Transactional(readOnly = true)
@@ -120,7 +123,7 @@ public class MessageService {
         if (!message.isVisible()) {
             throw new ChatException(ChatErrorCode.MESSAGE_NOT_FOUND);
         }
-        return MessageResult.from(message);
+        return MessageResult.from(message, findChatRoom(message.getChatRoomId()).getEventId());
     }
 
     @Transactional(readOnly = true)
@@ -135,23 +138,33 @@ public class MessageService {
                         query.chatRoomId(),
                         List.copyOf(EnumSet.of(MessageStatus.ACTIVE, MessageStatus.BLINDED)),
                         PageRequest.of(query.page(), query.size())
-                )
+                ),
+                findChatRoom(query.chatRoomId()).getEventId()
         );
     }
 
     @Transactional(readOnly = true)
-    public MessageSliceResult getMessagesForAdmin(FindAdminMessagesQuery query) {
+    public Page<MessageResult> getMessagesForAdmin(FindAdminMessagesQuery query) {
         if (query == null || query.page() < 0 || query.size() <= 0 || query.size() > MAX_PAGE_SIZE) {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
 
         Pageable pageable = PageRequest.of(query.page(), query.size());
-        Slice<Message> messages = messageRepository.findByStatusesAndCategory(
+        Page<Message> messages = messageRepository.findByStatusesAndCategory(
                 resolveAdminStatuses(query.status()),
                 query.category(),
                 pageable
         );
-        return getMessageSlice(messages);
+        Map<UUID, UUID> eventIdByChatRoomId = resolveEventIdMap(
+                messages.getContent().stream()
+                        .map(Message::getChatRoomId)
+                        .distinct()
+                        .toList()
+        );
+        return messages.map(message -> MessageResult.from(
+                message,
+                eventIdByChatRoomId.get(message.getChatRoomId())
+        ));
     }
 
     public void deleteMessage(DeleteMessageCommand command) {
@@ -180,7 +193,7 @@ public class MessageService {
         } else {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        return MessageResult.from(message);
+        return MessageResult.from(message, findChatRoom(message.getChatRoomId()).getEventId());
     }
 
     public void blindMessageBySystem(UUID messageId) {
@@ -270,11 +283,16 @@ public class MessageService {
                 .orElseThrow(() -> new ChatException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
-    private MessageSliceResult getMessageSlice(Slice<Message> messages) {
+    private MessageSliceResult getMessageSlice(Slice<Message> messages, UUID eventId) {
         List<MessageResult> results = messages.getContent().stream()
-                .map(MessageResult::from)
+                .map(message -> MessageResult.from(message, eventId))
                 .toList();
         return new MessageSliceResult(results, messages.hasNext());
+    }
+
+    private Map<UUID, UUID> resolveEventIdMap(List<UUID> chatRoomIds) {
+        return chatRoomRepository.findAllByIds(chatRoomIds).stream()
+                .collect(java.util.stream.Collectors.toMap(ChatRoom::getId, ChatRoom::getEventId));
     }
 
     private List<MessageStatus> resolveAdminStatuses(MessageStatus status) {

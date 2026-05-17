@@ -9,6 +9,7 @@ import java.util.UUID;
 public record MessageResponse(
         UUID messageId,
         UUID chatRoomId,
+        UUID eventId,
         UUID userId,
         String writerNickname,
         MessageType messageType,
@@ -29,6 +30,7 @@ public record MessageResponse(
         return new MessageResponse(
                 result.messageId(),
                 result.chatRoomId(),
+                result.eventId(),
                 result.userId(),
                 result.writerNickname(),
                 result.messageType(),

@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;
 
@@ -34,7 +35,7 @@ public class MessageRepositoryImpl implements MessageRepository {
     }
 
     @Override
-    public Slice<Message> findByStatusesAndCategory(List<MessageStatus> statuses, EventCategory category, Pageable pageable) {
+    public Page<Message> findByStatusesAndCategory(List<MessageStatus> statuses, EventCategory category, Pageable pageable) {
         return messageJpaRepository.findByStatusInAndCategoryOrderByCreatedAtDescIdDesc(statuses, category, pageable);
     }
 }

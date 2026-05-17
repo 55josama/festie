@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Slice;
 
 public interface MessageRepository {
@@ -18,6 +19,6 @@ public interface MessageRepository {
     // 채팅 히스토리 조회 (무한스크롤 - cursor 기반)
     Slice<Message> findByChatRoomIdAndStatuses(UUID chatRoomId, List<MessageStatus> statuses, Pageable pageable);
 
-    Slice<Message> findByStatusesAndCategory(List<MessageStatus> statuses, EventCategory category, Pageable pageable);
+    Page<Message> findByStatusesAndCategory(List<MessageStatus> statuses, EventCategory category, Pageable pageable);
 
 }
