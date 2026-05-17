@@ -465,7 +465,7 @@ export const handlers = [
       targetId: body.targetId,
       targetUserId: body.targetUserId ?? 'u1',
       targetType: body.targetType,
-      category: body.category ?? 'GENERAL',
+      category: body.category ?? 'OTHER',
       description: body.description ?? '신고',
       status: 'AUTO_BLINDED',
       operatorMemo: null,

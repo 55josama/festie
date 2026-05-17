@@ -3,39 +3,50 @@ import {Link, useNavigate, useSearchParams} from 'react-router-dom'
 import {useMutation, useQueries, useQuery, useQueryClient} from '@tanstack/react-query'
 import {
     approveEventRequest,
-    getAdminChatRooms,
-    getAdminUsers,
-    getAdminUserDetail,
+    changeAdminUserRole,
     createBlacklist,
-    getBlacklists,
     forceChatRoomStatus,
+    getAdminChatRooms,
+    getAdminUserDetail,
+    getAdminUsers,
+    getBlacklists,
     getEventRequests,
     getOperationRequests,
+    getReports,
+    rejectEventRequest,
     releaseBlacklist,
-  getReports,
-  rejectEventRequest,
-    changeAdminUserRole,
     updateOperationRequestStatus,
     updateReportStatus,
 } from '../api/admin'
 import {createEvent, getEvent, updateEvent} from '../api/events'
 import {getAdminChatMessages, updateAdminChatMessageStatus} from '../api/chat'
 import {
-  createCommunityCategory,
-  createEventCategory,
-  deleteCommunityCategory,
-  deleteEventCategory,
-  getCommunityCategories,
-  getEventCategories,
-  updateCommunityCategory,
-  updateEventCategory,
+    createCommunityCategory,
+    createEventCategory,
+    deleteCommunityCategory,
+    deleteEventCategory,
+    getCommunityCategories,
+    getEventCategories,
+    updateCommunityCategory,
+    updateEventCategory,
 } from '../api/categories'
 import {useAuthStore} from '../store/authStore'
 import {formatDateTime} from '../lib/format'
 import {getErrorMessage} from '../lib/error'
 import {searchAddressWithKakao} from '../lib/kakao'
 import type {Event} from '../types'
-import type {AdminMessageItem, AdminUserDetailItem, AdminUserItem, BlacklistPage, OperationRequestItem, AdminUserRole, AdminUserStatus, BlacklistStatus, ReportPage, ReportItem} from '../types/admin'
+import type {
+    AdminMessageItem,
+    AdminUserDetailItem,
+    AdminUserItem,
+    AdminUserRole,
+    AdminUserStatus,
+    BlacklistPage,
+    BlacklistStatus,
+    OperationRequestItem,
+    ReportItem,
+    ReportPage
+} from '../types/admin'
 
 const REPORT_STATUS_FILTERS = ['ALL', 'AUTO_BLINDED', 'RESOLVED', 'REJECTED'] as const
 const REQUEST_STATUS_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELED'] as const
@@ -129,7 +140,10 @@ export default function Admin() {
     const [blacklistPage, setBlacklistPage] = useState(0)
     const [selectedBlacklistId, setSelectedBlacklistId] = useState<string | null>(null)
     const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
-    const [reportReviewForms, setReportReviewForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
+    const [reportReviewForms, setReportReviewForms] = useState<Record<string, {
+        status: string;
+        operatorMemo: string
+    }>>({})
     const [operationAdminMemos, setOperationAdminMemos] = useState<Record<string, string>>({})
     const [requestPanels, setRequestPanels] = useState<Record<string, boolean>>({})
     const [requestDrafts, setRequestDrafts] = useState<Record<string, EventDraft>>({})
@@ -179,7 +193,7 @@ export default function Admin() {
             setPrefilledEditingEventId('')
             setGeneralEventErrors((prev) => {
                 if (!prev.startAt) return prev
-                const next = { ...prev }
+                const next = {...prev}
                 delete next.startAt
                 return next
             })
@@ -204,7 +218,7 @@ export default function Admin() {
         } else {
             setGeneralEventErrors((prev) => {
                 if (!prev.startAt) return prev
-                const next = { ...prev }
+                const next = {...prev}
                 delete next.startAt
                 return next
             })
@@ -413,12 +427,12 @@ export default function Admin() {
 
     const groupedReports = useMemo(() => {
         const groups = new Map<string, {
-            targetId: string
-            targetType: string
-            targetUserId?: string
-            targetContent?: string | null
-            reports: ReportItem[]
-        }>()
+                targetId: string
+                targetType: string
+                targetUserId?: string
+                targetContent?: string | null
+                reports: ReportItem[]
+            }>()
 
         ;(reportPageData.content as ReportItem[]).forEach((report) => {
             const key = report.targetId ?? report.id
@@ -458,7 +472,11 @@ export default function Admin() {
     })
 
     const reportReviewMutation = useMutation({
-        mutationFn: async ({reportIds, status, operatorMemo}: { reportIds: string[]; status: string; operatorMemo: string }) => {
+        mutationFn: async ({reportIds, status, operatorMemo}: {
+            reportIds: string[];
+            status: string;
+            operatorMemo: string
+        }) => {
             await Promise.all(reportIds.map((reportId) => updateReportStatus(reportId, status, operatorMemo)))
         },
         onSuccess: async () => {
@@ -492,7 +510,10 @@ export default function Admin() {
     })
 
     const blacklistReleaseMutation = useMutation({
-        mutationFn: ({blacklistId, reason}: { blacklistId: string; reason: string }) => releaseBlacklist(blacklistId, reason),
+        mutationFn: ({blacklistId, reason}: {
+            blacklistId: string;
+            reason: string
+        }) => releaseBlacklist(blacklistId, reason),
         onSuccess: async () => {
             await queryClient.invalidateQueries({queryKey: ['admin', 'blacklists']})
             await queryClient.invalidateQueries({queryKey: ['admin', 'users']})
@@ -565,7 +586,11 @@ export default function Admin() {
     })
 
     const operationRequestMutation = useMutation({
-        mutationFn: ({requestId, status, adminMemo}: { requestId: string; status: string; adminMemo?: string | null }) =>
+        mutationFn: ({requestId, status, adminMemo}: {
+            requestId: string;
+            status: string;
+            adminMemo?: string | null
+        }) =>
             updateOperationRequestStatus(requestId, status, adminMemo),
         onSuccess: () => queryClient.invalidateQueries({queryKey: ['admin', 'operation-requests']}),
     })
@@ -712,9 +737,11 @@ export default function Admin() {
 
     return (
         <div className="mx-auto max-w-[1180px] space-y-6 px-5 py-5 md:px-8 md:py-7">
-            <section className="rounded-[28px] bg-slate-950 px-5 py-4 text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] md:px-6 md:py-5">
+            <section
+                className="rounded-[28px] bg-slate-950 px-5 py-4 text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] md:px-6 md:py-5">
                 <div className="space-y-2.5">
-                    <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">
+                    <div
+                        className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">
                         관리
                     </div>
                     <div className="text-[22px] font-black tracking-tight text-white md:text-[26px]">
@@ -808,7 +835,10 @@ export default function Admin() {
                                     setDrafts={(value) => setCategoryDrafts(value)}
                                     canCreate={canCreateCategories}
                                     onCreate={() => createEventCategoryMutation.mutate(eventCategoryDraft.trim())}
-                                    onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({categoryId, name})}
+                                    onUpdate={(categoryId, name) => updateEventCategoryMutation.mutate({
+                                        categoryId,
+                                        name
+                                    })}
                                     onDelete={(categoryId) => deleteEventCategoryMutation.mutate(categoryId)}
                                     helperMessage={categoryErrors.event}
                                     loading={createEventCategoryMutation.isPending || updateEventCategoryMutation.isPending || deleteEventCategoryMutation.isPending}
@@ -892,39 +922,39 @@ export default function Admin() {
                                 {generalCreateOpen && (
                                     <div className="max-w-full overflow-x-hidden">
                                         <EventCreatePanel
-                                        title={editingEventId ? '행사 수정' : '일반 행사 생성'}
-                                        subtitle={editingEventId
-                                            ? '기존 행사 내용을 불러와서 필요한 부분만 수정할 수 있어요.'
-                                            : '관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다.'}
-                                        draft={generalDraftWithCategory}
-                                        setDraft={(patch) => setGeneralDraft((prev) => ({...prev, ...patch}))}
-                                        categoryOptions={eventCategories as any[]}
-                                        onSubmit={() => {
-                                            const errors = validateEventDraft(generalDraftWithCategory)
-                                            if (Object.keys(errors).length > 0) {
-                                                setGeneralEventErrors(errors)
-                                                return
-                                            }
-                                            saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})
-                                        }}
-                                        onClose={() => {
-                                            const next = new URLSearchParams(searchParams)
-                                            next.delete('panel')
-                                            next.delete('eventId')
-                                            setSearchParams(next, {replace: true})
-                                            setGeneralCreateOpen(false)
-                                            setPrefilledEditingEventId('')
-                                        }}
-                                        loading={saveGeneralEventMutation.isPending}
-                                        onLookupPlace={() => {
-                                            void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
-                                        }}
-                                        placeLookupLoading={addressLookupLoading}
-                                        onAttachImage={(file) => {
-                                            void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
-                                        }}
-                                        submitLabel={editingEventId ? '행사 수정' : '행사 등록'}
-                                        fieldErrors={generalEventErrors}
+                                            title={editingEventId ? '행사 수정' : '일반 행사 생성'}
+                                            subtitle={editingEventId
+                                                ? '기존 행사 내용을 불러와서 필요한 부분만 수정할 수 있어요.'
+                                                : '관리자/매니저가 직접 전체 항목을 채워서 행사와 채팅방을 함께 만듭니다.'}
+                                            draft={generalDraftWithCategory}
+                                            setDraft={(patch) => setGeneralDraft((prev) => ({...prev, ...patch}))}
+                                            categoryOptions={eventCategories as any[]}
+                                            onSubmit={() => {
+                                                const errors = validateEventDraft(generalDraftWithCategory)
+                                                if (Object.keys(errors).length > 0) {
+                                                    setGeneralEventErrors(errors)
+                                                    return
+                                                }
+                                                saveGeneralEventMutation.mutate({draft: generalDraftWithCategory})
+                                            }}
+                                            onClose={() => {
+                                                const next = new URLSearchParams(searchParams)
+                                                next.delete('panel')
+                                                next.delete('eventId')
+                                                setSearchParams(next, {replace: true})
+                                                setGeneralCreateOpen(false)
+                                                setPrefilledEditingEventId('')
+                                            }}
+                                            loading={saveGeneralEventMutation.isPending}
+                                            onLookupPlace={() => {
+                                                void lookupPlaceForDraft((patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
+                                            }}
+                                            placeLookupLoading={addressLookupLoading}
+                                            onAttachImage={(file) => {
+                                                void attachImageForDraft(file, (patch) => setGeneralDraft((prev) => ({...prev, ...patch})))
+                                            }}
+                                            submitLabel={editingEventId ? '행사 수정' : '행사 등록'}
+                                            fieldErrors={generalEventErrors}
                                         />
                                     </div>
                                 )}
@@ -933,8 +963,9 @@ export default function Admin() {
                                     {scopedEventRequests.map((request: any) => (
                                         <div key={request.id}
                                              className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                                        <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-                                            <div className="min-w-0 space-y-2">
+                                            <div
+                                                className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+                                                <div className="min-w-0 space-y-2">
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <span
                                                             className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">{request.status}</span>
@@ -952,10 +983,11 @@ export default function Admin() {
                                                     {request.rejectReason && <div className="text-xs text-rose-600">반려
                                                         사유: {request.rejectReason}</div>}
                                                 </div>
-                                            <div className="flex flex-col gap-2 rounded-[18px] border border-[var(--line)] bg-white p-3">
-                                                {request.status === 'APPROVED' ? (
-                                                    <>
-                                                        <button
+                                                <div
+                                                    className="flex flex-col gap-2 rounded-[18px] border border-[var(--line)] bg-white p-3">
+                                                    {request.status === 'APPROVED' ? (
+                                                        <>
+                                                            <button
                                                                 disabled
                                                                 className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 disabled:opacity-100"
                                                             >
@@ -1023,47 +1055,47 @@ export default function Admin() {
                                                             </button>
                                                         </>
                                                     )}
+                                                </div>
                                             </div>
-                                        </div>
 
                                             {request.status === 'APPROVED' && requestPanels[request.id] && !request.createdEventId && (
                                                 <div className="mt-4">
                                                     <div className="max-w-full overflow-x-hidden">
                                                         <EventCreatePanel
-                                                        title="요청 정보로 행사 생성"
-                                                        subtitle="요청 글의 내용을 자동으로 이어받아 필요한 항목만 채우면 됩니다."
-                                                        draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
-                                                        setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
-                                                        categoryOptions={eventCategories as any[]}
-                                                        onSubmit={() => {
-                                                            const currentDraft = requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)
-                                                            const errors = validateEventDraft(currentDraft)
-                                                            if (Object.keys(errors).length > 0) {
-                                                                setRequestEventErrors((prev) => ({
-                                                                    ...prev,
-                                                                    [request.id]: errors,
-                                                                }))
-                                                                return
-                                                            }
-                                                            createEventMutation.mutate({
-                                                                requestId: request.id,
-                                                                draft: currentDraft,
-                                                            })
-                                                        }}
-                                                        onClose={() => setRequestPanels((prev) => ({
-                                                            ...prev,
-                                                            [request.id]: false
-                                                        }))}
-                                                        loading={createEventMutation.isPending}
-                                                        onLookupPlace={() => {
-                                                            void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
-                                                        }}
-                                                        placeLookupLoading={addressLookupLoading}
-                                                        onAttachImage={(file) => {
-                                                            void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
-                                                        }}
-                                                        submitLabel="행사 생성"
-                                                        fieldErrors={requestEventErrors[request.id] ?? undefined}
+                                                            title="요청 정보로 행사 생성"
+                                                            subtitle="요청 글의 내용을 자동으로 이어받아 필요한 항목만 채우면 됩니다."
+                                                            draft={requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)}
+                                                            setDraft={(patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch))}
+                                                            categoryOptions={eventCategories as any[]}
+                                                            onSubmit={() => {
+                                                                const currentDraft = requestDrafts[request.id] ?? buildRequestDraft(request, eventCategoryMap)
+                                                                const errors = validateEventDraft(currentDraft)
+                                                                if (Object.keys(errors).length > 0) {
+                                                                    setRequestEventErrors((prev) => ({
+                                                                        ...prev,
+                                                                        [request.id]: errors,
+                                                                    }))
+                                                                    return
+                                                                }
+                                                                createEventMutation.mutate({
+                                                                    requestId: request.id,
+                                                                    draft: currentDraft,
+                                                                })
+                                                            }}
+                                                            onClose={() => setRequestPanels((prev) => ({
+                                                                ...prev,
+                                                                [request.id]: false
+                                                            }))}
+                                                            loading={createEventMutation.isPending}
+                                                            onLookupPlace={() => {
+                                                                void lookupPlaceForDraft((patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                                                            }}
+                                                            placeLookupLoading={addressLookupLoading}
+                                                            onAttachImage={(file) => {
+                                                                void attachImageForDraft(file, (patch) => setRequestDrafts((prev) => mergeDraft(prev, request.id, patch)))
+                                                            }}
+                                                            submitLabel="행사 생성"
+                                                            fieldErrors={requestEventErrors[request.id] ?? undefined}
                                                         />
                                                     </div>
                                                 </div>
@@ -1103,7 +1135,8 @@ export default function Admin() {
                                         return (
                                             <div key={request.id}
                                                  className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                                                <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+                                                <div
+                                                    className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
                                                     <div className="min-w-0 space-y-2">
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <span
@@ -1117,15 +1150,18 @@ export default function Admin() {
                                                         <div className="text-xs text-slate-500">요청자
                                                             ID: {request.requesterId}</div>
                                                         {request.adminMemo && request.status !== 'PENDING' && (
-                                                            <div className={`rounded-[16px] border px-3 py-2 text-xs leading-5 ${memoToneClass}`}>
+                                                            <div
+                                                                className={`rounded-[16px] border px-3 py-2 text-xs leading-5 ${memoToneClass}`}>
                                                                 <span className="font-semibold">
                                                                     {request.status === 'REJECTED' ? '반려 사유' : '관리 메모'}
                                                                 </span>
-                                                                <div className="mt-1 whitespace-pre-wrap break-words">{request.adminMemo}</div>
+                                                                <div
+                                                                    className="mt-1 whitespace-pre-wrap break-words">{request.adminMemo}</div>
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="flex shrink-0 flex-col gap-2 rounded-[18px] border border-[var(--line)] bg-white p-3">
+                                                    <div
+                                                        className="flex shrink-0 flex-col gap-2 rounded-[18px] border border-[var(--line)] bg-white p-3">
                                                         <textarea
                                                             value={adminMemo}
                                                             onChange={(e) => setOperationAdminMemos((prev) => ({
@@ -1249,13 +1285,15 @@ export default function Admin() {
             )}
 
             {activeTab === 'reports' && (
-                <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <section
+                    className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                     <SectionHeader
                         title="신고"
                         action={
                             <div className="flex flex-wrap gap-2">
                                 {REPORT_STATUS_FILTERS.map((item) => (
-                                    <Pill key={item} active={reportStatus === item} onClick={() => setReportStatus(item)}>
+                                    <Pill key={item} active={reportStatus === item}
+                                          onClick={() => setReportStatus(item)}>
                                         {labelReportFilter(item)}
                                     </Pill>
                                 ))}
@@ -1272,8 +1310,11 @@ export default function Admin() {
                             const targetStatus = hasAutoBlinded ? 'AUTO_BLINDED' : group.reports[0]?.status ?? 'PENDING'
                             const blindLabel = '채팅 블라인드'
                             const targetUserId = group.targetUserId
-                            const targetContent = group.targetContent ?? '원문을 불러오지 못했어요.'
-                            const reviewForm = reportReviewForms[group.targetId] ?? {status: 'RESOLVED', operatorMemo: ''}
+                            const targetContent = group.targetContent
+                            const reviewForm = reportReviewForms[group.targetId] ?? {
+                                status: 'RESOLVED',
+                                operatorMemo: ''
+                            }
                             const reporterSystemId = '00000000-0000-0000-0000-000000000000'
 
                             return (
@@ -1281,7 +1322,7 @@ export default function Admin() {
                                     key={group.targetId}
                                     className={`rounded-[22px] border border-[var(--line)] bg-slate-50 p-3 ${hasAutoBlinded ? 'ring-1 ring-rose-200' : ''}`}
                                 >
-                                    <div className="grid gap-3 lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)]">
+                                    <div className="grid gap-3 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
                                         <article className="rounded-[18px] border border-[var(--line)] bg-white p-3">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
@@ -1289,7 +1330,8 @@ export default function Admin() {
                                                 }`}>
                                                     {hasAutoBlinded ? labelReportStatus('AUTO_BLINDED') : '묶음'}
                                                 </span>
-                                                <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                                                <span
+                                                    className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
                                                     {labelReportTargetType(group.targetType)}
                                                 </span>
                                                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
@@ -1303,89 +1345,101 @@ export default function Admin() {
                                                 }`}>
                                                     {labelReportStatus(targetStatus)}
                                                 </span>
-                                                <span className="text-[11px] text-slate-500">{group.reports.length}건</span>
+                                                <span
+                                                    className="text-[11px] text-slate-500">{group.reports.length}건</span>
                                             </div>
 
-                                            <div className="mt-3 rounded-[16px] border border-[var(--line)] bg-slate-50 px-3 py-3">
-                                                <div className="text-[11px] font-bold text-slate-700">타겟 카드</div>
-                                                <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                                                    {targetContent}
-                                                </div>
-                                                <div className="mt-3 grid gap-1 text-[11px] text-slate-500">
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span>타겟 유저</span>
-                                                        <span className="break-all font-semibold text-slate-700">{targetUserId ?? '정보 없음'}</span>
+                                            <div className="mt-3 space-y-3">
+                                                <div className="rounded-[16px] border border-[var(--line)] bg-slate-50 px-3 py-3">
+                                                    <div className="text-[11px] font-bold text-slate-700">타겟 카드
                                                     </div>
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span>타겟 ID</span>
-                                                        <span className="break-all font-semibold text-slate-700">{group.targetId ?? '정보 없음'}</span>
+                                                    {targetContent && (
+                                                        <div
+                                                            className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                                            {targetContent}
+                                                        </div>
+                                                    )}
+                                                    <div className="mt-3 grid gap-1 text-[11px] text-slate-500">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span>타겟 유저</span>
+                                                            <span
+                                                                className="break-all font-semibold text-slate-700">{targetUserId ?? '정보 없음'}</span>
+                                                        </div>
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span>타겟 ID</span>
+                                                            <span
+                                                                className="break-all font-semibold text-slate-700">{group.targetId ?? '정보 없음'}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                {group.targetType === 'CHAT' && (
-                                                    <button
-                                                        type="button"
-                                                        disabled={reportBlindMutation.isPending || !group.targetId}
-                                                        onClick={() => reportBlindMutation.mutate({targetId: group.targetId})}
-                                                        className="rounded-full bg-slate-950 px-3 py-2 text-xs font-semibold text-white disabled:opacity-70"
-                                                    >
-                                                        {blindLabel}
-                                                    </button>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    disabled={!targetUserId}
-                                                    onClick={() => {
-                                                        const reason = window.prompt('블랙리스트 등록 사유를 입력하세요.')
-                                                        if (!reason?.trim() || !targetUserId) return
-                                                        blacklistCreateMutation.mutate({userId: targetUserId, reason: reason.trim()})
-                                                    }}
-                                                    className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 disabled:opacity-60"
-                                                >
-                                                    블랙리스트 등록
-                                                </button>
-                                            </div>
-
-                                            {hasAutoBlinded && (
-                                                <div className="mt-3 rounded-[16px] border border-[var(--line)] bg-white p-3">
-                                                    <div className="text-[11px] font-semibold text-slate-500">검토 처리</div>
-                                                    <div className="mt-2 space-y-2">
-                                                        <select
-                                                            value={reviewForm.status}
-                                                            onChange={(e) => setReportReviewForms((prev) => ({
-                                                                ...prev,
-                                                                [group.targetId]: {...reviewForm, status: e.target.value},
-                                                            }))}
-                                                            className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-xs outline-none"
-                                                        >
-                                                            <option value="RESOLVED">RESOLVED</option>
-                                                            <option value="REJECTED">REJECTED</option>
-                                                        </select>
-                                                        <input
-                                                            value={reviewForm.operatorMemo}
-                                                            onChange={(e) => setReportReviewForms((prev) => ({
-                                                                ...prev,
-                                                                [group.targetId]: {...reviewForm, operatorMemo: e.target.value},
-                                                            }))}
-                                                            placeholder="설명 / 메모"
-                                                            className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-xs outline-none"
-                                                        />
+                                                <div className="flex flex-wrap gap-2">
+                                                    {group.targetType === 'CHAT' && (
                                                         <button
                                                             type="button"
-                                                            onClick={() => reportReviewMutation.mutate({
-                                                                reportIds: group.reports.map((report) => report.id),
-                                                                status: reviewForm.status,
-                                                                operatorMemo: reviewForm.operatorMemo.trim() || '처리 완료',
-                                                            })}
-                                                            className="w-full rounded-full bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-white"
+                                                            disabled={reportBlindMutation.isPending || !group.targetId}
+                                                            onClick={() => reportBlindMutation.mutate({targetId: group.targetId})}
+                                                            className="rounded-full bg-slate-950 px-3 py-2 text-xs font-semibold text-white disabled:opacity-70"
                                                         >
-                                                            저장
+                                                            {blindLabel}
                                                         </button>
-                                                    </div>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        disabled={!targetUserId}
+                                                        onClick={() => {
+                                                            const reason = window.prompt('블랙리스트 등록 사유를 입력하세요.')
+                                                            if (!reason?.trim() || !targetUserId) return
+                                                            blacklistCreateMutation.mutate({
+                                                                userId: targetUserId,
+                                                                reason: reason.trim()
+                                                            })
+                                                        }}
+                                                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 disabled:opacity-60"
+                                                    >
+                                                        블랙리스트 등록
+                                                    </button>
                                                 </div>
-                                            )}
+
+                                                {hasAutoBlinded && (
+                                                    <div className="rounded-[16px] border border-[var(--line)] bg-white p-3">
+                                                        <div className="text-[11px] font-semibold text-slate-500">검토 처리</div>
+                                                        <div className="mt-2 flex flex-nowrap items-center gap-2">
+                                                            <select
+                                                                value={reviewForm.status}
+                                                                onChange={(e) => setReportReviewForms((prev) => ({
+                                                                    ...prev,
+                                                                    [group.targetId]: {...reviewForm, status: e.target.value},
+                                                                }))}
+                                                                className="min-w-0 flex-[0.9] rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-xs outline-none"
+                                                            >
+                                                                <option value="RESOLVED">RESOLVED</option>
+                                                                <option value="REJECTED">REJECTED</option>
+                                                            </select>
+                                                            <input
+                                                                value={reviewForm.operatorMemo}
+                                                                onChange={(e) => setReportReviewForms((prev) => ({
+                                                                    ...prev,
+                                                                    [group.targetId]: {...reviewForm, operatorMemo: e.target.value},
+                                                                }))}
+                                                                placeholder="설명 / 메모"
+                                                                className="min-w-0 flex-[1.7] rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2 text-xs outline-none"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => reportReviewMutation.mutate({
+                                                                    reportIds: group.reports.map((report) => report.id),
+                                                                    status: reviewForm.status,
+                                                                    operatorMemo: reviewForm.operatorMemo.trim() || '처리 완료',
+                                                                })}
+                                                                className="shrink-0 rounded-full bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-white"
+                                                            >
+                                                                저장
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </article>
 
                                         <div className="min-w-0">
@@ -1415,19 +1469,23 @@ export default function Admin() {
                                                                 className={`shrink-0 rounded-[18px] border border-[var(--line)] bg-white p-3 ${report.status === 'AUTO_BLINDED' ? 'w-[320px]' : 'w-[290px]'}`}
                                                             >
                                                                 <div className="flex flex-wrap items-center gap-2">
-                                                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusChipClass}`}>
+                                                                    <span
+                                                                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusChipClass}`}>
                                                                         {labelReportStatus(report.status)}
                                                                     </span>
-                                                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reporterChipClass}`}>
+                                                                    <span
+                                                                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${reporterChipClass}`}>
                                                                         {labelReporterType(report.reporterType)}
                                                                     </span>
-                                                                    <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                                                    <span
+                                                                        className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
                                                                         {report.category}
                                                                     </span>
                                                                 </div>
 
                                                                 <div className="mt-3 space-y-1">
-                                                                    <div className="text-sm font-semibold text-slate-950">
+                                                                    <div
+                                                                        className="text-sm font-semibold text-slate-950">
                                                                         {report.description}
                                                                     </div>
                                                                     <div className="text-[11px] text-slate-500">
@@ -1444,10 +1502,12 @@ export default function Admin() {
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="mt-3 grid gap-1.5 text-[11px] text-slate-500">
+                                                                <div
+                                                                    className="mt-3 grid gap-1.5 text-[11px] text-slate-500">
                                                                     <div className="flex flex-col gap-0.5">
                                                                         <span>타겟 ID</span>
-                                                                        <span className="break-all font-semibold text-slate-700">{report.targetId}</span>
+                                                                        <span
+                                                                            className="break-all font-semibold text-slate-700">{report.targetId}</span>
                                                                     </div>
                                                                 </div>
                                                             </article>
@@ -1463,7 +1523,8 @@ export default function Admin() {
                         {groupedReports.length === 0 && <EmptyState text="신고 목록이 비어 있어요."/>}
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
+                    <div
+                        className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
                         <div className="text-xs text-slate-500">
                             총 {reportPageData.totalElements}건
                         </div>
@@ -1701,7 +1762,8 @@ export default function Admin() {
             )}
 
             {activeTab === 'users' && isAdmin && (
-                <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <section
+                    className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                     <SectionHeader
                         title="사용자 조회"
                         action={<span className="text-xs text-slate-500">{adminUsersPage.totalElements}명</span>}
@@ -1711,7 +1773,8 @@ export default function Admin() {
                     </p>
 
                     <div className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                        <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(132px,0.72fr)_auto_auto] lg:items-end">
+                        <div
+                            className="grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(132px,0.72fr)_auto_auto] lg:items-end">
                             <label className="grid gap-1">
                                 <span className="text-[11px] font-semibold text-slate-500">이메일</span>
                                 <input
@@ -1777,7 +1840,8 @@ export default function Admin() {
                         </div>
                     </div>
 
-                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[110px_minmax(0,0.78fr)_minmax(0,0.82fr)_minmax(0,1.12fr)_minmax(0,1.18fr)_minmax(0,1fr)] lg:gap-3">
+                    <div
+                        className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[110px_minmax(0,0.78fr)_minmax(0,0.82fr)_minmax(0,1.12fr)_minmax(0,1.18fr)_minmax(0,1fr)] lg:gap-3">
                         <div>상태</div>
                         <div>이름</div>
                         <div>닉네임</div>
@@ -1840,7 +1904,8 @@ export default function Admin() {
             )}
 
             {activeTab === 'blacklist' && isAdmin && (
-                <section className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+                <section
+                    className="space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
                     <SectionHeader
                         title="블랙리스트"
                         action={<span className="text-xs text-slate-500">{blacklistPageData.totalElements}명</span>}
@@ -1891,7 +1956,8 @@ export default function Admin() {
                         </div>
                     </div>
 
-                    <div className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_180px] lg:gap-3">
+                    <div
+                        className="hidden rounded-[18px] border border-[var(--line)] bg-white px-4 py-3 text-[11px] font-semibold text-slate-500 lg:grid lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_180px] lg:gap-3">
                         <div>상태</div>
                         <div>UUID</div>
                         <div>이름</div>
@@ -1912,13 +1978,15 @@ export default function Admin() {
                                 }}
                                 className="w-full cursor-pointer rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100/80"
                             >
-                                <div className="grid gap-3 lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_180px] lg:items-center">
+                                <div
+                                    className="grid gap-3 lg:grid-cols-[120px_1.1fr_1fr_1fr_1.4fr_180px] lg:items-center">
                                     <div>
-                                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                            item.status === 'ACTIVE'
-                                                ? 'bg-rose-100 text-rose-700'
-                                                : 'bg-slate-100 text-slate-600'
-                                        }`}>
+                                        <span
+                                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                                item.status === 'ACTIVE'
+                                                    ? 'bg-rose-100 text-rose-700'
+                                                    : 'bg-slate-100 text-slate-600'
+                                            }`}>
                                             {labelBlacklistStatus(item.status)}
                                         </span>
                                     </div>
@@ -1929,7 +1997,8 @@ export default function Admin() {
                                         <span className="block truncate">{item.userDetail?.name ?? '불러오는 중...'}</span>
                                     </div>
                                     <div className="min-w-0 text-sm text-slate-700">
-                                        <span className="block truncate">{item.userDetail?.nickname ?? '불러오는 중...'}</span>
+                                        <span
+                                            className="block truncate">{item.userDetail?.nickname ?? '불러오는 중...'}</span>
                                     </div>
                                     <div className="min-w-0 text-sm text-slate-600">
                                         <span className="block truncate">{item.userDetail?.email ?? '불러오는 중...'}</span>
@@ -1941,7 +2010,10 @@ export default function Admin() {
                                             onClick={() => {
                                                 const reason = window.prompt(`블랙리스트 해제 사유를 입력해주세요.\n대상: ${item.userDetail?.name ?? item.userId}`)
                                                 if (!reason?.trim()) return
-                                                blacklistReleaseMutation.mutate({blacklistId: item.id, reason: reason.trim()})
+                                                blacklistReleaseMutation.mutate({
+                                                    blacklistId: item.id,
+                                                    reason: reason.trim()
+                                                })
                                             }}
                                             className="rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-40"
                                         >
@@ -2000,7 +2072,8 @@ export default function Admin() {
                     >
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+                                <div
+                                    className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
                                     사용자 상세
                                 </div>
                                 <div className="mt-2 text-[22px] font-black tracking-tight text-slate-950">
@@ -2020,14 +2093,14 @@ export default function Admin() {
                         </div>
 
                         <div className="mt-5 grid gap-3 md:grid-cols-2">
-                            <DetailField label="UUID" value={selectedUserDetail?.userId ?? '정보 없음'} />
-                            <DetailField label="이름" value={selectedUserDetail?.name ?? '정보 없음'} />
-                            <DetailField label="상태" value={labelUserStatus(selectedUserDetail?.status ?? '')} />
-                            <DetailField label="닉네임" value={selectedUserDetail?.nickname ?? '정보 없음'} />
-                            <DetailField label="이메일" value={selectedUserDetail?.email ?? '정보 없음'} />
-                            <DetailField label="권한" value={labelUserRole(selectedUserDetail?.role ?? '')} />
-                            <DetailField label="생성일" value={formatDateTime(selectedUserDetail?.createdAt)} />
-                            <DetailField label="수정일" value={formatDateTime(selectedUserDetail?.updatedAt)} />
+                            <DetailField label="UUID" value={selectedUserDetail?.userId ?? '정보 없음'}/>
+                            <DetailField label="이름" value={selectedUserDetail?.name ?? '정보 없음'}/>
+                            <DetailField label="상태" value={labelUserStatus(selectedUserDetail?.status ?? '')}/>
+                            <DetailField label="닉네임" value={selectedUserDetail?.nickname ?? '정보 없음'}/>
+                            <DetailField label="이메일" value={selectedUserDetail?.email ?? '정보 없음'}/>
+                            <DetailField label="권한" value={labelUserRole(selectedUserDetail?.role ?? '')}/>
+                            <DetailField label="생성일" value={formatDateTime(selectedUserDetail?.createdAt)}/>
+                            <DetailField label="수정일" value={formatDateTime(selectedUserDetail?.updatedAt)}/>
                         </div>
 
                         <div className="mt-5 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
@@ -2051,7 +2124,8 @@ export default function Admin() {
                     >
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+                                <div
+                                    className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
                                     블랙리스트 상세
                                 </div>
                                 <div className="mt-2 text-[22px] font-black tracking-tight text-slate-950">
@@ -2071,12 +2145,13 @@ export default function Admin() {
                         </div>
 
                         <div className="mt-5 grid gap-3 md:grid-cols-2">
-                            <DetailField label="UUID" value={selectedBlacklistItem.userId} />
-                            <DetailField label="블랙리스트 상태" value={labelBlacklistStatus(selectedBlacklistItem.status)} />
-                            <DetailField label="이름" value={selectedBlacklistItem.userDetail?.name ?? '정보 없음'} />
-                            <DetailField label="닉네임" value={selectedBlacklistItem.userDetail?.nickname ?? '정보 없음'} />
-                            <DetailField label="이메일" value={selectedBlacklistItem.userDetail?.email ?? '정보 없음'} />
-                            <DetailField label="아이디 상태" value={labelUserStatus(selectedBlacklistItem.userDetail?.status ?? '')} />
+                            <DetailField label="UUID" value={selectedBlacklistItem.userId}/>
+                            <DetailField label="블랙리스트 상태" value={labelBlacklistStatus(selectedBlacklistItem.status)}/>
+                            <DetailField label="이름" value={selectedBlacklistItem.userDetail?.name ?? '정보 없음'}/>
+                            <DetailField label="닉네임" value={selectedBlacklistItem.userDetail?.nickname ?? '정보 없음'}/>
+                            <DetailField label="이메일" value={selectedBlacklistItem.userDetail?.email ?? '정보 없음'}/>
+                            <DetailField label="아이디 상태"
+                                         value={labelUserStatus(selectedBlacklistItem.userDetail?.status ?? '')}/>
                         </div>
 
                         <div className="mt-5 flex items-center justify-end gap-2">
@@ -2085,7 +2160,10 @@ export default function Admin() {
                                 onClick={() => {
                                     const reason = window.prompt(`블랙리스트 해제 사유를 입력해주세요.\n대상: ${selectedBlacklistItem.userDetail?.name ?? selectedBlacklistItem.userId}`)
                                     if (!reason?.trim()) return
-                                    blacklistReleaseMutation.mutate({blacklistId: selectedBlacklistItem.id, reason: reason.trim()})
+                                    blacklistReleaseMutation.mutate({
+                                        blacklistId: selectedBlacklistItem.id,
+                                        reason: reason.trim()
+                                    })
                                     setSelectedBlacklistId(null)
                                 }}
                                 disabled={selectedBlacklistItem.status !== 'ACTIVE'}
@@ -2124,43 +2202,44 @@ function renderTextWithLinks(text: string) {
                         <span key={`part-${lineIndex}-${partIndex}`}>{part}</span>
                     )
                 })}
-                {lineIndex < lines.length - 1 ? <br /> : null}
+                {lineIndex < lines.length - 1 ? <br/> : null}
             </span>
         )
     })
 }
 
 function UserRow({
-  user,
-  onSelect,
-  onChangeRole,
-  onBlacklist,
-  loading,
-}: {
-  user: AdminUserItem
-  onSelect: () => void
-  onChangeRole: (role: AdminUserRole) => void
-  onBlacklist: () => void
-  loading?: boolean
+                     user,
+                     onSelect,
+                     onChangeRole,
+                     onBlacklist,
+                     loading,
+                 }: {
+    user: AdminUserItem
+    onSelect: () => void
+    onChangeRole: (role: AdminUserRole) => void
+    onBlacklist: () => void
+    loading?: boolean
 }) {
-  const [role, setRole] = useState<AdminUserRole>(user.role)
+    const [role, setRole] = useState<AdminUserRole>(user.role)
 
-  useEffect(() => {
-    setRole(user.role)
-  }, [user.role])
+    useEffect(() => {
+        setRole(user.role)
+    }, [user.role])
 
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onSelect()
-      }}
-      className="w-full cursor-pointer rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100/80"
-    >
-      <div className="grid gap-3 lg:grid-cols-[110px_minmax(0,0.78fr)_minmax(0,0.82fr)_minmax(0,1.12fr)_minmax(0,1.18fr)_minmax(0,1fr)] lg:items-center">
-        <div className="flex items-center gap-2 lg:block">
+    return (
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={onSelect}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') onSelect()
+            }}
+            className="w-full cursor-pointer rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100/80"
+        >
+            <div
+                className="grid gap-3 lg:grid-cols-[110px_minmax(0,0.78fr)_minmax(0,0.82fr)_minmax(0,1.12fr)_minmax(0,1.18fr)_minmax(0,1fr)] lg:items-center">
+                <div className="flex items-center gap-2 lg:block">
           <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
               user.status === 'BLOCKED'
                   ? 'bg-rose-100 text-rose-700'
@@ -2168,49 +2247,50 @@ function UserRow({
           }`}>
             {labelUserStatus(user.status)}
           </span>
+                </div>
+                <div className="min-w-0 text-sm font-semibold text-slate-950">
+                    <span className="block truncate">{user.name}</span>
+                </div>
+                <div className="min-w-0 text-sm text-slate-700">
+                    <span className="block truncate">{user.nickname}</span>
+                </div>
+                <div className="min-w-0 text-sm text-slate-600">
+                    <span className="block truncate">{user.email}</span>
+                </div>
+                <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+                    <select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value as AdminUserRole)}
+                        className="w-full rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none"
+                    >
+                        {USER_ROLE_OPTIONS.filter((item) => item.value !== 'ALL').map((item) => (
+                            <option key={item.value} value={item.value}>
+                                {item.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex items-center justify-end gap-2 whitespace-nowrap"
+                     onClick={(e) => e.stopPropagation()}>
+                    <button
+                        type="button"
+                        disabled={loading || role === user.role}
+                        onClick={() => onChangeRole(role)}
+                        className="shrink-0 rounded-full bg-[var(--accent)] px-2.5 py-2 text-[11px] font-semibold text-white disabled:opacity-70"
+                    >
+                        {loading ? '저장 중...' : '권한 저장'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onBlacklist}
+                        className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-2 text-[11px] font-semibold text-rose-700 hover:bg-rose-100"
+                    >
+                        블랙리스트 등록
+                    </button>
+                </div>
+            </div>
         </div>
-        <div className="min-w-0 text-sm font-semibold text-slate-950">
-          <span className="block truncate">{user.name}</span>
-        </div>
-        <div className="min-w-0 text-sm text-slate-700">
-          <span className="block truncate">{user.nickname}</span>
-        </div>
-        <div className="min-w-0 text-sm text-slate-600">
-          <span className="block truncate">{user.email}</span>
-        </div>
-        <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as AdminUserRole)}
-            className="w-full rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none"
-          >
-            {USER_ROLE_OPTIONS.filter((item) => item.value !== 'ALL').map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center justify-end gap-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            disabled={loading || role === user.role}
-            onClick={() => onChangeRole(role)}
-            className="shrink-0 rounded-full bg-[var(--accent)] px-2.5 py-2 text-[11px] font-semibold text-white disabled:opacity-70"
-          >
-            {loading ? '저장 중...' : '권한 저장'}
-          </button>
-          <button
-            type="button"
-            onClick={onBlacklist}
-            className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-2 text-[11px] font-semibold text-rose-700 hover:bg-rose-100"
-          >
-            블랙리스트 등록
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+    )
 }
 
 function SectionHeader({title, action}: { title: string; action?: ReactNode }) {
@@ -2602,13 +2682,13 @@ function EventCreatePanel({
                         value={categoryValue}
                         onChange={(e) => setDraft({categoryId: e.target.value})}
                         className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-3 py-2.5 text-sm outline-none"
-                        >
-                            <option value="">선택하세요</option>
-                            {categoryOptions.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                    {category.name}
-                                </option>
-                            ))}
+                    >
+                        <option value="">선택하세요</option>
+                        {categoryOptions.map((category) => (
+                            <option key={category.id} value={category.id}>
+                                {category.name}
+                            </option>
+                        ))}
                     </select>
                     {mergedErrors.categoryId && (
                         <div className="mt-1 text-[11px] leading-5 text-rose-600">{mergedErrors.categoryId}</div>
@@ -2744,7 +2824,7 @@ function EventCreatePanel({
                 {draft.hasTicketing && (
                     <div className="md:col-span-2 space-y-3 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
                         <div className="text-[11px] font-semibold text-slate-500">티켓팅 정보</div>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <AdminInput label="티켓팅 오픈" value={draft.ticketingOpenAt}
                                         onChange={(value) => setDraft({ticketingOpenAt: value})} type="datetime-local"
                                         error={mergedErrors.ticketingOpenAt} required={draft.hasTicketing}/>
@@ -2798,10 +2878,12 @@ function EventCreatePanel({
                     <div className="mt-1 text-[11px] leading-5 text-slate-400">
                         {draft.imgFileName ? `첨부 파일: ${draft.imgFileName}` : 'URL 또는 파일 첨부 둘 다 사용할 수 있어요.'}
                     </div>
-                    {mergedErrors.img && <div className="mt-1 text-[11px] leading-5 text-rose-600">{mergedErrors.img}</div>}
+                    {mergedErrors.img &&
+                        <div className="mt-1 text-[11px] leading-5 text-rose-600">{mergedErrors.img}</div>}
                 </label>
 
-                <div className="flex flex-col gap-3 min-[700px]:col-span-2 min-[700px]:flex-row min-[700px]:items-center min-[700px]:justify-between">
+                <div
+                    className="flex flex-col gap-3 min-[700px]:col-span-2 min-[700px]:flex-row min-[700px]:items-center min-[700px]:justify-between">
                     <div className="text-[11px] font-semibold text-slate-500">일정</div>
                     <button
                         type="button"
@@ -2820,7 +2902,7 @@ function EventCreatePanel({
                     </button>
                 </div>
 
-                    <div className="min-[700px]:col-span-2 space-y-2">
+                <div className="min-[700px]:col-span-2 space-y-2">
                     {(draft.schedules ?? []).map((schedule, index) => (
                         <div key={index}
                              className="grid grid-cols-1 gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 p-3 min-[700px]:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_auto] xl:items-end">
@@ -2908,12 +2990,13 @@ function EventCreatePanel({
             <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
                 <div className="text-[11px] font-semibold text-slate-500">등록 미리보기</div>
                 <div className="mt-3 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
-                    <PreviewField label="행사명" value={draft.eventName || '미입력'} />
-                    <PreviewField label="카테고리" value={categoryLabel} />
-                    <PreviewField label="기간" value={draft.startAt && draft.endAt ? `${draft.startAt} ~ ${draft.endAt}` : '미입력'} />
-                    <PreviewField label="장소" value={draft.place || '미입력'} />
-                    <PreviewField label="티켓팅" value={draft.hasTicketing ? '있음' : '없음'} />
-                    <PreviewField label="일정 개수" value={`${scheduleCount}개`} />
+                    <PreviewField label="행사명" value={draft.eventName || '미입력'}/>
+                    <PreviewField label="카테고리" value={categoryLabel}/>
+                    <PreviewField label="기간"
+                                  value={draft.startAt && draft.endAt ? `${draft.startAt} ~ ${draft.endAt}` : '미입력'}/>
+                    <PreviewField label="장소" value={draft.place || '미입력'}/>
+                    <PreviewField label="티켓팅" value={draft.hasTicketing ? '있음' : '없음'}/>
+                    <PreviewField label="일정 개수" value={`${scheduleCount}개`}/>
                 </div>
             </div>
 

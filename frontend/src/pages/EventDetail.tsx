@@ -368,7 +368,6 @@ export default function EventDetail() {
                     추가
                   </Link>
                 )}
-                {isLoggedIn() && <ReportButton targetType="EVENT" targetId={event.id} className="rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-medium text-slate-500" />}
                 {user && /ADMIN|MANAGER/.test(user.role) && (
                   <Link
                     to={`/admin?panel=general&eventId=${event.id}`}

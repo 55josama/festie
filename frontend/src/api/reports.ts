@@ -6,6 +6,7 @@ export const createReport = async (data: {
   targetId: string
   category?: string
   description: string
+  content?: string
 }) => {
   const res = await client.post('/operation-service/v1/reports', data)
   return unwrap(res.data)
