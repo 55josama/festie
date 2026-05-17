@@ -132,12 +132,13 @@ export default function Admin() {
     const [adminNotificationPage, setAdminNotificationPage] = useState(0)
     const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({})
     const [reportReviewForms, setReportReviewForms] = useState<Record<string, { status: string; operatorMemo: string }>>({})
-    const [operationForms, setOperationForms] = useState<Record<string, { status: string; adminMemo: string }>>({})
+    const [operationAdminMemos, setOperationAdminMemos] = useState<Record<string, string>>({})
     const [requestPanels, setRequestPanels] = useState<Record<string, boolean>>({})
     const [requestDrafts, setRequestDrafts] = useState<Record<string, EventDraft>>({})
     const [generalCreateOpen, setGeneralCreateOpen] = useState(true)
     const [generalDraft, setGeneralDraft] = useState<EventDraft>(createBlankEventDraft())
     const editingEventId = searchParams.get('eventId') ?? ''
+    const requestedEventId = searchParams.get('requestId') ?? ''
     const [prefilledEditingEventId, setPrefilledEditingEventId] = useState('')
     const [addressLookupLoading, setAddressLookupLoading] = useState(false)
     const [eventCategoryDraft, setEventCategoryDraft] = useState('')
@@ -385,6 +386,16 @@ export default function Admin() {
         return eventRequests.filter((request: any) => managedEventCategories.includes(request.category))
     }, [eventRequests, managedEventCategories, isAdmin, isManager])
 
+    useEffect(() => {
+        if (!requestedEventId) return
+        const targetRequest = scopedEventRequests.find((request: any) => request.id === requestedEventId)
+        if (!targetRequest || targetRequest.status !== 'APPROVED' || targetRequest.createdEventId) return
+        setRequestPanels((prev) => (prev[requestedEventId] ? prev : {
+            ...prev,
+            [requestedEventId]: true,
+        }))
+    }, [requestedEventId, scopedEventRequests])
+
     const scopedChatRooms = useMemo(() => {
         let rooms = isAdmin || isManager ? chatRooms : []
         if (!isAdmin && !isManager && managedChatCategories.size > 0) {
@@ -578,7 +589,7 @@ export default function Admin() {
     })
 
     const operationRequestMutation = useMutation({
-        mutationFn: ({requestId, status, adminMemo}: { requestId: string; status: string; adminMemo: string }) =>
+        mutationFn: ({requestId, status, adminMemo}: { requestId: string; status: string; adminMemo?: string | null }) =>
             updateOperationRequestStatus(requestId, status, adminMemo),
         onSuccess: () => queryClient.invalidateQueries({queryKey: ['admin', 'operation-requests']}),
     })
@@ -947,9 +958,8 @@ export default function Admin() {
                                     {scopedEventRequests.map((request: any) => (
                                         <div key={request.id}
                                              className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                                            <div
-                                                className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                                <div className="min-w-0 flex-1 space-y-2">
+                                        <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+                                            <div className="min-w-0 space-y-2">
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <span
                                                             className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">{request.status}</span>
@@ -967,10 +977,10 @@ export default function Admin() {
                                                     {request.rejectReason && <div className="text-xs text-rose-600">반려
                                                         사유: {request.rejectReason}</div>}
                                                 </div>
-                                                <div className="flex shrink-0 flex-col gap-2 lg:w-[260px]">
-                                                    {request.status === 'APPROVED' ? (
-                                                        <>
-                                                            <button
+                                            <div className="flex flex-col gap-2 rounded-[18px] border border-[var(--line)] bg-white p-3">
+                                                {request.status === 'APPROVED' ? (
+                                                    <>
+                                                        <button
                                                                 disabled
                                                                 className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 disabled:opacity-100"
                                                             >
@@ -1038,8 +1048,8 @@ export default function Admin() {
                                                             </button>
                                                         </>
                                                     )}
-                                                </div>
                                             </div>
+                                        </div>
 
                                             {request.status === 'APPROVED' && requestPanels[request.id] && !request.createdEventId && (
                                                 <div className="mt-4">
@@ -1108,16 +1118,18 @@ export default function Admin() {
                             {canViewOperationRequests ? (
                                 <div className="space-y-3">
                                     {scopedOperationRequests.map((request: OperationRequestItem) => {
-                                        const form = operationForms[request.id] ?? {
-                                            status: request.status,
-                                            adminMemo: request.adminMemo ?? ''
-                                        }
+                                        const adminMemo = operationAdminMemos[request.id] ?? ''
+                                        const canApproveOperation = request.status === 'PENDING'
+                                        const canResolveOperation = request.status === 'IN_PROGRESS'
+                                        const canRejectOperation = request.status === 'PENDING'
+                                        const memoToneClass = request.status === 'REJECTED'
+                                            ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                            : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                         return (
                                             <div key={request.id}
                                                  className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
-                                                <div
-                                                    className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                                    <div className="min-w-0 flex-1 space-y-2">
+                                                <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+                                                    <div className="min-w-0 space-y-2">
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <span
                                                                 className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">{request.status}</span>
@@ -1129,42 +1141,85 @@ export default function Admin() {
                                                             className="whitespace-pre-line break-words text-sm leading-6 text-slate-600">{renderTextWithLinks(request.content)}</div>
                                                         <div className="text-xs text-slate-500">요청자
                                                             ID: {request.requesterId}</div>
-                                                        {request.adminMemo && <div className="text-xs text-slate-500">관리
-                                                            메모: {request.adminMemo}</div>}
+                                                        {request.adminMemo && request.status !== 'PENDING' && (
+                                                            <div className={`rounded-[16px] border px-3 py-2 text-xs leading-5 ${memoToneClass}`}>
+                                                                <span className="font-semibold">
+                                                                    {request.status === 'REJECTED' ? '반려 사유' : '관리 메모'}
+                                                                </span>
+                                                                <div className="mt-1 whitespace-pre-wrap break-words">{request.adminMemo}</div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div className="flex shrink-0 flex-col gap-2 lg:w-[260px]">
-                                                        <select
-                                                            value={form.status}
-                                                            onChange={(e) => setOperationForms((prev) => ({
+                                                    <div className="flex shrink-0 flex-col gap-2 rounded-[18px] border border-[var(--line)] bg-white p-3">
+                                                        <textarea
+                                                            value={adminMemo}
+                                                            onChange={(e) => setOperationAdminMemos((prev) => ({
                                                                 ...prev,
-                                                                [request.id]: {...form, status: e.target.value},
+                                                                [request.id]: e.target.value,
                                                             }))}
-                                                            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
-                                                        >
-                                                            {OPERATION_STATUS_FILTERS.filter((item) => item !== 'ALL').map((item) => (
-                                                                <option key={item} value={item}>{item}</option>
-                                                            ))}
-                                                        </select>
-                                                        <input
-                                                            value={form.adminMemo}
-                                                            onChange={(e) => setOperationForms((prev) => ({
-                                                                ...prev,
-                                                                [request.id]: {...form, adminMemo: e.target.value},
-                                                            }))}
-                                                            placeholder="관리 메모"
-                                                            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+                                                            placeholder="관리자 코멘트"
+                                                            className="min-h-[88px] w-full rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3 text-sm outline-none"
                                                         />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => operationRequestMutation.mutate({
-                                                                requestId: request.id,
-                                                                status: form.status,
-                                                                adminMemo: form.adminMemo,
-                                                            })}
-                                                            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
-                                                        >
-                                                            상태 저장
-                                                        </button>
+                                                        {canApproveOperation && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => operationRequestMutation.mutate({
+                                                                    requestId: request.id,
+                                                                    status: 'IN_PROGRESS',
+                                                                    adminMemo: adminMemo.trim() || null,
+                                                                })}
+                                                                className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)]"
+                                                                disabled={operationRequestMutation.isPending}
+                                                            >
+                                                                승인
+                                                            </button>
+                                                        )}
+                                                        {canResolveOperation && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => operationRequestMutation.mutate({
+                                                                    requestId: request.id,
+                                                                    status: 'RESOLVED',
+                                                                    adminMemo: adminMemo.trim() || null,
+                                                                })}
+                                                                className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700"
+                                                                disabled={operationRequestMutation.isPending}
+                                                            >
+                                                                반영됨
+                                                            </button>
+                                                        )}
+                                                        {canRejectOperation && (
+                                                            <>
+                                                                <input
+                                                                    value={adminMemo}
+                                                                    onChange={(e) => setOperationAdminMemos((prev) => ({
+                                                                        ...prev,
+                                                                        [request.id]: e.target.value,
+                                                                    }))}
+                                                                    placeholder="반려 사유"
+                                                                    className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const reason = adminMemo.trim()
+                                                                        if (!reason) {
+                                                                            window.alert('반려 사유를 입력해 주세요.')
+                                                                            return
+                                                                        }
+                                                                        operationRequestMutation.mutate({
+                                                                            requestId: request.id,
+                                                                            status: 'REJECTED',
+                                                                            adminMemo: reason,
+                                                                        })
+                                                                    }}
+                                                                    className="rounded-full bg-rose-500 px-4 py-2 text-sm font-semibold text-white"
+                                                                    disabled={operationRequestMutation.isPending}
+                                                                >
+                                                                    반려
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

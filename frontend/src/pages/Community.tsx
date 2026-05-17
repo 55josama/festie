@@ -12,6 +12,7 @@ import type { EventRequestItem, OperationRequestItem } from '../types/admin'
 
 type FeedTab = 'posts' | 'requests'
 type RequestKind = 'event' | 'operation'
+type RequestStatusFilter = 'all' | 'PENDING' | 'APPROVED' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED'
 
 type RequestFeedItem = {
     id: string
@@ -23,6 +24,7 @@ type RequestFeedItem = {
     body: string
     authorNickname?: string | null
     createdAt?: string | null
+    createdEventId?: string | null
     status: string
     rejectReason?: string | null
     statusClassName: string
@@ -38,7 +40,9 @@ export default function Community() {
     const [requestKind, setRequestKind] = useState<RequestKind>(() => searchParams.get('requestKind') === 'operation' ? 'operation' : 'event')
     const [categoryId, setCategoryId] = useState<string | undefined>()
     const [sort, setSort] = useState<'latest' | 'popular'>('latest')
+    const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatusFilter>('all')
     const [requestRejectReasons, setRequestRejectReasons] = useState<Record<string, string>>({})
+    const [operationRejectReasons, setOperationRejectReasons] = useState<Record<string, string>>({})
     const isAdmin = !!user && /ADMIN/.test(user.role)
     const isManager = !!user && /_MANAGER$/.test(user.role)
     const canViewAllRequests = isAdmin || isManager
@@ -93,7 +97,7 @@ export default function Community() {
     })
 
     const updateOperationStatusMutation = useMutation({
-        mutationFn: ({requestId, status, reason}: { requestId: string; status: string; reason: string }) =>
+        mutationFn: ({requestId, status, reason}: { requestId: string; status: string; reason?: string | null }) =>
             updateOperationRequestStatus(requestId, status, reason),
         onSuccess: async () => {
             await queryClient.invalidateQueries({queryKey: ['community', 'operation-requests']})
@@ -143,6 +147,7 @@ export default function Community() {
             body: request.description ?? '',
             authorNickname: request.requesterNickname ?? request.requester_nickname ?? null,
             createdAt: request.createdAt ?? null,
+            createdEventId: request.createdEventId ?? request.created_event_id ?? null,
             status: request.status ?? request.status_name ?? 'PENDING',
             rejectReason: request.rejectReason ?? request.reject_reason ?? null,
             statusClassName: requestStatusClass(request.status ?? request.status_name),
@@ -176,6 +181,32 @@ export default function Community() {
             return left.sortIndex - right.sortIndex
         })
     }, [eventRequests, operationRequests, requestKind])
+
+    const visibleRequestItems = useMemo(() => {
+        if (requestStatusFilter === 'all') return requestItems
+        return requestItems.filter((request) => matchesRequestStatusFilter(request.kind, request.status, requestStatusFilter))
+    }, [requestItems, requestStatusFilter])
+
+    const requestStatusOptions = useMemo(() => {
+        return requestKind === 'event'
+            ? [
+                { value: 'all' as const, label: '전체', tone: 'slate' as const },
+                { value: 'PENDING' as const, label: '대기중', tone: 'amber' as const },
+                { value: 'APPROVED' as const, label: '승인됨', tone: 'emerald' as const },
+                { value: 'REJECTED' as const, label: '거절됨', tone: 'rose' as const },
+            ]
+            : [
+                { value: 'all' as const, label: '전체', tone: 'slate' as const },
+                { value: 'PENDING' as const, label: '대기중', tone: 'amber' as const },
+                { value: 'IN_PROGRESS' as const, label: '처리중', tone: 'sky' as const },
+                { value: 'RESOLVED' as const, label: '완료', tone: 'emerald' as const },
+                { value: 'REJECTED' as const, label: '거절됨', tone: 'rose' as const },
+            ]
+    }, [requestKind])
+
+    useEffect(() => {
+        setRequestStatusFilter('all')
+    }, [requestKind])
 
     return (
         <div className="space-y-5 px-5 py-5 md:px-8 md:py-7">
@@ -325,103 +356,111 @@ export default function Community() {
                         )}
                     </div>
 
+                    <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 px-3 py-3">
+                        <span className="text-[10px] font-semibold text-slate-500">상태</span>
+                        {requestStatusOptions.map((option) => (
+                            <FilterChip
+                                key={option.value}
+                                active={requestStatusFilter === option.value}
+                                tone={option.tone}
+                                onClick={() => setRequestStatusFilter(option.value)}
+                            >
+                                {option.label}
+                            </FilterChip>
+                        ))}
+                    </div>
+
                     <div className="space-y-3">
-                        {requestItems.length === 0 ? (
+                        {visibleRequestItems.length === 0 ? (
                             <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
                                 아직 요청 글이 없어요.
                             </div>
                         ) : (
-                            requestItems.map((request) => {
+                            visibleRequestItems.map((request) => {
                             const reason = requestRejectReasons[request.id] ?? ''
+                            const operationReason = operationRejectReasons[request.id] ?? ''
                             const canModerateOperation = isAdmin
                             const isOperationOwner = !!user && request.requesterId === user.userId
                             const isEventOwner = !!user && request.requesterId === user.userId
                             const canDeleteEventRequest = request.kind === 'event' && (isAdmin || isEventOwner)
                             const canEditOperationRequest = request.kind === 'operation' && (isAdmin || (isOperationOwner && request.status === 'PENDING'))
-                            const canDeleteOperationRequest = request.kind === 'operation' && (isAdmin || isOperationOwner) && (request.status === 'PENDING' || isAdmin)
+                            const canDeleteOperationRequest = request.kind === 'operation' && (isAdmin || isOperationOwner)
                             const operationActions = (() => {
-                                    const moderationBlock = canModerateOperation && request.status === 'PENDING' ? (
-                                        <>
+                                    const canApproveOperation = canModerateOperation && request.status === 'PENDING'
+                                    const canResolveOperation = canModerateOperation && request.status === 'IN_PROGRESS'
+                                    const canRejectOperation = canModerateOperation && request.status === 'PENDING'
+                                    const moderationBlock = canApproveOperation || canResolveOperation || canRejectOperation ? (
+                                        <div className="space-y-2.5">
                                             <input
-                                                value={reason}
-                                                onChange={(e) => setRequestRejectReasons((prev) => ({
+                                                value={operationReason}
+                                                onChange={(e) => setOperationRejectReasons((prev) => ({
                                                     ...prev,
                                                     [request.id]: e.target.value,
                                                 }))}
-                                                placeholder="반려 사유"
-                                                className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
+                                                placeholder="관리자 코멘트"
+                                                className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm outline-none"
                                             />
-                                            <div className="flex flex-wrap gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        updateOperationStatusMutation.mutate({
-                                                            requestId: request.id,
-                                                            status: 'IN_PROGRESS',
-                                                            reason: reason.trim() || '승인 처리',
-                                                        })
-                                                    }}
-                                                    className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
-                                                >
-                                                    승인
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const rejectReason = reason.trim()
-                                                        if (!rejectReason) return
-                                                        updateOperationStatusMutation.mutate({
-                                                            requestId: request.id,
-                                                            status: 'REJECTED',
-                                                            reason: rejectReason,
-                                                        })
-                                                    }}
-                                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
-                                                >
-                                                    거절
-                                                </button>
+                                            <div className="flex items-center gap-3 pt-1.5">
+                                                {canApproveOperation && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            updateOperationStatusMutation.mutate({
+                                                                requestId: request.id,
+                                                                status: 'IN_PROGRESS',
+                                                                reason: operationReason.trim() || null,
+                                                            })
+                                                        }}
+                                                        className="flex-1 rounded-full bg-[var(--accent-soft)] px-4 py-2.5 text-sm font-semibold text-[var(--accent)]"
+                                                    >
+                                                        승인
+                                                    </button>
+                                                )}
+                                                {canResolveOperation && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            updateOperationStatusMutation.mutate({
+                                                                requestId: request.id,
+                                                                status: 'RESOLVED',
+                                                                reason: operationReason.trim() || null,
+                                                            })
+                                                        }}
+                                                        className="flex-1 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700"
+                                                    >
+                                                        처리완료
+                                                    </button>
+                                                )}
+                                                {canRejectOperation && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const memo = operationReason.trim()
+                                                            if (!memo) {
+                                                                window.alert('관리자 코멘트를 입력해 주세요.')
+                                                                return
+                                                            }
+                                                            updateOperationStatusMutation.mutate({
+                                                                requestId: request.id,
+                                                                status: 'REJECTED',
+                                                                reason: memo,
+                                                            })
+                                                        }}
+                                                        className="flex-1 rounded-full bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white"
+                                                    >
+                                                        거절
+                                                    </button>
+                                                )}
                                             </div>
-                                        </>
-                                    ) : null
-
-                                    const editDeleteBlock = canEditOperationRequest || canDeleteOperationRequest ? (
-                                        <div className={`${moderationBlock ? 'border-t border-slate-200 pt-3' : ''} flex flex-wrap gap-2`}>
-                                            {canEditOperationRequest && (
-                                                <Link
-                                                    to={`/community/new?requestKind=operation&requestId=${request.id}`}
-                                                    className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-semibold text-violet-700"
-                                                >
-                                                    수정
-                                                </Link>
-                                            )}
-                                            {canDeleteOperationRequest && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (window.confirm('운영 요청을 삭제할까요?')) {
-                                                            deleteOperationMutation.mutate(request.id)
-                                                        }
-                                                    }}
-                                                    className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700"
-                                                    disabled={deleteOperationMutation.isPending}
-                                                >
-                                                    삭제
-                                                </button>
-                                            )}
                                         </div>
                                     ) : null
 
-                                    if (!moderationBlock && !editDeleteBlock) return null
-                                    return (
-                                        <div className="space-y-2 border-t border-slate-200 pt-3">
-                                            {moderationBlock}
-                                            {editDeleteBlock}
-                                        </div>
-                                    )
+                                    if (!moderationBlock) return null
+                                    return moderationBlock
                                 })()
                                 const eventActions = request.kind === 'event'
                                     ? (
-                                        <div className="space-y-2 border-t border-slate-200 pt-3">
+                                        <div className="space-y-2">
                                             {canModerateEventRequests && request.status === 'PENDING' && (
                                                 <>
                                                     <input
@@ -455,21 +494,23 @@ export default function Community() {
                                                     </div>
                                                 </>
                                             )}
-                                            {canDeleteEventRequest && (
-                                                <div className="flex flex-wrap gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (window.confirm('이벤트 요청을 삭제할까요?')) {
-                                                                deleteEventMutation.mutate(request.id)
-                                                            }
-                                                        }}
-                                                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700"
-                                                        disabled={deleteEventMutation.isPending}
-                                                    >
-                                                        삭제
-                                                    </button>
-                                                </div>
+
+                                            {canModerateEventRequests && request.status === 'APPROVED' && !request.createdEventId && (
+                                                <Link
+                                                    to={`/admin?tab=manage&requestId=${request.id}`}
+                                                    className="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
+                                                >
+                                                    행사 생성
+                                                </Link>
+                                            )}
+
+                                            {request.createdEventId && (
+                                                <Link
+                                                    to={`/events/${request.createdEventId}`}
+                                                    className="inline-flex w-full items-center justify-center rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                                                >
+                                                    생성된 행사 보기
+                                                </Link>
                                             )}
                                         </div>
                                     )
@@ -477,6 +518,47 @@ export default function Community() {
                                 const actions = request.kind === 'event'
                                     ? eventActions
                                     : operationActions
+                                const statusActions = request.kind === 'event'
+                                    ? (canDeleteEventRequest ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (window.confirm('이벤트 요청을 삭제할까요?')) {
+                                                    deleteEventMutation.mutate(request.id)
+                                                }
+                                            }}
+                                            className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[10px] font-semibold text-rose-700"
+                                            disabled={deleteEventMutation.isPending}
+                                        >
+                                            삭제
+                                        </button>
+                                    ) : null)
+                                    : (
+                                        <div className="flex items-center gap-2">
+                                            {canEditOperationRequest && (
+                                                <Link
+                                                    to={`/community/new?requestKind=operation&requestId=${request.id}`}
+                                                    className="inline-flex min-w-[64px] items-center justify-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-semibold text-violet-700"
+                                                >
+                                                    수정
+                                                </Link>
+                                            )}
+                                            {canDeleteOperationRequest && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (window.confirm('운영 요청을 삭제할까요?')) {
+                                                            deleteOperationMutation.mutate(request.id)
+                                                        }
+                                                    }}
+                                                    className="inline-flex min-w-[64px] items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700"
+                                                    disabled={deleteOperationMutation.isPending}
+                                                >
+                                                    삭제
+                                                </button>
+                                            )}
+                                        </div>
+                                    )
 
                                 return (
                                     <RequestCard
@@ -494,6 +576,7 @@ export default function Community() {
                                         statusLabel={requestStatusLabel(request.status)}
                                         statusClassName={request.statusClassName}
                                         rejectReason={request.rejectReason}
+                                        statusActions={statusActions}
                                         actions={actions}
                                     />
                                 )
@@ -513,7 +596,7 @@ function FilterChip({
     children,
 }: {
     active?: boolean
-    tone?: 'violet' | 'sky' | 'emerald' | 'rose' | 'pink' | 'slate'
+    tone?: 'violet' | 'sky' | 'emerald' | 'rose' | 'pink' | 'slate' | 'amber'
     onClick: () => void
     children: ReactNode
 }) {
@@ -524,6 +607,7 @@ function FilterChip({
         rose: 'border-rose-200 bg-rose-50 text-rose-700',
         pink: 'border-pink-200 bg-pink-50 text-pink-700',
         slate: 'border-slate-200 bg-slate-50 text-slate-700',
+        amber: 'border-amber-200 bg-amber-50 text-amber-700',
     }[tone]
 
     return (
@@ -574,7 +658,28 @@ function requestStatusClass(status?: string | null) {
     if (normalized === 'PENDING') return 'bg-amber-100 text-amber-700'
     if (normalized === 'APPROVED' || normalized === 'RESOLVED') return 'bg-emerald-100 text-emerald-700'
     if (normalized === 'REJECTED') return 'bg-rose-100 text-rose-700'
-    if (normalized === 'IN_PROGRESS') return 'bg-sky-100 text-sky-700'
+    if (normalized === 'IN_PROGRESS') return 'bg-emerald-100 text-emerald-700'
     if (normalized === 'CANCELED' || normalized === 'CANCELLED') return 'bg-slate-100 text-slate-600'
     return 'bg-slate-100 text-slate-600'
+}
+
+function matchesRequestStatusFilter(
+    kind: RequestKind,
+    status?: string | null,
+    filter?: RequestStatusFilter,
+) {
+    const normalized = String(status ?? '').toUpperCase()
+    const nextFilter = filter ?? 'all'
+    if (nextFilter === 'all') return true
+    if (kind === 'event') {
+        if (nextFilter === 'PENDING') return normalized === 'PENDING'
+        if (nextFilter === 'APPROVED') return normalized === 'APPROVED'
+        if (nextFilter === 'REJECTED') return normalized === 'REJECTED'
+        return true
+    }
+    if (nextFilter === 'PENDING') return normalized === 'PENDING'
+    if (nextFilter === 'IN_PROGRESS') return normalized === 'IN_PROGRESS' || normalized === 'APPROVED'
+    if (nextFilter === 'RESOLVED') return normalized === 'RESOLVED'
+    if (nextFilter === 'REJECTED') return normalized === 'REJECTED'
+    return true
 }
