@@ -16,13 +16,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,13 +33,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private static final String USER_ID_HEADER = "X-User-Id";
-
     private final CategoryService categoryService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<CategoryResponse> create(
             @Valid @RequestBody CreateCategoryRequest req) {
         CategoryResult result = categoryService.create(
@@ -47,7 +46,7 @@ public class CategoryController {
     }
 
     @PatchMapping("/{categoryId}")
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<CategoryResponse> update(
             @PathVariable UUID categoryId,
             @Valid @RequestBody UpdateCategoryRequest req) {
@@ -57,27 +56,25 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{categoryId}")
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> delete(
             @PathVariable UUID categoryId,
-            @RequestHeader(USER_ID_HEADER) UUID userId) {
+            @AuthenticationPrincipal UUID userId) {
         categoryService.delete(new DeleteCategoryCommand(categoryId, userId));
         return ApiResponse.deleted();
     }
 
+    // GET 은 SecurityConfig 에서 permitAll
     @GetMapping("/{categoryId}")
-    //@PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<CategoryResponse> getDetail(@PathVariable UUID categoryId) {
         CategoryResult result = categoryService.getDetail(categoryId);
         return ApiResponse.success(CategoryResponse.from(result));
     }
 
     @GetMapping
-    //@PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Page<CategoryResponse>> list(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         Page<CategoryResult> page = categoryService.list(pageable);
         return ApiResponse.success(page.map(CategoryResponse::from));
     }
-
 }
