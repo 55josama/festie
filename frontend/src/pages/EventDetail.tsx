@@ -21,6 +21,7 @@ export default function EventDetail() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user, isLoggedIn } = useAuthStore()
+  const isStaff = !!user && /ADMIN|MANAGER/.test(String(user.role ?? ''))
   const canFavoriteEvent = !user || user.role === 'USER'
   const [message, setMessage] = useState('')
   const [chatMessageError, setChatMessageError] = useState('')
@@ -343,32 +344,62 @@ export default function EventDetail() {
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <h1 className="text-[26px] font-black tracking-tight text-slate-950 md:text-[30px]">{event.name}</h1>
-                  {canFavoriteEvent ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!isLoggedIn()) {
-                          navigate('/login')
-                          return
-                        }
-                        favoriteToggleMutation.mutate()
-                      }}
-                      disabled={favoriteToggleMutation.isPending}
-                      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-[18px] transition-colors ${
-                        favoriteEntry
-                          ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
-                          : 'border-[var(--line)] bg-white text-slate-400 hover:bg-[var(--accent-soft)]/40 hover:text-rose-500'
-                      }`}
-                      title={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
-                      aria-label={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
-                    >
-                      {favoriteEntry ? '♥' : '♡'}
-                    </button>
-                  ) : (
-                    <div className="inline-flex h-11 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[11px] font-semibold text-slate-400">
-                      찜은 USER만 가능
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {user && /ADMIN/.test(user.role) && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const eventUuid = String(event.id ?? '')
+                          if (!eventUuid) return
+                          try {
+                            await navigator.clipboard.writeText(eventUuid)
+                            window.alert('행사 UUID를 복사했어요.')
+                          } catch {
+                            const textarea = document.createElement('textarea')
+                            textarea.value = eventUuid
+                            textarea.style.position = 'fixed'
+                            textarea.style.left = '-9999px'
+                            document.body.appendChild(textarea)
+                            textarea.select()
+                            document.execCommand('copy')
+                            document.body.removeChild(textarea)
+                            window.alert('행사 UUID를 복사했어요.')
+                          }
+                        }}
+                        className="inline-flex h-11 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[10px] font-semibold text-slate-400 transition-colors hover:bg-slate-100"
+                        title="행사 UUID 복사"
+                        aria-label="행사 UUID 복사"
+                      >
+                        UUID 복사
+                      </button>
+                    )}
+                    {!isStaff && canFavoriteEvent ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isLoggedIn()) {
+                            navigate('/login')
+                            return
+                          }
+                          favoriteToggleMutation.mutate()
+                        }}
+                        disabled={favoriteToggleMutation.isPending}
+                        className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-[18px] transition-colors ${
+                          favoriteEntry
+                            ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
+                            : 'border-[var(--line)] bg-white text-slate-400 hover:bg-[var(--accent-soft)]/40 hover:text-rose-500'
+                        }`}
+                        title={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
+                        aria-label={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
+                      >
+                        {favoriteEntry ? '♥' : '♡'}
+                      </button>
+                    ) : !isStaff ? (
+                      <div className="inline-flex h-11 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[11px] font-semibold text-slate-400">
+                        찜은 USER만 가능
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
                 <p className="mt-2 text-[15px] leading-6 text-slate-600">{event.description ?? '행사 상세 소개가 준비되어 있습니다.'}</p>
               </div>

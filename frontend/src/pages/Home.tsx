@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getCategories } from '../api/community'
@@ -6,14 +6,113 @@ import { getEvents, getTicketingEvents } from '../api/events'
 import { getPosts } from '../api/community'
 import { getPopularChatRooms } from '../api/chat'
 import { formatDateRange } from '../lib/format'
+import { useAuthStore } from '../store/authStore'
 import type { Event, Post } from '../types'
 
+type HomeBanner = {
+  id: string
+  title: string
+  link: string
+  imageUrl: string
+  eventId?: string
+}
+
+const HOME_BANNER_STORAGE_KEY = 'festie-home-banners'
+const DEFAULT_HOME_BANNERS: HomeBanner[] = [
+  {
+    id: 'banner-events',
+    title: '행사 바로가기',
+    link: '/events',
+    imageUrl: '',
+  },
+  {
+    id: 'banner-requests',
+    title: '요청 글',
+    link: '/community?tab=requests&requestKind=event',
+    imageUrl: '',
+  },
+  {
+    id: 'banner-popular',
+    title: '인기글',
+    link: '/community?tab=posts',
+    imageUrl: '',
+  },
+]
+
 export default function Home() {
+  const { user } = useAuthStore()
   const { data: allEvents = [] } = useQuery({ queryKey: ['events', 'home'], queryFn: () => getEvents({ size: 100 }) })
   const { data: ticketingEvents = [] } = useQuery({ queryKey: ['events', 'ticketing'], queryFn: getTicketingEvents })
   const { data: posts = [] } = useQuery({ queryKey: ['posts', 'home'], queryFn: () => getPosts({ size: 4, sort: 'createdAt,desc' }) })
   const { data: categories = [] } = useQuery({ queryKey: ['categories', 'home'], queryFn: getCategories })
   const { data: popularRooms = [] } = useQuery({ queryKey: ['popular-chat-rooms', 'home'], queryFn: () => getPopularChatRooms(3) })
+  const isAdmin = !!user && String(user.role ?? '').includes('ADMIN')
+  const [homeBanners, setHomeBanners] = useState<HomeBanner[]>(DEFAULT_HOME_BANNERS)
+  const [isBannerEditorOpen, setIsBannerEditorOpen] = useState(false)
+  const [bannerDrafts, setBannerDrafts] = useState<HomeBanner[]>(DEFAULT_HOME_BANNERS)
+  const [hasHydratedBanners, setHasHydratedBanners] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const stored = window.localStorage.getItem(HOME_BANNER_STORAGE_KEY)
+      if (!stored) return
+      const parsed = JSON.parse(stored) as HomeBanner[]
+      if (Array.isArray(parsed) && parsed.length) {
+        const normalized = parsed.slice(0, 3).map((banner, index) => ({
+          id: banner.id || `banner-${index}`,
+          title: String(banner.title ?? '').trim(),
+          link: String(banner.link ?? '').trim(),
+          imageUrl: String(banner.imageUrl ?? '').trim(),
+          eventId: String((banner as HomeBanner).eventId ?? '').trim(),
+        }))
+        const fallback = DEFAULT_HOME_BANNERS.slice(0, 3)
+        setHomeBanners(normalized.length ? normalized : fallback)
+        setBannerDrafts(normalized.length ? normalized : fallback)
+      }
+    } catch {
+      const fallback = DEFAULT_HOME_BANNERS.slice(0, 3)
+      setHomeBanners(fallback)
+      setBannerDrafts(fallback)
+    }
+    setHasHydratedBanners(true)
+  }, [])
+
+  useEffect(() => {
+    if (!hasHydratedBanners) return
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(HOME_BANNER_STORAGE_KEY, JSON.stringify(homeBanners))
+    } catch {
+      // ignore storage failures
+    }
+  }, [hasHydratedBanners, homeBanners])
+
+  useEffect(() => {
+    if (!hasHydratedBanners) return
+    if (!allEvents.length) return
+
+    let hasNextBannerChange = false
+    const nextBanners = homeBanners.map((banner) => {
+      if (banner.imageUrl.trim()) return banner
+      if (banner.eventId?.trim()) {
+        const eventImageUrl = suggestBannerImageUrl(`/events/${banner.eventId.trim()}`, allEvents as Event[])
+        if (eventImageUrl) {
+          hasNextBannerChange = true
+          return { ...banner, imageUrl: eventImageUrl }
+        }
+      }
+      const suggestedImageUrl = suggestBannerImageUrl(banner.link, allEvents as Event[])
+      if (!suggestedImageUrl) return banner
+      hasNextBannerChange = true
+      return { ...banner, imageUrl: suggestedImageUrl }
+    })
+
+    if (hasNextBannerChange) {
+      setHomeBanners(nextBanners)
+      setBannerDrafts(nextBanners)
+    }
+  }, [allEvents, hasHydratedBanners, homeBanners])
 
   const featuredPosts = useMemo(() => pickRecentPopularPosts(posts as Post[], 24), [posts])
   const upcomingEvents = useMemo(() => getCurrentEventWindow(allEvents as Event[]), [allEvents])
@@ -25,7 +124,7 @@ export default function Home() {
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
       <section className="rounded-[24px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-6">
-        <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr] xl:items-start">
+        <div className="flex items-start justify-between gap-3">
           <div className="space-y-3">
             <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)] md:inline-flex">
               행사 탐색
@@ -42,6 +141,29 @@ export default function Home() {
             <p className="hidden max-w-lg text-sm leading-6 text-slate-600 md:block">
               찾고, 보고, 바로 담는 행사 탐색
             </p>
+          </div>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                setBannerDrafts((homeBanners.length ? homeBanners : DEFAULT_HOME_BANNERS).slice(0, 3))
+                setIsBannerEditorOpen(true)
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] bg-white text-[18px] font-bold text-slate-600 hover:bg-slate-50"
+              aria-label="배너 편집"
+            >
+              +
+            </button>
+          )}
+        </div>
+        <div className="mt-5 hidden space-y-3 md:block">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] text-slate-400">행사 바로가기와 공지를 여기에 담아요</span>
+          </div>
+          <div className="grid gap-2 md:grid-cols-3">
+            {homeBanners.slice(0, 3).map((banner, index) => (
+              <BannerCard key={banner.id || `${banner.title}-${index}`} banner={banner} />
+            ))}
           </div>
         </div>
       </section>
@@ -124,17 +246,158 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {isBannerEditorOpen && isAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6">
+          <div className="w-full max-w-5xl rounded-[28px] bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.18)] md:p-6">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+              <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">배너 편집</div>
+                <h3 className="mt-3 text-[22px] font-black tracking-tight text-slate-950">홈 배너 3개를 관리해요</h3>
+                <p className="mt-1 text-xs text-slate-500">행사 UUID를 넣으면 링크와 이미지를 자동으로 채워요.</p>
+                <p className="mt-1 text-xs font-semibold text-[var(--accent)]">권장 이미지: 1200 x 675px 이상, 16:9 비율</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBannerEditorOpen(false)}
+                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600"
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              {bannerDrafts.slice(0, 3).map((banner, index) => (
+                <div key={banner.id} className="rounded-[22px] border border-[var(--line)] bg-slate-50 p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-sm font-semibold text-slate-700">배너 {index + 1}</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? {
+                          ...item,
+                          eventId: '',
+                          title: '',
+                          link: '',
+                          imageUrl: '',
+                        } : item))
+                      }}
+                      className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[11px] font-semibold text-slate-500"
+                    >
+                      비우기
+                    </button>
+                  </div>
+                  <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1.2fr_1.6fr]">
+                    <input
+                      value={banner.eventId ?? ''}
+                      onChange={(e) => {
+                        const next = e.target.value.trim()
+                        setBannerDrafts((prev) => prev.map((item, idx) => {
+                          if (idx !== index) return item
+                          if (!next) {
+                            return { ...item, eventId: '', link: '', imageUrl: '' }
+                          }
+                          const eventLink = `/events/${next}`
+                          return {
+                            ...item,
+                            eventId: next,
+                            link: eventLink,
+                            imageUrl: suggestBannerImageUrl(eventLink, allEvents as Event[]) || item.imageUrl,
+                          }
+                        }))
+                      }}
+                      placeholder="이벤트 UUID"
+                      className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                    />
+                    <input
+                      value={banner.title}
+                      onChange={(e) => {
+                        const next = e.target.value
+                        setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? { ...item, title: next } : item))
+                      }}
+                      placeholder="배너 제목"
+                      className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                    />
+                    <input
+                      value={banner.link}
+                      onChange={(e) => {
+                        const next = e.target.value
+                        setBannerDrafts((prev) => prev.map((item, idx) => {
+                          if (idx !== index) return item
+                          const resolvedEventId = extractEventIdFromBannerLink(next)
+                          const suggestedImageUrl = item.imageUrl.trim() ? item.imageUrl : suggestBannerImageUrl(next, allEvents as Event[])
+                          return {
+                            ...item,
+                            link: next,
+                            eventId: resolvedEventId || item.eventId,
+                            imageUrl: suggestedImageUrl || item.imageUrl,
+                          }
+                        }))
+                      }}
+                      placeholder="링크 주소"
+                      className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                    />
+                    <input
+                      value={banner.imageUrl}
+                      onChange={(e) => {
+                        const next = e.target.value
+                        setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? { ...item, imageUrl: next } : item))
+                      }}
+                      placeholder="이미지 주소"
+                      className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsBannerEditorOpen(false)}
+                className="rounded-full border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextBanners = bannerDrafts
+                    .map((banner, index) => ({
+                      id: banner.id || `banner-${index}`,
+                      title: String(banner.title ?? '').trim(),
+                      link: String(banner.link ?? '').trim(),
+                      imageUrl:
+                        String(banner.imageUrl ?? '').trim() ||
+                        suggestBannerImageUrl(String(banner.eventId ?? '').trim() ? `/events/${String(banner.eventId ?? '').trim()}` : String(banner.link ?? '').trim(), allEvents as Event[]),
+                      eventId: String(banner.eventId ?? '').trim(),
+                    }))
+                    .filter((banner) => banner.title || banner.link || banner.imageUrl)
+                  setHomeBanners((nextBanners.length ? nextBanners : DEFAULT_HOME_BANNERS).slice(0, 3))
+                  setIsBannerEditorOpen(false)
+                }}
+                className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white"
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 function sortUpcomingEvents(events: Event[]) {
-  return [...events].sort((a, b) => String(a.startAt ?? '').localeCompare(String(b.startAt ?? '')))
+  return [...events]
+    .filter((event) => isUpcomingEvent(event))
+    .sort((a, b) => String(a.startAt ?? '').localeCompare(String(b.startAt ?? '')))
 }
 
 function sortUpcomingTicketing(events: Event[]) {
   return [...events]
     .filter((event) => event.hasTicketing)
+    .filter((event) => isUpcomingEvent(event))
     .sort((a, b) => String(a.ticketingOpenAt ?? '').localeCompare(String(b.ticketingOpenAt ?? '')))
 }
 
@@ -181,6 +444,10 @@ function isWithinDays(dateValue?: string | null, limit = 7) {
   const target = new Date(dateValue)
   const diffDays = Math.ceil((target.getTime() - startOfToday().getTime()) / 86400000)
   return diffDays >= 0 && diffDays <= limit
+}
+
+function isUpcomingEvent(event: Event) {
+  return event.status !== 'COMPLETED' && event.status !== 'CANCELLED'
 }
 
 function SectionHeading({ title, action }: { title: string; action?: ReactNode }) {
@@ -257,6 +524,60 @@ function TicketingRow({ event }: { event: Event }) {
         </div>
       </div>
     </Link>
+  )
+}
+
+function BannerCard({ banner }: { banner: HomeBanner }) {
+  const internalPath = resolveInternalBannerPath(banner.link)
+  const isInternalLink = Boolean(internalPath)
+  const content = (
+    <div className="relative h-full min-h-[88px] w-full overflow-hidden rounded-[20px] border border-[var(--line)] bg-white text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.08)] md:min-h-[220px] md:rounded-[24px] md:bg-slate-950 md:text-white">
+      <div className="absolute inset-0 hidden md:block">
+        {banner.imageUrl ? (
+          <img
+            src={banner.imageUrl}
+            alt={banner.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-[#8b5cf6] via-[#a78bfa] to-[#f5d0fe]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
+      </div>
+
+      <div className="relative flex h-full flex-col justify-between p-3 md:justify-end md:p-4">
+        <div className="md:hidden">
+          <div className="text-[11px] font-semibold text-[var(--accent)]">배너</div>
+          <div className="mt-1 line-clamp-1 text-[14px] font-black leading-5 tracking-tight text-slate-950">
+            {banner.title || '배너 제목'}
+          </div>
+        </div>
+
+        <div className="hidden md:block">
+          <div className="mt-2 text-[17px] font-black leading-6 tracking-tight text-white">
+            {banner.title || '배너 제목'}
+          </div>
+        </div>
+
+        <div className="mt-2 inline-flex w-fit items-center rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[10px] font-semibold text-[var(--accent)] md:mt-3 md:px-3 md:py-1.5 md:text-[11px] md:bg-white md:text-slate-950">
+          바로가기
+        </div>
+      </div>
+    </div>
+  )
+
+  if (isInternalLink) {
+    return (
+      <Link to={internalPath} className="block w-full">
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <a href={banner.link} target="_blank" rel="noreferrer" className="block w-full">
+      {content}
+    </a>
   )
 }
 
@@ -337,4 +658,47 @@ function normalizePostCategoryKey(name: string) {
   if (normalized === '자유' || normalized === 'free') return 'free'
   if (normalized === '요청' || normalized === 'request') return 'request'
   return normalized
+}
+
+function suggestBannerImageUrl(link: string, events: Event[]) {
+  const normalized = resolveInternalBannerPath(link) || String(link ?? '').trim()
+  if (!normalized) return ''
+
+  if (normalized.startsWith('/events/')) {
+    const eventId = normalized.match(/^\/events\/([^/?#]+)/)?.[1]
+    if (eventId) {
+      const matchedEvent = events.find((event) => String(event.id) === eventId)
+      if (matchedEvent?.img) return matchedEvent.img
+    }
+    return '/banner-event.svg'
+  }
+
+  if (normalized.startsWith('/events')) return '/banner-event.svg'
+  if (normalized.startsWith('/community') || normalized.startsWith('/notice')) return '/banner-notice.svg'
+  if (normalized.startsWith('/calendar')) return '/banner-event.svg'
+
+  return ''
+}
+
+function resolveInternalBannerPath(link: string) {
+  const normalized = String(link ?? '').trim()
+  if (!normalized) return ''
+  if (normalized.startsWith('/')) return normalized
+
+  try {
+    const url = new URL(normalized)
+    if (typeof window !== 'undefined' && url.origin === window.location.origin) {
+      return `${url.pathname}${url.search}${url.hash}`
+    }
+  } catch {
+    // ignore invalid URLs
+  }
+
+  return ''
+}
+
+function extractEventIdFromBannerLink(link: string) {
+  const normalized = resolveInternalBannerPath(link)
+  if (!normalized) return ''
+  return normalized.match(/^\/events\/([^/?#]+)/)?.[1] ?? ''
 }

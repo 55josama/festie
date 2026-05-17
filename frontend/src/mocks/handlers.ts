@@ -14,6 +14,7 @@ import {
   mockFavorites,
   mockReports,
   mockNotifications,
+  mockNotices,
 } from './data'
 
 const wrap = (data: any) => ({ status: 'success', data })
@@ -423,6 +424,22 @@ export const handlers = [
     return HttpResponse.json(wrap(post))
   }),
 
+  http.post('/community-service/v1/posts/:postId/likes', async ({ params }) => {
+    await delay(90)
+    const post = mockPosts.find((item) => item.id === params.postId)
+    if (!post) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    post.likeCount = (post.likeCount ?? 0) + 1
+    return HttpResponse.json(wrap({}))
+  }),
+
+  http.delete('/community-service/v1/posts/:postId/likes', async ({ params }) => {
+    await delay(90)
+    const post = mockPosts.find((item) => item.id === params.postId)
+    if (!post) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    post.likeCount = Math.max(0, (post.likeCount ?? 0) - 1)
+    return HttpResponse.json(wrap({}))
+  }),
+
   http.get('/community-service/v1/posts/:postId/comments', async ({ params }) => {
     await delay(150)
     const comments = mockComments.filter((item) => item.postId === params.postId)
@@ -701,6 +718,29 @@ export const handlers = [
     const status = url.searchParams.get('status')
     const filtered = status ? mockReports.filter((item) => item.status === status) : mockReports
     return HttpResponse.json(wrap({ content: filtered, totalElements: filtered.length, totalPages: 1, size: 10, number: 0 }))
+  }),
+
+  http.get('/operation-service/v1/notices', async ({ request }) => {
+    await delay(140)
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? '0')
+    const size = Number(url.searchParams.get('size') ?? '10')
+    const start = page * size
+    const content = mockNotices.slice(start, start + size)
+    return HttpResponse.json(wrap({
+      content,
+      page,
+      size,
+      totalElements: mockNotices.length,
+      totalPages: Math.max(1, Math.ceil(mockNotices.length / size)),
+    }))
+  }),
+
+  http.get('/operation-service/v1/notices/:noticeId', async ({ params }) => {
+    await delay(120)
+    const notice = mockNotices.find((item) => item.noticeId === params.noticeId)
+    if (!notice) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(wrap(notice))
   }),
 
   http.patch('/operation-service/v1/reports/:reportId/status', async ({ params, request }) => {

@@ -1064,7 +1064,7 @@ export default function Admin() {
                                                                             [request.id]: !prev[request.id]
                                                                         }))
                                                                     }}
-                                                                    className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
+                                                                    className="rounded-full border border-violet-300 bg-violet-50 px-5 py-3 text-sm font-semibold text-violet-700 shadow-[0_0_0_1px_rgba(167,139,250,0.08)] transition-colors hover:bg-violet-100"
                                                                 >
                                                                     행사 생성
                                                                 </button>

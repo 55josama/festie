@@ -13,7 +13,9 @@ import type { EventRequestItem, OperationRequestItem } from '../types/admin'
 type FeedTab = 'posts' | 'requests'
 type RequestKind = 'event' | 'operation'
 type RequestStatusFilter = 'all' | 'PENDING' | 'APPROVED' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED'
+type RequestCategoryFilter = 'all' | string
 type PostScope = 'all' | 'mine'
+type PopularRange = 'today' | 'week' | 'month'
 
 type RequestFeedItem = {
     id: string
@@ -21,6 +23,8 @@ type RequestFeedItem = {
     kind: 'event' | 'operation'
     kindLabel: string
     metaLabel: string
+    categoryId?: string
+    categoryLabel?: string | null
     title: string
     body: string
     authorNickname?: string | null
@@ -42,13 +46,16 @@ export default function Community() {
     const [requestKind, setRequestKind] = useState<RequestKind>(() => searchParams.get('requestKind') === 'operation' ? 'operation' : 'event')
     const [categoryId, setCategoryId] = useState<string | undefined>()
     const [sort, setSort] = useState<'latest' | 'popular'>('latest')
+    const [popularRange, setPopularRange] = useState<PopularRange>('today')
     const [postScope, setPostScope] = useState<PostScope>(() => searchParams.get('scope') === 'mine' ? 'mine' : 'all')
     const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatusFilter>('all')
+    const [requestCategoryFilter, setRequestCategoryFilter] = useState<RequestCategoryFilter>('all')
     const [requestRejectReasons, setRequestRejectReasons] = useState<Record<string, string>>({})
     const [operationRejectReasons, setOperationRejectReasons] = useState<Record<string, string>>({})
+    const [selectedRequest, setSelectedRequest] = useState<RequestFeedItem | null>(null)
     const isAdmin = !!user && /ADMIN/.test(user.role)
     const isManager = !!user && /_MANAGER$/.test(user.role)
-    const canViewRequestTabs = user?.role === 'USER'
+    const canViewRequestTabs = !!user && (user.role === 'USER' || isAdmin || isManager)
     const canViewAllRequests = isAdmin || isManager
     const canModerateEventRequests = isAdmin || isManager
 
@@ -81,6 +88,15 @@ export default function Community() {
         setSearchParams(next, { replace: true })
     }, [canViewRequestTabs, feedTab, searchParams, setSearchParams])
 
+    useEffect(() => {
+        if (!isManager || requestKind !== 'operation') return
+        setRequestKind('event')
+        const next = new URLSearchParams(searchParams)
+        next.set('tab', 'requests')
+        next.set('requestKind', 'event')
+        setSearchParams(next, { replace: true })
+    }, [isManager, requestKind, searchParams, setSearchParams])
+
     const {data: categories = []} = useQuery({
         queryKey: ['categories'],
         queryFn: getCategories,
@@ -102,7 +118,7 @@ export default function Community() {
         queryFn: () => canViewAllRequests
             ? getEventRequests({size: 100})
             : getMyEventRequests({size: 100}),
-        enabled: feedTab === 'requests',
+        enabled: feedTab === 'requests' && requestKind === 'event',
     })
 
     const {data: operationRequests = []} = useQuery<OperationRequestItem[]>({
@@ -110,7 +126,7 @@ export default function Community() {
         queryFn: () => isAdmin
             ? getOperationRequests({size: 100})
             : getMyOperationRequests({size: 100}),
-        enabled: feedTab === 'requests' && !!user,
+        enabled: feedTab === 'requests' && requestKind === 'operation' && !!user,
     })
 
     const approveEventMutation = useMutation({
@@ -155,17 +171,17 @@ export default function Community() {
 
     const posts = useMemo(() => {
         if (sort === 'latest') return rawPosts
-        const formatter = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' })
-        const today = formatter.format(new Date())
-        const todayPosts = [...rawPosts]
+        const cutoffHours = popularRange === 'today' ? 24 : popularRange === 'week' ? 24 * 7 : 24 * 30
+        const cutoff = Date.now() - cutoffHours * 60 * 60 * 1000
+        const rangedPosts = [...rawPosts]
             .filter((post: any) => {
                 const createdAt = new Date(post.createdAt)
                 if (Number.isNaN(createdAt.getTime())) return false
-                return formatter.format(createdAt) === today
+                return createdAt.getTime() >= cutoff
             })
-            .sort((a: any, b: any) => b.likeCount - a.likeCount)
-        return todayPosts.length ? todayPosts : [...rawPosts].sort((a: any, b: any) => b.likeCount - a.likeCount)
-    }, [rawPosts, sort])
+            .sort((a: any, b: any) => (b.likeCount + b.commentCount) - (a.likeCount + a.commentCount))
+        return rangedPosts
+    }, [rawPosts, popularRange, sort])
 
     const requestItems = useMemo<RequestFeedItem[]>(() => {
         const eventRequestCards = (eventRequests ?? []).map((request: any, index: number) => ({
@@ -174,6 +190,8 @@ export default function Community() {
             kind: 'event' as const,
             kindLabel: '요청',
             metaLabel: '이벤트 요청',
+            categoryId: request.categoryId ?? request.category_id ?? '',
+            categoryLabel: request.category ?? null,
             title: request.eventName ?? '',
             body: request.description ?? '',
             authorNickname: request.requesterNickname ?? request.requester_nickname ?? null,
@@ -213,10 +231,29 @@ export default function Community() {
         })
     }, [eventRequests, operationRequests, requestKind])
 
+    const eventRequestCategories = useMemo(() => {
+        const seen = new Map<string, string>()
+        requestItems
+            .filter((request) => request.kind === 'event')
+            .forEach((request) => {
+                if (!request.categoryId) return
+                if (!seen.has(request.categoryId)) {
+                    seen.set(request.categoryId, request.categoryLabel ?? request.categoryId)
+                }
+            })
+        return Array.from(seen.entries()).map(([id, name]) => ({ id, name }))
+    }, [requestItems])
+
     const visibleRequestItems = useMemo(() => {
-        if (requestStatusFilter === 'all') return requestItems
-        return requestItems.filter((request) => matchesRequestStatusFilter(request.kind, request.status, requestStatusFilter))
-    }, [requestItems, requestStatusFilter])
+        return requestItems.filter((request) => {
+            const matchesStatus = requestStatusFilter === 'all'
+                || matchesRequestStatusFilter(request.kind, request.status, requestStatusFilter)
+            const matchesCategory = requestKind !== 'event'
+                || requestCategoryFilter === 'all'
+                || request.categoryId === requestCategoryFilter
+            return matchesStatus && matchesCategory
+        })
+    }, [requestCategoryFilter, requestItems, requestKind, requestStatusFilter])
 
     const requestStatusOptions = useMemo(() => {
         return requestKind === 'event'
@@ -237,6 +274,7 @@ export default function Community() {
 
     useEffect(() => {
         setRequestStatusFilter('all')
+        setRequestCategoryFilter('all')
     }, [requestKind])
 
     useEffect(() => {
@@ -301,7 +339,7 @@ export default function Community() {
                                     }}>
                                         이벤트
                                     </FilterChip>
-                                    {!!user && (
+                                    {isAdmin && (
                                         <FilterChip active={feedTab === 'requests' && requestKind === 'operation'} tone="rose" onClick={() => {
                                             setFeedTab('requests')
                                             setRequestKind('operation')
@@ -344,6 +382,17 @@ export default function Community() {
                                 <FilterChip active={sort === 'popular'} tone="sky" onClick={() => setSort('popular')}>
                                     인기글
                                 </FilterChip>
+                                {sort === 'popular' && (
+                                    <select
+                                        value={popularRange}
+                                        onChange={(e) => setPopularRange(e.target.value as PopularRange)}
+                                        className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 outline-none"
+                                    >
+                                        <option value="today">오늘</option>
+                                        <option value="week">이번주</option>
+                                        <option value="month">이번달</option>
+                                    </select>
+                                )}
                             </>
                         )}
                     </div>
@@ -356,11 +405,21 @@ export default function Community() {
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <h2 className="text-[18px] font-black tracking-tight text-slate-950">
-                                    {sort === 'popular' ? '오늘 인기글' : '최신글'}
+                                    {sort === 'popular'
+                                        ? popularRange === 'today'
+                                            ? '오늘 인기글'
+                                            : popularRange === 'week'
+                                                ? '이번주 인기글'
+                                                : '이번달 인기글'
+                                        : '최신글'}
                                 </h2>
                                 <p className="mt-1 hidden text-xs text-slate-500 md:block">
                                     {sort === 'popular'
-                                        ? '오늘 올라온 글 가운데 좋아요가 많은 글을 보고 있어요.'
+                                        ? popularRange === 'today'
+                                            ? '오늘 올라온 글 가운데 좋아요와 댓글이 많은 글을 보고 있어요.'
+                                            : popularRange === 'week'
+                                                ? '이번주에 올라온 글 가운데 좋아요와 댓글이 많은 글을 보고 있어요.'
+                                                : '이번달에 올라온 글 가운데 좋아요와 댓글이 많은 글을 보고 있어요.'
                                         : `${categoryId ? `${categoryNameById.get(categoryId) ?? '선택한'} 카테고리` : '모든 카테고리'} 글을 보고 있어요.`}
                                 </p>
                             </div>
@@ -433,6 +492,29 @@ export default function Community() {
                             </FilterChip>
                         ))}
                     </div>
+
+                    {requestKind === 'event' && (
+                        <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-[var(--line)] bg-slate-50 px-3 py-3">
+                            <span className="text-[10px] font-semibold text-slate-500">카테고리</span>
+                            <FilterChip
+                                active={requestCategoryFilter === 'all'}
+                                tone="violet"
+                                onClick={() => setRequestCategoryFilter('all')}
+                            >
+                                전체
+                            </FilterChip>
+                            {eventRequestCategories.map((category: any) => (
+                                <FilterChip
+                                    key={category.id}
+                                    active={requestCategoryFilter === category.id}
+                                    tone="pink"
+                                    onClick={() => setRequestCategoryFilter(category.id)}
+                                >
+                                    {category.name}
+                                </FilterChip>
+                            ))}
+                        </div>
+                    )}
 
                     <div className="space-y-3">
                         {visibleRequestItems.length === 0 ? (
@@ -522,68 +604,57 @@ export default function Community() {
                                     if (!moderationBlock) return null
                                     return moderationBlock
                                 })()
-                                const eventActionChildren: ReactNode[] = []
-                                if (canModerateEventRequests && request.status === 'PENDING') {
-                                    eventActionChildren.push(
-                                        <>
-                                            <input
-                                                value={reason}
-                                                onChange={(e) => setRequestRejectReasons((prev) => ({
-                                                    ...prev,
-                                                    [request.id]: e.target.value,
-                                                }))}
-                                                placeholder="반려 사유"
-                                                className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
-                                            />
-                                            <div className="flex flex-wrap gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => approveEventMutation.mutate(request.id)}
-                                                    className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
-                                                >
-                                                    승인
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const rejectReason = reason.trim()
-                                                        if (!rejectReason) return
-                                                        rejectEventMutation.mutate({requestId: request.id, reason: rejectReason})
-                                                    }}
-                                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
-                                                >
-                                                    거절
-                                                </button>
-                                            </div>
-                                        </>,
-                                    )
-                                }
-
-                                if (canModerateEventRequests && request.status === 'APPROVED' && !request.createdEventId) {
-                                    eventActionChildren.push(
-                                        <Link
-                                            to={`/admin?tab=manage&requestId=${request.id}`}
-                                            className="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
-                                        >
-                                            행사 생성
-                                        </Link>,
-                                    )
-                                }
-
-                                if (request.createdEventId) {
-                                    eventActionChildren.push(
-                                        <Link
-                                            to={`/events/${request.createdEventId}`}
-                                            className="inline-flex w-full items-center justify-center rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-                                        >
-                                            생성된 행사 보기
-                                        </Link>,
-                                    )
-                                }
-
-                                const eventActions = eventActionChildren.length > 0 ? (
+                                const eventActions = request.kind === 'event' ? (
                                     <div className="space-y-2">
-                                        {eventActionChildren}
+                                        {canModerateEventRequests && request.status === 'PENDING' && (
+                                            <div className="space-y-2">
+                                                <input
+                                                    value={reason}
+                                                    onChange={(e) => setRequestRejectReasons((prev) => ({
+                                                        ...prev,
+                                                        [request.id]: e.target.value,
+                                                    }))}
+                                                    placeholder="반려 사유"
+                                                    className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
+                                                />
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => approveEventMutation.mutate(request.id)}
+                                                        className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
+                                                    >
+                                                        승인
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const rejectReason = reason.trim()
+                                                            if (!rejectReason) return
+                                                            rejectEventMutation.mutate({requestId: request.id, reason: rejectReason})
+                                                        }}
+                                                        className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                                                    >
+                                                        거절
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {canModerateEventRequests && request.status === 'APPROVED' && !request.createdEventId && (
+                                            <Link
+                                                to={`/admin?tab=manage&requestId=${request.id}`}
+                                                className="inline-flex w-full items-center justify-center rounded-full border border-violet-300 bg-violet-50 px-5 py-3 text-sm font-semibold text-violet-700 shadow-[0_0_0_1px_rgba(167,139,250,0.08)] transition-colors hover:bg-violet-100"
+                                            >
+                                                행사 생성
+                                            </Link>
+                                        )}
+                                        {request.createdEventId && (
+                                            <Link
+                                                to={`/events/${request.createdEventId}`}
+                                                className="inline-flex w-full items-center justify-center rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                                            >
+                                                생성된 행사 보기
+                                            </Link>
+                                        )}
                                     </div>
                                 ) : null
                                 const actions = request.kind === 'event'
@@ -649,6 +720,7 @@ export default function Community() {
                                         rejectReason={request.rejectReason}
                                         statusActions={statusActions}
                                         actions={actions}
+                                        onClick={request.kind === 'event' ? () => setSelectedRequest(request) : undefined}
                                     />
                                 )
                             })
@@ -656,6 +728,70 @@ export default function Community() {
                     </div>
                 </section>
             )}
+            {selectedRequest && selectedRequest.kind === 'event' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6" onClick={() => setSelectedRequest(null)}>
+                    <div
+                        className="w-full max-w-2xl rounded-[28px] bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.18)]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">
+                                    요청 상세
+                                </div>
+                                <h3 className="mt-3 text-[22px] font-black tracking-tight text-slate-950">
+                                    {selectedRequest.title || selectedRequest.kindLabel}
+                                </h3>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    이벤트 요청의 상세 정보를 확인할 수 있어요.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedRequest(null)}
+                                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600"
+                            >
+                                닫기
+                            </button>
+                        </div>
+
+                        <div className="mt-5 grid gap-3 md:grid-cols-2">
+                            <DetailItem label="카테고리" value={selectedRequest.categoryLabel ?? selectedRequest.metaLabel} />
+                            <DetailItem label="작성자" value={selectedRequest.authorNickname ?? selectedRequest.requesterId} />
+                            <DetailItem label="요청일" value={selectedRequest.createdAt ?? '-'} />
+                            <DetailItem label="상태" value={requestStatusLabel(selectedRequest.status)} />
+                        </div>
+
+                        <div className="mt-4 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                            <div className="text-[11px] font-semibold text-slate-500">행사명</div>
+                            <div className="mt-1 text-sm font-bold text-slate-950">{selectedRequest.title}</div>
+                            <div className="mt-4 text-[11px] font-semibold text-slate-500">설명</div>
+                            <div className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+                                {selectedRequest.body}
+                            </div>
+                            {selectedRequest.rejectReason && (
+                                <div className={`mt-4 rounded-[16px] border px-3 py-3 text-[12px] leading-5 ${
+                                    selectedRequest.status === 'REJECTED'
+                                        ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                        : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                }`}>
+                                    <div className="font-semibold">{selectedRequest.status === 'REJECTED' ? '반려 사유' : '관리자 메모'}</div>
+                                    <div className="mt-1 whitespace-pre-wrap break-words">{selectedRequest.rejectReason}</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-[16px] border border-[var(--line)] bg-slate-50 px-3 py-3">
+            <div className="text-[11px] font-semibold text-slate-500">{label}</div>
+            <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
         </div>
     )
 }

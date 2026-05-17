@@ -63,6 +63,7 @@ export default function Header() {
           <NavLink to="/events" className={navClass}>행사</NavLink>
           <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
           <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
+          <NavLink to="/notices" className={navClass}>공지</NavLink>
           {showMyNav && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
           {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
         </nav>
@@ -77,6 +78,7 @@ export default function Header() {
             <NavLink to="/events" className={navClass}>행사</NavLink>
             <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
             <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
+            <NavLink to="/notices" className={navClass}>공지</NavLink>
             {showMyNav && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
           {isManager && <NavLink to="/admin" className={navClass}>관리</NavLink>}
           </nav>

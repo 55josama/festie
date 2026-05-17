@@ -231,3 +231,18 @@ export const mockNotifications = [
     readAt: null as string | null,
   },
 ]
+
+export const mockNotices = [
+  {
+    noticeId: 'notice-1',
+    adminId: 'admin-user',
+    title: 'Festie 서비스 점검 안내',
+    content: '5월 20일 새벽 2시부터 3시까지 서비스 점검이 예정되어 있습니다. 점검 시간 동안 일부 기능이 제한될 수 있습니다.',
+  },
+  {
+    noticeId: 'notice-2',
+    adminId: 'admin-user',
+    title: '운영 요청 처리 정책 변경 안내',
+    content: '운영 요청 승인/반려 흐름이 일부 조정되었습니다. 요청 상태는 요청 상세에서 확인해 주세요.',
+  },
+]
