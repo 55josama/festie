@@ -736,11 +736,42 @@ export const handlers = [
     }))
   }),
 
+  http.post('/operation-service/v1/notices', async ({ request }) => {
+    await delay(140)
+    const body = await request.json() as any
+    const created = {
+      noticeId: `notice-${Date.now()}`,
+      adminId: 'admin-user',
+      title: String(body.title ?? '').trim(),
+      content: String(body.content ?? '').trim(),
+    }
+    mockNotices.unshift(created)
+    return HttpResponse.json(wrap(created), { status: 201 })
+  }),
+
   http.get('/operation-service/v1/notices/:noticeId', async ({ params }) => {
     await delay(120)
     const notice = mockNotices.find((item) => item.noticeId === params.noticeId)
     if (!notice) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
     return HttpResponse.json(wrap(notice))
+  }),
+
+  http.patch('/operation-service/v1/notices/:noticeId', async ({ params, request }) => {
+    await delay(140)
+    const body = await request.json() as any
+    const notice = mockNotices.find((item) => item.noticeId === params.noticeId)
+    if (!notice) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    notice.title = String(body.title ?? notice.title).trim()
+    notice.content = String(body.content ?? notice.content).trim()
+    return HttpResponse.json(wrap(notice))
+  }),
+
+  http.delete('/operation-service/v1/notices/:noticeId', async ({ params }) => {
+    await delay(120)
+    const index = mockNotices.findIndex((item) => item.noticeId === params.noticeId)
+    if (index === -1) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    mockNotices.splice(index, 1)
+    return HttpResponse.json(wrap({}))
   }),
 
   http.patch('/operation-service/v1/reports/:reportId/status', async ({ params, request }) => {

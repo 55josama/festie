@@ -14,6 +14,7 @@ import Register from './pages/Register'
 import MyPage from './pages/MyPage'
 import Notices from './pages/Notices'
 import NoticeDetail from './pages/NoticeDetail'
+import NoticeWrite from './pages/NoticeWrite'
 import { useAuthStore } from './store/authStore'
 
 const queryClient = new QueryClient({
@@ -40,7 +41,9 @@ export default function App() {
             <Route path="/community/:postId/edit" element={<CommunityWrite />} />
             <Route path="/community/:postId" element={<PostDetail />} />
             <Route path="/notices" element={<Notices />} />
+            <Route path="/notices/new" element={<NoticeWrite />} />
             <Route path="/notices/:noticeId" element={<NoticeDetail />} />
+            <Route path="/notices/:noticeId/edit" element={<NoticeWrite />} />
             <Route path="/admin" element={<AdminRouteGuard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
