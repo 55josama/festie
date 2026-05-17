@@ -17,7 +17,9 @@ spring:
                   - "http://localhost:5173"
                   - "http://localhost:8088"
                   - "http://127.0.0.1:8088"
-                  - "${CORS_ALLOWED_ORIGIN:https://tubular-treacle-b17eba.netlify.app}"
+                  - "https://tubular-treacle-b17eba.netlify.app"
+                  - "https://festie.site"
+                  - "https://www.festie.site"
                 allowedMethods:
                   - GET
                   - POST
