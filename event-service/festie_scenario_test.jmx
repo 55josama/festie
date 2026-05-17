@@ -2,7 +2,7 @@
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Festie 시나리오 부하테스트 (Synthetic Data)">
-      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments">
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
@@ -10,8 +10,8 @@
     </TestPlan>
     <hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="가상 사용자 100명">
-        <intProp name="ThreadGroup.num_threads">100</intProp>
-        <intProp name="ThreadGroup.ramp_time">30</intProp>
+        <intProp name="ThreadGroup.num_threads">900</intProp>
+        <intProp name="ThreadGroup.ramp_time">90</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
@@ -20,92 +20,83 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-
-        <!-- CSV Data Set Config -->
-        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV Data Set - 가상 사용자 100명">
-          <stringProp name="filename">src/test/resources/jmeter/users.csv</stringProp>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV Data Set - 가상 사용자 100명" enabled="true">
+          <stringProp name="filename">C:/Users/naviv/Documents/GitHub/festie/event-service/src/test/resources/jmeter/users.csv</stringProp>
           <stringProp name="variableNames">user_id,user_type,hot_event_id,category_filter,general_event_id,think_time_ms</stringProp>
           <stringProp name="delimiter">,</stringProp>
           <boolProp name="quotedData">false</boolProp>
           <boolProp name="recycle">true</boolProp>
           <boolProp name="stopThread">false</boolProp>
-          <stringProp name="shareMode">shareMode.thread</stringProp>
+          <stringProp name="shareMode">shareMode.all</stringProp>
           <boolProp name="ignoreFirstLine">true</boolProp>
+          <stringProp name="fileEncoding"></stringProp>
         </CSVDataSet>
         <hashTree/>
-
-        <!-- HTTP Request Defaults -->
         <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
           <stringProp name="HTTPSampler.domain">festie-alb-1266745276.ap-northeast-2.elb.amazonaws.com</stringProp>
           <stringProp name="HTTPSampler.port">80</stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
             <collectionProp name="Arguments.arguments"/>
           </elementProp>
+          <stringProp name="HTTPSampler.implementation"></stringProp>
         </ConfigTestElement>
         <hashTree/>
-
-        <!-- HTTP Header Manager -->
         <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
           <collectionProp name="HeaderManager.headers">
             <elementProp name="Authorization" elementType="Header">
               <stringProp name="Header.name">Authorization</stringProp>
-              <stringProp name="Header.value">Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmZTQyMzlhNC05ODE1LTQ0NzktOWZkMi05ZmY3M2UyZmI0MmIiLCJlbWFpbCI6ImFkbWluQGZlc3RpZS5jb20iLCJyb2xlIjoiQURNSU4iLCJuaWNrbmFtZSI6IuyWtOuTnOuvvCIsInRva2VuVHlwZSI6IkFDQ0VTUyIsImlhdCI6MTc3OTAyNDM2MywiZXhwIjoxNzc5MDI3OTYzfQ.xv9BC0KQO6Gwk4SQoY0xiqEdqfnsc_1oLsa116XdkGc</stringProp>
+              <stringProp name="Header.value">Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmZTQyMzlhNC05ODE1LTQ0NzktOWZkMi05ZmY3M2UyZmI0MmIiLCJlbWFpbCI6ImFkbWluQGZlc3RpZS5jb20iLCJyb2xlIjoiQURNSU4iLCJuaWNrbmFtZSI6IuyWtOuTnOuvvCIsInRva2VuVHlwZSI6IkFDQ0VTUyIsImlhdCI6MTc3OTAyNTA3NiwiZXhwIjoxNzc5MDI4Njc2fQ.FpuO4bTsP03-wnT1lSk0LEv5HWRwkfsX7B6-JzVNZl0</stringProp>
             </elementProp>
           </collectionProp>
         </HeaderManager>
         <hashTree/>
-
-        <!-- ======================== -->
-        <!-- EXPLORER: 목록 → 인기 행사 상세 -->
-        <!-- ======================== -->
-        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="IF EXPLORER (60%)">
-          <stringProp name="IfController.condition">"${user_type}".equals("EXPLORER")</stringProp>
+        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="IF EXPLORER (60%)" enabled="true">
+          <stringProp name="IfController.condition">${__groovy(&quot;${user_type}&quot; == &quot;EXPLORER&quot;,)}</stringProp>
           <boolProp name="IfController.evaluateAll">false</boolProp>
-          <boolProp name="IfController.useExpression">true</boolProp>
+          <boolProp name="IfController.useExpression">false</boolProp>
         </IfController>
         <hashTree>
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="[EXPLORER] 행사 목록 조회" enabled="true">
             <stringProp name="HTTPSampler.path">/event-service/v1/events</stringProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments">
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
               <collectionProp name="Arguments.arguments"/>
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree/>
-          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time (사용자 생각 시간)">
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time (사용자 생각 시간)" enabled="true">
             <stringProp name="ConstantTimer.delay">${think_time_ms}</stringProp>
           </ConstantTimer>
           <hashTree/>
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="[EXPLORER] 인기 행사 상세 조회" enabled="true">
             <stringProp name="HTTPSampler.path">/event-service/v1/events/${hot_event_id}</stringProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments">
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
               <collectionProp name="Arguments.arguments"/>
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree/>
         </hashTree>
-
-        <!-- ======================== -->
-        <!-- SEARCHER: 카테고리 필터 목록 → 일반 행사 상세 -->
-        <!-- ======================== -->
-        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="IF SEARCHER (30%)">
-          <stringProp name="IfController.condition">"${user_type}".equals("SEARCHER")</stringProp>
+        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="IF SEARCHER (30%)" enabled="true">
+          <stringProp name="IfController.condition">${__groovy(&quot;${user_type}&quot; == &quot;SEARCHER&quot;,)}</stringProp>
           <boolProp name="IfController.evaluateAll">false</boolProp>
-          <boolProp name="IfController.useExpression">true</boolProp>
+          <boolProp name="IfController.useExpression">false</boolProp>
         </IfController>
         <hashTree>
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="[SEARCHER] 카테고리 필터 목록 조회" enabled="true">
             <stringProp name="HTTPSampler.path">/event-service/v1/events</stringProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments">
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
               <collectionProp name="Arguments.arguments">
                 <elementProp name="category" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
@@ -117,48 +108,44 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree/>
-          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time (사용자 생각 시간)">
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time (사용자 생각 시간)" enabled="true">
             <stringProp name="ConstantTimer.delay">${think_time_ms}</stringProp>
           </ConstantTimer>
           <hashTree/>
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="[SEARCHER] 일반 행사 상세 조회" enabled="true">
             <stringProp name="HTTPSampler.path">/event-service/v1/events/${general_event_id}</stringProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments">
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
               <collectionProp name="Arguments.arguments"/>
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree/>
         </hashTree>
-
-        <!-- ======================== -->
-        <!-- DIRECT: 바로 상세 조회 (공유 링크 접속) -->
-        <!-- ======================== -->
-        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="IF DIRECT (10%)">
-          <stringProp name="IfController.condition">"${user_type}".equals("DIRECT")</stringProp>
+        <IfController guiclass="IfControllerPanel" testclass="IfController" testname="IF DIRECT (10%)" enabled="true">
+          <stringProp name="IfController.condition">${__groovy(&quot;${user_type}&quot; == &quot;DIRECT&quot;,)}</stringProp>
           <boolProp name="IfController.evaluateAll">false</boolProp>
-          <boolProp name="IfController.useExpression">true</boolProp>
+          <boolProp name="IfController.useExpression">false</boolProp>
         </IfController>
         <hashTree>
-          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time (접속 지연 500ms)">
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Think Time (접속 지연 500ms)" enabled="true">
             <stringProp name="ConstantTimer.delay">500</stringProp>
           </ConstantTimer>
           <hashTree/>
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="[DIRECT] 행사 상세 직접 조회" enabled="true">
             <stringProp name="HTTPSampler.path">/event-service/v1/events/${hot_event_id}</stringProp>
-            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
             <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments">
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
               <collectionProp name="Arguments.arguments"/>
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree/>
         </hashTree>
-
-        <!-- Listeners -->
         <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
@@ -184,6 +171,7 @@
               <requestHeaders>false</requestHeaders>
               <responseDataOnError>false</responseDataOnError>
               <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+              <assertionsResultsToSave>0</assertionsResultsToSave>
               <bytes>true</bytes>
               <sentBytes>true</sentBytes>
               <url>true</url>
@@ -207,12 +195,25 @@
               <label>true</label>
               <code>true</code>
               <message>true</message>
+              <threadName>false</threadName>
+              <dataType>false</dataType>
+              <encoding>false</encoding>
+              <assertions>false</assertions>
+              <subresults>false</subresults>
+              <responseData>false</responseData>
+              <samplerData>false</samplerData>
+              <xml>false</xml>
+              <fieldNames>false</fieldNames>
+              <responseHeaders>false</responseHeaders>
+              <requestHeaders>false</requestHeaders>
+              <responseDataOnError>false</responseDataOnError>
+              <saveAssertionResultsFailureMessage>false</saveAssertionResultsFailureMessage>
+              <assertionsResultsToSave>0</assertionsResultsToSave>
             </value>
           </objProp>
           <stringProp name="filename"></stringProp>
         </ResultCollector>
         <hashTree/>
-
       </hashTree>
     </hashTree>
   </hashTree>
