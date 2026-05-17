@@ -68,11 +68,15 @@ export default function Home() {
             title="곧 열리는 티켓팅"
             action={<Link to="/calendar" className="text-sm font-medium text-[var(--accent)]">더 보기</Link>}
           />
-          <div className="space-y-3">
-            {upcomingTicketing.slice(0, 5).map((event) => (
-              <TicketingRow key={event.id} event={event} />
-            ))}
-          </div>
+          {upcomingTicketing.length ? (
+            <div className="space-y-3">
+              {upcomingTicketing.slice(0, 5).map((event) => (
+                <TicketingRow key={event.id} event={event} />
+              ))}
+            </div>
+          ) : (
+            <EmptyTicketingState />
+          )}
         </div>
       </section>
 
@@ -218,6 +222,17 @@ function EmptyEventState() {
       <div className="text-sm font-semibold text-slate-900">일정이 없네요.. 😮‍💨</div>
       <p className="mt-1 text-sm text-slate-500">
         원하시는 일정이 있나요? <Link to="/community/new?requestKind=event" className="font-semibold text-[var(--accent)] underline decoration-[var(--accent-soft)] decoration-2 underline-offset-4 transition-colors hover:text-[var(--accent-dark)]">행사 요청하러 가기!</Link>
+      </p>
+    </div>
+  )
+}
+
+function EmptyTicketingState() {
+  return (
+    <div className="rounded-[20px] border border-dashed border-[#dcd6f6] bg-white/70 p-5">
+      <div className="text-sm font-semibold text-slate-900">열리는 티켓팅이 없네요!</div>
+      <p className="mt-1 text-sm leading-6 text-slate-500">
+        곧 열릴 티켓팅이 확인되면 여기서 바로 보여드릴게요.
       </p>
     </div>
   )

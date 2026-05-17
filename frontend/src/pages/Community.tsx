@@ -48,6 +48,7 @@ export default function Community() {
     const [operationRejectReasons, setOperationRejectReasons] = useState<Record<string, string>>({})
     const isAdmin = !!user && /ADMIN/.test(user.role)
     const isManager = !!user && /_MANAGER$/.test(user.role)
+    const canViewRequestTabs = user?.role === 'USER'
     const canViewAllRequests = isAdmin || isManager
     const canModerateEventRequests = isAdmin || isManager
 
@@ -68,6 +69,17 @@ export default function Community() {
         setRequestKind(nextRequestKind)
         setPostScope(nextPostScope)
     }, [searchParams, user])
+
+    useEffect(() => {
+        if (canViewRequestTabs) return
+        if (feedTab !== 'requests') return
+
+        setFeedTab('posts')
+        const next = new URLSearchParams(searchParams)
+        next.set('tab', 'posts')
+        next.delete('requestKind')
+        setSearchParams(next, { replace: true })
+    }, [canViewRequestTabs, feedTab, searchParams, setSearchParams])
 
     const {data: categories = []} = useQuery({
         queryKey: ['categories'],
@@ -280,20 +292,24 @@ export default function Community() {
                                     </FilterChip>
                                 )
                             })}
-                            <span className="ml-1 text-[10px] font-semibold text-slate-500">요청</span>
-                            <FilterChip active={feedTab === 'requests' && requestKind === 'event'} tone="pink" onClick={() => {
-                                setFeedTab('requests')
-                                setRequestKind('event')
-                            }}>
-                                이벤트
-                            </FilterChip>
-                            {!!user && (
-                                <FilterChip active={feedTab === 'requests' && requestKind === 'operation'} tone="rose" onClick={() => {
-                                    setFeedTab('requests')
-                                    setRequestKind('operation')
-                                }}>
-                                    운영
-                                </FilterChip>
+                            {canViewRequestTabs && (
+                                <>
+                                    <span className="ml-1 text-[10px] font-semibold text-slate-500">요청</span>
+                                    <FilterChip active={feedTab === 'requests' && requestKind === 'event'} tone="pink" onClick={() => {
+                                        setFeedTab('requests')
+                                        setRequestKind('event')
+                                    }}>
+                                        이벤트
+                                    </FilterChip>
+                                    {!!user && (
+                                        <FilterChip active={feedTab === 'requests' && requestKind === 'operation'} tone="rose" onClick={() => {
+                                            setFeedTab('requests')
+                                            setRequestKind('operation')
+                                        }}>
+                                            운영
+                                        </FilterChip>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
@@ -506,63 +522,70 @@ export default function Community() {
                                     if (!moderationBlock) return null
                                     return moderationBlock
                                 })()
-                                const eventActions = request.kind === 'event'
-                                    ? (
-                                        <div className="space-y-2">
-                                            {canModerateEventRequests && request.status === 'PENDING' && (
-                                                <>
-                                                    <input
-                                                        value={reason}
-                                                        onChange={(e) => setRequestRejectReasons((prev) => ({
-                                                            ...prev,
-                                                            [request.id]: e.target.value,
-                                                        }))}
-                                                        placeholder="반려 사유"
-                                                        className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
-                                                    />
-                                                    <div className="flex flex-wrap gap-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => approveEventMutation.mutate(request.id)}
-                                                            className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
-                                                        >
-                                                            승인
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const rejectReason = reason.trim()
-                                                                if (!rejectReason) return
-                                                                rejectEventMutation.mutate({requestId: request.id, reason: rejectReason})
-                                                            }}
-                                                            className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
-                                                        >
-                                                            거절
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            )}
-
-                                            {canModerateEventRequests && request.status === 'APPROVED' && !request.createdEventId && (
-                                                <Link
-                                                    to={`/admin?tab=manage&requestId=${request.id}`}
-                                                    className="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
+                                const eventActionChildren: ReactNode[] = []
+                                if (canModerateEventRequests && request.status === 'PENDING') {
+                                    eventActionChildren.push(
+                                        <>
+                                            <input
+                                                value={reason}
+                                                onChange={(e) => setRequestRejectReasons((prev) => ({
+                                                    ...prev,
+                                                    [request.id]: e.target.value,
+                                                }))}
+                                                placeholder="반려 사유"
+                                                className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs outline-none"
+                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => approveEventMutation.mutate(request.id)}
+                                                    className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)]"
                                                 >
-                                                    행사 생성
-                                                </Link>
-                                            )}
-
-                                            {request.createdEventId && (
-                                                <Link
-                                                    to={`/events/${request.createdEventId}`}
-                                                    className="inline-flex w-full items-center justify-center rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                                                    승인
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const rejectReason = reason.trim()
+                                                        if (!rejectReason) return
+                                                        rejectEventMutation.mutate({requestId: request.id, reason: rejectReason})
+                                                    }}
+                                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600"
                                                 >
-                                                    생성된 행사 보기
-                                                </Link>
-                                            )}
-                                        </div>
+                                                    거절
+                                                </button>
+                                            </div>
+                                        </>,
                                     )
-                                    : null
+                                }
+
+                                if (canModerateEventRequests && request.status === 'APPROVED' && !request.createdEventId) {
+                                    eventActionChildren.push(
+                                        <Link
+                                            to={`/admin?tab=manage&requestId=${request.id}`}
+                                            className="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
+                                        >
+                                            행사 생성
+                                        </Link>,
+                                    )
+                                }
+
+                                if (request.createdEventId) {
+                                    eventActionChildren.push(
+                                        <Link
+                                            to={`/events/${request.createdEventId}`}
+                                            className="inline-flex w-full items-center justify-center rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                                        >
+                                            생성된 행사 보기
+                                        </Link>,
+                                    )
+                                }
+
+                                const eventActions = eventActionChildren.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {eventActionChildren}
+                                    </div>
+                                ) : null
                                 const actions = request.kind === 'event'
                                     ? eventActions
                                     : operationActions
