@@ -37,8 +37,8 @@ public class CalendarService {
         EventInfoResponseDto info = eventClient.getEvents(command.eventId());
 
         Calendar calendar = Calendar.create(command.userId(), command.memo(),
-                new EventInfo(command.eventId(), info.name(), command.eventDate(), command.eventDate(),
-                        EventStatus.valueOf(info.status())));
+                new EventInfo(command.eventId(), info.name(), command.eventDate(),
+                        info.ticketingOpenAt(), EventStatus.valueOf(info.status())));
 
         calendarRepository.save(calendar);
 
