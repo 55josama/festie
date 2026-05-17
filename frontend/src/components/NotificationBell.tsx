@@ -226,11 +226,7 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
         aria-label="알림 열기"
       >
         <BellIcon />
-        {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
+        {unreadCount > 0 && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-rose-500 shadow-sm" />}
       </button>
 
       {open && (

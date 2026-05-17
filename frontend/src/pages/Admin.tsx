@@ -2499,6 +2499,8 @@ function validateEventDraft(draft: EventDraft): EventFormErrors {
     if (draft.hasTicketing) {
         if (!draft.ticketingOpenAt.trim()) errors.ticketingOpenAt = '티켓팅 오픈은 필수입니다.'
         if (!draft.ticketingCloseAt.trim()) errors.ticketingCloseAt = '티켓팅 종료는 필수입니다.'
+        if (!draft.ticketingLink.trim()) errors.ticketingLink = '티켓팅 링크는 필수입니다.'
+        if (!draft.img.trim()) errors.img = '대표 이미지는 필수입니다.'
     }
 
     return errors
@@ -2753,7 +2755,7 @@ function EventCreatePanel({
                             <div className="md:col-span-2">
                                 <AdminInput label="티켓팅 링크" value={draft.ticketingLink}
                                             onChange={(value) => setDraft({ticketingLink: value})}
-                                            error={mergedErrors.ticketingLink}/>
+                                            error={mergedErrors.ticketingLink} required={draft.hasTicketing}/>
                             </div>
                         </div>
                     </div>
@@ -2761,7 +2763,10 @@ function EventCreatePanel({
                 <label className="md:col-span-2 block">
                     <div
                         className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
-                        <span>대표 이미지</span>
+                        <span className="flex items-center gap-1">
+                            <span>대표 이미지</span>
+                            {draft.hasTicketing && <span className="text-rose-500">*</span>}
+                        </span>
                         <button
                             type="button"
                             onClick={() => imageInputRef.current?.click()}
