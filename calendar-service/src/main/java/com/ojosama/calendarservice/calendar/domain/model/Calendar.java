@@ -21,8 +21,11 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "p_calendar",
         indexes = {
-                @Index(name = "idx_calendar_user_deleted", columnList = "user_id,deleted_at"),
-                @Index(name = "idx_calendar_user_eventdate_deleted", columnList = "user_id,event_date,deleted_at")
+                @Index(
+                        name = "uk_calendar_user_event_date",
+                        columnList = "user_id, event_id, event_date",
+                        unique = true
+                )
         }
 )
 @Getter

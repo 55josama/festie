@@ -21,8 +21,7 @@ public class CalendarSchedule {
     private final CalendarRepository calendarRepository;
     private final CalendarRedisService notificationService;
 
-    // @Scheduled(cron = "0 0 0 * * *")
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(cron = "0 0 0 * * *")
     public void registerAlarms() {
         LocalDate today = LocalDate.now();
         LocalDate tomorrow = today.plusDays(1);

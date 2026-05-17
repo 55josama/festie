@@ -18,7 +18,6 @@ import com.ojosama.calendarservice.calendar.infrastructure.client.dto.EventInfoR
 import com.ojosama.calendarservice.calendar.presentation.dto.response.CalendarResponseDto;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class CalendarService {
 
     private final CalendarRepository calendarRepository;
@@ -36,22 +34,15 @@ public class CalendarService {
 
     public CalendarResponseDto createCalendar(CreateCalendarCommand command) {
 
-        Optional<Calendar> exists = calendarRepository.findByEventInfo_EventIdAndEventInfo_EventDateAndUserIdAndDeletedAtIsNull(
-                command.eventId(),
-                command.eventDate(),
-                command.userId());
-
-        if (exists.isPresent()) {
-            throw new CalendarException(CalendarErrorCode.EXISTS_CALENDAR);
-        }
-
         EventInfoResponseDto info = eventClient.getEvents(command.eventId());
 
         Calendar calendar = Calendar.create(command.userId(), command.memo(),
-                new EventInfo(command.eventId(), info.name(), command.eventDate(),
-                        info.ticketingOpenAt(), EventStatus.valueOf(info.status())));
+                new EventInfo(command.eventId(), info.name(), command.eventDate(), command.eventDate(),
+                        EventStatus.valueOf(info.status())));
 
         calendarRepository.save(calendar);
+
+        log.info("calendar saved");
 
         return CalendarResponseDto.from(CalendarResult.from(calendar));
     }
@@ -73,17 +64,20 @@ public class CalendarService {
                 .toList();
     }
 
+    @Transactional
     public CalendarResponseDto updateCalendarMemo(UpdateCalendarCommand command) {
         Calendar calendar = validateCalendarAlive(command.calendarId(), command.userId());
         calendar.updateMemo(command.memo());
         return CalendarResponseDto.from(CalendarResult.from(calendar));
     }
 
+    @Transactional
     public void deleteCalendar(DeleteCalendarCommand command) {
         Calendar calendar = validateCalendarAlive(command.calendarId(), command.userId());
         calendar.deleted(command.userId());
     }
 
+    @Transactional
     public List<UUID> deleteAllByEventId(UUID eventId) {
         List<Calendar> calendarList = validateCalendarAlive(eventId);
         List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
@@ -91,6 +85,7 @@ public class CalendarService {
         return userIds;
     }
 
+    @Transactional
     public List<UUID> updateAllByEventId(UUID eventId, List<FieldChange> changedFields) {
         if (changedFields == null || changedFields.isEmpty()) {
             throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
@@ -126,6 +121,7 @@ public class CalendarService {
         return userIds;
     }
 
+    @Transactional
     public List<UUID> bulkUpdateStatusByEventId(UpdateStatusEventCommand command) {
         List<Calendar> calendarList = validateCalendarAlive(command.eventId());
         List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
