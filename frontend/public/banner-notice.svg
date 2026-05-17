@@ -1,0 +1,16 @@
+<svg width="1200" height="675" viewBox="0 0 1200 675" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1200" y2="675" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EA5E9"/>
+      <stop offset="0.5" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#A5F3FC"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" rx="48" fill="url(#g)"/>
+  <circle cx="1040" cy="140" r="130" fill="white" fill-opacity="0.14"/>
+  <circle cx="180" cy="540" r="170" fill="white" fill-opacity="0.09"/>
+  <rect x="82" y="410" width="1036" height="96" rx="28" fill="white" fill-opacity="0.14"/>
+  <text x="84" y="190" fill="white" font-family="Arial, sans-serif" font-size="62" font-weight="700">FESTIE</text>
+  <text x="84" y="272" fill="white" fill-opacity="0.95" font-family="Arial, sans-serif" font-size="44" font-weight="700">공지사항</text>
+  <text x="84" y="330" fill="white" fill-opacity="0.8" font-family="Arial, sans-serif" font-size="24">커뮤니티 공지와 안내를 보여주는 배너</text>
+</svg>
