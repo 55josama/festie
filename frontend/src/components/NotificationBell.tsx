@@ -174,10 +174,12 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
           )
           if (cancelled || abortController.signal.aborted) return
           setLiveConnected(false)
+          await syncInitialNotifications()
           retryTimer = window.setTimeout(connect, 5_000)
         } catch {
           if (cancelled || abortController.signal.aborted) return
           setLiveConnected(false)
+          await syncInitialNotifications()
           retryTimer = window.setTimeout(connect, 5_000)
         }
       }
