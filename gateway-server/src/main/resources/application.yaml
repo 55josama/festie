@@ -73,6 +73,16 @@ spring:
               filters:
                 - StripPrefix=1
 
+            - id: notification-service-sse  # 알림 sse 라우팅 설정
+              uri: lb://notification-service
+              predicates:
+                - Path=/notification-service/v1/notifications/subscribe
+              filters:
+                - StripPrefix=1
+              metadata:
+                response-timeout: 1800000 # 30분
+                connect-timeout: 3000
+
             - id: notification-service
               uri: lb://notification-service
               predicates:
