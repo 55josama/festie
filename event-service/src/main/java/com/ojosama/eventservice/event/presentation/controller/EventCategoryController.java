@@ -9,6 +9,9 @@ import com.ojosama.eventservice.event.application.service.EventCategoryQueryServ
 import com.ojosama.eventservice.event.presentation.dto.request.CreateEventCategoryRequest;
 import com.ojosama.eventservice.event.presentation.dto.request.UpdateEventCategoryRequest;
 import com.ojosama.eventservice.event.presentation.dto.response.EventCategoryResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/event-categories")
+@Tag(name = "행사 카테고리 API", description = "행사 카테고리 관리 (ADMIN 전용)")
 public class EventCategoryController {
 
     private final EventCategoryCommandService eventCategoryCommandService;
@@ -36,6 +40,7 @@ public class EventCategoryController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "카테고리 목록 조회", description = "관리자 전용 API입니다. 등록된 모든 행사 카테고리 목록을 반환합니다.")
     public ResponseEntity<ApiResponse<List<EventCategoryResponse>>> getCategories() {
 
         List<EventCategoryResponse> response = eventCategoryQueryService.getCategories().stream()
@@ -46,8 +51,9 @@ public class EventCategoryController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "카테고리 등록", description = "관리자 전용 API입니다. 새로운 행사 카테고리를 등록합니다. 카테고리 이름(name)은 필수이며 중복될 수 없습니다.")
     public ResponseEntity<ApiResponse<EventCategoryResponse>> createCategory(
-            @AuthenticationPrincipal String userId,
+            @Parameter(hidden = true) @AuthenticationPrincipal String userId,
             @Valid @RequestBody CreateEventCategoryRequest request) {
 
         CreateEventCategoryCommand command = new CreateEventCategoryCommand(UUID.fromString(userId), request.name());
@@ -58,20 +64,23 @@ public class EventCategoryController {
 
     @PatchMapping("/{categoryId}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "카테고리 수정", description = "관리자 전용 API입니다. 카테고리 이름(name)을 변경합니다. 존재하지 않는 카테고리 ID로 요청 시 404를 반환합니다.")
     public ResponseEntity<ApiResponse<EventCategoryResponse>> updateCategory(
-            @AuthenticationPrincipal String userId,
+            @Parameter(hidden = true) @AuthenticationPrincipal String userId,
             @PathVariable UUID categoryId,
             @Valid @RequestBody UpdateEventCategoryRequest request) {
 
-        UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(UUID.fromString(userId), categoryId, request.name());
+        UpdateEventCategoryCommand command = new UpdateEventCategoryCommand(UUID.fromString(userId), categoryId,
+                request.name());
         EventCategoryResult result = eventCategoryCommandService.updateCategory(command);
         return ResponseEntity.ok(ApiResponse.success(EventCategoryResponse.from(result)));
     }
 
     @DeleteMapping("/{categoryId}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "카테고리 삭제", description = "관리자 전용 API입니다. 해당 카테고리를 삭제합니다. 카테고리에 연결된 행사가 하나라도 존재하면 삭제할 수 없습니다. 존재하지 않는 카테고리 ID로 요청 시 404를 반환합니다.")
     public ResponseEntity<Void> deleteCategory(
-            @AuthenticationPrincipal String userId,
+            @Parameter(hidden = true) @AuthenticationPrincipal String userId,
             @PathVariable UUID categoryId) {
 
         eventCategoryCommandService.deleteCategory(UUID.fromString(userId), categoryId);

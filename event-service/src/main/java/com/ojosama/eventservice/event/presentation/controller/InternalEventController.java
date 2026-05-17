@@ -3,6 +3,7 @@ package com.ojosama.eventservice.event.presentation.controller;
 import com.ojosama.eventservice.event.application.service.EventQueryService;
 import com.ojosama.eventservice.event.presentation.dto.response.EventLocationResponse;
 import com.ojosama.eventservice.event.presentation.dto.response.EventResponse;
+import io.swagger.v3.oas.annotations.Hidden;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/internal/v1/events")
