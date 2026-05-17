@@ -2,6 +2,7 @@ package com.ojosama.notificationservice.infrastructure.sse;
 
 import com.ojosama.notificationservice.infrastructure.redis.NotificationDto;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,8 +57,9 @@ public class SseEmitterManager {
             } catch (IOException e) {
                 // heartbeat 실패 = 연결 끊김 → map에서 제거
                 emitters.remove(userId, emitter);
+                emitter.completeWithError(e);
             }
-        }, 30000);
+        }, Duration.ofSeconds(30));
 
         // 연결 끊기면 map에서 제거 + 스케줄러도 같이 취소
         emitter.onCompletion(() -> {
@@ -78,6 +80,7 @@ public class SseEmitterManager {
             emitter.send(SseEmitter.event().name("connect").data("connected"));
         } catch (IOException e) {
             emitters.remove(userId, emitter);
+            emitter.completeWithError(e);
         }
 
         return emitter;

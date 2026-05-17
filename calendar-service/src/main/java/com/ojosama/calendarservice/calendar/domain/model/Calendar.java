@@ -23,8 +23,7 @@ import lombok.NoArgsConstructor;
         indexes = {
                 @Index(
                         name = "uk_calendar_user_event_date",
-                        columnList = "user_id, event_id, event_date",
-                        unique = true
+                        columnList = "user_id, event_id, event_date"
                 )
         }
 )
