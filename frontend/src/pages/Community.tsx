@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCategories, getPosts } from '../api/community'
 import { approveEventRequest, rejectEventRequest, updateOperationRequestStatus } from '../api/admin'
@@ -35,6 +35,7 @@ type RequestFeedItem = {
 
 export default function Community() {
     const { user } = useAuthStore()
+    const navigate = useNavigate()
     const [searchParams, setSearchParams] = useSearchParams()
     const queryClient = useQueryClient()
     const [feedTab, setFeedTab] = useState<FeedTab>(() => searchParams.get('tab') === 'requests' ? 'requests' : 'posts')
@@ -49,6 +50,15 @@ export default function Community() {
     const isManager = !!user && /_MANAGER$/.test(user.role)
     const canViewAllRequests = isAdmin || isManager
     const canModerateEventRequests = isAdmin || isManager
+
+    const handleCreatePostClick = () => {
+        if (!user) {
+            window.alert('로그인 후 글을 작성해 주세요.')
+            navigate('/login')
+            return
+        }
+        navigate('/community/new')
+    }
 
     useEffect(() => {
         const nextFeedTab = searchParams.get('tab') === 'requests' ? 'requests' : 'posts'
@@ -338,12 +348,13 @@ export default function Community() {
                                         : `${categoryId ? `${categoryNameById.get(categoryId) ?? '선택한'} 카테고리` : '모든 카테고리'} 글을 보고 있어요.`}
                                 </p>
                             </div>
-                            <Link
-                                to="/community/new"
+                            <button
+                                type="button"
+                                onClick={handleCreatePostClick}
                                 className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-semibold text-[var(--accent)] hover:bg-white"
                             >
                                 글쓰기
-                            </Link>
+                            </button>
                         </div>
 
                         <div className="space-y-3">
