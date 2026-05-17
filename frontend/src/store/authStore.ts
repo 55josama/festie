@@ -36,11 +36,15 @@ function loadStoredAuthState(): StoredAuthState | null {
 
 function saveStoredAuthState(state: StoredAuthState) {
   if (typeof window === 'undefined') return
-  if (!state.accessToken && !state.refreshToken && !state.user) {
-    window.sessionStorage.removeItem(AUTH_STORAGE_KEY)
-    return
+  try {
+    if (!state.accessToken && !state.refreshToken && !state.user) {
+      window.sessionStorage.removeItem(AUTH_STORAGE_KEY)
+      return
+    }
+    window.sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // 세션 저장 실패가 로그인/토큰 갱신 흐름을 막지 않도록 흡수한다.
   }
-  window.sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state))
 }
 
 const storedAuthState = loadStoredAuthState()

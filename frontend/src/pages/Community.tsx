@@ -53,11 +53,11 @@ export default function Community() {
     useEffect(() => {
         const nextFeedTab = searchParams.get('tab') === 'requests' ? 'requests' : 'posts'
         const nextRequestKind = searchParams.get('requestKind') === 'operation' ? 'operation' : 'event'
-        const nextPostScope = searchParams.get('scope') === 'mine' ? 'mine' : 'all'
+        const nextPostScope = user && searchParams.get('scope') === 'mine' ? 'mine' : 'all'
         setFeedTab(nextFeedTab)
         setRequestKind(nextRequestKind)
         setPostScope(nextPostScope)
-    }, [searchParams])
+    }, [searchParams, user])
 
     const {data: categories = []} = useQuery({
         queryKey: ['categories'],
@@ -65,14 +65,14 @@ export default function Community() {
     })
 
     const {data: rawPosts = []} = useQuery({
-        queryKey: ['posts', categoryId, sort, postScope],
+        queryKey: ['posts', categoryId, sort, postScope, user?.userId ?? null],
         queryFn: () => getPosts({
             categoryId,
             sort: sort === 'popular' ? 'likeCount,desc' : 'createdAt,desc',
             size: 100,
-            mine: postScope === 'mine',
+            mine: postScope === 'mine' && !!user,
         }),
-        enabled: feedTab === 'posts',
+        enabled: feedTab === 'posts' && (postScope !== 'mine' || !!user),
     })
 
     const {data: eventRequests = []} = useQuery<EventRequestItem[]>({
@@ -216,6 +216,14 @@ export default function Community() {
     useEffect(() => {
         setRequestStatusFilter('all')
     }, [requestKind])
+
+    useEffect(() => {
+        if (postScope !== 'mine' || user) return
+        setPostScope('all')
+        const next = new URLSearchParams(searchParams)
+        next.delete('scope')
+        setSearchParams(next, { replace: true })
+    }, [postScope, searchParams, setSearchParams, user])
 
     return (
         <div className="space-y-5 px-5 py-5 md:px-8 md:py-7">

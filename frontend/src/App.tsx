@@ -52,6 +52,9 @@ export default function App() {
 function AdminRouteGuard() {
   const { user } = useAuthStore()
   if (!user) return <Navigate to="/login" replace />
-  if (!/ADMIN|MANAGER/.test(user.role)) return <Navigate to="/" replace />
+  const normalizedRole = String(user.role ?? '').replace(/^ROLE_/, '')
+  const canAccessAdmin =
+    normalizedRole === 'ADMIN' || normalizedRole === 'MANAGER' || normalizedRole.endsWith('_MANAGER')
+  if (!canAccessAdmin) return <Navigate to="/" replace />
   return <Admin />
 }
