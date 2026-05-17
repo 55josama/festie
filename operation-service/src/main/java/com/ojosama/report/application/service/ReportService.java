@@ -59,9 +59,11 @@ public class ReportService {
         try {
             validateDuplicateReport(command.reporterId(), command.targetId());
 
+            long reportCountBefore = reportRepository.countByTargetId(command.targetId());
+
             Report savedReport = saveReportSafely(command.toEntity(reporterType));
 
-            checkAndProcessAutomaticBlind(command, savedReport);
+            checkAndProcessAutomaticBlind(command, savedReport, reportCountBefore);
 
             return ReportInfoResult.from(savedReport);
 
@@ -186,9 +188,7 @@ public class ReportService {
 
     // ============= 블라인드 처리 관련 메서드 =============
 
-    private void checkAndProcessAutomaticBlind(CreateReportCommand command, Report report) {
-        long reportCountBefore = reportRepository.countByTargetId(command.targetId());
-
+    private void checkAndProcessAutomaticBlind(CreateReportCommand command, Report report, long reportCountBefore) {
         long reportCountAfter = reportCountBefore + 1;
 
         if (reportCountAfter >= 3 && reportCountBefore < 3) {
