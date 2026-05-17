@@ -16,7 +16,7 @@ export default function ReportButton({ targetType, targetId, label = '신고', c
     mutationFn: (description: string) => createReport({
       targetType,
       targetId,
-      category: 'GENERAL',
+      category: 'OTHER',
       description,
     }),
     onSuccess: () => {
