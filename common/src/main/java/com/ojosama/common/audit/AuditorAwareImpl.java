@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.AuditorAware;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -16,22 +17,23 @@ public class AuditorAwareImpl implements AuditorAware<UUID> {
     public Optional<UUID> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        log.info("authentication: {}", authentication);
-
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
             return Optional.empty();
         }
 
         Object principal = authentication.getPrincipal();
-
-        log.info("principal: {}", principal);
 
         if (principal instanceof UUID uuid) {
             return Optional.of(uuid);
         }
 
         if (principal instanceof String str) {
-            return Optional.of(UUID.fromString(str));
+            try {
+                return Optional.of(UUID.fromString(str));
+            } catch (IllegalArgumentException e) {
+                return Optional.empty();
+            }
         }
 
         return Optional.empty();
