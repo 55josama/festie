@@ -49,7 +49,7 @@ public class CalendarService {
 
         calendarRepository.save(calendar);
 
-        log.info("calendar saved");
+        log.info("캘린더 저장");
 
         return CalendarResponseDto.from(CalendarResult.from(calendar));
     }

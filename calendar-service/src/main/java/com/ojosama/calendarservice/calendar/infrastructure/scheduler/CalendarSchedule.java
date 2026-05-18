@@ -5,6 +5,7 @@ import com.ojosama.calendarservice.calendar.domain.repository.CalendarRepository
 import com.ojosama.calendarservice.calendar.infrastructure.redis.CalendarRedisService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -41,6 +42,7 @@ public class CalendarSchedule {
                             .toList();
                     String eventName = calendarList.get(0).getEventInfo().getEventName();
                     LocalDateTime ticketingDate = calendarList.get(0).getEventInfo().getEventTicketingDate();
+                    // 일정 알림 redis 등록
                     notificationService.registerTicketingAlarm(eventId, eventName, ticketingDate, userIds);
                 });
 
@@ -50,7 +52,7 @@ public class CalendarSchedule {
         List<Calendar> eventCalendars = calendarRepository
                 .findByEventInfo_EventDateBetweenAndDeletedAtIsNull(
                         tomorrow.atStartOfDay(),
-                        tomorrow.plusDays(1).atStartOfDay()
+                        tomorrow.atTime(LocalTime.MAX)
                 );
 
         eventCalendars.stream()
@@ -61,15 +63,15 @@ public class CalendarSchedule {
                             .distinct()
                             .toList();
                     String eventName = calendarList.get(0).getEventInfo().getEventName();
+                    // 일정 알림 redis 등록
                     notificationService.registerEventAlarm(eventId, eventName,
                             calendarList.get(0).getEventInfo().getEventDate(), userIds);
                 });
 
+        log.info("행사 알림 redis 등록 : {}", eventCalendars.size());
+
         if (calendars.isEmpty() && eventCalendars.isEmpty()) {
             log.info("오늘 처리할 알림 예약 대상이 없습니다.");
-            return;
         }
-
-        log.info("행사 알림 redis 등록 : {}", eventCalendars.size());
     }
 }
