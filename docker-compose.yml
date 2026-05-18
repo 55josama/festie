@@ -205,7 +205,7 @@ services:
       GIT_TOKEN: ${GIT_TOKEN}
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
     healthcheck:
-      test: [ "CMD-SHELL", "wget --spider -q http://localhost:8888/actuator/health || exit 1" ]
+      test: [ "CMD-SHELL", "wget --spider -q --http-user=\"$$CONFIG_USERNAME\" --http-password=\"$$CONFIG_PASSWORD\" http://localhost:8888/actuator/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -476,6 +476,11 @@ services:
       SPRING_REDIS_HOST: festie-redis
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
       ZIPKIN_ENDPOINT: http://festie-zipkin:9411/api/v2/spans
+      # HikariCP 커넥션 풀
+      # 200 VU 기준: 읽기/쓰기 동시 트랜잭션 고려해 50으로 설정
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 50
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 50
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 10000
 
   # ============ favorite-service ============
   favorite-service:
