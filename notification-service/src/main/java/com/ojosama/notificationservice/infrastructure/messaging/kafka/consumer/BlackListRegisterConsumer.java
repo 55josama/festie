@@ -63,9 +63,9 @@ public class BlackListRegisterConsumer {
     }
 
     private void dispatch(BlackListRegisterMessage event) {
-        if (event == null || event.targetUserId() == null || event.reason() == null) {
+        if (event == null || event.userId() == null || event.reason() == null) {
             throw new NotificationException(NotificationErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
-        notificationService.blackListRegister(new BlackListRegisterCommand(event.targetUserId(), event.reason()));
+        notificationService.blackListRegister(new BlackListRegisterCommand(event.userId(), event.reason()));
     }
 }
