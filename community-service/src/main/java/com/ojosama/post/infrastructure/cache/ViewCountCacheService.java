@@ -1,5 +1,6 @@
 package com.ojosama.post.infrastructure.cache;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -15,7 +17,17 @@ import org.springframework.stereotype.Component;
 public class ViewCountCacheService {
 
     private static final String VIEW_KEY_PREFIX = "post:views:";
-    private static final String DIRTY_SET_KEY = "post:views:dirty";
+    private static final String DIRTY_SET_KEY   = "post:views:dirty";
+
+    private static final RedisScript<Long> RESET_BY_LUA = RedisScript.of(
+        "local remaining = redis.call('DECRBY', KEYS[1], ARGV[1])\n" +
+        "redis.call('SREM', KEYS[2], ARGV[2])\n" +
+        "if tonumber(remaining) > 0 then\n" +
+        "    redis.call('SADD', KEYS[2], ARGV[2])\n" +
+        "end\n" +
+        "return remaining",
+        Long.class
+    );
 
     private final StringRedisTemplate redis;
 
@@ -63,17 +75,19 @@ public class ViewCountCacheService {
         }
     }
 
-    // DB UPDATE 성공 후 flush 한 만큼만 DECRBY.
-    // peek~resetBy 사이에 들어온 INCR 는 그대로 남아 다음 주기에 반영됨.
-    // ex) peek=5 → DB +5 → 그 사이 INCR 2번 → resetBy(5) → Redis 잔여=2
+    /**
+     * DB UPDATE 성공 후 flush 한 만큼만 차감 — Lua 스크립트로 원자 처리.
+     * peek~resetBy 사이에 들어온 INCR 는 그대로 남아 다음 주기에 반영됨.
+     * ex) peek=5 → DB +5 → 그 사이 INCR 2번 → resetBy(5) → Redis 잔여=2
+     */
     public void resetBy(UUID postId, long flushed) {
         if (flushed <= 0) return;
         try {
-            Long remaining = redis.opsForValue().decrement(viewKey(postId), flushed);
-            redis.opsForSet().remove(DIRTY_SET_KEY, postId.toString());
-            if (remaining != null && remaining > 0) {
-                redis.opsForSet().add(DIRTY_SET_KEY, postId.toString());
-            }
+            redis.execute(
+                RESET_BY_LUA,
+                List.of(viewKey(postId), DIRTY_SET_KEY),
+                String.valueOf(flushed), postId.toString()
+            );
         } catch (Exception e) {
             log.error("[ViewCountCache] resetBy 실패 postId={}, flushed={}: {}", postId, flushed, e.getMessage());
         }
