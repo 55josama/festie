@@ -57,10 +57,10 @@ public class OperationHandler {
 
     // 블랙리스트 사용자 이메일 전송
     public void handleBlackListRegister(BlackListRegisterCommand command) {
-        String email = userClient.getUserEmail(command.targetUserId());
+        String email = userClient.getUserEmail(command.userId());
         MailSendDto mailSendDto = MailSendDto.of(email, "festie 알림", command.reason());
         mailService.sendEmail(mailSendDto);
-        log.info("이메일 전송 성공 : {}", command.targetUserId());
+        log.info("이메일 전송 성공 : {}", command.userId());
     }
 
     // 운영요청 알림 관리자,,
