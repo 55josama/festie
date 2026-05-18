@@ -11,6 +11,7 @@ import { STATUS_LABEL, type Event, type Post } from '../types'
 
 type HomeBanner = {
   id: string
+  eyebrow?: string
   title: string
   link: string
   imageUrl: string
@@ -28,12 +29,14 @@ const DEFAULT_HOME_BANNERS: HomeBanner[] = [
   FIXED_NOTICE_BANNER,
   {
     id: 'banner-events',
+    eyebrow: 'IN_PROGRESS',
     title: '이 행사는 어때요?',
     link: '/events',
     imageUrl: '',
   },
   {
     id: 'banner-popular',
+    eyebrow: 'SCHEDULED',
     title: '추천하는 행사!',
     link: '/community?tab=posts',
     imageUrl: '',
@@ -44,6 +47,14 @@ export default function Home() {
   const { user } = useAuthStore()
   const { data: allEvents = [] } = useQuery({ queryKey: ['events', 'home'], queryFn: () => getEvents({ size: 100 }) })
   const { data: ticketingEvents = [] } = useQuery({ queryKey: ['events', 'ticketing'], queryFn: getTicketingEvents })
+  const { data: bannerOngoingEvents = [] } = useQuery({
+    queryKey: ['events', 'banner', 'ongoing'],
+    queryFn: () => getEvents({ size: 1, page: 0, status: 'IN_PROGRESS', sort: 'startAt,asc' }),
+  })
+  const { data: bannerUpcomingEvents = [] } = useQuery({
+    queryKey: ['events', 'banner', 'upcoming'],
+    queryFn: () => getEvents({ size: 1, page: 0, status: 'SCHEDULED', sort: 'startAt,asc' }),
+  })
   const { data: posts = [] } = useQuery({ queryKey: ['posts', 'home'], queryFn: () => getPosts({ size: 4, sort: 'createdAt,desc' }) })
   const { data: categories = [] } = useQuery({ queryKey: ['categories', 'home'], queryFn: getCategories })
   const { data: popularRooms = [] } = useQuery({ queryKey: ['popular-chat-rooms', 'home'], queryFn: () => getPopularChatRooms(3) })
@@ -56,6 +67,13 @@ export default function Home() {
   const [ongoingPage, setOngoingPage] = useState(0)
   const [ticketingPage, setTicketingPage] = useState(0)
   const homeSectionPageSize = 3
+  const displayBanners = useMemo(() => {
+    return [
+      FIXED_NOTICE_BANNER,
+      createAutoBannerFromEvent(bannerOngoingEvents[0] ?? null, DEFAULT_HOME_BANNERS[1].title, '/calendar?status=IN_PROGRESS'),
+      createAutoBannerFromEvent(bannerUpcomingEvents[0] ?? null, DEFAULT_HOME_BANNERS[2].title, '/calendar?status=SCHEDULED'),
+    ].slice(0, 3)
+  }, [bannerOngoingEvents, bannerUpcomingEvents])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -101,39 +119,10 @@ export default function Home() {
     }
   }, [hasHydratedBanners, homeBanners])
 
-  useEffect(() => {
-    if (!hasHydratedBanners) return
-    if (!allEvents.length) return
-
-    let hasNextBannerChange = false
-    const nextBanners = homeBanners.map((banner, index) => {
-      if (index === 0) return FIXED_NOTICE_BANNER
-      if (banner.imageUrl.trim()) return banner
-      if (banner.eventId?.trim()) {
-        const eventImageUrl = suggestBannerImageUrl(`/events/${banner.eventId.trim()}`, allEvents as Event[])
-        if (eventImageUrl) {
-          hasNextBannerChange = true
-          return { ...banner, imageUrl: eventImageUrl }
-        }
-      }
-      const suggestedImageUrl = suggestBannerImageUrl(banner.link, allEvents as Event[])
-      if (!suggestedImageUrl) return banner
-      hasNextBannerChange = true
-      return { ...banner, imageUrl: suggestedImageUrl }
-    })
-
-    if (hasNextBannerChange) {
-      setHomeBanners(nextBanners)
-      setBannerDrafts(nextBanners)
-    }
-  }, [allEvents, hasHydratedBanners, homeBanners])
-
   const featuredPosts = useMemo(() => pickRecentPopularPosts(posts as Post[], 24), [posts])
   const upcomingEvents = useMemo(() => getCurrentEventWindow(allEvents as Event[]), [allEvents])
   const ongoingEvents = useMemo(() => getCurrentOngoingEventWindow(allEvents as Event[]), [allEvents])
   const upcomingTicketing = useMemo(() => getCurrentTicketingWindow(ticketingEvents as Event[]), [ticketingEvents])
-  const autoUpcomingBanner = useMemo(() => createAutoBannerFromEvents(upcomingEvents, '다가오는 행사'), [upcomingEvents])
-  const autoOngoingBanner = useMemo(() => createAutoBannerFromEvents(ongoingEvents, '진행중인 행사'), [ongoingEvents])
   const categoryNameById = useMemo(() => {
     return new Map((categories as any[]).map((category: any) => [category.id, category.name]))
   }, [categories])
@@ -155,45 +144,6 @@ export default function Home() {
   useEffect(() => {
     if (ticketingPage > ticketingPages - 1) setTicketingPage(Math.max(ticketingPages - 1, 0))
   }, [ticketingPage, ticketingPages])
-
-  useEffect(() => {
-    if (!hasHydratedBanners) return
-    if (!allEvents.length) return
-
-    setHomeBanners((prev) => {
-      const next = [...prev]
-      let changed = false
-
-      if (autoUpcomingBanner) {
-        next[1] = { ...autoUpcomingBanner, title: DEFAULT_HOME_BANNERS[1].title }
-        changed = true
-      }
-
-      if (autoOngoingBanner) {
-        next[2] = { ...autoOngoingBanner, title: DEFAULT_HOME_BANNERS[2].title }
-        changed = true
-      }
-
-      return changed ? next.slice(0, 3) : prev
-    })
-
-    setBannerDrafts((prev) => {
-      const next = [...prev]
-      let changed = false
-
-      if (autoUpcomingBanner) {
-        next[1] = { ...autoUpcomingBanner, title: DEFAULT_HOME_BANNERS[1].title }
-        changed = true
-      }
-
-      if (autoOngoingBanner) {
-        next[2] = { ...autoOngoingBanner, title: DEFAULT_HOME_BANNERS[2].title }
-        changed = true
-      }
-
-      return changed ? next.slice(0, 3) : prev
-    })
-  }, [allEvents, autoOngoingBanner, autoUpcomingBanner, hasHydratedBanners])
 
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
@@ -235,7 +185,7 @@ export default function Home() {
             <span className="text-[11px] text-slate-400">행사 바로가기와 공지를 여기에 담아요</span>
           </div>
           <div className="grid gap-2 md:grid-cols-3">
-            {homeBanners.slice(0, 3).map((banner, index) => (
+            {displayBanners.map((banner, index) => (
               <BannerCard key={banner.id || `${banner.title}-${index}`} banner={banner} />
             ))}
           </div>
@@ -543,17 +493,31 @@ function pickRecentPopularPosts(posts: Post[], hours = 24) {
     .slice(0, 4)
 }
 
-function createAutoBannerFromEvents(events: Event[], fallbackTitle: string) {
-  const matchedEvent = events.find((event) => String(event.img ?? '').trim())
-  if (!matchedEvent) return null
+function createAutoBannerFromEvent(matchedEvent: Event | null, fallbackTitle: string, fallbackLink: string) {
+  if (!matchedEvent) {
+    return {
+      id: `banner-${fallbackTitle}`,
+      title: fallbackTitle,
+      link: fallbackLink,
+      imageUrl: '/banner-event.svg',
+    } satisfies HomeBanner
+  }
   const eventId = String(matchedEvent.id ?? '').trim()
-  if (!eventId) return null
+  if (!eventId) {
+    return {
+      id: `banner-${fallbackTitle}`,
+      title: fallbackTitle,
+      link: fallbackLink,
+      imageUrl: String(matchedEvent.img ?? '').trim() || '/banner-event.svg',
+    } satisfies HomeBanner
+  }
 
   return {
     id: `banner-${eventId}`,
-    title: matchedEvent.name || fallbackTitle,
+    eyebrow: String(matchedEvent.status ?? '').trim() || undefined,
+    title: fallbackTitle,
     link: `/events/${eventId}`,
-    imageUrl: String(matchedEvent.img ?? '').trim(),
+    imageUrl: String(matchedEvent.img ?? '').trim() || '/banner-event.svg',
     eventId,
   } satisfies HomeBanner
 }
@@ -752,7 +716,7 @@ function BannerCard({ banner }: { banner: HomeBanner }) {
   const internalPath = resolveInternalBannerPath(banner.link)
   const isInternalLink = Boolean(internalPath)
   const content = (
-    <div className="relative h-full min-h-[88px] w-full overflow-hidden rounded-[20px] border border-[var(--line)] bg-white text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.08)] md:rounded-[24px] md:bg-white md:text-slate-950">
+    <div className="group relative h-full min-h-[88px] w-full overflow-hidden rounded-[20px] border border-[var(--line)] bg-white text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.08)] md:rounded-[24px] md:bg-white md:text-slate-950">
       <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[20px] bg-[#ece8ff] md:rounded-[24px]">
         {banner.imageUrl ? (
           <>
@@ -764,29 +728,31 @@ function BannerCard({ banner }: { banner: HomeBanner }) {
             <img
               src={banner.imageUrl}
               alt={banner.title}
-              className="absolute inset-5 h-[calc(100%-2.5rem)] w-[calc(100%-2.5rem)] rounded-[18px] object-cover object-center md:inset-6 md:h-[calc(100%-3rem)] md:w-[calc(100%-3rem)] md:rounded-[20px] opacity-95 shadow-[0_0_0_1px_rgba(255,255,255,0.4)]"
+              className="absolute inset-5 h-[calc(100%-2.5rem)] w-[calc(100%-2.5rem)] rounded-[18px] object-cover object-center transition-transform duration-300 group-hover:scale-[1.02] md:inset-6 md:h-[calc(100%-3rem)] md:w-[calc(100%-3rem)] md:rounded-[20px] opacity-95 shadow-[0_0_0_1px_rgba(255,255,255,0.4)]"
             />
           </>
         ) : (
           <>
             <div className="absolute inset-0 bg-gradient-to-br from-[#dcd2ff] via-[#cbbcff] to-[#efe2ff] opacity-95" />
-            <div className="absolute inset-5 rounded-[18px] border border-white/75 bg-white/25 md:inset-6 md:rounded-[20px]" />
-            <div className="absolute inset-0 flex items-center justify-center text-[16px] font-semibold text-slate-500/80">
-              행사 이미지
+            <div className="absolute inset-5 rounded-[18px] border border-white/75 bg-white/20 md:inset-6 md:rounded-[20px]" />
+            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+              <div className="h-12 w-12 rounded-full bg-white/35 blur-[1px]" />
             </div>
           </>
         )}
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(194,163,255,0.07)_48%,rgba(15,23,42,0.10)_100%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(196,164,255,0.12),transparent_34%)]" />
-        <div className="absolute inset-x-4 bottom-4 md:inset-x-6 md:bottom-6">
-          <div className="max-w-[78%]">
+        <div className="absolute inset-x-6 bottom-6 md:inset-x-8 md:bottom-8">
+          <div className="max-w-[74%] md:ml-1 md:-mt-1">
             <div className="text-[14px] font-black leading-5 tracking-tight text-white drop-shadow-[0_2px_10px_rgba(15,23,42,0.55)] md:text-[17px] md:leading-6">
               {banner.title || '배너 제목'}
             </div>
-            <div className="mt-2 inline-flex w-fit items-center rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-[var(--accent)] shadow-[0_8px_22px_rgba(15,23,42,0.12)] backdrop-blur md:mt-3 md:px-3 md:py-1.5 md:text-[11px]">
-              바로가기
-            </div>
           </div>
+          {banner.eyebrow ? (
+            <div className="absolute bottom-0 right-0 pb-0 pr-1 text-[9px] font-semibold tracking-[0.28em] text-white/75 drop-shadow-[0_2px_10px_rgba(15,23,42,0.28)] md:pr-1.5 md:text-[10px]">
+              {banner.eyebrow}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

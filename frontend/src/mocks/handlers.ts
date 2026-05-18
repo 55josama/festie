@@ -19,6 +19,18 @@ import {
 
 const wrap = (data: any) => ({ status: 'success', data })
 
+function sortMockEvents(events: typeof mockEvents, sort: string | null) {
+  if (!sort) return [...events]
+  const [field, direction] = sort.split(',')
+  const factor = direction?.toLowerCase() === 'desc' ? -1 : 1
+  return [...events].sort((a: any, b: any) => {
+    const aValue = String(a?.[field] ?? '')
+    const bValue = String(b?.[field] ?? '')
+    if (aValue === bValue) return 0
+    return aValue.localeCompare(bValue) * factor
+  })
+}
+
 type MockProfile = {
   userId: string
   nickname: string
@@ -210,14 +222,30 @@ export const handlers = [
   http.get('/event-service/v1/events', async ({ request }) => {
     await delay(250)
     const url = new URL(request.url)
+    const status = url.searchParams.get('status')
     const hasTicketing = url.searchParams.get('hasTicketing')
+    const sort = url.searchParams.get('sort')
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 10)
     let events = [...mockEvents]
+    if (status) {
+      events = events.filter((event) => event.status === status)
+    }
     if (hasTicketing === 'true') {
       events = events.filter((event) => event.hasTicketing)
     } else if (hasTicketing === 'false') {
       events = events.filter((event) => !event.hasTicketing)
     }
-    return HttpResponse.json(wrap({ content: events, totalElements: events.length, totalPages: 1, size: 10, number: 0 }))
+    events = sortMockEvents(events, sort)
+    const start = page * Math.max(size, 1)
+    const content = events.slice(start, start + Math.max(size, 1))
+    return HttpResponse.json(wrap({
+      content,
+      totalElements: events.length,
+      totalPages: Math.max(1, Math.ceil(events.length / Math.max(size, 1))),
+      size: Math.max(size, 1),
+      number: page,
+    }))
   }),
 
   http.get('/event-service/v1/events/:eventId', async ({ params }) => {
