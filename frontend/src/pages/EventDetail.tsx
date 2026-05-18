@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteEvent, getEvent } from '../api/events'
@@ -12,7 +12,7 @@ import { formatPrice, formatDateTime } from '../lib/format'
 import { getErrorMessage } from '../lib/error'
 import { getDDay as calcDDay } from '../lib/format'
 import { normalizeBannedWordError } from '../lib/error'
-import type { ChatRoom } from '../types'
+import type { ChatMessage, ChatRoom } from '../types'
 import { Stomp, type IMessage } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 
@@ -24,6 +24,10 @@ export default function EventDetail() {
   const isStaff = !!user && /ADMIN|MANAGER/.test(String(user.role ?? ''))
   const canFavoriteEvent = !user || user.role === 'USER'
   const [message, setMessage] = useState('')
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatMessagePage, setChatMessagePage] = useState(0)
+  const [chatHasNext, setChatHasNext] = useState(false)
+  const [loadingOlderChatMessages, setLoadingOlderChatMessages] = useState(false)
   const [chatMessageError, setChatMessageError] = useState('')
   const [isChatEntered, setIsChatEntered] = useState(false)
   const [chatConnectionStatus, setChatConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
@@ -37,6 +41,8 @@ export default function EventDetail() {
   const chatConnectionStatusRef = useRef<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const chatMessagesScrollRef = useRef<HTMLDivElement | null>(null)
   const isMessageComposingRef = useRef(false)
+  const previousChatMessageCountRef = useRef(0)
+  const pendingScrollAnchorRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null)
 
   useEffect(() => {
     if (!chatMessageError) return
@@ -59,6 +65,12 @@ export default function EventDetail() {
     if (locationError) return
     setLocationErrorPhase('idle')
   }, [locationError])
+
+  useEffect(() => {
+    if (isChatEntered) return
+    previousChatMessageCountRef.current = 0
+    pendingScrollAnchorRef.current = null
+  }, [isChatEntered])
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', eventId],
@@ -86,11 +98,11 @@ export default function EventDetail() {
     enabled: !!eventId && isLoggedIn() && user?.role === 'USER',
   })
 
-  const { data: messages = [] } = useQuery({
+  const { data: chatMessagesPage } = useQuery({
     queryKey: ['chat-messages', chatRoomId],
     queryFn: () => {
       if (!chatRoomId) {
-        return Promise.resolve([])
+        return Promise.resolve({ messages: [], hasNext: false })
       }
       return getChatMessages(chatRoomId)
     },
@@ -122,8 +134,7 @@ export default function EventDetail() {
     mutationFn: (messageId: string) => deleteChatMessage(messageId),
     onSuccess: async (_, messageId) => {
       if (!chatRoomId) return
-      queryClient.setQueryData<any[]>(['chat-messages', chatRoomId], (prev = []) => prev.filter((message) => message.messageId !== messageId))
-      await queryClient.invalidateQueries({ queryKey: ['chat-messages', chatRoomId] })
+      setChatMessages((prev) => prev.filter((message) => message.messageId !== messageId))
     },
     onError: () => {
       window.alert('메시지를 삭제하지 못했어요.')
@@ -200,8 +211,20 @@ export default function EventDetail() {
   const calendarDateOptions = useMemo(() => buildCalendarDateOptions(event), [event?.id, event?.startAt, event?.endAt, schedules.length])
   const chatState = useMemo(() => resolveChatState(chatRoom), [chatRoom])
   const chatTheme = useMemo(() => getChatTheme(chatRoom?.category ?? event?.categoryName ?? ''), [chatRoom?.category, event?.categoryName])
-  const orderedMessages = useMemo(() => normalizeChatMessages(messages), [messages])
+  const orderedMessages = useMemo(() => normalizeChatMessages(chatMessages), [chatMessages])
   const canJoinChat = Boolean(chatRoomId && chatRoom && chatState.isOpen && isLoggedIn())
+
+  const scrollChatToBottom = () => {
+    const el = chatMessagesScrollRef.current
+    if (!el) return
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const nextEl = chatMessagesScrollRef.current
+        if (!nextEl) return
+        nextEl.scrollTop = nextEl.scrollHeight
+      })
+    })
+  }
 
   useEffect(() => {
     if (!event) return
@@ -209,17 +232,48 @@ export default function EventDetail() {
   }, [calendarDateOptions, event?.startAt, event?.id])
 
   useEffect(() => {
+    if (!chatMessagesPage) return
+    setChatMessages(chatMessagesPage.messages)
+    setChatMessagePage(0)
+    setChatHasNext(chatMessagesPage.hasNext)
+  }, [chatMessagesPage, chatRoomId])
+
+  useLayoutEffect(() => {
     if (!isChatEntered || !chatMessagesScrollRef.current) {
       return
     }
-    requestAnimationFrame(() => {
-      const el = chatMessagesScrollRef.current
-      if (!el) return
-      el.scrollTop = el.scrollHeight
-    })
-  }, [isChatEntered, orderedMessages.length, chatConnectionStatus])
+    const el = chatMessagesScrollRef.current
+
+    const pendingAnchor = pendingScrollAnchorRef.current
+    if (pendingAnchor) {
+      const delta = el.scrollHeight - pendingAnchor.scrollHeight
+      el.scrollTop = pendingAnchor.scrollTop + delta
+      pendingScrollAnchorRef.current = null
+      return
+    }
+    if (previousChatMessageCountRef.current === 0) {
+      scrollChatToBottom()
+      previousChatMessageCountRef.current = orderedMessages.length
+      return
+    }
+
+    if (orderedMessages.length > previousChatMessageCountRef.current) {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+      if (distanceFromBottom < 120) {
+        scrollChatToBottom()
+      }
+    }
+
+    previousChatMessageCountRef.current = orderedMessages.length
+  }, [isChatEntered, orderedMessages.length, chatConnectionStatus, loadingOlderChatMessages])
 
   useEffect(() => {
+    setChatMessages([])
+    setChatMessagePage(0)
+    setChatHasNext(false)
+    setLoadingOlderChatMessages(false)
+    previousChatMessageCountRef.current = 0
+    pendingScrollAnchorRef.current = null
     setIsChatEntered(false)
     setChatConnectionStatus('idle')
     chatConnectionStatusRef.current = 'idle'
@@ -253,14 +307,14 @@ export default function EventDetail() {
         const stompClient = Stomp.over(socket)
         stompClient.debug = () => undefined
 
-          stompClient.connect({}, () => {
+        stompClient.connect({}, () => {
           if (cancelled) return
           setChatConnectionStatus('connected')
           chatConnectionStatusRef.current = 'connected'
           stompClient.subscribe(`/topic/rooms/${chatRoomId}/messages`, (frame: IMessage) => {
             const nextMessage = parseChatMessage(frame)
             if (!nextMessage) return
-            queryClient.setQueryData<any[]>(['chat-messages', chatRoomId], (prev = []) => [...prev, nextMessage])
+            setChatMessages((prev) => normalizeChatMessages([...prev, nextMessage]))
           })
           stompClient.subscribe('/user/queue/errors', (frame: IMessage) => {
             const nextError = parseWebSocketError(frame)
@@ -296,6 +350,32 @@ export default function EventDetail() {
       chatConnectionStatusRef.current = 'idle'
     }
   }, [chatRoomId, chatRoom, chatState.isOpen, isChatEntered, queryClient, user])
+
+  const loadOlderChatMessages = async () => {
+    if (!chatRoomId || loadingOlderChatMessages || !chatHasNext) {
+      return
+    }
+
+    const container = chatMessagesScrollRef.current
+    const previousScrollHeight = container?.scrollHeight ?? 0
+    const previousScrollTop = container?.scrollTop ?? 0
+
+    pendingScrollAnchorRef.current = {
+      scrollTop: previousScrollTop,
+      scrollHeight: previousScrollHeight,
+    }
+    setLoadingOlderChatMessages(true)
+
+    try {
+      const nextPage = chatMessagePage + 1
+      const response = await getChatMessages(chatRoomId, { page: nextPage, size: 30 })
+      setChatMessages((prev) => normalizeChatMessages([...response.messages, ...prev]))
+      setChatMessagePage(nextPage)
+      setChatHasNext(response.hasNext)
+    } finally {
+      setLoadingOlderChatMessages(false)
+    }
+  }
 
   if (isLoading) {
     return <div className="px-5 py-10 text-slate-500">행사 정보를 불러오는 중입니다.</div>
@@ -582,9 +662,21 @@ export default function EventDetail() {
               <div className={`space-y-2 ${isChatEntered ? '' : 'pointer-events-none select-none blur-[1px]'}`}>
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold text-slate-500">메시지</div>
-                  <div className="text-xs text-slate-400">{orderedMessages.length}개</div>
                 </div>
-                <div ref={chatMessagesScrollRef} className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
+                <div
+                  ref={chatMessagesScrollRef}
+                  onScroll={(event) => {
+                    const el = event.currentTarget
+                    if (el.scrollTop > 40 || !chatHasNext || loadingOlderChatMessages) return
+                    void loadOlderChatMessages()
+                  }}
+                  className="max-h-[460px] space-y-2 overflow-y-auto pr-1"
+                >
+                  {loadingOlderChatMessages && (
+                    <div className="py-2 text-center text-[11px] font-medium text-slate-400">
+                      이전 메시지를 불러오는 중...
+                    </div>
+                  )}
                   {orderedMessages.map((msg: any) => (
                     <MessageBubble
                       key={msg.messageId}
@@ -596,6 +688,13 @@ export default function EventDetail() {
                   ))}
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => scrollChatToBottom()}
+                className="absolute bottom-3 right-3 rounded-full border border-[var(--line)] bg-white/95 px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+              >
+                아래로
+              </button>
 
               {!isChatEntered && canJoinChat && (
                 <div className={`absolute inset-0 flex items-center justify-center px-4 backdrop-blur-[1px] ${chatTheme.overlayClass}`}>

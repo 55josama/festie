@@ -864,10 +864,25 @@ export const handlers = [
     return HttpResponse.json(wrap(room), { status: 201 })
   }),
 
-  http.get('/chat-service/v1/chat/rooms/:chatRoomId/messages', async ({ params }) => {
+  http.get('/chat-service/v1/chat/rooms/:chatRoomId/messages', async ({ params, request }) => {
     await delay(120)
-    const messages = mockMessages.filter((item) => item.chatRoomId === params.chatRoomId)
-    return HttpResponse.json(wrap({ messages, hasNext: false }))
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 30)
+    const messages = mockMessages
+      .filter((item) => item.chatRoomId === params.chatRoomId)
+      .sort((left, right) => {
+        const leftTime = new Date(left.createdAt).getTime()
+        const rightTime = new Date(right.createdAt).getTime()
+        if (leftTime !== rightTime) return rightTime - leftTime
+        return String(right.messageId).localeCompare(String(left.messageId))
+      })
+    const start = page * size
+    const sliced = messages.slice(start, start + size)
+    return HttpResponse.json(wrap({
+      messages: sliced,
+      hasNext: start + size < messages.length,
+    }))
   }),
 
   http.get('/chat-service/v1/chat/rooms/popular', async ({ request }) => {

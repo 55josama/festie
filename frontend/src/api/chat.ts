@@ -3,6 +3,11 @@ import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { ChatMessage, ChatRoom } from '../types'
 import type { AdminMessageItem } from '../types/admin'
 
+export interface ChatMessageSliceResponse {
+  messages: ChatMessage[]
+  hasNext: boolean
+}
+
 export const createChatRoom = async (payload: {
   eventId: string
   eventName: string
@@ -27,11 +32,19 @@ export const verifyEventLocation = async (eventId: string, currentLatitude: numb
   return unwrap<{ eventId: string; isNearEvent: boolean }>(res.data)
 }
 
-export const getChatMessages = async (chatRoomId: string) => {
-  const res = await client.get(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, { params: { page: 0, size: 30 } })
+export const getChatMessages = async (chatRoomId: string, params: { page?: number; size?: number } = {}) => {
+  const res = await client.get(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, {
+    params: {
+      page: params.page ?? 0,
+      size: params.size ?? 30,
+    },
+  })
   const data = unwrap<any>(res.data)
   const normalized = Array.isArray(data) ? data : (data?.messages ?? data?.content ?? [])
-  return unwrapPage<ChatMessage>({ data: normalized })
+  return {
+    messages: unwrapPage<ChatMessage>({ data: normalized }),
+    hasNext: Boolean(data?.hasNext),
+  } satisfies ChatMessageSliceResponse
 }
 
 export const sendChatMessage = async (chatRoomId: string, content: string) => {
