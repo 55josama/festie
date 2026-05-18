@@ -635,6 +635,19 @@ export const handlers = [
     return HttpResponse.json(wrap({}))
   }),
 
+  http.patch('/event-service/v1/events/:eventId/cancel', async ({ params }) => {
+    await delay(180)
+    const event = mockEvents.find((item) => item.id === params.eventId)
+    if (!event) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
+    event.status = 'CANCELLED'
+    const room = mockChatRooms.find((item) => item.eventId === event.id)
+    if (room) {
+      room.status = 'CLOSED'
+      room.closedAt = new Date().toISOString()
+    }
+    return HttpResponse.json(wrap(event))
+  }),
+
   http.get('/event-service/v1/event-requests', async ({ request }) => {
     await delay(180)
     const url = new URL(request.url)

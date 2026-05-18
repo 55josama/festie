@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteEvent, getEvent } from '../api/events'
+import { cancelEvent, deleteEvent, getEvent } from '../api/events'
 import { createChatRoom, deleteChatMessage, getChatMessages, getChatRoomByEventId, verifyEventLocation } from '../api/chat'
 import { createCalendar } from '../api/calendar'
 import { createFavorite, deleteFavorite, getFavorites } from '../api/favorites'
@@ -77,6 +77,8 @@ export default function EventDetail() {
     queryFn: () => getEvent(eventId),
     enabled: !!eventId,
   })
+  const eventStatus = String(event?.status ?? '').toUpperCase()
+  const canCancelEvent = isStaff && (eventStatus === 'SCHEDULED' || eventStatus === 'IN_PROGRESS')
 
   const { data: chatRoom } = useQuery({
     queryKey: ['chat-room', eventId],
@@ -159,6 +161,23 @@ export default function EventDetail() {
       queryClient.invalidateQueries({ queryKey: ['events'] })
       queryClient.invalidateQueries({ queryKey: ['event', eventId] })
       window.alert('행사를 삭제했어요.')
+    },
+  })
+
+  const cancelMutation = useMutation({
+    mutationFn: () => {
+      if (!event) throw new Error('event is missing')
+      return cancelEvent(event.id)
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['events'] })
+      await queryClient.invalidateQueries({ queryKey: ['event', eventId] })
+      await queryClient.invalidateQueries({ queryKey: ['chat-room', eventId] })
+      await queryClient.invalidateQueries({ queryKey: ['popular-chat-rooms'] })
+      window.alert('행사를 취소했어요.')
+    },
+    onError: () => {
+      window.alert('행사를 취소하지 못했어요.')
     },
   })
 
@@ -425,34 +444,6 @@ export default function EventDetail() {
                 <div className="flex items-start justify-between gap-3">
                   <h1 className="text-[26px] font-black tracking-tight text-slate-950 md:text-[30px]">{event.name}</h1>
                   <div className="flex items-center gap-2">
-                    {user && /ADMIN/.test(user.role) && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const eventUuid = String(event.id ?? '')
-                          if (!eventUuid) return
-                          try {
-                            await navigator.clipboard.writeText(eventUuid)
-                            window.alert('행사 UUID를 복사했어요.')
-                          } catch {
-                            const textarea = document.createElement('textarea')
-                            textarea.value = eventUuid
-                            textarea.style.position = 'fixed'
-                            textarea.style.left = '-9999px'
-                            document.body.appendChild(textarea)
-                            textarea.select()
-                            document.execCommand('copy')
-                            document.body.removeChild(textarea)
-                            window.alert('행사 UUID를 복사했어요.')
-                          }
-                        }}
-                        className="inline-flex h-11 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[10px] font-semibold text-slate-400 transition-colors hover:bg-slate-100"
-                        title="행사 UUID 복사"
-                        aria-label="행사 UUID 복사"
-                      >
-                        UUID 복사
-                      </button>
-                    )}
                     {!isStaff && canFavoriteEvent ? (
                       <button
                         type="button"
@@ -481,14 +472,42 @@ export default function EventDetail() {
                     ) : null}
                   </div>
                 </div>
+                {user && /ADMIN/.test(user.role) && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const eventUuid = String(event.id ?? '')
+                      if (!eventUuid) return
+                      try {
+                        await navigator.clipboard.writeText(eventUuid)
+                        window.alert('행사 UUID를 복사했어요.')
+                      } catch {
+                        const textarea = document.createElement('textarea')
+                        textarea.value = eventUuid
+                        textarea.style.position = 'fixed'
+                        textarea.style.left = '-9999px'
+                        document.body.appendChild(textarea)
+                        textarea.select()
+                        document.execCommand('copy')
+                        document.body.removeChild(textarea)
+                        window.alert('행사 UUID를 복사했어요.')
+                      }
+                    }}
+                    className="mt-3 inline-flex h-8 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[10px] font-semibold text-slate-400 transition-colors hover:bg-slate-100"
+                    title="행사 UUID 복사"
+                    aria-label="행사 UUID 복사"
+                  >
+                    UUID 복사
+                  </button>
+                )}
                 <p className="mt-2 text-[15px] leading-6 text-slate-600">{event.description ?? '행사 상세 소개가 준비되어 있습니다.'}</p>
               </div>
 
               <div className="space-y-3">
-                <div className="grid gap-3 min-[700px]:grid-cols-2">
-                  <MiniInfoCard label="시작" value={formatDateTime(event.startAt)} />
-                  <MiniInfoCard label="종료" value={formatDateTime(event.endAt)} />
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <MiniInfoCard label="시작" value={formatDateTime(event.startAt)} />
+                <MiniInfoCard label="종료" value={formatDateTime(event.endAt)} />
+              </div>
                 <div className="overflow-hidden rounded-[18px] border border-[var(--line)] bg-white">
                   <DetailMeta label="장소" value={event.place} />
                   <DetailMeta label="가격" value={formatPrice(event.minFee, event.maxFee)} />
@@ -548,6 +567,19 @@ export default function EventDetail() {
                   >
                     수정
                   </Link>
+                )}
+                {canCancelEvent && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('이 행사를 취소할까요?')) {
+                        cancelMutation.mutate()
+                      }
+                    }}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700"
+                  >
+                    {cancelMutation.isPending ? '취소 중...' : '행사 취소'}
+                  </button>
                 )}
                 {user && /ADMIN|MANAGER/.test(user.role) && (
                   <button
@@ -646,7 +678,7 @@ export default function EventDetail() {
             </div>
           </div>
 
-          <div className="grid gap-3 min-[700px]:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <MiniInfoCard label="오픈 시간" value={chatState.openTimeLabel} />
             <MiniInfoCard label="클로즈 시간" value={chatState.closeTimeLabel} />
           </div>

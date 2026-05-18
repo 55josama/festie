@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore'
 
 const REGION_FILTERS = ['전체', '서울', '경기', '충청', '강원', '경상', '전라', '부산', '제주']
 const CATEGORY_FILTERS = ['전체', '콘서트', '축제', '팬미팅', '팝업스토어']
+const STATUS_FILTERS = ['전체', '예정', '진행중', '종료']
 const EVENT_CREATE_LINK = '/admin?panel=general'
 
 export default function Events() {
@@ -15,6 +16,7 @@ export default function Events() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedRegion, setSelectedRegion] = useState(searchParams.get('region') ?? '전체')
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') ?? '전체')
+  const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') ?? '전체')
   const [query, setQuery] = useState(searchParams.get('query') ?? '')
   const [resolvedRegions, setResolvedRegions] = useState<Record<string, string>>({})
   const regionCacheRef = useRef<Record<string, string>>({})
@@ -69,10 +71,11 @@ export default function Events() {
         const regionOk = selectedRegion === '전체' || getRegionLabel(event, resolvedRegions) === selectedRegion
         const categoryOk = selectedCategory === '전체'
           || normalizeCategoryKey(event.categoryName) === normalizeCategoryKey(selectedCategory)
-        return queryOk && regionOk && categoryOk
+        const statusOk = selectedStatus === '전체' || getDisplayStatus(event).label === selectedStatus
+        return queryOk && regionOk && categoryOk && statusOk
       })
     )
-  }, [events, query, resolvedRegions, selectedCategory, selectedRegion])
+  }, [events, query, resolvedRegions, selectedCategory, selectedRegion, selectedStatus])
 
   const submitSearch = () => {
     const next = query.trim()
@@ -80,6 +83,7 @@ export default function Events() {
       ...(next ? { query: next } : {}),
       ...(selectedRegion !== '전체' ? { region: selectedRegion } : {}),
       ...(selectedCategory !== '전체' ? { category: selectedCategory } : {}),
+      ...(selectedStatus !== '전체' ? { status: selectedStatus } : {}),
     })
   }
 
@@ -127,13 +131,20 @@ export default function Events() {
 
         <div className="mt-4 space-y-3">
           <div className="grid gap-3 md:hidden">
-            <FilterRow label="지역">
-              {REGION_FILTERS.map((item) => (
-                <Chip key={item} active={selectedRegion === item} onClick={() => setSelectedRegion(item)}>
-                  {item}
-                </Chip>
-              ))}
-            </FilterRow>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-slate-500">지역</span>
+              <select
+                value={selectedRegion}
+                onChange={(e) => setSelectedRegion(e.target.value)}
+                className="min-w-[120px] rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 outline-none"
+              >
+                {REGION_FILTERS.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </div>
             <FilterRow label="카테고리">
               {CATEGORY_FILTERS.map((item) => (
                 <Chip
@@ -141,6 +152,18 @@ export default function Events() {
                   active={selectedCategory === item}
                   tone={item === '전체' ? 'slate' : getCategoryTone(item)}
                   onClick={() => setSelectedCategory(item)}
+                >
+                  {item}
+                </Chip>
+              ))}
+            </FilterRow>
+            <FilterRow label="상태">
+              {STATUS_FILTERS.map((item) => (
+                <Chip
+                  key={item}
+                  active={selectedStatus === item}
+                  tone={item === '전체' ? 'slate' : item === '예정' ? 'violet' : item === '진행중' ? 'emerald' : 'slate'}
+                  onClick={() => setSelectedStatus(item)}
                 >
                   {item}
                 </Chip>
@@ -163,6 +186,18 @@ export default function Events() {
                   active={selectedCategory === item}
                   tone={item === '전체' ? 'slate' : getCategoryTone(item)}
                   onClick={() => setSelectedCategory(item)}
+                >
+                  {item}
+                </Chip>
+              ))}
+            </FilterRow>
+            <FilterRow label="상태">
+              {STATUS_FILTERS.map((item) => (
+                <Chip
+                  key={item}
+                  active={selectedStatus === item}
+                  tone={item === '전체' ? 'slate' : item === '예정' ? 'violet' : item === '진행중' ? 'emerald' : 'slate'}
+                  onClick={() => setSelectedStatus(item)}
                 >
                   {item}
                 </Chip>
@@ -204,27 +239,27 @@ function EventNewsCard({ event }: { event: Event }) {
   return (
     <Link
       to={`/events/${event.id}`}
-      className={`flex h-full overflow-hidden rounded-[24px] border shadow-[0_12px_24px_rgba(15,23,42,0.04)] transition-transform hover:-translate-y-0.5 md:flex md:flex-col ${
+      className={`flex h-full overflow-hidden rounded-[26px] border shadow-[0_12px_24px_rgba(15,23,42,0.04)] transition-transform hover:-translate-y-0.5 md:flex md:flex-col ${
         displayStatus.isPast
-          ? 'border-slate-200 bg-slate-50 opacity-85'
-          : 'border-[var(--line)] bg-white'
+          ? 'border-[rgba(226,217,245,0.85)] bg-[linear-gradient(180deg,rgba(250,248,255,0.95),rgba(243,238,255,0.88))] opacity-90'
+          : 'border-[rgba(226,217,245,0.95)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,248,255,0.94))]'
       }`}
     >
       {event.img ? (
-        <div className="relative flex h-auto w-[104px] shrink-0 overflow-hidden md:h-36 md:w-full md:p-3">
+        <div className="relative flex h-auto w-[104px] shrink-0 overflow-hidden rounded-l-[26px] md:h-36 md:w-full md:rounded-none md:p-3">
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(238,232,255,0.82),rgba(245,243,255,0.58),rgba(249,168,212,0.20))]" />
-          <div className="relative flex h-full w-full items-center justify-center p-2.5 md:p-0">
+          <div className="relative flex h-full w-full items-center justify-center p-2 md:p-0">
             <img
               src={event.img}
               alt={event.name}
-              className="h-full w-full object-cover md:rounded-[18px] md:shadow-[0_0_0_1px_rgba(148,163,184,0.18)]"
+              className="h-full w-full rounded-[18px] object-cover shadow-[0_0_0_1px_rgba(148,163,184,0.18)] md:rounded-[18px]"
             />
           </div>
         </div>
       ) : (
         <div
           style={cardTone(event.categoryName)}
-          className="flex h-auto w-[104px] shrink-0 items-center justify-center px-3 py-3 md:h-36 md:w-full md:px-4 md:py-3"
+          className="flex h-auto w-[104px] shrink-0 items-center justify-center rounded-l-[26px] px-3 py-3 md:h-36 md:w-full md:rounded-none md:px-4 md:py-3"
         >
           <div className="flex h-24 w-full items-center justify-center rounded-[18px] border border-white/60 bg-white/30 text-[11px] font-semibold text-white/90 md:h-full md:text-sm">
             행사 이미지

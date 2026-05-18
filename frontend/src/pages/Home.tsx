@@ -43,7 +43,7 @@ export default function Home() {
     return new Map((categories as any[]).map((category: any) => [category.id, category.name]))
   }, [categories])
   const mobileFeaturedEvents = useMemo(
-    () => [...upcomingEvents, ...ongoingEvents, ...upcomingTicketing].slice(0, 4),
+    () => uniqueEventsById([...upcomingEvents, ...ongoingEvents, ...upcomingTicketing]).slice(0, 4),
     [ongoingEvents, upcomingEvents, upcomingTicketing],
   )
   const mobilePopularPosts = useMemo(() => featuredPosts.slice(0, 3), [featuredPosts])
@@ -143,7 +143,7 @@ export default function Home() {
               전체보기
             </Link>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none]">
+          <div className="flex gap-3 overflow-x-scroll pb-4 festie-horizontal-scroll">
             {mobileFeaturedEvents.length ? (
               mobileFeaturedEvents.map((event) => (
                 <FeaturedEventCard key={event.id} event={event} variant="compact" />
@@ -260,7 +260,7 @@ export default function Home() {
               <p className="mt-2 text-sm text-slate-500">
                 특별한 하루를 놓치지 않도록, 중요한 소식과 추천 행사를 한곳에 담았어요.
               </p>
-              <div className="mt-4 flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none]">
+              <div className="mt-4 flex gap-4 overflow-x-scroll pb-4 festie-horizontal-scroll">
                 <NoticePromoCard />
                 {mobileFeaturedEvents.length ? (
                   mobileFeaturedEvents.map((event) => (
@@ -447,6 +447,15 @@ function paginateItems<T>(items: T[], page: number, pageSize: number) {
   const safePage = Math.max(0, page)
   const start = safePage * pageSize
   return items.slice(start, start + pageSize)
+}
+
+function uniqueEventsById(events: Event[]) {
+  const seen = new Set<string>()
+  return events.filter((event) => {
+    if (seen.has(event.id)) return false
+    seen.add(event.id)
+    return true
+  })
 }
 
 function countdownLabel(dateValue?: string | null, mode: 'event' | 'ticketing' = 'event') {

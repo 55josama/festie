@@ -185,6 +185,21 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
       ? '전체 캘린더는 행사 데이터만으로 만들고, 내 일정은 백엔드에 저장된 카드와 메모만 보여줍니다.'
       : '내 일정은 데이터베이스에 저장된 개인 일정입니다. 캘린더와 연결된 개념이 아니라 카드와 메모를 따로 읽는 화면이에요.'
 
+  const resetMineSelections = () => {
+    setYear(today.getFullYear())
+    setMonth(today.getMonth() + 1)
+    setSelectedMineDay(null)
+    setMineSort('latest')
+    setMineCategory('전체')
+    setMobileMineWeekStart(startOfWeek(today))
+    if (mode === 'mine') {
+      setMineTab('schedule')
+      const next = new URLSearchParams(searchParams)
+      next.set('tab', 'schedule')
+      setSearchParams(next, { replace: true })
+    }
+  }
+
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
       {mode === 'all' ? (
@@ -196,7 +211,7 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
           <p className="mt-1 hidden max-w-xl text-sm leading-6 text-slate-600 md:mt-2 md:block">{description}</p>
         </section>
       ) : (
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-between gap-3">
           <div className="inline-flex rounded-full border border-[var(--line)] bg-white p-1 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
             <button
               type="button"
@@ -231,6 +246,13 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
               관심 목록
             </button>
           </div>
+          <button
+            type="button"
+            onClick={resetMineSelections}
+            className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            초기화
+          </button>
         </div>
       )}
 
