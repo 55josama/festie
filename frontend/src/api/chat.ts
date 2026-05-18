@@ -72,6 +72,11 @@ export const getAdminChatMessages = async (params: Record<string, any> = {}) => 
   return unwrapPageResponse<AdminMessageItem>(res.data)
 }
 
+export const getAdminChatMessage = async (messageId: string) => {
+  const res = await client.get(`/chat-service/v1/chat/admin/messages/${messageId}`)
+  return unwrap<AdminMessageItem>(res.data)
+}
+
 export const updateAdminChatMessageStatus = async (messageId: string, status: 'ACTIVE' | 'BLINDED') => {
   const res = await client.patch(`/chat-service/v1/chat/admin/messages/${messageId}/status`, { status })
   return unwrap<AdminMessageItem>(res.data)

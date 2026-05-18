@@ -339,14 +339,12 @@ export default function Community() {
                                     }}>
                                         이벤트
                                     </FilterChip>
-                                    {isAdmin && (
-                                        <FilterChip active={feedTab === 'requests' && requestKind === 'operation'} tone="rose" onClick={() => {
-                                            setFeedTab('requests')
-                                            setRequestKind('operation')
-                                        }}>
-                                            운영
-                                        </FilterChip>
-                                    )}
+                                    <FilterChip active={feedTab === 'requests' && requestKind === 'operation'} tone="rose" onClick={() => {
+                                        setFeedTab('requests')
+                                        setRequestKind('operation')
+                                    }}>
+                                        운영
+                                    </FilterChip>
                                 </>
                             )}
                         </div>

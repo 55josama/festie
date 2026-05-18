@@ -19,7 +19,7 @@ import {
     updateReportStatus,
 } from '../api/admin'
 import {createEvent, getEvent, updateEvent} from '../api/events'
-import {getAdminChatMessages, updateAdminChatMessageStatus} from '../api/chat'
+import {getAdminChatMessage, getAdminChatMessages, updateAdminChatMessageStatus} from '../api/chat'
 import {
     createCommunityCategory,
     createEventCategory,
@@ -54,6 +54,12 @@ const OPERATION_STATUS_FILTERS = ['ALL', 'PENDING', 'IN_PROGRESS', 'RESOLVED', '
 const CHAT_STATUS_FILTERS = ['ALL', 'SCHEDULED', 'OPEN', 'CLOSED'] as const
 const USER_ROLE_FILTERS = ['ALL', 'USER', 'ADMIN', 'CONCERT_MANAGER', 'FESTIVAL_MANAGER', 'FANMEETING_MANAGER', 'POPUP_MANAGER', 'COMMUNITY_MANAGER'] as const
 const ADMIN_TABS = ['manage', 'reports', 'chat', 'users', 'blacklist'] as const
+const CHAT_ROOM_PAGE_SIZE = 3
+const MESSAGE_PAGE_SIZE = 5
+const CHAT_PAGE_WINDOW = 5
+const USER_PAGE_WINDOW = 10
+const BLACKLIST_PAGE_WINDOW = 10
+const MESSAGE_PAGE_WINDOW = 10
 const EVENT_CATEGORY_SCOPE: Record<string, string[]> = {
     ADMIN: [],
     CONCERT_MANAGER: ['\uCF58\uC11C\uD2B8'],
@@ -137,6 +143,8 @@ export default function Admin() {
     const [chatRoomPage, setChatRoomPage] = useState(0)
     const [messageStatus, setMessageStatus] = useState<'ALL' | 'ACTIVE' | 'BLINDED'>('ALL')
     const [messagePage, setMessagePage] = useState(0)
+    const [messageUuidQuery, setMessageUuidQuery] = useState('')
+    const [selectedAdminMessageId, setSelectedAdminMessageId] = useState<string | null>(null)
     const [reportPage, setReportPage] = useState(0)
     const [userSearchEmail, setUserSearchEmail] = useState('')
     const [userSearchName, setUserSearchName] = useState('')
@@ -393,7 +401,7 @@ export default function Admin() {
         queryKey: ['admin', 'chat-rooms', chatStatus, chatRoomPage, chatRoomScheduledFrom, chatRoomScheduledTo],
         queryFn: () => getAdminChatRooms({
             page: chatRoomPage,
-            size: 7,
+            size: CHAT_ROOM_PAGE_SIZE,
             scheduledOpenAtFrom: chatRoomScheduledFrom || undefined,
             scheduledOpenAtTo: chatRoomScheduledTo || undefined,
         }),
@@ -407,10 +415,21 @@ export default function Admin() {
         queryFn: () =>
             getAdminChatMessages({
                 page: messagePage,
-                size: 10,
+                size: MESSAGE_PAGE_SIZE,
                 status: messageStatus === 'ALL' ? undefined : messageStatus,
                 category: managedMessageCategory,
             }),
+    })
+
+    const {
+        data: selectedAdminMessage,
+        isFetching: isSelectedAdminMessageLoading,
+        error: selectedAdminMessageError,
+    } = useQuery({
+        queryKey: ['admin', 'message-detail', selectedAdminMessageId],
+        queryFn: () => getAdminChatMessage(selectedAdminMessageId ?? ''),
+        enabled: Boolean(selectedAdminMessageId),
+        retry: false,
     })
 
     const scopedEventRequests = useMemo(() => {
@@ -475,6 +494,19 @@ export default function Admin() {
         return operationRequests as OperationRequestItem[]
     }, [canViewOperationRequests, operationRequests])
 
+    const userTotalPages = Math.max(adminUsersPage.totalPages || 0, 1)
+    const userPageWindowStart = Math.floor(adminUsersPage.page / USER_PAGE_WINDOW) * USER_PAGE_WINDOW
+    const userVisiblePageIndexes = Array.from(
+        { length: Math.min(USER_PAGE_WINDOW, userTotalPages - userPageWindowStart) },
+        (_, index) => userPageWindowStart + index,
+    )
+    const blacklistTotalPages = Math.max(blacklistPageData.totalPages || 0, 1)
+    const blacklistPageWindowStart = Math.floor(blacklistPageData.page / BLACKLIST_PAGE_WINDOW) * BLACKLIST_PAGE_WINDOW
+    const blacklistVisiblePageIndexes = Array.from(
+        { length: Math.min(BLACKLIST_PAGE_WINDOW, blacklistTotalPages - blacklistPageWindowStart) },
+        (_, index) => blacklistPageWindowStart + index,
+    )
+
     const groupedReports = useMemo(() => {
         const groups = new Map<string, {
                 targetId: string
@@ -538,7 +570,12 @@ export default function Admin() {
     const messageMutation = useMutation({
         mutationFn: ({messageId, status}: { messageId: string; status: 'ACTIVE' | 'BLINDED' }) =>
             updateAdminChatMessageStatus(messageId, status),
-        onSuccess: () => queryClient.invalidateQueries({queryKey: ['admin', 'messages']}),
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({queryKey: ['admin', 'messages']}),
+                queryClient.invalidateQueries({queryKey: ['admin', 'message-detail']}),
+            ])
+        },
     })
 
     const userRoleMutation = useMutation({
@@ -742,11 +779,32 @@ export default function Admin() {
 
     const adminMessages = adminMessagePage.content
     const messageTotalPages = Math.max(adminMessagePage.totalPages || 0, 1)
+    const chatRoomPageWindowStart = Math.floor(chatRoomPage / CHAT_PAGE_WINDOW) * CHAT_PAGE_WINDOW
+    const messagePageWindowStart = Math.floor(messagePage / MESSAGE_PAGE_WINDOW) * MESSAGE_PAGE_WINDOW
+    const chatRoomVisiblePageIndexes = Array.from(
+        { length: Math.min(CHAT_PAGE_WINDOW, chatRoomTotalPages - chatRoomPageWindowStart) },
+        (_, index) => chatRoomPageWindowStart + index,
+    )
+    const messageVisiblePageIndexes = Array.from(
+        { length: Math.min(MESSAGE_PAGE_WINDOW, messageTotalPages - messagePageWindowStart) },
+        (_, index) => messagePageWindowStart + index,
+    )
+    const handleOpenMessageDetail = () => {
+        const next = messageUuidQuery.trim()
+        if (!next) return
+        setSelectedAdminMessageId(next)
+    }
     useEffect(() => {
         if (chatRoomPage > 0 && chatRoomPage >= chatRoomTotalPages) {
             setChatRoomPage(0)
         }
     }, [chatRoomPage, chatRoomTotalPages])
+
+    useEffect(() => {
+        if (selectedAdminMessageId) {
+            setMessageUuidQuery(selectedAdminMessageId)
+        }
+    }, [selectedAdminMessageId])
 
     const lookupPlaceForDraft = async (setDraft: (patch: Partial<EventDraft>) => void) => {
         setAddressLookupLoading(true)
@@ -1728,13 +1786,13 @@ export default function Admin() {
                                 <button
                                     type="button"
                                     disabled={chatRoomPage === 0}
-                                    onClick={() => setChatRoomPage((prev) => Math.max(prev - 1, 0))}
+                                    onClick={() => setChatRoomPage((prev) => Math.max(prev - CHAT_PAGE_WINDOW, 0))}
                                     className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                                 >
                                     이전
                                 </button>
                                 <div className="flex items-center gap-1">
-                                    {Array.from({length: chatRoomTotalPages}, (_, index) => index).slice(0, 5).map((pageIndex) => (
+                                    {chatRoomVisiblePageIndexes.map((pageIndex) => (
                                         <button
                                             key={pageIndex}
                                             type="button"
@@ -1749,8 +1807,8 @@ export default function Admin() {
                                 </div>
                                 <button
                                     type="button"
-                                    disabled={chatRoomPage + 1 >= chatRoomTotalPages}
-                                    onClick={() => setChatRoomPage((prev) => prev + 1)}
+                                    disabled={chatRoomPage + CHAT_PAGE_WINDOW >= chatRoomTotalPages}
+                                    onClick={() => setChatRoomPage((prev) => Math.min(prev + CHAT_PAGE_WINDOW, chatRoomTotalPages - 1))}
                                     className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                                 >
                                     다음
@@ -1763,43 +1821,67 @@ export default function Admin() {
                             <SectionHeader
                                 title="메시지 모니터링"
                                 action={
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                void refetchAdminMessages()
-                                            }}
-                                            className="rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[9px] font-semibold text-slate-700 hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[10px]"
-                                        >
-                                            새로고침
-                                        </button>
-                                        <Pill
-                                            active={messageStatus === 'ALL'}
-                                            onClick={() => {
-                                                setMessageStatus('ALL')
-                                                setMessagePage(0)
-                                            }}
-                                        >
-                                            ALL
-                                        </Pill>
-                                        <Pill
-                                            active={messageStatus === 'ACTIVE'}
-                                            onClick={() => {
-                                                setMessageStatus('ACTIVE')
-                                                setMessagePage(0)
-                                            }}
-                                        >
-                                            ACTIVE
-                                        </Pill>
-                                        <Pill
-                                            active={messageStatus === 'BLINDED'}
-                                            onClick={() => {
-                                                setMessageStatus('BLINDED')
-                                                setMessagePage(0)
-                                            }}
-                                        >
-                                            BLINDED
-                                        </Pill>
+                                    <div className="flex w-full max-w-[760px] flex-col gap-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void refetchAdminMessages()
+                                                }}
+                                                className="rounded-full border border-[var(--line)] bg-white px-2 py-1 text-[9px] font-semibold text-slate-700 hover:bg-slate-50 md:px-2.5 md:py-1.5 md:text-[10px]"
+                                            >
+                                                새로고침
+                                            </button>
+                                            <Pill
+                                                active={messageStatus === 'ALL'}
+                                                onClick={() => {
+                                                    setMessageStatus('ALL')
+                                                    setMessagePage(0)
+                                                }}
+                                            >
+                                                ALL
+                                            </Pill>
+                                            <Pill
+                                                active={messageStatus === 'ACTIVE'}
+                                                onClick={() => {
+                                                    setMessageStatus('ACTIVE')
+                                                    setMessagePage(0)
+                                                }}
+                                            >
+                                                ACTIVE
+                                            </Pill>
+                                            <Pill
+                                                active={messageStatus === 'BLINDED'}
+                                                onClick={() => {
+                                                    setMessageStatus('BLINDED')
+                                                    setMessagePage(0)
+                                                }}
+                                            >
+                                                BLINDED
+                                            </Pill>
+                                        </div>
+                                        <div className="flex w-full items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-2">
+                                            <input
+                                                value={messageUuidQuery}
+                                                onChange={(e) => setMessageUuidQuery(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault()
+                                                        handleOpenMessageDetail()
+                                                    }
+                                                }}
+                                                placeholder="messageId UUID"
+                                                className="min-w-0 flex-1 bg-transparent text-[11px] outline-none"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleOpenMessageDetail}
+                                                disabled={!messageUuidQuery.trim()}
+                                                className="shrink-0 rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[10px] font-semibold text-[var(--accent)] disabled:opacity-40"
+                                            >
+                                                조회
+                                            </button>
+                                        </div>
                                     </div>
                                 }
                             />
@@ -1869,13 +1951,13 @@ export default function Admin() {
                                 <button
                                     type="button"
                                     disabled={messagePage === 0}
-                                    onClick={() => setMessagePage((prev) => Math.max(prev - 1, 0))}
+                                    onClick={() => setMessagePage((prev) => Math.max(prev - MESSAGE_PAGE_WINDOW, 0))}
                                     className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                                 >
                                     이전
                                 </button>
                                 <div className="flex items-center gap-1">
-                                    {Array.from({length: messageTotalPages}, (_, index) => index).map((pageIndex) => (
+                                    {messageVisiblePageIndexes.map((pageIndex) => (
                                         <button
                                             key={pageIndex}
                                             type="button"
@@ -1890,8 +1972,8 @@ export default function Admin() {
                                 </div>
                                 <button
                                     type="button"
-                                    disabled={messagePage + 1 >= messageTotalPages}
-                                    onClick={() => setMessagePage((prev) => prev + 1)}
+                                    disabled={messagePage + MESSAGE_PAGE_WINDOW >= messageTotalPages}
+                                    onClick={() => setMessagePage((prev) => Math.min(prev + MESSAGE_PAGE_WINDOW, messageTotalPages - 1))}
                                     className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                                 >
                                     다음
@@ -2013,13 +2095,13 @@ export default function Admin() {
                         <button
                             type="button"
                             disabled={adminUsersPage.page === 0}
-                            onClick={() => setUserPage((prev) => Math.max(prev - 1, 0))}
+                            onClick={() => setUserPage((prev) => Math.max(prev - USER_PAGE_WINDOW, 0))}
                             className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                         >
                             이전
                         </button>
                         <div className="flex items-center gap-1">
-                            {Array.from({length: Math.max(adminUsersPage.totalPages || 0, 1)}, (_, index) => index).map((pageIndex) => (
+                            {userVisiblePageIndexes.map((pageIndex) => (
                                 <button
                                     key={pageIndex}
                                     type="button"
@@ -2034,8 +2116,8 @@ export default function Admin() {
                         </div>
                         <button
                             type="button"
-                            disabled={adminUsersPage.page + 1 >= Math.max(adminUsersPage.totalPages || 0, 1)}
-                            onClick={() => setUserPage((prev) => prev + 1)}
+                            disabled={adminUsersPage.page + USER_PAGE_WINDOW >= userTotalPages}
+                            onClick={() => setUserPage((prev) => Math.min(prev + USER_PAGE_WINDOW, userTotalPages - 1))}
                             className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                         >
                             다음
@@ -2171,13 +2253,13 @@ export default function Admin() {
                         <button
                             type="button"
                             disabled={blacklistPageData.page === 0}
-                            onClick={() => setBlacklistPage((prev) => Math.max(prev - 1, 0))}
+                            onClick={() => setBlacklistPage((prev) => Math.max(prev - BLACKLIST_PAGE_WINDOW, 0))}
                             className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                         >
                             이전
                         </button>
                         <div className="flex items-center gap-1">
-                            {Array.from({length: Math.max(blacklistPageData.totalPages || 0, 1)}, (_, index) => index).map((pageIndex) => (
+                            {blacklistVisiblePageIndexes.map((pageIndex) => (
                                 <button
                                     key={pageIndex}
                                     type="button"
@@ -2192,14 +2274,100 @@ export default function Admin() {
                         </div>
                         <button
                             type="button"
-                            disabled={blacklistPageData.page + 1 >= Math.max(blacklistPageData.totalPages || 0, 1)}
-                            onClick={() => setBlacklistPage((prev) => prev + 1)}
+                            disabled={blacklistPageData.page + BLACKLIST_PAGE_WINDOW >= blacklistTotalPages}
+                            onClick={() => setBlacklistPage((prev) => Math.min(prev + BLACKLIST_PAGE_WINDOW, blacklistTotalPages - 1))}
                             className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
                         >
                             다음
                         </button>
                     </div>
                 </section>
+            )}
+
+            {selectedAdminMessageId && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-8"
+                    onClick={() => setSelectedAdminMessageId(null)}
+                >
+                    <div
+                        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.24)] md:p-6"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+                                    메시지 상세
+                                </div>
+                                <div className="mt-2 text-[22px] font-black tracking-tight text-slate-950">
+                                    {isSelectedAdminMessageLoading
+                                        ? '불러오는 중...'
+                                        : selectedAdminMessage?.writerNickname ?? '알 수 없음'}
+                                </div>
+                                <div className="mt-1 break-all text-sm text-slate-500">
+                                    {selectedAdminMessageId}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedAdminMessageId(null)}
+                                className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600"
+                            >
+                                닫기
+                            </button>
+                        </div>
+
+                        {selectedAdminMessageError ? (
+                            <div className="mt-5 rounded-[20px] border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                                메시지를 찾을 수 없어요.
+                            </div>
+                        ) : (
+                            <>
+                                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                                    <DetailField label="메시지 UUID" value={selectedAdminMessage?.messageId ?? selectedAdminMessageId}/>
+                                    <DetailField label="채팅방 UUID" value={selectedAdminMessage?.chatRoomId ?? '정보 없음'}/>
+                                    <DetailField label="작성자" value={selectedAdminMessage?.writerNickname ?? '정보 없음'}/>
+                                    <DetailField label="작성자 UUID" value={selectedAdminMessage?.userId ?? '정보 없음'}/>
+                                    <DetailField label="상태" value={selectedAdminMessage?.status ?? '정보 없음'}/>
+                                    <DetailField label="유형" value={selectedAdminMessage?.messageType ?? '정보 없음'}/>
+                                    <DetailField label="작성일" value={formatDateTime(selectedAdminMessage?.createdAt)}/>
+                                    <DetailField label="연결 행사" value={selectedAdminMessage?.eventId ?? '정보 없음'}/>
+                                </div>
+
+                                <div className="mt-5 rounded-[20px] border border-[var(--line)] bg-slate-50 p-4">
+                                    <div className="text-[11px] font-semibold text-slate-500">메시지 내용</div>
+                                    <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">
+                                        {selectedAdminMessage?.content ?? '내용 없음'}
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (!selectedAdminMessageId) return
+                                            messageMutation.mutate({messageId: selectedAdminMessageId, status: 'ACTIVE'})
+                                        }}
+                                        disabled={!selectedAdminMessageId}
+                                        className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40"
+                                    >
+                                        활성화
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (!selectedAdminMessageId) return
+                                            messageMutation.mutate({messageId: selectedAdminMessageId, status: 'BLINDED'})
+                                        }}
+                                        disabled={!selectedAdminMessageId}
+                                        className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-40"
+                                    >
+                                        블라인드
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
             )}
 
             {selectedUserId && (
