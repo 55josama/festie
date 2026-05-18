@@ -21,6 +21,8 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
   const [mineCategory, setMineCategory] = useState('전체')
   const [memoDrafts, setMemoDrafts] = useState<Record<string, string>>({})
   const { isLoggedIn } = useAuthStore()
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const [mobileMineWeekStart, setMobileMineWeekStart] = useState(() => startOfWeek(today))
 
   useEffect(() => {
     if (mode !== 'mine') return
@@ -154,6 +156,11 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
       return getMonthKey(date.getFullYear(), date.getMonth() + 1, date.getDate()) === selectedMineDateKey
     })
   }, [filteredMineCards, selectedMineDateKey])
+  const mobileWeekDays = useMemo(() => buildWeekDays(mobileMineWeekStart), [mobileMineWeekStart])
+  const mobileWeekKeys = useMemo(() => new Set(mobileWeekDays.map((day) => getMonthKey(day.year, day.month, day.day))), [mobileWeekDays])
+  const mobileWeekCards = useMemo(() => {
+    return filteredMineCards.filter((item: any) => mobileWeekKeys.has(getMonthKey(new Date(item.eventDate).getFullYear(), new Date(item.eventDate).getMonth() + 1, new Date(item.eventDate).getDate())))
+  }, [filteredMineCards, mobileWeekKeys])
 
   const currentMonthEvents = useMemo(() => {
     const seen = new Set<string>()
@@ -360,6 +367,80 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
       ) : mineTab === 'schedule' ? (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <section className="min-w-0 space-y-3 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+            {isMobile && (
+              <div className="rounded-[22px] border border-[var(--line)] bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-[16px] font-black tracking-tight text-slate-950">주간 달력</h3>
+                    <div className="mt-1 text-xs text-slate-500">내 일정 카드 위에서 이번 주를 먼저 볼 수 있어요.</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMobileMineWeekStart((prev) => shiftWeek(prev, -1))}
+                      className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileMineWeekStart(startOfWeek(today))}
+                      className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    >
+                      오늘
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileMineWeekStart((prev) => shiftWeek(prev, 1))}
+                      className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-7 gap-1.5">
+                  {mobileWeekDays.map((dayInfo) => {
+                    const key = getMonthKey(dayInfo.year, dayInfo.month, dayInfo.day)
+                    const saved = calendarByDay.get(key) ?? []
+                    const isSelected = selectedMineDay === dayInfo.day && year === dayInfo.year && month === dayInfo.month
+                    const isToday = today.getFullYear() === dayInfo.year && today.getMonth() + 1 === dayInfo.month && today.getDate() === dayInfo.day
+
+                    return (
+                      <button
+                        key={`${dayInfo.year}-${dayInfo.month}-${dayInfo.day}`}
+                        type="button"
+                        onClick={() => {
+                          if (year !== dayInfo.year) setYear(dayInfo.year)
+                          if (month !== dayInfo.month) setMonth(dayInfo.month)
+                          setSelectedMineDay(dayInfo.day)
+                        }}
+                        className={`flex min-h-[72px] flex-col items-center justify-between rounded-[18px] border px-2 py-2 text-center transition-colors ${
+                          isSelected
+                            ? 'border-[var(--accent)] bg-[var(--accent-soft)]'
+                            : 'border-[var(--line)] bg-white hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${
+                          isToday ? 'bg-[var(--accent)] text-white' : 'text-slate-800'
+                        }`}>
+                          {dayInfo.day}
+                        </div>
+                        <div className="text-[10px] font-semibold text-slate-500">
+                          {dayInfo.label}
+                        </div>
+                        <div className="text-[10px] font-semibold text-[var(--accent)]">
+                          {saved.length ? `${saved.length}개` : ' '}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="mt-2 text-[11px] font-semibold text-slate-500">
+                  이번 주 일정 {mobileWeekCards.length}개
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-[18px] font-black tracking-tight text-slate-950">내 일정 카드</h2>
@@ -396,14 +477,14 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                   return (
                     <div
                       key={item.id}
-                      className={`overflow-hidden rounded-[18px] border p-2.5 ${
+                      className={`overflow-hidden rounded-[18px] border p-2.5 ${isMobile ? 'py-2' : ''} ${
                         isEnded
                           ? 'border-[rgba(168,139,255,0.18)] bg-[linear-gradient(180deg,rgba(250,247,255,0.98),rgba(240,233,255,0.9))] opacity-95 shadow-[0_8px_20px_rgba(111,84,255,0.05)]'
                           : 'border-[rgba(168,139,255,0.24)] bg-[linear-gradient(180deg,rgba(247,243,255,0.99),rgba(236,229,255,0.92))] shadow-[0_10px_24px_rgba(111,84,255,0.08)]'
                       }`}
                     >
-                      <Link to={item.eventId ? `/events/${item.eventId}` : '#'} className="flex gap-2.5 rounded-[16px] p-1 transition-colors hover:bg-white/55">
-                        <div className="relative flex h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-[var(--accent-soft)] shadow-[0_0_0_1px_rgba(111,84,255,0.12)]">
+                      <Link to={item.eventId ? `/events/${item.eventId}` : '#'} className={`flex gap-2.5 rounded-[16px] p-1 transition-colors hover:bg-white/55 ${isMobile ? 'items-start' : ''}`}>
+                        <div className={`relative flex shrink-0 overflow-hidden rounded-[14px] bg-[var(--accent-soft)] shadow-[0_0_0_1px_rgba(111,84,255,0.12)] ${isMobile ? 'h-12 w-12' : 'h-14 w-14'}`}>
                           {item.event?.img ? (
                             <img src={item.event.img} alt={item.eventName} className="h-full w-full object-cover" />
                           ) : (
@@ -427,43 +508,44 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                               <div className="h-2.5 w-2.5 rounded-full bg-violet-300" aria-hidden="true" />
                             )}
                           </div>
-                          <div className="mt-0.5 truncate text-sm font-semibold text-slate-950">{item.eventName}</div>
-                          <div className="mt-0.5 text-[11px] text-slate-500">{formatDateTime(item.eventDate)}</div>
+                          <div className={`mt-0.5 truncate font-semibold text-slate-950 ${isMobile ? 'text-[13px]' : 'text-sm'}`}>{item.eventName}</div>
+                          <div className={`mt-0.5 text-slate-500 ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}>{formatDateTime(item.eventDate)}</div>
                           {memoValue && (
-                            <div className="mt-1 truncate text-[11px] font-medium text-slate-600">{memoValue}</div>
+                            <div className={`mt-1 truncate font-medium text-slate-600 ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}>{memoValue}</div>
                           )}
                         </div>
                       </Link>
 
-                      <div className="mt-2">
-                        <div className="text-[10px] font-semibold text-slate-500">메모</div>
-                        <input
-                          value={memoValue}
-                          onChange={(e) => setMemoDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                          placeholder="메모를 입력하세요"
-                          className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none ring-1 ring-transparent transition placeholder:text-slate-300 focus:border-[var(--accent)] focus:ring-[var(--accent-soft)]/60"
-                        />
-                      </div>
+                      <div className={`mt-2 grid gap-2 ${isMobile ? 'grid-cols-[auto_minmax(0,1fr)] items-center' : 'grid-cols-[88px_minmax(0,1fr)]'}`}>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => deleteMutation.mutate(item.id)}
+                            disabled={deleteMutation.isPending}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-[12px] font-semibold text-rose-600 disabled:opacity-70"
+                            aria-label="일정 삭제"
+                            title="일정 삭제"
+                          >
+                            ❌
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateMutation.mutate({ calendarId: item.id, memo: memoValue })}
+                            disabled={updateMutation.isPending}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-white text-[12px] font-semibold text-slate-700 disabled:opacity-70"
+                          >
+                            ✅
+                          </button>
+                        </div>
 
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => deleteMutation.mutate(item.id)}
-                        disabled={deleteMutation.isPending}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-[12px] text-rose-600 disabled:opacity-70"
-                        aria-label="일정 삭제"
-                        title="일정 삭제"
-                      >
-                        🗑
-                      </button>
-                        <button
-                          type="button"
-                          onClick={() => updateMutation.mutate({ calendarId: item.id, memo: memoValue })}
-                          disabled={updateMutation.isPending}
-                          className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700 disabled:opacity-70"
-                        >
-                          저장
-                        </button>
+                        <div className="min-w-0">
+                          <input
+                            value={memoValue}
+                            onChange={(e) => setMemoDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                            placeholder="메모를 입력하세요"
+                            className={`h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none ring-1 ring-transparent transition placeholder:text-slate-300 focus:border-[var(--accent)] focus:ring-[var(--accent-soft)]/60`}
+                          />
+                        </div>
                       </div>
                     </div>
                   )
@@ -584,9 +666,11 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
                         type="button"
                         onClick={() => deleteFavoriteMutation.mutate(item.favoriteId)}
                         disabled={deleteFavoriteMutation.isPending}
-                        className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700 disabled:opacity-70"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-[16px] font-semibold text-rose-600 transition-colors hover:bg-rose-100 disabled:opacity-70"
+                        aria-label="찜 취소"
+                        title="찜 취소"
                       >
-                        찜 취소
+                        ♥
                       </button>
                     </div>
                   ))
@@ -611,6 +695,33 @@ export default function Calendar({ mode }: { mode: 'all' | 'mine' }) {
       )}
     </div>
   )
+}
+
+function startOfWeek(date: Date) {
+  const next = new Date(date)
+  next.setDate(date.getDate() - date.getDay())
+  next.setHours(0, 0, 0, 0)
+  return next
+}
+
+function shiftWeek(date: Date, step: number) {
+  const next = new Date(date)
+  next.setDate(date.getDate() + step * 7)
+  next.setHours(0, 0, 0, 0)
+  return next
+}
+
+function buildWeekDays(start: Date) {
+  return Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date(start)
+    date.setDate(start.getDate() + index)
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+      label: ['일', '월', '화', '수', '목', '금', '토'][date.getDay()],
+    }
+  })
 }
 
 function shiftMonth(
@@ -719,4 +830,18 @@ function getMineStatusStyle(item: any) {
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
+
+  useEffect(() => {
+    const mediaQueryList = window.matchMedia(query)
+    const handleChange = () => setMatches(mediaQueryList.matches)
+    handleChange()
+    mediaQueryList.addEventListener('change', handleChange)
+    return () => mediaQueryList.removeEventListener('change', handleChange)
+  }, [query])
+
+  return matches
 }

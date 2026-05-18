@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getCategories } from '../api/community'
 import { getEvents, getTicketingEvents } from '../api/events'
 import { getPosts } from '../api/community'
 import { getPopularChatRooms } from '../api/chat'
+import { getCalendars } from '../api/calendar'
 import { formatDateRange } from '../lib/format'
 import { useAuthStore } from '../store/authStore'
-import { STATUS_LABEL, type Event, type Post } from '../types'
+import { formatDateTime } from '../lib/format'
+import { STATUS_LABEL, type CalendarEntry, type Event, type Post } from '../types'
 
 type HomeBanner = {
   id: string
@@ -44,9 +46,18 @@ const DEFAULT_HOME_BANNERS: HomeBanner[] = [
 ]
 
 export default function Home() {
-  const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const today = new Date()
+  const currentYear = today.getFullYear()
+  const currentMonth = today.getMonth() + 1
+  const { user, isLoggedIn } = useAuthStore()
   const { data: allEvents = [] } = useQuery({ queryKey: ['events', 'home'], queryFn: () => getEvents({ size: 100 }) })
   const { data: ticketingEvents = [] } = useQuery({ queryKey: ['events', 'ticketing'], queryFn: getTicketingEvents })
+  const { data: myCalendars = [] } = useQuery({
+    queryKey: ['calendars', 'home', currentYear, currentMonth],
+    queryFn: () => getCalendars(currentYear, currentMonth),
+    enabled: isLoggedIn(),
+  })
   const { data: bannerOngoingEvents = [] } = useQuery({
     queryKey: ['events', 'banner', 'ongoing'],
     queryFn: () => getEvents({ size: 1, page: 0, status: 'IN_PROGRESS', sort: 'startAt,asc' }),
@@ -66,6 +77,7 @@ export default function Home() {
   const [upcomingPage, setUpcomingPage] = useState(0)
   const [ongoingPage, setOngoingPage] = useState(0)
   const [ticketingPage, setTicketingPage] = useState(0)
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('')
   const homeSectionPageSize = 3
   const displayBanners = useMemo(() => {
     return [
@@ -126,6 +138,22 @@ export default function Home() {
   const categoryNameById = useMemo(() => {
     return new Map((categories as any[]).map((category: any) => [category.id, category.name]))
   }, [categories])
+  const mobileFeaturedEvents = useMemo(
+    () => [...upcomingEvents, ...ongoingEvents, ...upcomingTicketing].slice(0, 4),
+    [ongoingEvents, upcomingEvents, upcomingTicketing],
+  )
+  const mobilePopularPosts = useMemo(() => featuredPosts.slice(0, 3), [featuredPosts])
+  const mobilePopularRooms = useMemo(() => (popularRooms as any[]).slice(0, 3), [popularRooms])
+  const mobileMyCalendarItems = useMemo(() => {
+    const eventById = new Map((allEvents as Event[]).map((event) => [event.id, event]))
+    return [...(myCalendars as CalendarEntry[])]
+      .sort((a, b) => String(a.eventDate ?? '').localeCompare(String(b.eventDate ?? '')))
+      .map((item) => ({
+        ...item,
+        event: eventById.get(item.eventId) ?? null,
+      }))
+      .slice(0, 3)
+  }, [allEvents, myCalendars])
   const upcomingPages = Math.max(1, Math.ceil(upcomingEvents.length / homeSectionPageSize))
   const ongoingPages = Math.max(1, Math.ceil(ongoingEvents.length / homeSectionPageSize))
   const ticketingPages = Math.max(1, Math.ceil(upcomingTicketing.length / homeSectionPageSize))
@@ -145,8 +173,173 @@ export default function Home() {
     if (ticketingPage > ticketingPages - 1) setTicketingPage(Math.max(ticketingPages - 1, 0))
   }, [ticketingPage, ticketingPages])
 
+  const submitMobileSearch = () => {
+    const next = mobileSearchQuery.trim()
+    if (!next) return
+    navigate(`/events?query=${encodeURIComponent(next)}`)
+  }
+
   return (
-    <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
+    <div className="space-y-6 px-4 py-4 pb-24 sm:px-5 md:px-8 md:py-7 md:pb-7">
+      <div className="space-y-5 md:hidden">
+        <section className="rounded-[32px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+          <div className="space-y-1.5">
+            <div className="text-[22px] font-black leading-tight tracking-tight text-slate-950">
+              당신의 모든 특별한 순간을 연결하다
+            </div>
+            <div className="text-[12px] leading-5 text-slate-500">
+              찾으시는 행사나 주제를 검색해보세요!
+            </div>
+          </div>
+
+          <div className="mt-2 flex justify-end">
+            <div className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-500">
+              추천 검색어: 콘서트, 축제
+            </div>
+          </div>
+
+          <label className="mt-4 flex items-center gap-2 rounded-full border border-[var(--line)] bg-slate-50 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+            <span className="text-[16px] text-slate-400">⌕</span>
+            <input
+              value={mobileSearchQuery}
+              onChange={(e) => setMobileSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  submitMobileSearch()
+                }
+              }}
+              placeholder="행사, 아티스트, 장소 검색"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+            />
+            <button
+              type="button"
+              onClick={submitMobileSearch}
+              className="rounded-full bg-[var(--accent-soft)] px-3 py-2 text-xs font-semibold text-[var(--accent)]"
+            >
+              검색
+            </button>
+          </label>
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[18px] font-black tracking-tight text-slate-950">추천 행사</h2>
+              <p className="mt-1 text-xs text-slate-500">지금 가장 먼저 볼 행사들이에요.</p>
+            </div>
+            <Link to="/events" className="text-sm font-medium text-[var(--accent)]">
+              전체보기
+            </Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none]">
+            {mobileFeaturedEvents.length ? (
+              mobileFeaturedEvents.map((event) => (
+                <MobileEventCard key={event.id} event={event} />
+              ))
+            ) : (
+              <div className="w-full rounded-[24px] border border-dashed border-[var(--line)] bg-white px-4 py-8 text-center text-sm text-slate-500">
+                아직 보여줄 행사가 없어요.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[18px] font-black tracking-tight text-slate-950">내 일정</h2>
+              <p className="mt-1 text-xs text-slate-500">내가 추가한 나의 캘린더를 먼저 보여줘요.</p>
+            </div>
+            <Link to="/my/calendars" className="text-sm font-medium text-[var(--accent)]">
+              내 캘린더
+            </Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {isLoggedIn() ? (
+              mobileMyCalendarItems.length ? (
+                mobileMyCalendarItems.map((item) => (
+                  <MobileCalendarRow key={item.id} item={item} />
+                ))
+              ) : (
+                <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                  아직 추가한 일정이 없어요.
+                </div>
+              )
+            ) : (
+              <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                로그인하면 내가 추가한 일정이 보여요.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[18px] font-black tracking-tight text-slate-950">실시간 커뮤니티</h2>
+              <p className="mt-1 text-xs text-slate-500">인기글을 빠르게 훑어봐요.</p>
+            </div>
+            <Link to="/community" className="text-sm font-medium text-[var(--accent)]">
+              더 보기
+            </Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {mobilePopularPosts.length ? (
+              mobilePopularPosts.map((post) => (
+                <PostRow
+                  key={post.id}
+                  post={post}
+                  categoryLabel={categoryNameById.get(post.categoryId) ?? post.categoryName}
+                />
+              ))
+            ) : (
+              <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                아직 인기글이 없어요.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[18px] font-black tracking-tight text-slate-950">실시간 인기 채팅방</h2>
+              <p className="mt-1 text-xs text-slate-500">지금 사람들이 많이 보고 있어요.</p>
+            </div>
+            <Link to="/events" className="text-sm font-medium text-[var(--accent)]">
+              이동
+            </Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {mobilePopularRooms.length ? (
+              mobilePopularRooms.map((room) => (
+                <Link
+                  key={room.chatRoomId}
+                  to={`/events/${room.eventId}`}
+                  className="block rounded-[20px] border border-[var(--line)] bg-slate-50 px-4 py-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-semibold text-[var(--accent)]">{room.category}</div>
+                      <div className="mt-1 truncate text-sm font-semibold text-slate-950">{room.eventName}</div>
+                    </div>
+                    <div className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                      {room.currentViewerCount ?? 0}명
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                아직 인기 채팅방이 없어요.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <div className="hidden space-y-6 md:block">
       <section className="rounded-[24px] border border-[var(--line)] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-3">
@@ -468,6 +661,7 @@ export default function Home() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
@@ -685,6 +879,76 @@ function EmptyOngoingState() {
         현재 열려 있는 행사가 생기면 여기서 바로 보여드릴게요.
       </p>
     </div>
+  )
+}
+
+function MobileEventCard({ event }: { event: Event }) {
+  const chipClass = categoryChipClass(event.categoryName)
+  return (
+    <Link
+      to={`/events/${event.id}`}
+      className="w-[72vw] max-w-[290px] shrink-0 overflow-hidden rounded-[22px] border border-[var(--line)] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]"
+    >
+      <div className="relative aspect-[4/5] overflow-hidden bg-slate-100">
+        {event.img ? (
+          <img src={event.img} alt={event.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#d7ccff] via-[#efe9ff] to-[#ffe4f0]" />
+        )}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0)_36%,rgba(15,23,42,0.68)_100%)]" />
+        <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${chipClass}`}>{displayEventCategoryLabel(event.categoryName)}</span>
+          <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-slate-700">
+            {STATUS_LABEL[event.status] ?? event.status}
+          </span>
+        </div>
+        <div className="absolute inset-x-3 bottom-3 space-y-1 text-white">
+          <div className="text-[15px] font-black leading-5 tracking-tight drop-shadow-[0_1px_6px_rgba(15,23,42,0.55)]">
+            {event.name}
+          </div>
+          <div className="text-[11px] leading-4 text-white/90 drop-shadow-[0_1px_4px_rgba(15,23,42,0.4)]">
+            {formatDateRange(event.startAt, event.endAt)}
+          </div>
+          <div className="truncate text-[11px] leading-4 text-white/80 drop-shadow-[0_1px_4px_rgba(15,23,42,0.35)]">
+            {event.place}
+          </div>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+function MobileCalendarRow({
+  item,
+}: {
+  item: CalendarEntry & { event: Event | null }
+}) {
+  const categoryLabel = item.event ? displayEventCategoryLabel(item.event.categoryName) : '일정'
+  const memo = String(item.memo ?? '').trim()
+
+  return (
+    <Link
+      to={item.eventId ? `/events/${item.eventId}` : '/my/calendars'}
+      className="flex items-center gap-3 rounded-[20px] border border-[var(--line)] bg-slate-50 px-3 py-3 transition-colors hover:bg-white"
+    >
+      <div className="flex h-14 w-14 shrink-0 overflow-hidden rounded-[16px] bg-[var(--accent-soft)]">
+        {item.event?.img ? (
+          <img src={item.event.img} alt={item.eventName} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-center text-[10px] font-semibold text-[var(--accent)]">
+            {item.eventName.slice(0, 4) || '일정'}
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500">{categoryLabel}</span>
+          <span className="text-[10px] text-slate-400">{formatDateTime(item.eventDate)}</span>
+        </div>
+        <div className="mt-1 truncate text-sm font-semibold text-slate-950">{item.eventName}</div>
+        <div className="mt-0.5 truncate text-[11px] text-slate-500">{memo || '메모 없음'}</div>
+      </div>
+    </Link>
   )
 }
 
