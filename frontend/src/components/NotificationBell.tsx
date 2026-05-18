@@ -38,7 +38,7 @@ function BellIcon() {
 }
 
 export default function NotificationBell({ variant }: NotificationBellProps) {
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const isDesktop = useMediaQuery('(min-width: 960px)')
   const shouldRender = variant === 'desktop' ? isDesktop : !isDesktop
   const user = useAuthStore((state) => state.user)
   const accessToken = useAuthStore((state) => state.accessToken)
@@ -235,7 +235,7 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
           className={`fixed z-[70] overflow-hidden rounded-[24px] border border-[var(--line)] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)] ${
             variant === 'desktop'
               ? 'right-4 top-16 w-[min(92vw,380px)]'
-              : 'left-2 right-2 top-16 w-auto'
+              : 'right-3 top-16 w-[min(84vw,320px)] max-h-[72vh]'
           }`}
         >
           <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-950 to-slate-800 px-4 py-3 text-white">
@@ -257,7 +257,7 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
             </button>
           </div>
 
-          <div className="bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] px-4 py-3">
+          <div className="max-h-[calc(72vh-64px)] overflow-y-auto bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] px-4 py-3">
             <div className="flex items-center justify-between gap-2">
               <div className="text-[12px] font-semibold text-slate-500">받은 알림 {notifications.length}건</div>
               <div className="flex items-center gap-2">

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-sm: 60rem;
+  --breakpoint-md: 60rem;
+  --breakpoint-lg: 60rem;
+}
+
 :root {
   --page-bg: #fcfbff;
   --line: #e2d9f5;

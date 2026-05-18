@@ -11,7 +11,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   }`
 
 const mobileNavClass = ({ isActive }: { isActive: boolean }) =>
-  `flex flex-1 flex-col items-center justify-center gap-1 rounded-[18px] px-2 py-2 text-[11px] font-semibold transition-colors ${
+  `flex flex-1 flex-col items-center justify-center gap-1 rounded-[16px] px-1.5 py-2 text-[10px] font-semibold transition-colors ${
     isActive
       ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -36,7 +36,7 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-white/92 backdrop-blur">
         <div className="flex flex-col gap-2 px-4 py-2.5">
-          <div className="flex items-center justify-between gap-4 lg:hidden">
+          <div className="flex items-center justify-between gap-4 min-[60rem]:hidden">
             <Link to="/" className="flex shrink-0 items-center whitespace-nowrap text-[22px] font-black leading-none tracking-tight text-slate-950">
               <span>Fest</span><span className="text-[var(--accent)]">ie</span>
             </Link>
@@ -44,13 +44,20 @@ export default function Header() {
             <div className="flex shrink-0 items-center gap-2">
               {user ? (
                 <>
-                  <NotificationBell variant="mobile" />
                   <Link
                     to="/my"
                     className="inline-flex items-center rounded-full border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                   >
-                    내 정보
+                    {user.nickname}
                   </Link>
+                  <NotificationBell variant="mobile" />
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-full bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-white"
+                  >
+                    로그아웃
+                  </button>
                 </>
               ) : (
                 <Link to="/login" className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
@@ -60,7 +67,7 @@ export default function Header() {
             </div>
           </div>
 
-          <div className="relative hidden w-full items-center justify-between gap-6 lg:flex">
+          <div className="relative hidden w-full items-center justify-between gap-6 min-[60rem]:flex">
             <Link to="/" className="flex shrink-0 items-center whitespace-nowrap text-[22px] font-black leading-none tracking-tight text-slate-950">
               <span>Fest</span><span className="text-[var(--accent)]">ie</span>
             </Link>
@@ -68,7 +75,6 @@ export default function Header() {
             <nav className="absolute left-1/2 top-1/2 flex min-w-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-5 whitespace-nowrap">
               <NavLink to="/" end className={navClass}>홈</NavLink>
               <NavLink to="/events" className={navClass}>행사</NavLink>
-              <NavLink to="/calendar" className={navClass}>캘린더</NavLink>
               <NavLink to="/community" className={navClass}>커뮤니티</NavLink>
               <NavLink to="/notices" className={navClass}>공지</NavLink>
               {showMyNav && <NavLink to="/my/calendars" className={navClass}>MY</NavLink>}
@@ -109,8 +115,8 @@ export default function Header() {
         </div>
       </header>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--line)] bg-white/95 px-3 py-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-[520px] grid-cols-5 gap-2">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--line)] bg-white/95 px-3 py-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur min-[60rem]:hidden">
+        <div className="mx-auto grid max-w-[680px] grid-cols-5 gap-2">
           <NavLink to="/" end className={mobileNavClass}>
             <MobileIcon name="home" />
             <span>홈</span>
@@ -123,13 +129,13 @@ export default function Header() {
             <MobileIcon name="community" />
             <span>커뮤니티</span>
           </NavLink>
-          <NavLink to="/calendar" className={mobileNavClass}>
-            <MobileIcon name="calendar" />
-            <span>캘린더</span>
+          <NavLink to="/notices" className={mobileNavClass}>
+            <MobileIcon name="notice" />
+            <span>공지</span>
           </NavLink>
-          <NavLink to={user ? '/my/calendars' : '/login'} className={mobileNavClass}>
-            <MobileIcon name="user" />
-            <span>{user ? 'MY' : '로그인'}</span>
+          <NavLink to={user ? (isManager ? '/admin' : '/my/calendars') : '/login'} className={mobileNavClass}>
+            <MobileIcon name={user ? (isManager ? 'admin' : 'user') : 'user'} />
+            <span>{user ? (isManager ? '관리' : 'MY') : '로그인'}</span>
           </NavLink>
         </div>
       </nav>
@@ -137,7 +143,7 @@ export default function Header() {
   )
 }
 
-function MobileIcon({ name }: { name: 'home' | 'search' | 'community' | 'calendar' | 'admin' | 'user' }) {
+function MobileIcon({ name }: { name: 'home' | 'search' | 'community' | 'calendar' | 'admin' | 'user' | 'notice' }) {
   const common = 'h-4.5 w-4.5'
 
   switch (name) {
@@ -175,6 +181,15 @@ function MobileIcon({ name }: { name: 'home' | 'search' | 'community' | 'calenda
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2 4.5 6v6.5c0 4.6 3 7.9 7.5 9 4.5-1.1 7.5-4.4 7.5-9V6L12 2Z" />
           <path d="M9.5 12.2 11.2 14l3.3-3.5" />
+        </svg>
+      )
+    case 'notice':
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 5.5h16v13H4z" />
+          <path d="M7 9h10" />
+          <path d="M7 12h10" />
+          <path d="M7 15h6" />
         </svg>
       )
     case 'user':

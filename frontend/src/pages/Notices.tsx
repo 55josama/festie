@@ -20,22 +20,32 @@ export default function Notices() {
 
   return (
     <div className="space-y-4 px-5 py-5 md:px-8 md:py-7">
-      <section className="rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)] md:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">공지</div>
-            <h1 className="mt-3 text-[24px] font-black tracking-tight text-slate-950">Festie 공지사항</h1>
-            <p className="mt-1 text-sm text-slate-500">운영팀 공지를 목록 형태로 확인해보세요.</p>
+      <section className="overflow-hidden rounded-[28px] border border-[var(--line)] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+        <div className="relative min-h-[220px] md:min-h-[280px]">
+          <img
+            src="/notice-hero.png"
+            alt="공지사항 히어로"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.70)_42%,rgba(255,255,255,0.20)_100%)]" />
+          <div className="relative z-10 flex h-full min-h-[220px] flex-col justify-between p-5 md:min-h-[280px] md:p-8">
+            <div className="flex justify-end">
+              {canWriteNotice && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/notices/new')}
+                  className="rounded-full bg-white/85 px-4 py-2 text-xs font-semibold text-[var(--accent)] shadow-[0_4px_14px_rgba(15,23,42,0.05)] backdrop-blur-sm hover:bg-white"
+                >
+                  공지 작성
+                </button>
+              )}
+            </div>
+            <div className="max-w-[540px]">
+              <h1 className="text-[30px] font-black tracking-tight text-slate-950 md:text-[36px]">
+                공지사항
+              </h1>
+            </div>
           </div>
-          {canWriteNotice && (
-            <button
-              type="button"
-              onClick={() => navigate('/notices/new')}
-              className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-xs font-semibold text-[var(--accent)] hover:bg-white"
-            >
-              공지 작성
-            </button>
-          )}
         </div>
       </section>
 

@@ -36,7 +36,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:eventId" element={<EventDetail />} />
-            <Route path="/calendar" element={<Calendar mode="all" />} />
+            <Route path="/calendar" element={<Navigate to="/" replace />} />
             <Route path="/community" element={<Community />} />
             <Route path="/community/new" element={<CommunityWrite />} />
             <Route path="/community/:postId/edit" element={<CommunityWrite />} />

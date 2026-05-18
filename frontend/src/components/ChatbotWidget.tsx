@@ -195,11 +195,11 @@ export default function ChatbotWidget() {
                 <button
                     type="button"
                     onClick={() => setOpen(true)}
-                    className="fixed bottom-24 right-4 z-[60] inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(15,23,42,0.24)] transition-transform hover:scale-[1.02] sm:bottom-4"
+                    className="fixed bottom-24 right-4 z-[60] inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(15,23,42,0.24)] transition-transform hover:scale-[1.02] lg:bottom-4"
                 >
                     <span
                         className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-base">AI</span>
-                    <span className="hidden sm:inline">Festie 챗봇</span>
+                    <span className="hidden lg:inline">Festie 챗봇</span>
                 </button>
             ) : (
                 <>
@@ -209,7 +209,7 @@ export default function ChatbotWidget() {
                         aria-hidden="true"
                     />
                     <div
-                        className="fixed bottom-24 right-4 z-[60] flex h-[600px] w-[min(92vw,420px)] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white/90 shadow-[0_24px_60px_rgba(15,23,42,0.24)] backdrop-blur-xl sm:bottom-4">
+                        className="fixed bottom-20 right-3 z-[60] flex h-[min(74vh,560px)] w-[min(88vw,380px)] flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white/90 shadow-[0_24px_60px_rgba(15,23,42,0.24)] backdrop-blur-xl min-[60rem]:bottom-4 min-[60rem]:right-4 min-[60rem]:h-[600px] min-[60rem]:w-[min(92vw,420px)]">
                     <div
                         className="flex items-start justify-between gap-3 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 px-4 py-3 text-white">
                         <div>
