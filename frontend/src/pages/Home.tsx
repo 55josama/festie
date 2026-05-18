@@ -7,7 +7,7 @@ import { getPosts } from '../api/community'
 import { getPopularChatRooms } from '../api/chat'
 import { formatDateRange } from '../lib/format'
 import { useAuthStore } from '../store/authStore'
-import type { Event, Post } from '../types'
+import { STATUS_LABEL, type Event, type Post } from '../types'
 
 type HomeBanner = {
   id: string
@@ -18,22 +18,23 @@ type HomeBanner = {
 }
 
 const HOME_BANNER_STORAGE_KEY = 'festie-home-banners'
+const FIXED_NOTICE_BANNER: HomeBanner = {
+  id: 'banner-notice',
+  title: '공지사항',
+  link: '/notices',
+  imageUrl: '/banner-notice.svg',
+}
 const DEFAULT_HOME_BANNERS: HomeBanner[] = [
+  FIXED_NOTICE_BANNER,
   {
     id: 'banner-events',
-    title: '행사 바로가기',
+    title: '이 행사는 어때요?',
     link: '/events',
     imageUrl: '',
   },
   {
-    id: 'banner-requests',
-    title: '요청 글',
-    link: '/community?tab=requests&requestKind=event',
-    imageUrl: '',
-  },
-  {
     id: 'banner-popular',
-    title: '인기글',
+    title: '추천하는 행사!',
     link: '/community?tab=posts',
     imageUrl: '',
   },
@@ -51,6 +52,10 @@ export default function Home() {
   const [isBannerEditorOpen, setIsBannerEditorOpen] = useState(false)
   const [bannerDrafts, setBannerDrafts] = useState<HomeBanner[]>(DEFAULT_HOME_BANNERS)
   const [hasHydratedBanners, setHasHydratedBanners] = useState(false)
+  const [upcomingPage, setUpcomingPage] = useState(0)
+  const [ongoingPage, setOngoingPage] = useState(0)
+  const [ticketingPage, setTicketingPage] = useState(0)
+  const homeSectionPageSize = 3
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -67,8 +72,9 @@ export default function Home() {
           eventId: String((banner as HomeBanner).eventId ?? '').trim(),
         }))
         const fallback = DEFAULT_HOME_BANNERS.slice(0, 3)
-        setHomeBanners(normalized.length ? normalized : fallback)
-        setBannerDrafts(normalized.length ? normalized : fallback)
+        const merged = [FIXED_NOTICE_BANNER, ...normalized.slice(1, 3)]
+        setHomeBanners(merged.length ? merged : fallback)
+        setBannerDrafts(merged.length ? merged : fallback)
       }
     } catch {
       const fallback = DEFAULT_HOME_BANNERS.slice(0, 3)
@@ -82,7 +88,14 @@ export default function Home() {
     if (!hasHydratedBanners) return
     if (typeof window === 'undefined') return
     try {
-      window.localStorage.setItem(HOME_BANNER_STORAGE_KEY, JSON.stringify(homeBanners))
+      const lockedBanners = [
+        FIXED_NOTICE_BANNER,
+        ...homeBanners.slice(1, 3).map((banner, index) => ({
+          ...banner,
+          id: banner.id || `banner-${index + 1}`,
+        })),
+      ].slice(0, 3)
+      window.localStorage.setItem(HOME_BANNER_STORAGE_KEY, JSON.stringify(lockedBanners))
     } catch {
       // ignore storage failures
     }
@@ -93,7 +106,8 @@ export default function Home() {
     if (!allEvents.length) return
 
     let hasNextBannerChange = false
-    const nextBanners = homeBanners.map((banner) => {
+    const nextBanners = homeBanners.map((banner, index) => {
+      if (index === 0) return FIXED_NOTICE_BANNER
       if (banner.imageUrl.trim()) return banner
       if (banner.eventId?.trim()) {
         const eventImageUrl = suggestBannerImageUrl(`/events/${banner.eventId.trim()}`, allEvents as Event[])
@@ -116,10 +130,70 @@ export default function Home() {
 
   const featuredPosts = useMemo(() => pickRecentPopularPosts(posts as Post[], 24), [posts])
   const upcomingEvents = useMemo(() => getCurrentEventWindow(allEvents as Event[]), [allEvents])
+  const ongoingEvents = useMemo(() => getCurrentOngoingEventWindow(allEvents as Event[]), [allEvents])
   const upcomingTicketing = useMemo(() => getCurrentTicketingWindow(ticketingEvents as Event[]), [ticketingEvents])
+  const autoUpcomingBanner = useMemo(() => createAutoBannerFromEvents(upcomingEvents, '다가오는 행사'), [upcomingEvents])
+  const autoOngoingBanner = useMemo(() => createAutoBannerFromEvents(ongoingEvents, '진행중인 행사'), [ongoingEvents])
   const categoryNameById = useMemo(() => {
     return new Map((categories as any[]).map((category: any) => [category.id, category.name]))
   }, [categories])
+  const upcomingPages = Math.max(1, Math.ceil(upcomingEvents.length / homeSectionPageSize))
+  const ongoingPages = Math.max(1, Math.ceil(ongoingEvents.length / homeSectionPageSize))
+  const ticketingPages = Math.max(1, Math.ceil(upcomingTicketing.length / homeSectionPageSize))
+  const upcomingPageItems = useMemo(() => paginateItems(upcomingEvents, upcomingPage, homeSectionPageSize), [upcomingEvents, upcomingPage])
+  const ongoingPageItems = useMemo(() => paginateItems(ongoingEvents, ongoingPage, homeSectionPageSize), [ongoingEvents, ongoingPage])
+  const ticketingPageItems = useMemo(() => paginateItems(upcomingTicketing, ticketingPage, homeSectionPageSize), [upcomingTicketing, ticketingPage])
+
+  useEffect(() => {
+    if (upcomingPage > upcomingPages - 1) setUpcomingPage(Math.max(upcomingPages - 1, 0))
+  }, [upcomingPage, upcomingPages])
+
+  useEffect(() => {
+    if (ongoingPage > ongoingPages - 1) setOngoingPage(Math.max(ongoingPages - 1, 0))
+  }, [ongoingPage, ongoingPages])
+
+  useEffect(() => {
+    if (ticketingPage > ticketingPages - 1) setTicketingPage(Math.max(ticketingPages - 1, 0))
+  }, [ticketingPage, ticketingPages])
+
+  useEffect(() => {
+    if (!hasHydratedBanners) return
+    if (!allEvents.length) return
+
+    setHomeBanners((prev) => {
+      const next = [...prev]
+      let changed = false
+
+      if (autoUpcomingBanner && shouldAutofillBannerSlot(next[1], DEFAULT_HOME_BANNERS[1])) {
+        next[1] = { ...autoUpcomingBanner, title: DEFAULT_HOME_BANNERS[1].title }
+        changed = true
+      }
+
+      if (autoOngoingBanner && shouldAutofillBannerSlot(next[2], DEFAULT_HOME_BANNERS[2])) {
+        next[2] = { ...autoOngoingBanner, title: DEFAULT_HOME_BANNERS[2].title }
+        changed = true
+      }
+
+      return changed ? next.slice(0, 3) : prev
+    })
+
+    setBannerDrafts((prev) => {
+      const next = [...prev]
+      let changed = false
+
+      if (autoUpcomingBanner && shouldAutofillBannerSlot(next[1], DEFAULT_HOME_BANNERS[1])) {
+        next[1] = { ...autoUpcomingBanner, title: DEFAULT_HOME_BANNERS[1].title }
+        changed = true
+      }
+
+      if (autoOngoingBanner && shouldAutofillBannerSlot(next[2], DEFAULT_HOME_BANNERS[2])) {
+        next[2] = { ...autoOngoingBanner, title: DEFAULT_HOME_BANNERS[2].title }
+        changed = true
+      }
+
+      return changed ? next.slice(0, 3) : prev
+    })
+  }, [allEvents, autoOngoingBanner, autoUpcomingBanner, hasHydratedBanners])
 
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
@@ -168,36 +242,76 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+      <section className="grid gap-6 xl:grid-cols-3">
         <div className="min-w-0 space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
           <SectionHeading
             title="다가오는 행사"
             action={<Link to="/calendar" className="text-sm font-medium text-[var(--accent)]">캘린더</Link>}
           />
-          {upcomingEvents.length ? (
+          {upcomingPageItems.length ? (
             <div className="space-y-3">
-              {upcomingEvents.slice(0, 6).map((event) => (
+              {upcomingPageItems.map((event) => (
                 <CompactEventRow key={event.id} event={event} />
               ))}
             </div>
           ) : (
             <EmptyEventState />
           )}
+          {upcomingEvents.length > homeSectionPageSize && (
+            <SectionPager
+              page={upcomingPage}
+              totalPages={upcomingPages}
+              onPrev={() => setUpcomingPage((prev) => Math.max(prev - 1, 0))}
+              onNext={() => setUpcomingPage((prev) => Math.min(prev + 1, upcomingPages - 1))}
+            />
+          )}
         </div>
 
-        <div className="min-w-0 space-y-4 rounded-[24px] border border-[var(--line)] bg-[#f7f5ff] p-4 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+        <div className="min-w-0 space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
+          <SectionHeading
+            title="진행중인 행사"
+            action={<Link to="/calendar?status=IN_PROGRESS" className="text-sm font-medium text-[var(--accent)]">더 보기</Link>}
+          />
+          {ongoingPageItems.length ? (
+            <div className="space-y-3">
+              {ongoingPageItems.map((event) => (
+                <CompactEventRow key={event.id} event={event} />
+              ))}
+            </div>
+          ) : (
+            <EmptyOngoingState />
+          )}
+          {ongoingEvents.length > homeSectionPageSize && (
+            <SectionPager
+              page={ongoingPage}
+              totalPages={ongoingPages}
+              onPrev={() => setOngoingPage((prev) => Math.max(prev - 1, 0))}
+              onNext={() => setOngoingPage((prev) => Math.min(prev + 1, ongoingPages - 1))}
+            />
+          )}
+        </div>
+
+        <div className="min-w-0 space-y-4 rounded-[24px] border border-[var(--line)] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.04)]">
           <SectionHeading
             title="곧 열리는 티켓팅"
             action={<Link to="/calendar" className="text-sm font-medium text-[var(--accent)]">더 보기</Link>}
           />
-          {upcomingTicketing.length ? (
+          {ticketingPageItems.length ? (
             <div className="space-y-3">
-              {upcomingTicketing.slice(0, 5).map((event) => (
+              {ticketingPageItems.map((event) => (
                 <TicketingRow key={event.id} event={event} />
               ))}
             </div>
           ) : (
             <EmptyTicketingState />
+          )}
+          {upcomingTicketing.length > homeSectionPageSize && (
+            <SectionPager
+              page={ticketingPage}
+              totalPages={ticketingPages}
+              onPrev={() => setTicketingPage((prev) => Math.max(prev - 1, 0))}
+              onNext={() => setTicketingPage((prev) => Math.min(prev + 1, ticketingPages - 1))}
+            />
           )}
         </div>
       </section>
@@ -266,34 +380,42 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="mt-5 grid gap-3">
-              {bannerDrafts.slice(0, 3).map((banner, index) => (
-                <div key={banner.id} className="rounded-[22px] border border-[var(--line)] bg-slate-50 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="text-sm font-semibold text-slate-700">배너 {index + 1}</div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? {
-                          ...item,
-                          eventId: '',
-                          title: '',
-                          link: '',
-                          imageUrl: '',
-                        } : item))
-                      }}
-                      className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[11px] font-semibold text-slate-500"
-                    >
-                      비우기
-                    </button>
-                  </div>
-                  <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1.2fr_1.6fr]">
-                    <input
-                      value={banner.eventId ?? ''}
-                      onChange={(e) => {
-                        const next = e.target.value.trim()
-                        setBannerDrafts((prev) => prev.map((item, idx) => {
-                          if (idx !== index) return item
+              <div className="mt-5 grid gap-3">
+                {bannerDrafts.slice(0, 3).map((banner, index) => (
+                  <div key={banner.id} className="rounded-[22px] border border-[var(--line)] bg-slate-50 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="text-sm font-semibold text-slate-700">배너 {index + 1}</div>
+                      {index === 0 ? (
+                        <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">
+                          고정
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? {
+                              ...item,
+                              eventId: '',
+                              title: '',
+                              link: '',
+                              imageUrl: '',
+                            } : item))
+                          }}
+                          className="rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[11px] font-semibold text-slate-500"
+                        >
+                          비우기
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1.2fr_1.6fr]">
+                      <input
+                        value={banner.eventId ?? ''}
+                        disabled={index === 0}
+                        onChange={(e) => {
+                          if (index === 0) return
+                          const next = e.target.value.trim()
+                          setBannerDrafts((prev) => prev.map((item, idx) => {
+                            if (idx !== index) return item
                           if (!next) {
                             return { ...item, eventId: '', link: '', imageUrl: '' }
                           }
@@ -305,25 +427,29 @@ export default function Home() {
                             imageUrl: suggestBannerImageUrl(eventLink, allEvents as Event[]) || item.imageUrl,
                           }
                         }))
-                      }}
-                      placeholder="이벤트 UUID"
-                      className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
-                    />
-                    <input
-                      value={banner.title}
-                      onChange={(e) => {
-                        const next = e.target.value
-                        setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? { ...item, title: next } : item))
-                      }}
-                      placeholder="배너 제목"
-                      className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
-                    />
-                    <input
-                      value={banner.link}
-                      onChange={(e) => {
-                        const next = e.target.value
-                        setBannerDrafts((prev) => prev.map((item, idx) => {
-                          if (idx !== index) return item
+                        }}
+                        placeholder="이벤트 UUID"
+                        className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                      />
+                      <input
+                        value={banner.title}
+                        disabled={index === 0}
+                        onChange={(e) => {
+                          if (index === 0) return
+                          const next = e.target.value
+                          setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? { ...item, title: next } : item))
+                        }}
+                        placeholder="배너 제목"
+                        className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                      />
+                      <input
+                        value={banner.link}
+                        disabled={index === 0}
+                        onChange={(e) => {
+                          if (index === 0) return
+                          const next = e.target.value
+                          setBannerDrafts((prev) => prev.map((item, idx) => {
+                            if (idx !== index) return item
                           const resolvedEventId = extractEventIdFromBannerLink(next)
                           const suggestedImageUrl = item.imageUrl.trim() ? item.imageUrl : suggestBannerImageUrl(next, allEvents as Event[])
                           return {
@@ -333,21 +459,23 @@ export default function Home() {
                             imageUrl: suggestedImageUrl || item.imageUrl,
                           }
                         }))
-                      }}
-                      placeholder="링크 주소"
-                      className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
-                    />
-                    <input
-                      value={banner.imageUrl}
-                      onChange={(e) => {
-                        const next = e.target.value
-                        setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? { ...item, imageUrl: next } : item))
-                      }}
-                      placeholder="이미지 주소"
-                      className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none"
-                    />
+                        }}
+                        placeholder="링크 주소"
+                        className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                      />
+                      <input
+                        value={banner.imageUrl}
+                        disabled={index === 0}
+                        onChange={(e) => {
+                          if (index === 0) return
+                          const next = e.target.value
+                          setBannerDrafts((prev) => prev.map((item, idx) => idx === index ? { ...item, imageUrl: next } : item))
+                        }}
+                        placeholder="이미지 주소"
+                        className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                      />
+                    </div>
                   </div>
-                </div>
               ))}
             </div>
 
@@ -373,7 +501,13 @@ export default function Home() {
                       eventId: String(banner.eventId ?? '').trim(),
                     }))
                     .filter((banner) => banner.title || banner.link || banner.imageUrl)
-                  setHomeBanners((nextBanners.length ? nextBanners : DEFAULT_HOME_BANNERS).slice(0, 3))
+                  const sourceBanners = nextBanners.length ? nextBanners : DEFAULT_HOME_BANNERS
+                  const mergedBanners = [
+                    FIXED_NOTICE_BANNER,
+                    ...sourceBanners.slice(1, 3),
+                  ].slice(0, 3)
+                  setHomeBanners(mergedBanners)
+                  setBannerDrafts(mergedBanners)
                   setIsBannerEditorOpen(false)
                 }}
                 className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white"
@@ -409,10 +543,41 @@ function pickRecentPopularPosts(posts: Post[], hours = 24) {
     .slice(0, 4)
 }
 
+function createAutoBannerFromEvents(events: Event[], fallbackTitle: string) {
+  const matchedEvent = events.find((event) => String(event.img ?? '').trim())
+  if (!matchedEvent) return null
+  const eventId = String(matchedEvent.id ?? '').trim()
+  if (!eventId) return null
+
+  return {
+    id: `banner-${eventId}`,
+    title: matchedEvent.name || fallbackTitle,
+    link: `/events/${eventId}`,
+    imageUrl: String(matchedEvent.img ?? '').trim(),
+    eventId,
+  } satisfies HomeBanner
+}
+
+function shouldAutofillBannerSlot(banner: HomeBanner | undefined, defaultBanner: HomeBanner) {
+  if (!banner) return true
+  const title = String(banner.title ?? '').trim()
+  const link = String(banner.link ?? '').trim()
+  const imageUrl = String(banner.imageUrl ?? '').trim()
+  const eventId = String(banner.eventId ?? '').trim()
+  return title === defaultBanner.title && link === defaultBanner.link && !imageUrl && !eventId
+}
+
+function paginateItems<T>(items: T[], page: number, pageSize: number) {
+  const safePage = Math.max(0, page)
+  const start = safePage * pageSize
+  return items.slice(start, start + pageSize)
+}
+
 function countdownLabel(dateValue?: string | null, mode: 'event' | 'ticketing' = 'event') {
   if (!dateValue) return mode === 'ticketing' ? '미정' : '진행중'
-  const diffDays = Math.ceil((new Date(dateValue).getTime() - startOfToday().getTime()) / 86400000)
+  const diffDays = dayDiffFromToday(dateValue)
   if (diffDays > 0) return `D-${diffDays}`
+  if (diffDays === 0) return mode === 'ticketing' ? '오픈중' : 'D-DAY'
   return mode === 'ticketing' ? '오픈중' : '진행중'
 }
 
@@ -423,6 +588,16 @@ function startOfToday() {
 
 function getCurrentEventWindow(events: Event[]) {
   return sortUpcomingEvents(events.filter((event) => isWithinDays(event.startAt, 7)))
+}
+
+function getCurrentOngoingEventWindow(events: Event[]) {
+  return [...events]
+    .filter((event) => event.status === 'IN_PROGRESS')
+    .sort((a, b) => {
+      const endDiff = String(a.endAt ?? '').localeCompare(String(b.endAt ?? ''))
+      if (endDiff !== 0) return endDiff
+      return String(a.startAt ?? '').localeCompare(String(b.startAt ?? ''))
+    })
 }
 
 function getCurrentTicketingWindow(events: Event[]) {
@@ -441,9 +616,15 @@ function isTicketingOpen(event: Event) {
 
 function isWithinDays(dateValue?: string | null, limit = 7) {
   if (!dateValue) return false
-  const target = new Date(dateValue)
-  const diffDays = Math.ceil((target.getTime() - startOfToday().getTime()) / 86400000)
+  const diffDays = dayDiffFromToday(dateValue)
   return diffDays >= 0 && diffDays <= limit
+}
+
+function dayDiffFromToday(dateValue: string) {
+  const target = new Date(dateValue)
+  if (Number.isNaN(target.getTime())) return -1
+  const targetStart = new Date(target.getFullYear(), target.getMonth(), target.getDate())
+  return Math.floor((targetStart.getTime() - startOfToday().getTime()) / 86400000)
 }
 
 function isUpcomingEvent(event: Event) {
@@ -459,6 +640,42 @@ function SectionHeading({ title, action }: { title: string; action?: ReactNode }
   )
 }
 
+function SectionPager({
+  page,
+  totalPages,
+  onPrev,
+  onNext,
+}: {
+  page: number
+  totalPages: number
+  onPrev: () => void
+  onNext: () => void
+}) {
+  return (
+    <div className="flex items-center justify-center gap-2 pt-1">
+      <button
+        type="button"
+        onClick={onPrev}
+        disabled={page <= 0}
+        className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+      >
+        이전
+      </button>
+      <div className="text-[11px] font-semibold text-slate-500">
+        {page + 1} / {totalPages}
+      </div>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={page >= totalPages - 1}
+        className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-40"
+      >
+        다음
+      </button>
+    </div>
+  )
+}
+
 function CompactEventRow({ event }: { event: Event }) {
   const chipClass = categoryChipClass(event.categoryName)
   return (
@@ -469,7 +686,7 @@ function CompactEventRow({ event }: { event: Event }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{displayEventCategoryLabel(event.categoryName)}</span>
-          <span className="text-[11px] text-slate-500">{event.status}</span>
+          <span className="text-[11px] text-slate-500">{STATUS_LABEL[event.status] ?? event.status}</span>
         </div>
         <div className="mt-2 truncate text-sm font-semibold text-slate-950">{event.name}</div>
         <div className="mt-1 truncate text-xs text-slate-500">
@@ -505,23 +722,36 @@ function EmptyTicketingState() {
   )
 }
 
+function EmptyOngoingState() {
+  return (
+    <div className="rounded-[20px] border border-dashed border-[#dcd6f6] bg-white/70 p-5">
+      <div className="text-sm font-semibold text-slate-900">진행중인 행사가 없네요!</div>
+      <p className="mt-1 text-sm leading-6 text-slate-500">
+        현재 열려 있는 행사가 생기면 여기서 바로 보여드릴게요.
+      </p>
+    </div>
+  )
+}
+
 function TicketingRow({ event }: { event: Event }) {
   const chipClass = categoryChipClass(event.categoryName)
   return (
     <Link
       to={`/events/${event.id}`}
-      className="block rounded-[18px] border border-[#dcd6f6] bg-gradient-to-br from-[#faf8ff] to-white px-4 py-3 hover:border-[var(--accent)]"
+      className="flex items-center justify-between gap-4 rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3 hover:bg-white"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{displayEventCategoryLabel(event.categoryName)}</div>
-          <div className="mt-1 truncate text-sm font-semibold text-slate-950">{event.name}</div>
-          <div className="mt-1 truncate text-xs text-slate-500">{formatDateRange(event.startAt, event.endAt)}</div>
-          <div className="mt-2 text-xs text-slate-500">{event.place}</div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${chipClass}`}>{displayEventCategoryLabel(event.categoryName)}</span>
+          <span className="text-[11px] text-slate-500">티켓팅</span>
         </div>
-        <div className="shrink-0 rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
-          {countdownLabel(event.ticketingOpenAt, 'ticketing')}
+        <div className="mt-2 truncate text-sm font-semibold text-slate-950">{event.name}</div>
+        <div className="mt-1 truncate text-xs text-slate-500">
+          {formatDateRange(event.startAt, event.endAt)} · {event.place}
         </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <div className="text-xs font-semibold text-[var(--accent)]">{countdownLabel(event.ticketingOpenAt, 'ticketing')}</div>
       </div>
     </Link>
   )

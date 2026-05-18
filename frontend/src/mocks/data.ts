@@ -14,7 +14,7 @@ export const mockEvents = [
     place: '여의도 한강공원', region: '서울', minFee: 0, maxFee: 0,
     hasTicketing: false, status: 'IN_PROGRESS',
     description: '여의도 한강공원에서 펼쳐지는 봄꽃 축제입니다.',
-    img: null, liked: true, chatRoomId: 'room-2',
+    img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80', liked: true, chatRoomId: 'room-2',
   },
   {
     id: '3', name: '아이돌 팬미팅 2026', categoryId: 'c3', categoryName: '팬미팅',
@@ -37,7 +37,7 @@ export const mockEvents = [
     startAt: '2026-06-15T17:00:00', endAt: '2026-06-15T23:00:00',
     place: '잠실종합운동장', region: '서울', minFee: 99000, maxFee: 99000,
     hasTicketing: true, ticketingOpenAt: '2026-05-16T20:00:00',
-    status: 'SCHEDULED', img: null, liked: false, chatRoomId: 'room-5',
+    status: 'SCHEDULED', img: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80', liked: false, chatRoomId: 'room-5',
   },
   {
     id: '6', name: '드림 팬미팅', categoryId: 'c3', categoryName: '팬미팅',
