@@ -164,12 +164,12 @@ export default function Home() {
       const next = [...prev]
       let changed = false
 
-      if (autoUpcomingBanner && shouldAutofillBannerSlot(next[1], DEFAULT_HOME_BANNERS[1])) {
+      if (autoUpcomingBanner) {
         next[1] = { ...autoUpcomingBanner, title: DEFAULT_HOME_BANNERS[1].title }
         changed = true
       }
 
-      if (autoOngoingBanner && shouldAutofillBannerSlot(next[2], DEFAULT_HOME_BANNERS[2])) {
+      if (autoOngoingBanner) {
         next[2] = { ...autoOngoingBanner, title: DEFAULT_HOME_BANNERS[2].title }
         changed = true
       }
@@ -181,12 +181,12 @@ export default function Home() {
       const next = [...prev]
       let changed = false
 
-      if (autoUpcomingBanner && shouldAutofillBannerSlot(next[1], DEFAULT_HOME_BANNERS[1])) {
+      if (autoUpcomingBanner) {
         next[1] = { ...autoUpcomingBanner, title: DEFAULT_HOME_BANNERS[1].title }
         changed = true
       }
 
-      if (autoOngoingBanner && shouldAutofillBannerSlot(next[2], DEFAULT_HOME_BANNERS[2])) {
+      if (autoOngoingBanner) {
         next[2] = { ...autoOngoingBanner, title: DEFAULT_HOME_BANNERS[2].title }
         changed = true
       }
@@ -556,15 +556,6 @@ function createAutoBannerFromEvents(events: Event[], fallbackTitle: string) {
     imageUrl: String(matchedEvent.img ?? '').trim(),
     eventId,
   } satisfies HomeBanner
-}
-
-function shouldAutofillBannerSlot(banner: HomeBanner | undefined, defaultBanner: HomeBanner) {
-  if (!banner) return true
-  const title = String(banner.title ?? '').trim()
-  const link = String(banner.link ?? '').trim()
-  const imageUrl = String(banner.imageUrl ?? '').trim()
-  const eventId = String(banner.eventId ?? '').trim()
-  return title === defaultBanner.title && link === defaultBanner.link && !imageUrl && !eventId
 }
 
 function paginateItems<T>(items: T[], page: number, pageSize: number) {
