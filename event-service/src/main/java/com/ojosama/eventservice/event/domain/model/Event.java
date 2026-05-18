@@ -17,6 +17,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -32,7 +33,12 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "p_event")
+@Table(name = "p_event", indexes = {
+        @Index(name = "idx_p_event_category_id", columnList = "category_id"),
+        @Index(name = "idx_p_event_status", columnList = "status"),
+        @Index(name = "idx_p_event_start_at", columnList = "start_at"),
+        @Index(name = "idx_p_event_deleted_at", columnList = "deleted_at")
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Event extends BaseUserEntity {
     @Id
