@@ -15,7 +15,8 @@ public record MessageResult(
         MessageType messageType,
         String content,
         MessageStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean locationVerified
 ) {
     private static final UUID SYSTEM_NOTICE_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
@@ -24,6 +25,10 @@ public record MessageResult(
     }
 
     public static MessageResult from(Message message, UUID eventId) {
+        return from(message, eventId, false);
+    }
+
+    public static MessageResult from(Message message, UUID eventId, boolean locationVerified) {
         return new MessageResult(
                 message.getId(),
                 message.getChatRoomId(),
@@ -33,7 +38,8 @@ public record MessageResult(
                 resolveMessageType(message),
                 message.getContent(),
                 message.getStatus(),
-                message.getCreatedAt()
+                message.getCreatedAt(),
+                locationVerified
         );
     }
 

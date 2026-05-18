@@ -14,7 +14,8 @@ public record MessageWsResponse(
         MessageType messageType,
         String content,
         MessageStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean locationVerified
 ) {
     public static MessageWsResponse from(MessageResult result) {
         return new MessageWsResponse(
@@ -25,7 +26,8 @@ public record MessageWsResponse(
                 result.messageType(),
                 result.content(),
                 result.status(),
-                result.createdAt()
+                result.createdAt(),
+                result.locationVerified()
         );
     }
 }

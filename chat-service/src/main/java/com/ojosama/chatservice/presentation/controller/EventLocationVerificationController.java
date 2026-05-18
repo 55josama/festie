@@ -10,6 +10,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,10 +28,12 @@ public class EventLocationVerificationController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<EventLocationVerificationResponse>> verifyLocation(
             @PathVariable UUID eventId,
+            @AuthenticationPrincipal String userId,
             @Valid @RequestBody VerifyEventLocationRequest request
     ) {
         var result = eventLocationVerificationService.verify(new VerifyEventLocationCommand(
                 eventId,
+                UUID.fromString(userId),
                 request.currentLatitude(),
                 request.currentLongitude()
         ));
