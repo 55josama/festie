@@ -82,6 +82,7 @@ type EventFormFieldErrorKey =
     | 'performer'
     | 'description'
     | 'img'
+    | 'form'
 
 type EventFormErrors = Partial<Record<EventFormFieldErrorKey, string>>
 
@@ -2749,6 +2750,8 @@ function mapEventFormErrors(message: string): EventFormErrors {
     if (/출연|아티스트|가수|performer/i.test(text)) errors.performer = text
     if (/이미지|사진/.test(text)) errors.img = text
     if (/반경/.test(text)) errors.radius = text
+    if (/수수료|금액/.test(text)) errors.form = text
+    if (!Object.keys(errors).length) errors.form = text
 
     return errors
 }
@@ -2790,6 +2793,7 @@ function EventCreatePanel({
     const canSubmit = hasPlace && hasCoordinates
     const scheduleCount = draft.schedules?.length ?? 0
     const mergedErrors = fieldErrors ?? {}
+    const formError = mergedErrors.form?.trim()
 
     return (
         <div className="w-full max-w-full overflow-x-hidden rounded-[22px] border border-[var(--line)] bg-white p-4">
@@ -2806,6 +2810,11 @@ function EventCreatePanel({
             </div>
 
             <div className="mt-4 grid gap-3 grid-cols-1 md:grid-cols-2">
+                {formError && (
+                    <div className="md:col-span-2 rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
+                        {formError}
+                    </div>
+                )}
                 <AdminInput
                     label="행사명"
                     value={draft.eventName}
