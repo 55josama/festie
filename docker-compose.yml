@@ -205,7 +205,7 @@ services:
       GIT_TOKEN: ${GIT_TOKEN}
       EUREKA_SERVER_URL: http://festie-eureka:8761/eureka/
     healthcheck:
-      test: [ "CMD-SHELL", "wget --spider -q --http-user=${CONFIG_USERNAME} --http-password=${CONFIG_PASSWORD} http://localhost:8888/actuator/health || exit 1" ]
+      test: [ "CMD-SHELL", "wget --spider -q --http-user=\"$$CONFIG_USERNAME\" --http-password=\"$$CONFIG_PASSWORD\" http://localhost:8888/actuator/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
