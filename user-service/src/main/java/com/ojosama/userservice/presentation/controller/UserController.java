@@ -12,6 +12,9 @@ import com.ojosama.userservice.presentation.dto.request.UpdateUserRequestDto;
 import com.ojosama.userservice.presentation.dto.response.CreateUserResponseDto;
 import com.ojosama.userservice.presentation.dto.response.GetUserResponseDto;
 import com.ojosama.userservice.presentation.dto.response.UpdateUserResponseDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +32,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/users")
+@Tag(name = "User", description = "회원 API")
 public class UserController {
+
 
     private final UserService userService;
 
     // 회원가입
     @PostMapping
+    @Operation(
+            summary = "회원가입",
+            description = "새로운 회원을 생성합니다."
+    )
+
     public ResponseEntity<ApiResponse<CreateUserResponseDto>> createUser(
             @Valid @RequestBody CreateUserRequestDto request
     ) {
@@ -48,6 +58,11 @@ public class UserController {
 
     // 내 정보 조회
     @GetMapping("/me")
+    @Operation(
+            summary = "내 정보 조회",
+            description = "로그인한 회원의 정보를 조회합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
     public ResponseEntity<ApiResponse<GetUserResponseDto>> getMyInfo(Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
@@ -59,6 +74,12 @@ public class UserController {
 
     // 내 정보 수정
     @PatchMapping("/me")
+    @Operation(
+            summary = "내 정보 수정",
+            description = "로그인한 회원의 정보를 수정합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+
     public ResponseEntity<ApiResponse<UpdateUserResponseDto>> updateMyInfo(
             Authentication authentication,
             @Valid @RequestBody UpdateUserRequestDto request
@@ -73,6 +94,11 @@ public class UserController {
 
     // 회원 탈퇴
     @DeleteMapping("/me")
+    @Operation(
+            summary = "회원 탈퇴",
+            description = "로그인한 회원을 탈퇴 처리합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
     public ResponseEntity<ApiResponse<Void>> deleteMyInfo(Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
