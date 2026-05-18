@@ -1,7 +1,5 @@
 package com.ojosama.post.infrastructure.cache;
 
-import com.ojosama.post.domain.exception.PostErrorCode;
-import com.ojosama.post.domain.exception.PostException;
 import com.ojosama.post.domain.repository.PostRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -37,13 +35,4 @@ public class PostViewCountExecutor {
         return true;
     }
 
-    // PostService 는 class-level readOnly 트랜잭션이라 직접 UPDATE 불가.
-    // REQUIRES_NEW 로 별도 쓰기 트랜잭션을 열어 fallback 처리.
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void incrementViewCountFallback(UUID postId) {
-        int affected = postRepository.incrementViewCount(postId);
-        if (affected == 0) {
-            throw new PostException(PostErrorCode.POST_NOT_FOUND);
-        }
-    }
 }

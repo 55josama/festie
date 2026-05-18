@@ -17,7 +17,6 @@ import com.ojosama.post.domain.exception.PostException;
 import com.ojosama.post.domain.model.Post;
 import com.ojosama.post.domain.model.PostStatus;
 import com.ojosama.post.domain.repository.PostRepository;
-import com.ojosama.post.infrastructure.cache.PostViewCountExecutor;
 import com.ojosama.post.infrastructure.cache.ViewCountCacheService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,6 @@ public class PostService {
     private final PostRepository postRepository;
     private final OutboxEventPublisher outbox;
     private final ViewCountCacheService viewCountCache;
-    private final PostViewCountExecutor postViewCountExecutor;
 
     @Value("${spring.kafka.topic.community-moderation-requested}")
     private String moderationRequestedTopic;
@@ -115,13 +113,13 @@ public class PostService {
         }
 
         // Write-Behind: Redis INCR 만 하고 DB flush 는 스케줄러가 일괄 처리.
-        // Redis 장애 시 fallback 으로 DB 직접 UPDATE.
-        // class-level readOnly 트랜잭션 안에서 UPDATE 하면 JPA 예외가 발생할 수 있어
-        // REQUIRES_NEW 로 분리된 executor 에 위임한다.
-        boolean cached = viewCountCache.increment(postId);
-        if (!cached) {
-            postViewCountExecutor.incrementViewCountFallback(postId);
-        }
+        // fallback(DB 직접 UPDATE)을 제거한 이유:
+        //   executePipelined() 예외는 INCR 명령이 서버에서 실행된 후 응답 수신에 실패한
+        //   경우(timeout 등)를 구분할 수 없다. 이 상태에서 fallback 을 실행하면
+        //   Redis 캐시 + DB 에 각각 +1 되어 동일 조회에 +2가 적용되는 이중 카운트가 발생한다.
+        //   조회수는 eventually consistent 가 허용되는 데이터이므로 Redis 장애 시
+        //   해당 요청의 카운트를 놓치더라도 서비스 정합성에 영향이 없다고 판단하여 일시적 허용으로.
+        viewCountCache.increment(postId);
 
         return adjustViewCountForResponse(post, 1);
     }
