@@ -10,6 +10,8 @@ import com.ojosama.eventservice.event.domain.event.payload.EventStatusChangedMes
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,6 +26,11 @@ public class EventScheduleActionExecutor {
     private final EventRepository eventRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "event", key = "#action.eventId"),
+            @CacheEvict(cacheNames = "event-all", allEntries = true),
+            @CacheEvict(cacheNames = "event-list", allEntries = true)
+    })
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processOne(EventScheduleAction action) {
         try {
