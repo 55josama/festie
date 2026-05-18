@@ -1,6 +1,8 @@
 package com.ojosama.eventservice.event.infrastructure.persistence;
 
 import com.ojosama.eventservice.event.domain.model.Event;
+import com.ojosama.eventservice.event.domain.exception.EventErrorCode;
+import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.EventStatus;
 import com.ojosama.eventservice.event.domain.model.QEvent;
 import com.ojosama.eventservice.event.domain.repository.EventFilter;
@@ -138,6 +140,9 @@ public class EventRepositoryImpl implements EventRepository {
             builder.and(event.eventTime.endAt.loe(filter.endAt()));
         }
         if (filter.year() != null && filter.month() != null) {
+            if (filter.month() < 1 || filter.month() > 12) {
+                throw new EventException(EventErrorCode.VALIDATION_ERROR);
+            }
             LocalDateTime start = LocalDateTime.of(filter.year(), filter.month(), 1, 0, 0);
             LocalDateTime end = start.plusMonths(1);
             builder.and(event.eventTime.startAt.goe(start).and(event.eventTime.startAt.lt(end)));

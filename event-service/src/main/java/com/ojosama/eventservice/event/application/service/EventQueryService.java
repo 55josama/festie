@@ -29,7 +29,7 @@ public class EventQueryService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = "event-list",
-            key = "(#command.category ?: 'all') + ':' + (#command.status?.name() ?: 'all') + ':' + (#command.year ?: 0) + ':' + (#command.month ?: 0) + ':' + #pageable.pageNumber + ':' + #pageable.pageSize",
+            key = "(#command.category ?: 'all') + ':' + (#command.status?.name() ?: 'all') + ':' + (#command.year ?: 0) + ':' + (#command.month ?: 0) + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort.toString()",
             condition = "#command.startAt == null && #command.endAt == null"
     )
     public Page<EventListResult> getEvents(EventListCommand command, Pageable pageable) {
