@@ -714,7 +714,6 @@ export default function EventDetail() {
                       key={msg.messageId}
                       message={msg}
                       me={user?.userId}
-                      locationVerified={locationVerified}
                       onDelete={(messageId) => deleteMessageMutation.mutate(messageId)}
                     />
                   ))}
@@ -1149,12 +1148,10 @@ function DetailMeta({ label, value }: { label: string; value: string }) {
 function MessageBubble({
   message,
   me,
-  locationVerified,
   onDelete,
 }: {
   message: any
   me?: string
-  locationVerified?: boolean
   onDelete?: (messageId: string) => void
 }) {
   const mine = me && message.userId === me
@@ -1170,7 +1167,7 @@ function MessageBubble({
     <div className={`flex flex-col gap-1 ${mine ? 'items-end' : 'items-start'}`}>
       <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
         <span>{message.writerNickname}</span>
-        {mine && locationVerified && (
+        {message.locationVerified && (
           <img
             src="/locationIcon.svg"
             alt=""
