@@ -90,17 +90,13 @@ public class ViewCountCacheService {
         try {
             String value = redis.opsForValue().get(viewKey(postId));
             return value != null ? Long.parseLong(value) : 0L;
-public long peek(UUID postId) {
-    try {
-        String value = redis.opsForValue().get(viewKey(postId));
-        return value != null ? Long.parseLong(value) : 0L;
-    } catch (NumberFormatException e) {
-        log.warn("[ViewCountCache] Redis 값 파싱 실패 postId={}", postId);
-        return 0L;
-    } catch (Exception e) {
-        throw new IllegalStateException("peek failed for postId=" + postId, e);
-    }
-}
+        } catch (NumberFormatException e) {
+            log.warn("[ViewCountCache] Redis 값 파싱 실패 postId={}", postId);
+            return 0L;
+        } catch (Exception e) {
+            log.error("[ViewCountCache] peek 실패 postId={}: {}", postId, e.getMessage());
+            return 0L;
+        }
     }
 
     /**
