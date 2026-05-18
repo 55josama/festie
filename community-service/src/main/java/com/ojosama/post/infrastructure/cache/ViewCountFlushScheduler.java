@@ -1,6 +1,5 @@
 package com.ojosama.post.infrastructure.cache;
 
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -11,11 +10,12 @@ import org.springframework.stereotype.Component;
 
 /**
  * Redis 에 쌓인 조회수를 주기적으로 DB 에 flush 하는 스케줄러.
- *
- * 흐름: peek(Redis 조회) → flushOne(DB UPDATE, REQUIRES_NEW) → resetBy(Redis 차감)
- * DB UPDATE 성공 후에 Redis 를 차감하므로 중간에 장애가 나도 조회수가 유실되지 않는다.
- * 전체 루프에 @Transactional 을 걸지 않고 flushOne 단위로 트랜잭션을 분리해,
- * 한 글 실패가 다른 글 flush 에 영향을 주지 않는다.
+ * 흐름: spopDirtyPostIds(SPOP) → peek → flushOne(DB UPDATE) → resetBy(Redis 차감)
+ * SMEMBERS 대신 SPOP 을 사용하는 이유:
+ *   멀티 인스턴스 환경에서 SMEMBERS 는 모든 인스턴스가 동일 postId 를 읽어
+ *   동일 delta 를 DB 에 중복 flush 할 수 있다. SPOP 은 pop 이 원자적이라
+ *   인스턴스 간 같은 postId 를 중복으로 처리하지 않는다.
+ * DB 실패 시: requeue() 로 dirty set 에 재등록 → 다음 주기에 재시도
  */
 @Slf4j
 @Component
@@ -30,32 +30,29 @@ public class ViewCountFlushScheduler {
 
     @Scheduled(fixedDelayString = "${community.view-count.flush-interval-ms:30000}")
     public void flush() {
-        Set<String> dirtyIds = viewCountCache.getDirtyPostIds();
-        if (dirtyIds.isEmpty()) {
+        // SPOP: 최대 batchSize 개를 원자적으로 꺼냄 (다른 인스턴스와 중복 없음)
+        Set<String> poppedIds = viewCountCache.spopDirtyPostIds(batchSize);
+        if (poppedIds.isEmpty()) {
             return;
         }
 
-        // 한 번에 처리할 글 수를 제한해 DB 락 점유 시간을 제어
-        List<String> batch = dirtyIds.stream()
-                .limit(batchSize)
-                .toList();
-
         int flushedCount = 0;
-        long totalDelta = 0L;
+        long totalDelta  = 0L;
 
-        for (String idStr : batch) {
+        for (String idStr : poppedIds) {
             UUID postId;
             try {
                 postId = UUID.fromString(idStr);
             } catch (IllegalArgumentException e) {
-                log.warn("[ViewCountFlush] 잘못된 UUID, dirty set 에서 제거: {}", idStr);
-                viewCountCache.removeInvalidEntry(idStr);
+                // 잘못된 UUID — SPOP 으로 이미 dirty set 에서 제거됐으므로 그냥 skip
+                log.warn("[ViewCountFlush] 잘못된 UUID, skip: {}", idStr);
                 continue;
             }
 
             try {
                 long delta = viewCountCache.peek(postId);
                 if (delta <= 0) {
+                    // 이미 다른 경로에서 처리됐거나 값이 없는 경우 — Redis 키만 정리
                     viewCountCache.discard(postId);
                     continue;
                 }
@@ -63,25 +60,24 @@ public class ViewCountFlushScheduler {
                 boolean updated = postViewCountExecutor.flushOne(postId, delta);
 
                 if (updated) {
+                    // DB UPDATE 성공 → Redis 에서 flush 한 만큼 차감 (INCR 잔여분 보존)
                     viewCountCache.resetBy(postId, delta);
                     flushedCount++;
                     totalDelta += delta;
                 } else {
-                    // affected=0: 글이 삭제된 케이스
+                    // affected=0: 글이 삭제된 경우 — Redis 키 정리, 재시도 불필요
                     viewCountCache.discard(postId);
                 }
 
             } catch (Exception e) {
-                // DB 장애 등 — dirty 유지, 다음 주기에 재시도
+                // DB 장애 등 — dirty set 에 재등록해 다음 주기에 재시도
                 log.error("[ViewCountFlush] flush 실패, 다음 주기 재시도 postId={}: {}", postId, e.getMessage());
+                viewCountCache.requeue(postId);
             }
         }
 
         if (flushedCount > 0) {
             log.info("[ViewCountFlush] {}개 글 flush 완료 (총 조회수 +{})", flushedCount, totalDelta);
-        }
-        if (dirtyIds.size() > batchSize) {
-            log.debug("[ViewCountFlush] dirty {}개 중 {}개 처리, 나머지 다음 주기", dirtyIds.size(), batch.size());
         }
     }
 }

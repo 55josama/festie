@@ -1,5 +1,6 @@
 package com.ojosama.post.infrastructure.cache;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -17,11 +18,19 @@ import org.springframework.stereotype.Component;
 public class ViewCountCacheService {
 
     private static final String VIEW_KEY_PREFIX = "post:views:";
-    private static final String DIRTY_SET_KEY   = "post:views:dirty";
+    private static final String DIRTY_SET_KEY = "post:views:dirty";
 
+    /**
+     * DECRBY + 조건부 SADD 를 원자적으로 실행하는 Lua 스크립트.
+     *
+     * SPOP 으로 dirty set 에서 이미 제거된 상태이므로 SREM 은 불필요.
+     * DECRBY 후 remaining > 0 이면 flush 중 새 INCR 가 들어온 것 → dirty set 에 재등록.
+     *
+     * KEYS[1] = viewKey(postId), KEYS[2] = DIRTY_SET_KEY
+     * ARGV[1] = flushed, ARGV[2] = postId string
+     */
     private static final RedisScript<Long> RESET_BY_LUA = RedisScript.of(
         "local remaining = redis.call('DECRBY', KEYS[1], ARGV[1])\n" +
-        "redis.call('SREM', KEYS[2], ARGV[2])\n" +
         "if tonumber(remaining) > 0 then\n" +
         "    redis.call('SADD', KEYS[2], ARGV[2])\n" +
         "end\n" +
@@ -50,14 +59,29 @@ public class ViewCountCacheService {
         }
     }
 
-    // 스케줄러가 flush 대상 ID 목록을 가져갈 때 사용
-    public Set<String> getDirtyPostIds() {
+    /**
+     * dirty set 에서 최대 count 개를 원자적으로 SPOP.
+     *
+     * SMEMBERS(읽기만) 대신 SPOP(꺼내기)를 사용하므로 멀티 인스턴스 환경에서
+     * 동일 postId 를 두 인스턴스가 중복 처리하는 문제를 방지한다.
+     */
+    public Set<String> spopDirtyPostIds(int count) {
         try {
-            Set<String> ids = redis.opsForSet().members(DIRTY_SET_KEY);
-            return ids != null ? ids : Set.of();
+            // Spring Data Redis 3.x 에서 pop(key, count) 는 List<V> 반환
+            List<String> popped = redis.opsForSet().pop(DIRTY_SET_KEY, count);
+            return popped != null ? new HashSet<>(popped) : Set.of();
         } catch (Exception e) {
-            log.error("[ViewCountCache] dirty set 조회 실패: {}", e.getMessage());
+            log.error("[ViewCountCache] dirty set SPOP 실패: {}", e.getMessage());
             return Set.of();
+        }
+    }
+
+    // DB 장애 등으로 flush 실패 시 다음 주기에 재시도할 수 있도록 dirty set 에 재등록
+    public void requeue(UUID postId) {
+        try {
+            redis.opsForSet().add(DIRTY_SET_KEY, postId.toString());
+        } catch (Exception e) {
+            log.warn("[ViewCountCache] requeue 실패 postId={}", postId);
         }
     }
 
@@ -77,8 +101,8 @@ public class ViewCountCacheService {
 
     /**
      * DB UPDATE 성공 후 flush 한 만큼만 차감 — Lua 스크립트로 원자 처리.
-     * peek~resetBy 사이에 들어온 INCR 는 그대로 남아 다음 주기에 반영됨.
-     * ex) peek=5 → DB +5 → 그 사이 INCR 2번 → resetBy(5) → Redis 잔여=2
+     * SPOP 으로 이미 dirty set 에서 제거된 상태이므로 SREM 은 없음.
+     * remaining > 0 이면 flush 중 새 INCR 가 들어온 것 → 자동으로 dirty 재등록.
      */
     public void resetBy(UUID postId, long flushed) {
         if (flushed <= 0) return;
@@ -93,22 +117,12 @@ public class ViewCountCacheService {
         }
     }
 
-    // 글 삭제 등으로 재시도가 불필요한 경우 카운터 키와 dirty 항목 모두 제거
+    // 글 삭제 등으로 재시도가 불필요한 경우 카운터 키 제거 (dirty set 은 SPOP 으로 이미 제거됨)
     public void discard(UUID postId) {
         try {
             redis.delete(viewKey(postId));
-            redis.opsForSet().remove(DIRTY_SET_KEY, postId.toString());
         } catch (Exception e) {
             log.warn("[ViewCountCache] discard 실패 postId={}", postId);
-        }
-    }
-
-    // dirty set 에 잘못된 UUID 형식이 들어온 경우 제거 (무한 재시도 방지)
-    public void removeInvalidEntry(String rawId) {
-        try {
-            redis.opsForSet().remove(DIRTY_SET_KEY, rawId);
-        } catch (Exception e) {
-            log.warn("[ViewCountCache] removeInvalidEntry 실패 rawId={}", rawId);
         }
     }
 
