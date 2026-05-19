@@ -57,6 +57,7 @@ const ADMIN_TABS = ['manage', 'reports', 'chat', 'users', 'blacklist'] as const
 const CHAT_ROOM_PAGE_SIZE = 3
 const MESSAGE_PAGE_SIZE = 5
 const CHAT_PAGE_WINDOW = 5
+const REPORT_PAGE_SIZE = 20
 const USER_PAGE_WINDOW = 10
 const BLACKLIST_PAGE_WINDOW = 10
 const MESSAGE_PAGE_WINDOW = 10
@@ -369,7 +370,7 @@ export default function Admin() {
         queryKey: ['admin', 'reports', reportStatus, reportPage],
         queryFn: () => getReports({
             page: reportPage,
-            size: 6,
+            size: REPORT_PAGE_SIZE,
             status: reportStatus === 'ALL' ? undefined : reportStatus,
         }),
         enabled: activeTab === 'reports',
@@ -514,10 +515,10 @@ export default function Admin() {
                 targetUserId?: string
                 targetContent?: string | null
                 reports: ReportItem[]
-            }>()
+        }>()
 
         ;(reportPageData.content as ReportItem[]).forEach((report) => {
-            const key = report.targetId ?? report.id
+            const key = normalizeReportGroupKey(report.targetId) ?? report.id
             const current = groups.get(key)
             const nextItem = {
                 targetId: report.targetId,
@@ -1420,7 +1421,9 @@ export default function Admin() {
                     <div className="space-y-3">
                         {groupedReports.map((group) => {
                             const hasAutoBlinded = group.reports.some((report) => report.status === 'AUTO_BLINDED')
-                            const targetStatus = hasAutoBlinded ? 'AUTO_BLINDED' : group.reports[0]?.status ?? 'PENDING'
+                            const reviewedStatus = group.reports.find((report) => report.status === 'RESOLVED' || report.status === 'REJECTED')?.status
+                            const targetStatus = reviewedStatus
+                                ?? (hasAutoBlinded ? 'AUTO_BLINDED' : group.reports[0]?.status ?? 'PENDING')
                             const blindLabel = '채팅 블라인드'
                             const targetUserId = group.targetUserId
                             const targetContent = group.targetContent
@@ -1454,9 +1457,11 @@ export default function Admin() {
                                                             ? 'bg-emerald-100 text-emerald-700'
                                                             : targetStatus === 'REJECTED'
                                                                 ? 'bg-slate-200 text-slate-700'
-                                                                : 'bg-slate-100 text-slate-600'
+                                                        : 'bg-slate-100 text-slate-600'
                                                 }`}>
-                                                    {labelReportStatus(targetStatus)}
+                                                    {targetStatus === 'RESOLVED' || targetStatus === 'REJECTED'
+                                                        ? `${targetStatus} · ${labelReportStatus(targetStatus)}`
+                                                        : labelReportStatus(targetStatus)}
                                                 </span>
                                                 <span
                                                     className="text-[11px] text-slate-500">{group.reports.length}건</span>
@@ -1486,6 +1491,20 @@ export default function Admin() {
                                                             <span>타겟 ID</span>
                                                             <span
                                                                 className="break-all font-semibold text-slate-700">{group.targetId ?? '정보 없음'}</span>
+                                                        </div>
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span>처리 상태</span>
+                                                            <span className={`break-all font-semibold ${
+                                                                targetStatus === 'RESOLVED'
+                                                                    ? 'text-emerald-700'
+                                                                    : targetStatus === 'REJECTED'
+                                                                        ? 'text-slate-700'
+                                                                        : targetStatus === 'AUTO_BLINDED'
+                                                                            ? 'text-rose-700'
+                                                                            : 'text-slate-700'
+                                                            }`}>
+                                                                {targetStatus}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -3551,6 +3570,17 @@ function labelReporterType(reporterType: string) {
     const normalized = String(reporterType ?? '').trim().toUpperCase()
     if (normalized === 'SYSTEM_AI') return 'AI 신고'
     return '사용자 신고'
+}
+
+function normalizeReportGroupKey(targetId: string | null | undefined) {
+    const raw = String(targetId ?? '').trim().toLowerCase()
+    if (!raw) return null
+    const uuidMatch = raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/)
+    if (uuidMatch?.[0]) {
+        return uuidMatch[0]
+    }
+    const uuidLike = raw.replace(/[^0-9a-f-]/g, '')
+    return uuidLike || raw
 }
 
 function labelReportFilter(value: string) {
