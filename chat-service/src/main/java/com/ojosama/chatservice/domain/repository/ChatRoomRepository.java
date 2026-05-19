@@ -20,6 +20,8 @@ public interface ChatRoomRepository {
 
     Page<ChatRoom> findAll(Pageable pageable);
 
+    Page<ChatRoom> findAllFiltered(ChatRoomStatus status, LocalDateTime scheduledOpenAtFrom, LocalDateTime scheduledOpenAtTo, Pageable pageable);
+
     List<ChatRoom> findAllByIds(Collection<UUID> ids);
 
     List<ChatRoom> findAllByStatus(ChatRoomStatus status);

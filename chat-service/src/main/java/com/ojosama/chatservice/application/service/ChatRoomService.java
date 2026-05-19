@@ -10,6 +10,7 @@ import com.ojosama.chatservice.application.dto.result.ChatRoomSummaryResult;
 import com.ojosama.chatservice.domain.exception.ChatErrorCode;
 import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.chatservice.domain.model.ChatRoom;
+import com.ojosama.chatservice.domain.model.ChatRoomStatus;
 import com.ojosama.chatservice.domain.model.ChatRoomSchedule;
 import com.ojosama.chatservice.domain.repository.ChatRoomRepository;
 import com.ojosama.common.exception.CommonErrorCode;
@@ -92,6 +93,12 @@ public class ChatRoomService {
     @Transactional(readOnly = true)
     public Page<ChatRoomResult> getAllChatRooms(Pageable pageable) {
         return chatRoomRepository.findAll(pageable)
+                .map(ChatRoomResult::from);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChatRoomResult> getAllChatRooms(ChatRoomStatus status, LocalDateTime scheduledOpenAtFrom, LocalDateTime scheduledOpenAtTo, Pageable pageable) {
+        return chatRoomRepository.findAllFiltered(status, scheduledOpenAtFrom, scheduledOpenAtTo, pageable)
                 .map(ChatRoomResult::from);
     }
 
