@@ -45,3 +45,8 @@ export const deleteEvent = async (eventId: string) => {
   const res = await client.delete(`/event-service/v1/events/${eventId}`)
   return unwrap<void>(res.data)
 }
+
+export const cancelEvent = async (eventId: string) => {
+  const res = await client.patch(`/event-service/v1/events/${eventId}/cancel`)
+  return unwrap<Event>(res.data)
+}

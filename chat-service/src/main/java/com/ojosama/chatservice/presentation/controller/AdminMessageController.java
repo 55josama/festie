@@ -4,7 +4,6 @@ import com.ojosama.chatservice.application.dto.command.ChangeMessageStatusComman
 import com.ojosama.chatservice.application.dto.query.FindAdminMessagesQuery;
 import com.ojosama.chatservice.application.dto.query.FindMessageQuery;
 import com.ojosama.chatservice.application.dto.result.MessageResult;
-import com.ojosama.chatservice.application.dto.result.MessageSliceResult;
 import com.ojosama.chatservice.application.service.MessageService;
 import com.ojosama.chatservice.domain.model.EventCategory;
 import com.ojosama.chatservice.domain.model.MessageStatus;
@@ -12,8 +11,8 @@ import com.ojosama.chatservice.presentation.dto.request.ChangeMessageStatusActio
 import com.ojosama.chatservice.presentation.dto.request.ChangeMessageStatusRequest;
 import com.ojosama.chatservice.presentation.dto.response.ChangeMessageStatusResponse;
 import com.ojosama.chatservice.presentation.dto.response.MessageResponse;
-import com.ojosama.chatservice.presentation.dto.response.MessageSliceResponse;
 import com.ojosama.common.response.ApiResponse;
+import com.ojosama.common.response.PageResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -37,16 +36,17 @@ public class AdminMessageController {
     private final MessageService messageService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<MessageSliceResponse>> getMessagesForAdmin(
+    public ResponseEntity<ApiResponse<PageResponse<MessageResponse>>> getMessagesForAdmin(
             @RequestParam(required = false) MessageStatus status,
             @RequestParam(required = false) EventCategory category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        MessageSliceResult result = messageService.getMessagesForAdmin(
-                new FindAdminMessagesQuery(status, category, page, size)
-        );
-        return ResponseEntity.ok(ApiResponse.success(MessageSliceResponse.from(result, false)));
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(
+                messageService.getMessagesForAdmin(
+                        new FindAdminMessagesQuery(status, category, page, size)
+                ).map(message -> MessageResponse.from(message, false))
+        )));
     }
 
     @GetMapping("/{messageId}")

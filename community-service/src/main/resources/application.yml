@@ -10,12 +10,3 @@ spring:
       uri: ${CONFIG_SERVER_URL:http://festie-config:8888}
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
-
-  jpa:
-    properties:
-      hibernate:
-        default_schema: community_schema
-
-logging:
-  level:
-    com.ojosama.community.infrastructure.persistence.outbox: INFO

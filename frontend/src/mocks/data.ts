@@ -14,7 +14,7 @@ export const mockEvents = [
     place: '여의도 한강공원', region: '서울', minFee: 0, maxFee: 0,
     hasTicketing: false, status: 'IN_PROGRESS',
     description: '여의도 한강공원에서 펼쳐지는 봄꽃 축제입니다.',
-    img: null, liked: true, chatRoomId: 'room-2',
+    img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80', liked: true, chatRoomId: 'room-2',
   },
   {
     id: '3', name: '아이돌 팬미팅 2026', categoryId: 'c3', categoryName: '팬미팅',
@@ -37,7 +37,7 @@ export const mockEvents = [
     startAt: '2026-06-15T17:00:00', endAt: '2026-06-15T23:00:00',
     place: '잠실종합운동장', region: '서울', minFee: 99000, maxFee: 99000,
     hasTicketing: true, ticketingOpenAt: '2026-05-16T20:00:00',
-    status: 'SCHEDULED', img: null, liked: false, chatRoomId: 'room-5',
+    status: 'SCHEDULED', img: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80', liked: false, chatRoomId: 'room-5',
   },
   {
     id: '6', name: '드림 팬미팅', categoryId: 'c3', categoryName: '팬미팅',
@@ -72,11 +72,11 @@ export const mockPosts = [
 ]
 
 export const mockMessages = [
-  { messageId: '1', chatRoomId: 'room-1', userId: 'u1', writerNickname: '페스티유저', messageType: 'USER', content: '줄이 엄청 길어요 ㅠㅠ', status: 'ACTIVE', createdAt: '2026-05-01T17:32:00' },
-  { messageId: '2', chatRoomId: 'room-1', userId: 'u2', writerNickname: '콘서트고수', messageType: 'USER', content: '저는 방금 입장했어요! 빠르게 오세요', status: 'ACTIVE', createdAt: '2026-05-01T17:33:00' },
-  { messageId: '3', chatRoomId: 'room-1', userId: 'system', writerNickname: '', messageType: 'SYSTEM', content: '채팅방이 오픈되었습니다', status: 'ACTIVE', createdAt: '2026-05-01T17:33:30' },
-  { messageId: '4', chatRoomId: 'room-1', userId: 'me', writerNickname: '나', messageType: 'USER', content: '굿즈 어디서 팔아요?', status: 'ACTIVE', createdAt: '2026-05-01T17:34:00' },
-  { messageId: '5', chatRoomId: 'room-1', userId: 'u3', writerNickname: '팬심가득', messageType: 'USER', content: '2번 게이트 앞쪽에 있어요!', status: 'ACTIVE', createdAt: '2026-05-01T17:34:30' },
+  { messageId: '1', chatRoomId: 'room-1', eventId: '1', userId: 'u1', writerNickname: '페스티유저', messageType: 'USER', content: '줄이 엄청 길어요 ㅠㅠ', status: 'ACTIVE', createdAt: '2026-05-01T17:32:00' },
+  { messageId: '2', chatRoomId: 'room-1', eventId: '1', userId: 'u2', writerNickname: '콘서트고수', messageType: 'USER', content: '저는 방금 입장했어요! 빠르게 오세요', status: 'ACTIVE', createdAt: '2026-05-01T17:33:00' },
+  { messageId: '3', chatRoomId: 'room-1', eventId: '1', userId: 'system', writerNickname: '', messageType: 'SYSTEM', content: '채팅방이 오픈되었습니다', status: 'ACTIVE', createdAt: '2026-05-01T17:33:30' },
+  { messageId: '4', chatRoomId: 'room-1', eventId: '1', userId: 'me', writerNickname: '나', messageType: 'USER', content: '굿즈 어디서 팔아요?', status: 'ACTIVE', createdAt: '2026-05-01T17:34:00' },
+  { messageId: '5', chatRoomId: 'room-1', eventId: '1', userId: 'u3', writerNickname: '팬심가득', messageType: 'USER', content: '2번 게이트 앞쪽에 있어요!', status: 'ACTIVE', createdAt: '2026-05-01T17:34:30' },
 ]
 
 export const mockChatRooms = [
@@ -229,5 +229,20 @@ export const mockNotifications = [
     title: '블랙리스트 알림',
     content: '신고한 유저가 관리자 검토 대상에 올랐습니다.',
     readAt: null as string | null,
+  },
+]
+
+export const mockNotices = [
+  {
+    noticeId: 'notice-1',
+    adminId: 'admin-user',
+    title: 'Festie 서비스 점검 안내',
+    content: '5월 20일 새벽 2시부터 3시까지 서비스 점검이 예정되어 있습니다. 점검 시간 동안 일부 기능이 제한될 수 있습니다.',
+  },
+  {
+    noticeId: 'notice-2',
+    adminId: 'admin-user',
+    title: '운영 요청 처리 정책 변경 안내',
+    content: '운영 요청 승인/반려 흐름이 일부 조정되었습니다. 요청 상태는 요청 상세에서 확인해 주세요.',
   },
 ]

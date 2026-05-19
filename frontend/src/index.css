@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-sm: 60rem;
+  --breakpoint-md: 60rem;
+  --breakpoint-lg: 60rem;
+}
+
 :root {
   --page-bg: #fcfbff;
   --line: #e2d9f5;
@@ -41,4 +47,36 @@ textarea {
 
 ::selection {
   background: rgba(111, 84, 255, 0.18);
+}
+
+.festie-horizontal-scroll {
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: none;
+}
+
+.festie-horizontal-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 60rem) {
+  .festie-horizontal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(111, 84, 255, 0.45) rgba(238, 232, 255, 0.9);
+  }
+
+  .festie-horizontal-scroll::-webkit-scrollbar {
+    display: block;
+    height: 10px;
+  }
+
+  .festie-horizontal-scroll::-webkit-scrollbar-track {
+    background: rgba(238, 232, 255, 0.9);
+    border-radius: 9999px;
+  }
+
+  .festie-horizontal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(111, 84, 255, 0.45);
+    border-radius: 9999px;
+    border: 2px solid rgba(238, 232, 255, 0.9);
+  }
 }

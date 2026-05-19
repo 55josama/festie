@@ -15,6 +15,7 @@ type RequestCardProps = {
   rejectReason?: string | null
   statusActions?: ReactNode
   actions?: ReactNode
+  onClick?: () => void
 }
 
 export default function RequestCard({
@@ -31,12 +32,16 @@ export default function RequestCard({
   rejectReason,
   statusActions,
   actions,
+  onClick,
 }: RequestCardProps) {
   const hasTitle = Boolean(String(title ?? '').trim())
   const hasAuthor = Boolean(String(authorNickname ?? '').trim())
   const hasCreatedAt = Boolean(String(createdAt ?? '').trim())
   return (
-    <article className="rounded-[20px] border border-[var(--line)] bg-slate-50 p-4 transition-colors hover:bg-white md:p-5">
+    <article
+      className={`rounded-[20px] border border-[var(--line)] bg-slate-50 p-4 transition-colors hover:bg-white md:p-5 ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(260px,2fr)] lg:items-start">
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BlackListRegisterMessage(
-        UUID targetUserId,
+        UUID userId,
         String reason
 ) {
 }

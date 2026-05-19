@@ -17,6 +17,7 @@ import com.ojosama.post.domain.exception.PostException;
 import com.ojosama.post.domain.model.Post;
 import com.ojosama.post.domain.model.PostStatus;
 import com.ojosama.post.domain.repository.PostRepository;
+import com.ojosama.post.infrastructure.cache.ViewCountCacheService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final OutboxEventPublisher outbox;
+    private final ViewCountCacheService viewCountCache;
 
     @Value("${spring.kafka.topic.community-moderation-requested}")
     private String moderationRequestedTopic;
@@ -101,18 +103,24 @@ public class PostService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResult getDetail(UUID postId) {
         Post post = loadAlive(postId);
-        // BLINDED 게시글도 200으로 응답한다 (PostResponse에서 마스킹 처리).
-        // 단, 조회수는 증가시키지 않음 — 차단된 게시글에 어뷰징성 조회수 발생 방지.
+        // BLINDED 게시글도 200으로 응답한다 (PostResponse 에서 마스킹 처리).
+        // 블라인드 상태에서는 조회수를 올리지 않음.
         if (post.isBlinded()) {
             return PostResult.from(post);
         }
-        int affected = postRepository.incrementViewCount(postId);
-        if (affected == 0) {
-            throw new PostException(PostErrorCode.POST_NOT_FOUND);
-        }
+
+        // Write-Behind: Redis INCR 만 하고 DB flush 는 스케줄러가 일괄 처리.
+        // fallback(DB 직접 UPDATE)을 제거한 이유:
+        //   executePipelined() 예외는 INCR 명령이 서버에서 실행된 후 응답 수신에 실패한
+        //   경우(timeout 등)를 구분할 수 없다. 이 상태에서 fallback 을 실행하면
+        //   Redis 캐시 + DB 에 각각 +1 되어 동일 조회에 +2가 적용되는 이중 카운트가 발생한다.
+        //   조회수는 eventually consistent 가 허용되는 데이터이므로 Redis 장애 시
+        //   해당 요청의 카운트를 놓치더라도 서비스 정합성에 영향이 없다고 판단하여 일시적 허용으로.
+        viewCountCache.increment(postId);
+
         return adjustViewCountForResponse(post, 1);
     }
 

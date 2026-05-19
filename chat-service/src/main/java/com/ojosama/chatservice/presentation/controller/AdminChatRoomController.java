@@ -56,7 +56,7 @@ public class AdminChatRoomController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ChatRoomResponse>>> getAllChatRooms(
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 3, sort = "schedule.scheduledOpenAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(
                 PageResponse.from(chatRoomService.getAllChatRooms(pageable)
                         .map(ChatRoomResponse::from))

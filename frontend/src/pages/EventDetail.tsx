@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteEvent, getEvent } from '../api/events'
-import { createChatRoom, deleteChatMessage, getChatMessages, getChatRoomByEventId } from '../api/chat'
+import { cancelEvent, deleteEvent, getEvent } from '../api/events'
+import { createChatRoom, deleteChatMessage, getChatMessages, getChatRoomByEventId, verifyEventLocation } from '../api/chat'
 import { createCalendar } from '../api/calendar'
 import { createFavorite, deleteFavorite, getFavorites } from '../api/favorites'
 import { reissueAccessToken } from '../api/client'
@@ -11,7 +11,8 @@ import { useAuthStore } from '../store/authStore'
 import { formatPrice, formatDateTime } from '../lib/format'
 import { getErrorMessage } from '../lib/error'
 import { getDDay as calcDDay } from '../lib/format'
-import type { ChatRoom } from '../types'
+import { normalizeBannedWordError } from '../lib/error'
+import type { ChatMessage, ChatRoom } from '../types'
 import { Stomp, type IMessage } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 
@@ -20,21 +21,64 @@ export default function EventDetail() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user, isLoggedIn } = useAuthStore()
+  const isStaff = !!user && /ADMIN|MANAGER/.test(String(user.role ?? ''))
   const canFavoriteEvent = !user || user.role === 'USER'
   const [message, setMessage] = useState('')
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatMessagePage, setChatMessagePage] = useState(0)
+  const [chatHasNext, setChatHasNext] = useState(false)
+  const [loadingOlderChatMessages, setLoadingOlderChatMessages] = useState(false)
+  const [chatMessageError, setChatMessageError] = useState('')
   const [isChatEntered, setIsChatEntered] = useState(false)
   const [chatConnectionStatus, setChatConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const [calendarDate, setCalendarDate] = useState('')
   const [scheduleCalendarDates, setScheduleCalendarDates] = useState<Record<string, string>>({})
+  const [showLocationPolicy, setShowLocationPolicy] = useState(false)
+  const [locationVerified, setLocationVerified] = useState(false)
+  const [locationError, setLocationError] = useState('')
+  const [locationErrorPhase, setLocationErrorPhase] = useState<'idle' | 'visible' | 'fading'>('idle')
   const stompClientRef = useRef<any>(null)
   const chatConnectionStatusRef = useRef<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const chatMessagesScrollRef = useRef<HTMLDivElement | null>(null)
+  const isMessageComposingRef = useRef(false)
+  const previousChatMessageCountRef = useRef(0)
+  const pendingScrollAnchorRef = useRef<{ scrollTop: number; scrollHeight: number } | null>(null)
+
+  useEffect(() => {
+    if (!chatMessageError) return
+    const timer = window.setTimeout(() => setChatMessageError(''), 2500)
+    return () => window.clearTimeout(timer)
+  }, [chatMessageError])
+
+  useEffect(() => {
+    if (!locationError) return
+    setLocationErrorPhase('visible')
+    const fadeTimer = window.setTimeout(() => setLocationErrorPhase('fading'), 5000)
+    const clearTimer = window.setTimeout(() => setLocationError(''), 5700)
+    return () => {
+      window.clearTimeout(fadeTimer)
+      window.clearTimeout(clearTimer)
+    }
+  }, [locationError])
+
+  useEffect(() => {
+    if (locationError) return
+    setLocationErrorPhase('idle')
+  }, [locationError])
+
+  useEffect(() => {
+    if (isChatEntered) return
+    previousChatMessageCountRef.current = 0
+    pendingScrollAnchorRef.current = null
+  }, [isChatEntered])
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', eventId],
     queryFn: () => getEvent(eventId),
     enabled: !!eventId,
   })
+  const eventStatus = String(event?.status ?? '').toUpperCase()
+  const canCancelEvent = isStaff && (eventStatus === 'SCHEDULED' || eventStatus === 'IN_PROGRESS')
 
   const { data: chatRoom } = useQuery({
     queryKey: ['chat-room', eventId],
@@ -44,17 +88,23 @@ export default function EventDetail() {
   })
   const chatRoomId = chatRoom?.chatRoomId
 
+  useEffect(() => {
+    setShowLocationPolicy(false)
+    setLocationVerified(false)
+    setLocationError('')
+  }, [chatRoomId, eventId])
+
   const { data: favoritePage = { content: [], page: 0, size: 0, totalElements: 0, totalPages: 0 } } = useQuery({
     queryKey: ['favorites', 'mine', eventId],
     queryFn: () => getFavorites({ size: 200 }),
     enabled: !!eventId && isLoggedIn() && user?.role === 'USER',
   })
 
-  const { data: messages = [] } = useQuery({
+  const { data: chatMessagesPage } = useQuery({
     queryKey: ['chat-messages', chatRoomId],
     queryFn: () => {
       if (!chatRoomId) {
-        return Promise.resolve([])
+        return Promise.resolve({ messages: [], hasNext: false })
       }
       return getChatMessages(chatRoomId)
     },
@@ -86,8 +136,7 @@ export default function EventDetail() {
     mutationFn: (messageId: string) => deleteChatMessage(messageId),
     onSuccess: async (_, messageId) => {
       if (!chatRoomId) return
-      queryClient.setQueryData<any[]>(['chat-messages', chatRoomId], (prev = []) => prev.filter((message) => message.messageId !== messageId))
-      await queryClient.invalidateQueries({ queryKey: ['chat-messages', chatRoomId] })
+      setChatMessages((prev) => prev.filter((message) => message.messageId !== messageId))
     },
     onError: () => {
       window.alert('메시지를 삭제하지 못했어요.')
@@ -115,6 +164,23 @@ export default function EventDetail() {
     },
   })
 
+  const cancelMutation = useMutation({
+    mutationFn: () => {
+      if (!event) throw new Error('event is missing')
+      return cancelEvent(event.id)
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['events'] })
+      await queryClient.invalidateQueries({ queryKey: ['event', eventId] })
+      await queryClient.invalidateQueries({ queryKey: ['chat-room', eventId] })
+      await queryClient.invalidateQueries({ queryKey: ['popular-chat-rooms'] })
+      window.alert('행사를 취소했어요.')
+    },
+    onError: () => {
+      window.alert('행사를 취소하지 못했어요.')
+    },
+  })
+
   const favoriteEntry = useMemo(
     () => favoritePage.content.find((item) => item.eventId === event?.id),
     [favoritePage.content, event?.id],
@@ -137,13 +203,47 @@ export default function EventDetail() {
     },
   })
 
+  const locationVerifyMutation = useMutation({
+    mutationFn: async () => {
+      if (!eventId) throw new Error('eventId is missing')
+      const position = await getCurrentPosition()
+      return verifyEventLocation(eventId, position.latitude, position.longitude)
+    },
+    onSuccess: (result) => {
+      if (result.isNearEvent) {
+        setLocationVerified(true)
+        setLocationError('')
+        setShowLocationPolicy(false)
+        return
+      }
+      setLocationVerified(false)
+      setLocationError('해당 위치가 아닙니다. 행사 반경 안에서 다시 시도해 주세요.')
+      setShowLocationPolicy(false)
+    },
+    onError: (error) => {
+      setLocationError(getErrorMessage(error, '위치 인증에 실패했어요.'))
+    },
+  })
+
   const schedules = useMemo(() => event?.schedules ?? [], [event?.schedules])
   const hasDetailedSchedules = schedules.length > 0
   const calendarDateOptions = useMemo(() => buildCalendarDateOptions(event), [event?.id, event?.startAt, event?.endAt, schedules.length])
   const chatState = useMemo(() => resolveChatState(chatRoom), [chatRoom])
   const chatTheme = useMemo(() => getChatTheme(chatRoom?.category ?? event?.categoryName ?? ''), [chatRoom?.category, event?.categoryName])
-  const orderedMessages = useMemo(() => normalizeChatMessages(messages), [messages])
+  const orderedMessages = useMemo(() => normalizeChatMessages(chatMessages), [chatMessages])
   const canJoinChat = Boolean(chatRoomId && chatRoom && chatState.isOpen && isLoggedIn())
+
+  const scrollChatToBottom = () => {
+    const el = chatMessagesScrollRef.current
+    if (!el) return
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const nextEl = chatMessagesScrollRef.current
+        if (!nextEl) return
+        nextEl.scrollTop = nextEl.scrollHeight
+      })
+    })
+  }
 
   useEffect(() => {
     if (!event) return
@@ -151,17 +251,48 @@ export default function EventDetail() {
   }, [calendarDateOptions, event?.startAt, event?.id])
 
   useEffect(() => {
+    if (!chatMessagesPage) return
+    setChatMessages(chatMessagesPage.messages)
+    setChatMessagePage(0)
+    setChatHasNext(chatMessagesPage.hasNext)
+  }, [chatMessagesPage, chatRoomId])
+
+  useLayoutEffect(() => {
     if (!isChatEntered || !chatMessagesScrollRef.current) {
       return
     }
-    requestAnimationFrame(() => {
-      const el = chatMessagesScrollRef.current
-      if (!el) return
-      el.scrollTop = el.scrollHeight
-    })
-  }, [isChatEntered, orderedMessages.length, chatConnectionStatus])
+    const el = chatMessagesScrollRef.current
+
+    const pendingAnchor = pendingScrollAnchorRef.current
+    if (pendingAnchor) {
+      const delta = el.scrollHeight - pendingAnchor.scrollHeight
+      el.scrollTop = pendingAnchor.scrollTop + delta
+      pendingScrollAnchorRef.current = null
+      return
+    }
+    if (previousChatMessageCountRef.current === 0) {
+      scrollChatToBottom()
+      previousChatMessageCountRef.current = orderedMessages.length
+      return
+    }
+
+    if (orderedMessages.length > previousChatMessageCountRef.current) {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+      if (distanceFromBottom < 120) {
+        scrollChatToBottom()
+      }
+    }
+
+    previousChatMessageCountRef.current = orderedMessages.length
+  }, [isChatEntered, orderedMessages.length, chatConnectionStatus, loadingOlderChatMessages])
 
   useEffect(() => {
+    setChatMessages([])
+    setChatMessagePage(0)
+    setChatHasNext(false)
+    setLoadingOlderChatMessages(false)
+    previousChatMessageCountRef.current = 0
+    pendingScrollAnchorRef.current = null
     setIsChatEntered(false)
     setChatConnectionStatus('idle')
     chatConnectionStatusRef.current = 'idle'
@@ -202,7 +333,12 @@ export default function EventDetail() {
           stompClient.subscribe(`/topic/rooms/${chatRoomId}/messages`, (frame: IMessage) => {
             const nextMessage = parseChatMessage(frame)
             if (!nextMessage) return
-            queryClient.setQueryData<any[]>(['chat-messages', chatRoomId], (prev = []) => [...prev, nextMessage])
+            setChatMessages((prev) => normalizeChatMessages([...prev, nextMessage]))
+          })
+          stompClient.subscribe('/user/queue/errors', (frame: IMessage) => {
+            const nextError = parseWebSocketError(frame)
+            if (!nextError) return
+            setChatMessageError(normalizeBannedWordError(nextError.message ?? '채팅 메시지를 보낼 수 없어요.'))
           })
         }, () => {
           if (cancelled) return
@@ -233,6 +369,32 @@ export default function EventDetail() {
       chatConnectionStatusRef.current = 'idle'
     }
   }, [chatRoomId, chatRoom, chatState.isOpen, isChatEntered, queryClient, user])
+
+  const loadOlderChatMessages = async () => {
+    if (!chatRoomId || loadingOlderChatMessages || !chatHasNext) {
+      return
+    }
+
+    const container = chatMessagesScrollRef.current
+    const previousScrollHeight = container?.scrollHeight ?? 0
+    const previousScrollTop = container?.scrollTop ?? 0
+
+    pendingScrollAnchorRef.current = {
+      scrollTop: previousScrollTop,
+      scrollHeight: previousScrollHeight,
+    }
+    setLoadingOlderChatMessages(true)
+
+    try {
+      const nextPage = chatMessagePage + 1
+      const response = await getChatMessages(chatRoomId, { page: nextPage, size: 30 })
+      setChatMessages((prev) => normalizeChatMessages([...response.messages, ...prev]))
+      setChatMessagePage(nextPage)
+      setChatHasNext(response.hasNext)
+    } finally {
+      setLoadingOlderChatMessages(false)
+    }
+  }
 
   if (isLoading) {
     return <div className="px-5 py-10 text-slate-500">행사 정보를 불러오는 중입니다.</div>
@@ -281,41 +443,71 @@ export default function EventDetail() {
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <h1 className="text-[26px] font-black tracking-tight text-slate-950 md:text-[30px]">{event.name}</h1>
-                  {canFavoriteEvent ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!isLoggedIn()) {
-                          navigate('/login')
-                          return
-                        }
-                        favoriteToggleMutation.mutate()
-                      }}
-                      disabled={favoriteToggleMutation.isPending}
-                      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-[18px] transition-colors ${
-                        favoriteEntry
-                          ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
-                          : 'border-[var(--line)] bg-white text-slate-400 hover:bg-[var(--accent-soft)]/40 hover:text-rose-500'
-                      }`}
-                      title={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
-                      aria-label={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
-                    >
-                      {favoriteEntry ? '♥' : '♡'}
-                    </button>
-                  ) : (
-                    <div className="inline-flex h-11 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[11px] font-semibold text-slate-400">
-                      찜은 USER만 가능
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {!isStaff && canFavoriteEvent ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isLoggedIn()) {
+                            navigate('/login')
+                            return
+                          }
+                          favoriteToggleMutation.mutate()
+                        }}
+                        disabled={favoriteToggleMutation.isPending}
+                        className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-[18px] transition-colors ${
+                          favoriteEntry
+                            ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
+                            : 'border-[var(--line)] bg-white text-slate-400 hover:bg-[var(--accent-soft)]/40 hover:text-rose-500'
+                        }`}
+                        title={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
+                        aria-label={isLoggedIn() ? (favoriteEntry ? '찜 취소' : '찜하기') : '로그인 후 찜할 수 있어요'}
+                      >
+                        {favoriteEntry ? '♥' : '♡'}
+                      </button>
+                    ) : !isStaff ? (
+                      <div className="inline-flex h-11 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[11px] font-semibold text-slate-400">
+                        찜은 USER만 가능
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
+                {user && /ADMIN/.test(user.role) && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const eventUuid = String(event.id ?? '')
+                      if (!eventUuid) return
+                      try {
+                        await navigator.clipboard.writeText(eventUuid)
+                        window.alert('행사 UUID를 복사했어요.')
+                      } catch {
+                        const textarea = document.createElement('textarea')
+                        textarea.value = eventUuid
+                        textarea.style.position = 'fixed'
+                        textarea.style.left = '-9999px'
+                        document.body.appendChild(textarea)
+                        textarea.select()
+                        document.execCommand('copy')
+                        document.body.removeChild(textarea)
+                        window.alert('행사 UUID를 복사했어요.')
+                      }
+                    }}
+                    className="mt-3 inline-flex h-8 items-center rounded-full border border-[var(--line)] bg-slate-50 px-3 text-[10px] font-semibold text-slate-400 transition-colors hover:bg-slate-100"
+                    title="행사 UUID 복사"
+                    aria-label="행사 UUID 복사"
+                  >
+                    UUID 복사
+                  </button>
+                )}
                 <p className="mt-2 text-[15px] leading-6 text-slate-600">{event.description ?? '행사 상세 소개가 준비되어 있습니다.'}</p>
               </div>
 
               <div className="space-y-3">
-                <div className="grid gap-3 min-[700px]:grid-cols-2">
-                  <MiniInfoCard label="시작" value={formatDateTime(event.startAt)} />
-                  <MiniInfoCard label="종료" value={formatDateTime(event.endAt)} />
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <MiniInfoCard label="시작" value={formatDateTime(event.startAt)} />
+                <MiniInfoCard label="종료" value={formatDateTime(event.endAt)} />
+              </div>
                 <div className="overflow-hidden rounded-[18px] border border-[var(--line)] bg-white">
                   <DetailMeta label="장소" value={event.place} />
                   <DetailMeta label="가격" value={formatPrice(event.minFee, event.maxFee)} />
@@ -375,6 +567,19 @@ export default function EventDetail() {
                   >
                     수정
                   </Link>
+                )}
+                {canCancelEvent && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('이 행사를 취소할까요?')) {
+                        cancelMutation.mutate()
+                      }
+                    }}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700"
+                  >
+                    {cancelMutation.isPending ? '취소 중...' : '행사 취소'}
+                  </button>
                 )}
                 {user && /ADMIN|MANAGER/.test(user.role) && (
                   <button
@@ -473,7 +678,7 @@ export default function EventDetail() {
             </div>
           </div>
 
-          <div className="grid gap-3 min-[700px]:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <MiniInfoCard label="오픈 시간" value={chatState.openTimeLabel} />
             <MiniInfoCard label="클로즈 시간" value={chatState.closeTimeLabel} />
           </div>
@@ -489,19 +694,39 @@ export default function EventDetail() {
               <div className={`space-y-2 ${isChatEntered ? '' : 'pointer-events-none select-none blur-[1px]'}`}>
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold text-slate-500">메시지</div>
-                  <div className="text-xs text-slate-400">{orderedMessages.length}개</div>
                 </div>
-                <div ref={chatMessagesScrollRef} className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
+                <div
+                  ref={chatMessagesScrollRef}
+                  onScroll={(event) => {
+                    const el = event.currentTarget
+                    if (el.scrollTop > 40 || !chatHasNext || loadingOlderChatMessages) return
+                    void loadOlderChatMessages()
+                  }}
+                  className="max-h-[460px] space-y-2 overflow-y-auto pr-1"
+                >
+                  {loadingOlderChatMessages && (
+                    <div className="py-2 text-center text-[11px] font-medium text-slate-400">
+                      이전 메시지를 불러오는 중...
+                    </div>
+                  )}
                   {orderedMessages.map((msg: any) => (
                     <MessageBubble
                       key={msg.messageId}
                       message={msg}
                       me={user?.userId}
+                      locationVerified={locationVerified}
                       onDelete={(messageId) => deleteMessageMutation.mutate(messageId)}
                     />
                   ))}
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => scrollChatToBottom()}
+                className="absolute bottom-3 right-3 rounded-full border border-[var(--line)] bg-white/95 px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+              >
+                아래로
+              </button>
 
               {!isChatEntered && canJoinChat && (
                 <div className={`absolute inset-0 flex items-center justify-center px-4 backdrop-blur-[1px] ${chatTheme.overlayClass}`}>
@@ -544,11 +769,22 @@ export default function EventDetail() {
                 <div className="flex gap-2">
                   <input
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                      setMessage(e.target.value)
+                      if (chatMessageError) {
+                        setChatMessageError('')
+                      }
+                    }}
+                    onCompositionStart={() => {
+                      isMessageComposingRef.current = true
+                    }}
+                    onCompositionEnd={() => {
+                      isMessageComposingRef.current = false
+                    }}
                     placeholder="메시지를 입력하세요"
                     disabled={chatConnectionStatus !== 'connected'}
                     onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return
+                      if (e.key !== 'Enter' || e.nativeEvent.isComposing || isMessageComposingRef.current) return
                       e.preventDefault()
                       sendChatOverSocket({
                         chatRoomId,
@@ -576,6 +812,16 @@ export default function EventDetail() {
                     전송
                   </button>
                 </div>
+                {chatMessageError && (
+                  <div className="text-[12px] font-medium text-rose-600">
+                    {chatMessageError}
+                  </div>
+                )}
+                {locationError && (
+                  <div className={`rounded-[14px] border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-medium text-rose-600 transition-all duration-700 ease-out ${locationErrorPhase === 'fading' ? 'translate-y-1 opacity-0' : 'translate-y-0 opacity-100'}`}>
+                    {locationError}
+                  </div>
+                )}
               </>
             ) : (
               <div className={`rounded-[18px] border p-3.5 text-sm ${chatTheme.noticeClass} ${chatTheme.noticeTextClass}`}>
@@ -584,20 +830,71 @@ export default function EventDetail() {
             )}
 
             {isChatEntered && (
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
+              <div className="flex items-center justify-between gap-2 text-[11px] text-slate-400">
                 <span>실시간 연결: {chatConnectionStatus === 'connected' ? '연결됨' : chatConnectionStatus === 'connecting' ? '연결 중' : chatConnectionStatus === 'error' ? '오류' : '대기 중'}</span>
-                <button
-                  type="button"
-                  onClick={() => setIsChatEntered(false)}
-                  className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600"
-                >
-                  나가기
-                </button>
+                <div className="flex items-center gap-2">
+                  {isLoggedIn() && !locationVerified && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLocationError('')
+                        setShowLocationPolicy(true)
+                      }}
+                      className="inline-flex items-center rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                    >
+                      위치 동의
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsChatEntered(false)}
+                    className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                  >
+                    나가기
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </aside>
       </div>
+
+      {showLocationPolicy && isLoggedIn() && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6">
+          <div className="w-full max-w-md rounded-[28px] bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.18)]">
+            <div className="inline-flex rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[11px] font-semibold text-[var(--accent)]">
+              위치 정보 동의
+            </div>
+            <h2 className="mt-3 text-[22px] font-black tracking-tight text-slate-950">
+              위치 인증을 진행할까요?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              현재 위치를 서버로 전송해 행사 반경 안에 있는지 확인합니다.
+              동의하면 위치 정보는 인증 목적에만 사용되고, 저장되지 않으며 확인 후에는 배지로 표시됩니다.
+            </p>
+            <div className="mt-4 rounded-[20px] bg-slate-50 p-4 text-[12px] leading-5 text-slate-500">
+              위치 정보는 채팅 참여 인증을 위해서만 사용되며, 행사 반경 확인 외의 용도로는 사용되지 않고 저장되지 않습니다.
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowLocationPolicy(false)}
+                className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => locationVerifyMutation.mutate()}
+                disabled={locationVerifyMutation.isPending}
+                className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+              >
+                {locationVerifyMutation.isPending ? '확인 중...' : '동의하고 인증'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -849,7 +1146,17 @@ function DetailMeta({ label, value }: { label: string; value: string }) {
   )
 }
 
-function MessageBubble({ message, me, onDelete }: { message: any; me?: string; onDelete?: (messageId: string) => void }) {
+function MessageBubble({
+  message,
+  me,
+  locationVerified,
+  onDelete,
+}: {
+  message: any
+  me?: string
+  locationVerified?: boolean
+  onDelete?: (messageId: string) => void
+}) {
   const mine = me && message.userId === me
   if (message.messageType === 'SYSTEM') {
     return (
@@ -861,8 +1168,16 @@ function MessageBubble({ message, me, onDelete }: { message: any; me?: string; o
 
   return (
     <div className={`flex flex-col gap-1 ${mine ? 'items-end' : 'items-start'}`}>
-      <div className="text-[11px] font-semibold text-slate-500">
-        {message.writerNickname}
+      <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+        <span>{message.writerNickname}</span>
+        {mine && locationVerified && (
+          <img
+            src="/locationIcon.svg"
+            alt=""
+            aria-hidden="true"
+            className="h-[18px] w-[18px] shrink-0"
+          />
+        )}
       </div>
       <div className={`max-w-[68%] rounded-[16px] px-3 py-2 text-[13px] leading-5 shadow-sm ${mine ? 'bg-[var(--accent)] text-white' : 'bg-slate-100 text-slate-800'}`}>
         {message.content}
@@ -873,7 +1188,7 @@ function MessageBubble({ message, me, onDelete }: { message: any; me?: string; o
           <button
             type="button"
             onClick={() => onDelete?.(message.messageId)}
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-[10px] text-rose-600"
+            className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-[9px] text-rose-600"
             aria-label="메시지 삭제"
             title="삭제"
           >
@@ -911,6 +1226,39 @@ function parseChatMessage(frame: IMessage) {
   } catch {
     return undefined
   }
+}
+
+function parseWebSocketError(frame: IMessage) {
+  try {
+    return JSON.parse(frame.body) as { status?: number; message?: string; timestamp?: string }
+  } catch {
+    return undefined
+  }
+}
+
+function getCurrentPosition() {
+  return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('브라우저에서 위치 정보를 지원하지 않습니다.'))
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        })
+      },
+      (error) => {
+        reject(new Error(error.message || '위치 정보를 가져오지 못했습니다.'))
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    )
+  })
 }
 
 async function ensureFreshAccessToken() {

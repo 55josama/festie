@@ -110,7 +110,7 @@ export default function MyPage() {
           </div>
         </section>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <InfoCard title="내가 쓴 글" description="커뮤니티에서 내가 쓴 글만 바로 볼 수 있어요.">
             <Link
               to="/community?tab=posts&scope=mine"
@@ -120,14 +120,25 @@ export default function MyPage() {
             </Link>
           </InfoCard>
           <InfoCard
-            title="내가 저장한 일정"
-            description="내 일정 캘린더로 바로 연결해서 추가한 행사만 따로 볼 수 있어요."
+            title="내 일정"
+            description="추가한 행사만 캘린더에서 따로 볼 수 있어요."
           >
             <Link
               to="/my/calendars"
               className="mt-4 inline-flex rounded-full border border-[var(--line)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)]"
             >
-              내 일정 열기
+              일정 보기
+            </Link>
+          </InfoCard>
+          <InfoCard
+            title="관심 목록"
+            description="찜해둔 행사를 한 번에 확인할 수 있어요."
+          >
+            <Link
+              to="/my/calendars?tab=favorites"
+              className="mt-4 inline-flex rounded-full border border-[var(--line)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent)]"
+            >
+              관심 목록 보기
             </Link>
           </InfoCard>
         </div>

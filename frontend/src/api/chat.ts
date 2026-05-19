@@ -1,7 +1,12 @@
 import client from './client'
-import { unwrap, unwrapPage } from '../lib/api'
+import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { ChatMessage, ChatRoom } from '../types'
 import type { AdminMessageItem } from '../types/admin'
+
+export interface ChatMessageSliceResponse {
+  messages: ChatMessage[]
+  hasNext: boolean
+}
 
 export const createChatRoom = async (payload: {
   eventId: string
@@ -19,11 +24,27 @@ export const getChatRoomByEventId = async (eventId: string) => {
   return unwrap<ChatRoom>(res.data)
 }
 
-export const getChatMessages = async (chatRoomId: string) => {
-  const res = await client.get(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, { params: { page: 0, size: 30 } })
+export const verifyEventLocation = async (eventId: string, currentLatitude: number, currentLongitude: number) => {
+  const res = await client.post(`/chat-service/v1/chat/events/${eventId}/location/verify`, {
+    currentLatitude,
+    currentLongitude,
+  })
+  return unwrap<{ eventId: string; isNearEvent: boolean }>(res.data)
+}
+
+export const getChatMessages = async (chatRoomId: string, params: { page?: number; size?: number } = {}) => {
+  const res = await client.get(`/chat-service/v1/chat/rooms/${chatRoomId}/messages`, {
+    params: {
+      page: params.page ?? 0,
+      size: params.size ?? 30,
+    },
+  })
   const data = unwrap<any>(res.data)
   const normalized = Array.isArray(data) ? data : (data?.messages ?? data?.content ?? [])
-  return unwrapPage<ChatMessage>({ data: normalized })
+  return {
+    messages: unwrapPage<ChatMessage>({ data: normalized }),
+    hasNext: Boolean(data?.hasNext),
+  } satisfies ChatMessageSliceResponse
 }
 
 export const sendChatMessage = async (chatRoomId: string, content: string) => {
@@ -41,25 +62,19 @@ export const getPopularChatRooms = async (limit = 3) => {
   return unwrapPage<ChatRoom>(res.data)
 }
 
+export const getAdminChatRooms = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/chat-service/v1/chat/admin/rooms', { params })
+  return unwrapPageResponse<ChatRoom & { currentViewerCount?: number }>(res.data)
+}
+
 export const getAdminChatMessages = async (params: Record<string, any> = {}) => {
   const res = await client.get('/chat-service/v1/chat/admin/messages', { params })
-  const data = unwrap<any>(res.data)
-  if (Array.isArray(data)) {
-    return {
-      content: data,
-      totalElements: data.length,
-      totalPages: 1,
-      size: data.length,
-      number: 0,
-    }
-  }
-  return {
-    content: data?.content ?? [],
-    totalElements: data?.totalElements ?? data?.content?.length ?? 0,
-    totalPages: data?.totalPages ?? 1,
-    size: data?.size ?? data?.content?.length ?? 0,
-    number: data?.number ?? 0,
-  }
+  return unwrapPageResponse<AdminMessageItem>(res.data)
+}
+
+export const getAdminChatMessage = async (messageId: string) => {
+  const res = await client.get(`/chat-service/v1/chat/admin/messages/${messageId}`)
+  return unwrap<AdminMessageItem>(res.data)
 }
 
 export const updateAdminChatMessageStatus = async (messageId: string, status: 'ACTIVE' | 'BLINDED') => {

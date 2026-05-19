@@ -51,3 +51,9 @@ CLAUDE.md
 **/src/main/generated/
 **/src/test/generated/
 **/build/generated/
+
+## 개인
+testing
+scripts
+chat-demo-test.js
+chat-load-test.js

@@ -1,0 +1,16 @@
+<svg width="1200" height="675" viewBox="0 0 1200 675" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1200" y2="675" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="0.45" stop-color="#A855F7"/>
+      <stop offset="1" stop-color="#F472B6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" rx="48" fill="url(#g)"/>
+  <circle cx="1020" cy="120" r="120" fill="white" fill-opacity="0.12"/>
+  <circle cx="160" cy="560" r="180" fill="white" fill-opacity="0.10"/>
+  <path d="M165 450C260 360 355 345 435 380C524 420 560 515 675 522C812 531 870 392 1005 330" stroke="white" stroke-opacity="0.22" stroke-width="18" stroke-linecap="round"/>
+  <text x="84" y="190" fill="white" font-family="Arial, sans-serif" font-size="62" font-weight="700">FESTIE</text>
+  <text x="84" y="272" fill="white" fill-opacity="0.95" font-family="Arial, sans-serif" font-size="44" font-weight="700">행사 바로가기</text>
+  <text x="84" y="330" fill="white" fill-opacity="0.8" font-family="Arial, sans-serif" font-size="24">이벤트 페이지와 바로 연결되는 배너</text>
+</svg>

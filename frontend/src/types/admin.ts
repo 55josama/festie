@@ -54,6 +54,7 @@ export interface ReportDetailItem extends ReportItem {
 export interface AdminMessageItem {
   messageId: string
   chatRoomId: string
+  eventId?: string | null
   userId: string
   writerNickname: string
   messageType: string
