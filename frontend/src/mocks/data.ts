@@ -64,11 +64,11 @@ export const mockCategories = [
 ]
 
 export const mockPosts = [
-  { id: '1', userId: 'u1', categoryId: 'cat1', categoryName: '후기', title: '2026 봄 콘서트 1일차 후기 진짜 너무 좋았어요', content: '좌석 시야도 좋았고, 무대 구성도 깔끔했어요. 다음 회차도 가고 싶습니다.', viewCount: 320, likeCount: 87, commentCount: 23, status: 'CLEAN', createdAt: '2026-05-13T17:55:00', updatedAt: '2026-05-13T18:10:00', authorNickname: '페스티유저', eventName: '2026 봄 콘서트' },
+  { id: '1', userId: 'u1', categoryId: 'cat1', categoryName: '후기', title: '2026 봄 콘서트 1일차 후기 진짜 너무 좋았어요', content: '좌석 시야도 좋았고, 무대 구성도 깔끔했어요. 다음 회차도 가고 싶습니다.', viewCount: 320, likeCount: 87, liked: true, commentCount: 23, status: 'CLEAN', createdAt: '2026-05-13T17:55:00', updatedAt: '2026-05-13T18:10:00', authorNickname: '페스티유저', eventName: '2026 봄 콘서트' },
   { id: '2', userId: 'u2', categoryId: 'cat2', categoryName: '꿀팁', title: '올림픽공원 주차 꿀팁 총정리 P3 P4 비교해봤습니다', content: '주차장마다 동선이 달라서 미리 확인하면 훨씬 편합니다.', viewCount: 210, likeCount: 41, commentCount: 12, status: 'CLEAN', createdAt: '2026-05-13T17:00:00', updatedAt: '2026-05-13T17:20:00', authorNickname: '콘서트고수', eventName: '2026 봄 콘서트' },
   { id: '3', userId: 'u3', categoryId: 'cat3', categoryName: '자유', title: '서울 봄꽃 축제 같이 갈 사람 구해요', content: '주말에 여의도 가실 분 있으면 댓글 주세요.', viewCount: 88, likeCount: 12, commentCount: 8, status: 'CLEAN', createdAt: '2026-05-13T16:00:00', updatedAt: '2026-05-13T16:15:00', authorNickname: '봄봄봄', eventName: '서울 봄꽃 축제' },
   { id: '4', userId: 'u4', categoryId: 'cat4', categoryName: '요청', title: '성수 팝업스토어 등록 요청드립니다', content: '공식 인스타 링크와 위치를 함께 남깁니다. 확인 부탁드려요.', viewCount: 45, likeCount: 3, commentCount: 1, status: 'CLEAN', createdAt: '2026-05-13T15:00:00', updatedAt: '2026-05-13T15:10:00', authorNickname: '팝업덕후' },
-  { id: '5', userId: 'u5', categoryId: 'cat1', categoryName: '후기', title: '드림 팬미팅 굿즈 구성 미리보기 공유해요', content: '현장 굿즈 사진 정리했습니다. 입장 전 확인하면 좋아요.', viewCount: 480, likeCount: 56, commentCount: 19, status: 'CLEAN', createdAt: '2026-05-13T13:00:00', updatedAt: '2026-05-13T13:20:00', authorNickname: '팬심가득', eventName: '드림 팬미팅' },
+  { id: '5', userId: 'u5', categoryId: 'cat1', categoryName: '후기', title: '드림 팬미팅 굿즈 구성 미리보기 공유해요', content: '현장 굿즈 사진 정리했습니다. 입장 전 확인하면 좋아요.', viewCount: 480, likeCount: 56, liked: true, commentCount: 19, status: 'CLEAN', createdAt: '2026-05-13T13:00:00', updatedAt: '2026-05-13T13:20:00', authorNickname: '팬심가득', eventName: '드림 팬미팅' },
 ]
 
 export const mockMessages = [

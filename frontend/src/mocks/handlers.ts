@@ -466,7 +466,7 @@ export const handlers = [
     await delay(120)
     const post = mockPosts.find((item) => item.id === params.postId)
     if (!post) return HttpResponse.json({ status: 'error', message: 'Not found' }, { status: 404 })
-    return HttpResponse.json(wrap(post))
+    return HttpResponse.json(wrap({ ...post, liked: Boolean((post as any).liked) }))
   }),
 
   http.post('/community-service/v1/posts/:postId/likes', async ({ params }) => {

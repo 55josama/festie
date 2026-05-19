@@ -523,7 +523,7 @@ export default function Admin() {
                 targetId: report.targetId,
                 targetType: report.targetType,
                 targetUserId: report.targetUserId,
-                targetContent: report.targetContent,
+                targetContent: report.targetContent ?? report.content ?? null,
                 reports: current ? [...current.reports, report] : [report],
             }
             groups.set(key, nextItem)
@@ -1466,10 +1466,14 @@ export default function Admin() {
                                                 <div className="rounded-[16px] border border-[var(--line)] bg-slate-50 px-3 py-3">
                                                     <div className="text-[11px] font-bold text-slate-700">타겟 카드
                                                     </div>
-                                                    {targetContent && (
+                                                    {targetContent ? (
                                                         <div
                                                             className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                                                             {targetContent}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="mt-2 text-sm leading-6 text-slate-500">
+                                                            원문을 불러오지 못했어요.
                                                         </div>
                                                     )}
                                                     <div className="mt-3 grid gap-1 text-[11px] text-slate-500">

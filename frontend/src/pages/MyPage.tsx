@@ -6,14 +6,14 @@ import { useAuthStore } from '../store/authStore'
 export default function MyPage() {
   const { user, setUser } = useAuthStore()
   const [nickname, setNickname] = useState(user?.nickname ?? '')
-  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber ?? '')
+  const [phoneParts, setPhoneParts] = useState(splitPhoneNumber(user?.phoneNumber ?? ''))
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   useEffect(() => {
     setNickname(user?.nickname ?? '')
-    setPhoneNumber(user?.phoneNumber ?? '')
+    setPhoneParts(splitPhoneNumber(user?.phoneNumber ?? ''))
   }, [user?.nickname, user?.phoneNumber])
 
   useEffect(() => {
@@ -31,15 +31,15 @@ export default function MyPage() {
       const updated = await updateMe({
         name: user.name,
         nickname: nextNickname,
-        phoneNumber: phoneNumber.trim() || user.phoneNumber || '',
+        phoneNumber: joinPhoneNumber(phoneParts),
       })
       setUser({
         ...user,
         nickname: updated.nickname ?? nextNickname,
-        phoneNumber: updated.phoneNumber ?? phoneNumber ?? user.phoneNumber,
+        phoneNumber: updated.phoneNumber ?? joinPhoneNumber(phoneParts) ?? user.phoneNumber,
       })
       setNickname(updated.nickname ?? nextNickname)
-      setPhoneNumber(updated.phoneNumber ?? phoneNumber)
+      setPhoneParts(splitPhoneNumber(updated.phoneNumber ?? joinPhoneNumber(phoneParts) ?? user.phoneNumber ?? ''))
       setSaveMessage('닉네임이 저장되었습니다.')
       setToast({ type: 'success', message: '프로필이 저장되었습니다.' })
     } catch {
@@ -100,12 +100,29 @@ export default function MyPage() {
             <MiniField label="이름" value={user?.name ?? '-'} />
             <div className="rounded-[18px] border border-[var(--line)] bg-slate-50 px-4 py-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">휴대폰 번호</div>
-              <input
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="mt-2 w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
-                placeholder="010-0000-0000"
-              />
+              <div className="mt-2 grid grid-cols-[80px_1fr_1fr] gap-2">
+                <input
+                  value={phoneParts.phone1}
+                  onChange={(e) => setPhoneParts((prev) => ({ ...prev, phone1: e.target.value.replace(/\D/g, '').slice(0, 3) }))}
+                  maxLength={3}
+                  inputMode="numeric"
+                  className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                />
+                <input
+                  value={phoneParts.phone2}
+                  onChange={(e) => setPhoneParts((prev) => ({ ...prev, phone2: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                  maxLength={4}
+                  inputMode="numeric"
+                  className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                />
+                <input
+                  value={phoneParts.phone3}
+                  onChange={(e) => setPhoneParts((prev) => ({ ...prev, phone3: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                  maxLength={4}
+                  inputMode="numeric"
+                  className="w-full rounded-full border border-[var(--line)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -175,4 +192,30 @@ function MiniField({ label, value, muted = false }: { label: string; value: stri
       <div className={`mt-1 text-sm font-semibold ${muted ? 'text-slate-400' : 'text-slate-900'}`}>{value}</div>
     </div>
   )
+}
+
+function splitPhoneNumber(phoneNumber: string) {
+  const digits = String(phoneNumber ?? '').replace(/\D/g, '')
+  if (digits.length >= 11) {
+    return {
+      phone1: digits.slice(0, 3),
+      phone2: digits.slice(3, 7),
+      phone3: digits.slice(7, 11),
+    }
+  }
+
+  const parts = String(phoneNumber ?? '').split('-').filter(Boolean)
+  return {
+    phone1: parts[0] ?? '010',
+    phone2: parts[1] ?? '',
+    phone3: parts[2] ?? '',
+  }
+}
+
+function joinPhoneNumber(phoneParts: { phone1: string; phone2: string; phone3: string }) {
+  const phone1 = phoneParts.phone1.trim() || '010'
+  const phone2 = phoneParts.phone2.trim()
+  const phone3 = phoneParts.phone3.trim()
+  if (!phone2 || !phone3) return phone1
+  return `${phone1}-${phone2}-${phone3}`
 }

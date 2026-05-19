@@ -55,6 +55,7 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
 
   const panelRef = useRef<HTMLDivElement | null>(null)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const wasOpenRef = useRef(false)
 
   const unreadCount = useMemo(() => notifications.filter((item) => item.readAt === null).length, [notifications])
   const hasPrev = page > 0
@@ -110,6 +111,13 @@ export default function NotificationBell({ variant }: NotificationBellProps) {
       setLoadingMore(false)
     }
   }
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current && unreadCount > 0) {
+      void handleMarkAllRead()
+    }
+    wasOpenRef.current = open
+  }, [open, unreadCount])
 
   useEffect(() => {
     syncUserFromAccessToken()

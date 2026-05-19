@@ -51,6 +51,7 @@ export interface Post {
   viewCount: number
   likeCount: number
   commentCount: number
+  liked?: boolean
   status: string
   createdAt: string
   updatedAt?: string

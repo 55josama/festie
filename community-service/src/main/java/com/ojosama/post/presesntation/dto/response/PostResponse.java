@@ -15,6 +15,7 @@ public record PostResponse(
         int viewCount,
         int likeCount,
         int commentCount,
+        boolean liked,
         PostStatus status,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -30,6 +31,7 @@ public record PostResponse(
                 r.viewCount(),
                 r.likeCount(),
                 r.commentCount(),
+                r.liked(),
                 r.status(),
                 r.createdAt(),
                 r.updatedAt()

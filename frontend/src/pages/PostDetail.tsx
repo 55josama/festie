@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createComment, deleteComment, deletePost, getCategories, getComments, getPost, likePost, unlikePost } from '../api/community'
@@ -41,6 +41,10 @@ export default function PostDetail() {
   const parsedRequest = parseRequestContent(post?.content ?? '')
   const showRequestPreview =
     normalizePostCategoryKey(categoryLabel) === 'request' || parsedRequest.hasFields
+
+  useEffect(() => {
+    setLiked(Boolean(post?.liked))
+  }, [post?.liked, post?.id])
 
   const mutation = useMutation({
     mutationFn: (text: string) => createComment(postId, text),
@@ -200,10 +204,10 @@ export default function PostDetail() {
                     ? 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100'
                     : 'border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
                 }`}
-              >
+                >
                 <span>{liked ? '♥' : '♡'}</span>
                 <span>좋아요</span>
-                <span className="text-xs text-slate-400">{post.likeCount + (liked ? 1 : 0)}</span>
+                <span className="text-xs text-slate-400">{post.likeCount}</span>
               </button>
             </div>
 

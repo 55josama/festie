@@ -35,6 +35,7 @@ export interface ReportItem {
   category: string
   description: string
   targetContent?: string | null
+  content?: string | null
   status: string
   operatorMemo: string | null
 }

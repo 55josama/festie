@@ -83,8 +83,12 @@ public class PostController {
 
     @Operation(summary = "게시글 상세 조회", description = "게시글 상세 정보를 조회합니다. 비로그인도 가능합니다.")
     @GetMapping("/{postId}")
-    public ApiResponse<PostResponse> getDetail(@PathVariable UUID postId) {
-        PostResult result = postService.getDetail(postId);
+    public ApiResponse<PostResponse> getDetail(@PathVariable UUID postId, Authentication authentication) {
+        UUID userId = null;
+        if (authentication != null && authentication.getPrincipal() instanceof UUID principal) {
+            userId = principal;
+        }
+        PostResult result = postService.getDetail(postId, userId);
         return ApiResponse.success(PostResponse.from(result));
     }
 

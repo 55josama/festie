@@ -10,7 +10,9 @@ export default function Register() {
     password: '',
     name: '',
     nickname: '',
-    phoneNumber: '',
+    phone1: '010',
+    phone2: '',
+    phone3: '',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,7 +22,13 @@ export default function Register() {
     setLoading(true)
     setError('')
     try {
-      await register(form)
+      await register({
+        email: form.email,
+        password: form.password,
+        name: form.name,
+        nickname: form.nickname,
+        phoneNumber: joinPhoneNumber(form.phone1, form.phone2, form.phone3),
+      })
       navigate('/login')
     } catch (err: any) {
       setError(getErrorMessage(err, '회원가입에 실패했습니다.'))
@@ -50,7 +58,12 @@ export default function Register() {
           <GridInput label="비밀번호" value={form.password} onChange={(password) => setForm((prev) => ({ ...prev, password }))} type="password" />
           <GridInput label="이름" value={form.name} onChange={(name) => setForm((prev) => ({ ...prev, name }))} />
           <GridInput label="닉네임" value={form.nickname} onChange={(nickname) => setForm((prev) => ({ ...prev, nickname }))} />
-          <GridInput label="전화번호" value={form.phoneNumber} onChange={(phoneNumber) => setForm((prev) => ({ ...prev, phoneNumber }))} />
+          <PhoneNumberInput
+            phone1={form.phone1}
+            phone2={form.phone2}
+            phone3={form.phone3}
+            onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+          />
 
           {error && <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
@@ -92,4 +105,53 @@ function GridInput({
       />
     </label>
   )
+}
+
+function PhoneNumberInput({
+  phone1,
+  phone2,
+  phone3,
+  onChange,
+}: {
+  phone1: string
+  phone2: string
+  phone3: string
+  onChange: (value: { phone1?: string; phone2?: string; phone3?: string }) => void
+}) {
+  return (
+    <label className="block">
+      <div className="mb-2 text-sm font-medium text-slate-700">전화번호</div>
+      <div className="grid grid-cols-[80px_1fr_1fr] gap-2">
+        <input
+          value={phone1}
+          onChange={(e) => onChange({ phone1: e.target.value.replace(/\D/g, '').slice(0, 3) })}
+          maxLength={3}
+          inputMode="numeric"
+          className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+        />
+        <input
+          value={phone2}
+          onChange={(e) => onChange({ phone2: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+          maxLength={4}
+          inputMode="numeric"
+          className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+        />
+        <input
+          value={phone3}
+          onChange={(e) => onChange({ phone3: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+          maxLength={4}
+          inputMode="numeric"
+          className="w-full rounded-full border border-[var(--line)] bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+        />
+      </div>
+    </label>
+  )
+}
+
+function joinPhoneNumber(phone1: string, phone2: string, phone3: string) {
+  const first = phone1.trim() || '010'
+  const second = phone2.trim()
+  const third = phone3.trim()
+  if (!second || !third) return first
+  return `${first}-${second}-${third}`
 }

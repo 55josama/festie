@@ -15,11 +15,16 @@ public record PostResult(
         int viewCount,
         int likeCount,
         int commentCount,
+        boolean liked,
         PostStatus status,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
     public static PostResult from(Post post) {
+        return from(post, false);
+    }
+
+    public static PostResult from(Post post, boolean liked) {
         return new PostResult(
                 post.getId(),
                 post.getUserId(),
@@ -29,10 +34,10 @@ public record PostResult(
                 post.getViewCount(),
                 post.getLikeCount(),
                 post.getCommentCount(),
+                liked,
                 post.getStatus(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
     }
 }
-

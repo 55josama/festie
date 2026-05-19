@@ -16,6 +16,7 @@ import com.ojosama.post.domain.exception.PostErrorCode;
 import com.ojosama.post.domain.exception.PostException;
 import com.ojosama.post.domain.model.Post;
 import com.ojosama.post.domain.model.PostStatus;
+import com.ojosama.post.domain.repository.PostLikeRepository;
 import com.ojosama.post.domain.repository.PostRepository;
 import com.ojosama.post.infrastructure.cache.ViewCountCacheService;
 import java.util.UUID;
@@ -32,6 +33,7 @@ public class PostService {
     private static final String AGGREGATE_TYPE = "POST";
 
     private final PostRepository postRepository;
+    private final PostLikeRepository postLikeRepository;
     private final OutboxEventPublisher outbox;
     private final ViewCountCacheService viewCountCache;
 
@@ -105,11 +107,16 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResult getDetail(UUID postId) {
+        return getDetail(postId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PostResult getDetail(UUID postId, UUID userId) {
         Post post = loadAlive(postId);
         // BLINDED 게시글도 200으로 응답한다 (PostResponse 에서 마스킹 처리).
         // 블라인드 상태에서는 조회수를 올리지 않음.
         if (post.isBlinded()) {
-            return PostResult.from(post);
+            return PostResult.from(post, isLiked(postId, userId));
         }
 
         // Write-Behind: Redis INCR 만 하고 DB flush 는 스케줄러가 일괄 처리.
@@ -121,7 +128,7 @@ public class PostService {
         //   해당 요청의 카운트를 놓치더라도 서비스 정합성에 영향이 없다고 판단하여 일시적 허용으로.
         viewCountCache.increment(postId);
 
-        return adjustViewCountForResponse(post, 1);
+        return adjustViewCountForResponse(post, 1, isLiked(postId, userId));
     }
 
     public Page<PostResult> list(PostListQuery query) {
@@ -155,7 +162,7 @@ public class PostService {
         return post;
     }
 
-    private PostResult adjustViewCountForResponse(Post post, int delta) {
+    private PostResult adjustViewCountForResponse(Post post, int delta, boolean liked) {
         return new PostResult(
                 post.getId(),
                 post.getUserId(),
@@ -165,10 +172,18 @@ public class PostService {
                 post.getViewCount() + delta,
                 post.getLikeCount(),
                 post.getCommentCount(),
+                liked,
                 post.getStatus(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
+    }
+
+    private boolean isLiked(UUID postId, UUID userId) {
+        if (userId == null) {
+            return false;
+        }
+        return postLikeRepository.existsByPostIdAndUserId(postId, userId);
     }
 
 
