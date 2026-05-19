@@ -1256,6 +1256,7 @@ function MessageBubble({
                     <ReportButton
                         targetType="CHAT"
                         targetId={message.messageId}
+                        targetContent={message.content}
                         label="신고"
                         className="inline-flex items-center rounded-full border border-[var(--line)] bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
                     />

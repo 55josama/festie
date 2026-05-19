@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore'
 type ReportButtonProps = {
   targetType: string
   targetId: string
+  targetContent: string
   label?: string
   className?: string
 }
@@ -21,7 +22,7 @@ const REPORT_CATEGORY_OPTIONS = [
   { value: 'OTHER', label: '기타' },
 ] as const
 
-export default function ReportButton({ targetType, targetId, label = '신고', className = 'rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-slate-700' }: ReportButtonProps) {
+export default function ReportButton({ targetType, targetId, targetContent, label = '신고', className = 'rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium text-slate-700' }: ReportButtonProps) {
   const { isLoggedIn } = useAuthStore()
   const [open, setOpen] = useState(false)
   const [category, setCategory] = useState<(typeof REPORT_CATEGORY_OPTIONS)[number]['value']>('OTHER')
@@ -33,7 +34,7 @@ export default function ReportButton({ targetType, targetId, label = '신고', c
       targetId,
       category: payload.category,
       description: payload.description,
-      content: payload.description,
+      content: targetContent,
     }),
     onSuccess: () => {
       window.alert('신고가 접수되었습니다.')

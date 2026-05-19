@@ -131,7 +131,7 @@ export default function PostDetail() {
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <ReportButton targetType="POST" targetId={post.id} />
+              <ReportButton targetType="POST" targetId={post.id} targetContent={post.content} />
               {canDelete && (
                 <>
                   <Link
@@ -310,7 +310,7 @@ function CommentItem({
             </button>
           )}
           {currentUser && (
-            <ReportButton targetType="COMMENT" targetId={comment.id} label="신고" className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600" />
+            <ReportButton targetType="COMMENT" targetId={comment.id} targetContent={comment.content} label="신고" className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600" />
           )}
           {canDelete && (
             <button

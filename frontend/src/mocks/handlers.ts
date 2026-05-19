@@ -529,6 +529,7 @@ export const handlers = [
       targetType: body.targetType,
       category: body.category ?? 'OTHER',
       description: body.description ?? '신고',
+      targetContent: body.content ?? '',
       status: 'AUTO_BLINDED',
       operatorMemo: null,
     }
