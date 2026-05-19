@@ -403,7 +403,6 @@ export default function Admin() {
         queryFn: () => getAdminChatRooms({
             page: chatRoomPage,
             size: CHAT_ROOM_PAGE_SIZE,
-            sort: 'schedule.scheduledOpenAt,desc',
             status: chatStatus === 'ALL' ? undefined : chatStatus,
             scheduledOpenAtFrom: chatRoomScheduledFrom || undefined,
             scheduledOpenAtTo: chatRoomScheduledTo || undefined,
@@ -452,17 +451,8 @@ export default function Admin() {
     }, [requestedEventId, scopedEventRequests])
 
     const scopedChatRooms = useMemo(() => {
-        let rooms = isAdmin || isManager ? adminChatRoomPage.content : []
-        if (!isAdmin && !isManager && managedChatCategories.size > 0) {
-            rooms = rooms.filter((room: any) => managedChatCategories.has(room.category))
-        }
-        rooms = [...rooms].sort((a: any, b: any) => {
-            const left = a.scheduledOpenAt ? new Date(a.scheduledOpenAt).getTime() : 0
-            const right = b.scheduledOpenAt ? new Date(b.scheduledOpenAt).getTime() : 0
-            return right - left
-        })
-        return rooms
-    }, [adminChatRoomPage.content, chatStatus, managedChatCategories, isAdmin, isManager, chatRoomScheduledFrom, chatRoomScheduledTo])
+        return isAdmin || isManager ? adminChatRoomPage.content : []
+    }, [adminChatRoomPage.content, chatStatus, isAdmin, isManager])
 
     const chatRoomTotalPages = Math.max(adminChatRoomPage.totalPages || 0, 1)
 
@@ -1708,7 +1698,7 @@ export default function Admin() {
                                 }
                             />
                             <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-dashed border-[var(--line)] bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                                <span className="text-[11px] font-semibold text-slate-500">범위</span>
+                                <span className="text-[11px] font-semibold text-slate-500">오픈일</span>
                                 <label className="flex items-center gap-2">
                                     <input
                                         type="date"
@@ -1717,13 +1707,11 @@ export default function Admin() {
                                             const nextFrom = e.target.value
                                             setChatRoomScheduledFrom(nextFrom)
                                             setChatRoomPage(0)
-                                            if (!chatRoomScheduledTo || chatRoomScheduledTo < nextFrom) {
-                                                setChatRoomScheduledTo(nextFrom)
-                                            }
                                         }}
                                         className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-xs outline-none"
                                     />
                                 </label>
+                                <span className="text-[11px] font-semibold text-slate-400">~</span>
                                 <label className="flex items-center gap-2">
                                     <input
                                         type="date"

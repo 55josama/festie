@@ -11,7 +11,6 @@ const REGION_FILTERS = ['전체', '서울', '경기', '충청', '강원', '경�
 const CATEGORY_FILTERS = ['전체', '콘서트', '축제', '팬미팅', '팝업스토어']
 const STATUS_FILTERS = ['전체', '예정', '진행중', '종료']
 const PAGE_SIZE = 20
-const PAGE_WINDOW_SIZE = 10
 const EVENT_CREATE_LINK = '/admin?panel=general'
 
 export default function Events() {
@@ -22,24 +21,28 @@ export default function Events() {
   const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') ?? '전체')
   const [query, setQuery] = useState(searchParams.get('query') ?? '')
   const [currentPage, setCurrentPage] = useState(0)
+  const [pageWindowSize, setPageWindowSize] = useState(10)
   const [resolvedRegions, setResolvedRegions] = useState<Record<string, string>>({})
   const regionCacheRef = useRef<Record<string, string>>({})
   const kakaoKey = String(import.meta.env.VITE_KAKAO_JS_KEY ?? '')
   const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)')
+    const update = () => setPageWindowSize(mediaQuery.matches ? 5 : 10)
+    update()
+    mediaQuery.addEventListener('change', update)
+    return () => mediaQuery.removeEventListener('change', update)
+  }, [])
+
   const eventStatusParam = useMemo(() => mapDisplayStatusToApiStatus(selectedStatus), [selectedStatus])
-  const eventCategoryParam = useMemo(
-    () => (selectedCategory === '전체' ? undefined : selectedCategory),
-    [selectedCategory],
-  )
 
   const { data: eventPage = { content: [], page: 0, size: PAGE_SIZE, totalElements: 0, totalPages: 0 } } = useQuery<PageResponse<Event>>({
-    queryKey: ['events', 'list', currentPage, eventCategoryParam, eventStatusParam],
+    queryKey: ['events', 'list', currentPage, eventStatusParam],
     queryFn: () =>
       getEventsPage({
         page: currentPage,
         size: PAGE_SIZE,
-        ...(eventCategoryParam ? { category: eventCategoryParam } : {}),
         ...(eventStatusParam ? { status: eventStatusParam } : {}),
       }),
   })
@@ -99,7 +102,6 @@ export default function Events() {
     setSearchParams({
       ...(next ? { query: next } : {}),
       ...(selectedRegion !== '전체' ? { region: selectedRegion } : {}),
-      ...(selectedCategory !== '전체' ? { category: selectedCategory } : {}),
       ...(selectedStatus !== '전체' ? { status: selectedStatus } : {}),
     })
     setCurrentPage(0)
@@ -121,8 +123,8 @@ export default function Events() {
   }
 
   const totalPages = eventPage.totalPages ?? 0
-  const pageWindowStart = Math.floor(currentPage / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE
-  const pageWindowEnd = Math.min(pageWindowStart + PAGE_WINDOW_SIZE - 1, Math.max(totalPages - 1, 0))
+  const pageWindowStart = Math.floor(currentPage / pageWindowSize) * pageWindowSize
+  const pageWindowEnd = Math.min(pageWindowStart + pageWindowSize - 1, Math.max(totalPages - 1, 0))
   const pageNumbers = Array.from({ length: Math.max(pageWindowEnd - pageWindowStart + 1, 0) }, (_, index) => pageWindowStart + index)
   const hasPreviousWindow = pageWindowStart > 0
   const hasNextWindow = pageWindowEnd < totalPages - 1
@@ -275,11 +277,11 @@ export default function Events() {
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setCurrentPage((prev) => Math.max(0, prev - PAGE_WINDOW_SIZE))}
+              onClick={() => setCurrentPage((prev) => Math.max(0, prev - pageWindowSize))}
               disabled={!hasPreviousWindow}
               className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              이전 10개
+              이전 {pageWindowSize}개
             </button>
             {pageNumbers.map((pageNumber) => (
               <button
@@ -297,11 +299,11 @@ export default function Events() {
             ))}
             <button
               type="button"
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + PAGE_WINDOW_SIZE))}
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + pageWindowSize))}
               disabled={!hasNextWindow}
               className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              다음 10개
+              다음 {pageWindowSize}개
             </button>
           </div>
         )}
