@@ -65,10 +65,10 @@ public class EventStatusUpdateConsumer {
     }
 
     private void dispatch(EventStatusUpdatedMessage event) {
-        if (event.status() == null || event.eventId() == null) {
+        if (event.afterStatus() == null || event.eventId() == null) {
             throw new FavoriteException(FavoriteErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
         favoriteService.updateStatusEventId(
-                new UpdateStatusEventCommand(event.eventId(), EventStatus.from(event.status())));
+                new UpdateStatusEventCommand(event.eventId(), EventStatus.from(event.afterStatus())));
     }
 }

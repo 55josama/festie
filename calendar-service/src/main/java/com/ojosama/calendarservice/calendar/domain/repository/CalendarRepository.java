@@ -29,5 +29,9 @@ public interface CalendarRepository {
     void deleteAllByEventId(UUID eventId);
 
     void bulkUpdateStatusByEventId(UUID eventId, EventStatus status);
+
+    List<Calendar> findAllByEventIdAndEventInfo_EventDateIn(UUID eventId, List<LocalDateTime> deletedScheduleIds);
+
+    void deleteAllByEventIdAndEventInfo_EventDateIn(UUID eventId, List<LocalDateTime> deletedScheduleIds);
 }
 

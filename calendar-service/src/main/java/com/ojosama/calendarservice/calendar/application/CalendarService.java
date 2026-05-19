@@ -145,4 +145,14 @@ public class CalendarService {
     private List<Calendar> validateCalendarAlive(UUID eventId) {
         return calendarRepository.findByEventInfo_EventIdAndDeletedAtIsNull(eventId);
     }
+
+    @Transactional
+    public List<UUID> deleteAllByEventIdAndEventInfo_EventDateIn(UUID eventId, List<LocalDateTime> deletedScheduleIds) {
+        List<Calendar> calendarList = calendarRepository.findAllByEventIdAndEventInfo_EventDateIn(eventId,
+                deletedScheduleIds);
+        List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
+        calendarRepository.deleteAllByEventIdAndEventInfo_EventDateIn(eventId, deletedScheduleIds);
+
+        return userIds;
+    }
 }
