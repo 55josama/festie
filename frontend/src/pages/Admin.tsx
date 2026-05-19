@@ -403,6 +403,8 @@ export default function Admin() {
         queryFn: () => getAdminChatRooms({
             page: chatRoomPage,
             size: CHAT_ROOM_PAGE_SIZE,
+            sort: 'schedule.scheduledOpenAt,desc',
+            status: chatStatus === 'ALL' ? undefined : chatStatus,
             scheduledOpenAtFrom: chatRoomScheduledFrom || undefined,
             scheduledOpenAtTo: chatRoomScheduledTo || undefined,
         }),
@@ -453,23 +455,6 @@ export default function Admin() {
         let rooms = isAdmin || isManager ? adminChatRoomPage.content : []
         if (!isAdmin && !isManager && managedChatCategories.size > 0) {
             rooms = rooms.filter((room: any) => managedChatCategories.has(room.category))
-        }
-        if (chatStatus !== 'ALL') {
-            rooms = rooms.filter((room: any) => room.status === chatStatus)
-        }
-        if (chatRoomScheduledFrom) {
-            const fromKey = chatRoomScheduledFrom
-            rooms = rooms.filter((room: any) => {
-                const scheduledOpenAt = toLocalDateKey(room.scheduledOpenAt)
-                return scheduledOpenAt != null && scheduledOpenAt >= fromKey
-            })
-        }
-        if (chatRoomScheduledTo) {
-            const toKey = chatRoomScheduledTo
-            rooms = rooms.filter((room: any) => {
-                const scheduledOpenAt = toLocalDateKey(room.scheduledOpenAt)
-                return scheduledOpenAt != null && scheduledOpenAt <= toKey
-            })
         }
         rooms = [...rooms].sort((a: any, b: any) => {
             const left = a.scheduledOpenAt ? new Date(a.scheduledOpenAt).getTime() : 0
@@ -1708,8 +1693,14 @@ export default function Admin() {
                                 action={
                                     <div className="flex flex-wrap items-center gap-2">
                                         {CHAT_STATUS_FILTERS.map((item) => (
-                                            <Pill key={item} active={chatStatus === item}
-                                                  onClick={() => setChatStatus(item)}>
+                                            <Pill
+                                                key={item}
+                                                active={chatStatus === item}
+                                                onClick={() => {
+                                                    setChatStatus(item)
+                                                    setChatRoomPage(0)
+                                                }}
+                                            >
                                                 {item}
                                             </Pill>
                                         ))}
@@ -3488,16 +3479,6 @@ function TogglePill({active, onClick, children}: { active?: boolean; onClick: ()
 function normalizeRole(role?: string | null) {
     if (!role) return ''
     return role.replace(/^ROLE_/, '')
-}
-
-function toLocalDateKey(value?: string | null) {
-    if (!value) return null
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return null
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
 }
 
 function normalizeAdminTab(value: string | null): AdminTab {

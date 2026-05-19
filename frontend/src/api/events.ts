@@ -1,11 +1,16 @@
 import client from './client'
-import { unwrap, unwrapPage } from '../lib/api'
+import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { Event } from '../types'
 import type { EventRequestItem } from '../types/admin'
 
 export const getEvents = async (params: Record<string, any> = {}) => {
   const res = await client.get('/event-service/v1/events', { params })
   return unwrapPage<Event>(res.data)
+}
+
+export const getEventsPage = async (params: Record<string, any> = {}) => {
+  const res = await client.get('/event-service/v1/events', { params })
+  return unwrapPageResponse<Event>(res.data)
 }
 
 export const getEvent = async (eventId: string) => {

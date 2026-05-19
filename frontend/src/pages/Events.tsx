@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { getEvents } from '../api/events'
+import { getEventsPage } from '../api/events'
 import type { Event } from '../types'
+import type { PageResponse } from '../lib/api'
 import { resolveRegionFromCoordinates } from '../lib/kakao'
 import { useAuthStore } from '../store/authStore'
 
 const REGION_FILTERS = ['전체', '서울', '경기', '충청', '강원', '경상', '전라', '부산', '제주']
 const CATEGORY_FILTERS = ['전체', '콘서트', '축제', '팬미팅', '팝업스토어']
 const STATUS_FILTERS = ['전체', '예정', '진행중', '종료']
+const PAGE_SIZE = 20
+const PAGE_WINDOW_SIZE = 10
 const EVENT_CREATE_LINK = '/admin?panel=general'
 
 export default function Events() {
@@ -18,20 +21,34 @@ export default function Events() {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') ?? '전체')
   const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') ?? '전체')
   const [query, setQuery] = useState(searchParams.get('query') ?? '')
+  const [currentPage, setCurrentPage] = useState(0)
   const [resolvedRegions, setResolvedRegions] = useState<Record<string, string>>({})
   const regionCacheRef = useRef<Record<string, string>>({})
   const kakaoKey = String(import.meta.env.VITE_KAKAO_JS_KEY ?? '')
   const isManager = !!user && /ADMIN|MANAGER/.test(user.role)
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['events', 'list'],
-    queryFn: () => getEvents({ size: 100 }),
+  const eventStatusParam = useMemo(() => mapDisplayStatusToApiStatus(selectedStatus), [selectedStatus])
+  const eventCategoryParam = useMemo(
+    () => (selectedCategory === '전체' ? undefined : selectedCategory),
+    [selectedCategory],
+  )
+
+  const { data: eventPage = { content: [], page: 0, size: PAGE_SIZE, totalElements: 0, totalPages: 0 } } = useQuery<PageResponse<Event>>({
+    queryKey: ['events', 'list', currentPage, eventCategoryParam, eventStatusParam],
+    queryFn: () =>
+      getEventsPage({
+        page: currentPage,
+        size: PAGE_SIZE,
+        ...(eventCategoryParam ? { category: eventCategoryParam } : {}),
+        ...(eventStatusParam ? { status: eventStatusParam } : {}),
+      }),
   })
+  const events = eventPage.content ?? []
 
   useEffect(() => {
     if (!kakaoKey) return
     let cancelled = false
-    const pending = (events as Event[]).filter((event) => {
+    const pending = events.filter((event) => {
       if (event.region) return false
       if (regionCacheRef.current[event.id]) return false
       return event.latitude != null && event.longitude != null
@@ -66,7 +83,7 @@ export default function Events() {
 
   const filteredEvents = useMemo(() => {
     return sortUpcomingEvents(
-      (events as Event[]).filter((event) => {
+      events.filter((event) => {
         const queryOk = !query.trim() || matchesSearchText([event.name, event.place, event.performer ?? '', event.categoryName].join(' '), query)
         const regionOk = selectedRegion === '전체' || getRegionLabel(event, resolvedRegions) === selectedRegion
         const categoryOk = selectedCategory === '전체'
@@ -85,7 +102,30 @@ export default function Events() {
       ...(selectedCategory !== '전체' ? { category: selectedCategory } : {}),
       ...(selectedStatus !== '전체' ? { status: selectedStatus } : {}),
     })
+    setCurrentPage(0)
   }
+
+  const changeRegion = (value: string) => {
+    setSelectedRegion(value)
+    setCurrentPage(0)
+  }
+
+  const changeCategory = (value: string) => {
+    setSelectedCategory(value)
+    setCurrentPage(0)
+  }
+
+  const changeStatus = (value: string) => {
+    setSelectedStatus(value)
+    setCurrentPage(0)
+  }
+
+  const totalPages = eventPage.totalPages ?? 0
+  const pageWindowStart = Math.floor(currentPage / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE
+  const pageWindowEnd = Math.min(pageWindowStart + PAGE_WINDOW_SIZE - 1, Math.max(totalPages - 1, 0))
+  const pageNumbers = Array.from({ length: Math.max(pageWindowEnd - pageWindowStart + 1, 0) }, (_, index) => pageWindowStart + index)
+  const hasPreviousWindow = pageWindowStart > 0
+  const hasNextWindow = pageWindowEnd < totalPages - 1
 
   return (
     <div className="space-y-6 px-5 py-5 md:px-8 md:py-7">
@@ -135,7 +175,7 @@ export default function Events() {
               <span className="text-[11px] font-semibold text-slate-500">지역</span>
               <select
                 value={selectedRegion}
-                onChange={(e) => setSelectedRegion(e.target.value)}
+                onChange={(e) => changeRegion(e.target.value)}
                 className="min-w-[120px] rounded-full border border-[var(--line)] bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 outline-none"
               >
                 {REGION_FILTERS.map((item) => (
@@ -147,11 +187,11 @@ export default function Events() {
             </div>
             <FilterRow label="카테고리">
               {CATEGORY_FILTERS.map((item) => (
-                <Chip
+                  <Chip
                   key={item}
                   active={selectedCategory === item}
                   tone={item === '전체' ? 'slate' : getCategoryTone(item)}
-                  onClick={() => setSelectedCategory(item)}
+                  onClick={() => changeCategory(item)}
                 >
                   {item}
                 </Chip>
@@ -159,11 +199,11 @@ export default function Events() {
             </FilterRow>
             <FilterRow label="상태">
               {STATUS_FILTERS.map((item) => (
-                <Chip
+                  <Chip
                   key={item}
                   active={selectedStatus === item}
                   tone={item === '전체' ? 'slate' : item === '예정' ? 'violet' : item === '진행중' ? 'emerald' : 'slate'}
-                  onClick={() => setSelectedStatus(item)}
+                  onClick={() => changeStatus(item)}
                 >
                   {item}
                 </Chip>
@@ -174,7 +214,7 @@ export default function Events() {
           <div className="hidden mt-6 flex-wrap items-center gap-3 md:flex">
             <FilterRow label="지역">
               {REGION_FILTERS.map((item) => (
-                <Chip key={item} active={selectedRegion === item} onClick={() => setSelectedRegion(item)}>
+                <Chip key={item} active={selectedRegion === item} onClick={() => changeRegion(item)}>
                   {item}
                 </Chip>
               ))}
@@ -185,7 +225,7 @@ export default function Events() {
                   key={item}
                   active={selectedCategory === item}
                   tone={item === '전체' ? 'slate' : getCategoryTone(item)}
-                  onClick={() => setSelectedCategory(item)}
+                  onClick={() => changeCategory(item)}
                 >
                   {item}
                 </Chip>
@@ -197,7 +237,7 @@ export default function Events() {
                   key={item}
                   active={selectedStatus === item}
                   tone={item === '전체' ? 'slate' : item === '예정' ? 'violet' : item === '진행중' ? 'emerald' : 'slate'}
-                  onClick={() => setSelectedStatus(item)}
+                  onClick={() => changeStatus(item)}
                 >
                   {item}
                 </Chip>
@@ -211,7 +251,9 @@ export default function Events() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-[18px] font-black tracking-tight text-slate-950">행사 결과</h2>
-            <p className="mt-1 text-xs text-slate-500">{filteredEvents.length}개의 행사를 보고 있어요.</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {filteredEvents.length}개의 행사를 보고 있어요. · {currentPage + 1} / {Math.max(totalPages, 1)} 페이지
+            </p>
           </div>
           {isManager && (
             <Link
@@ -228,6 +270,41 @@ export default function Events() {
             <EventNewsCard key={event.id} event={event} />
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(0, prev - PAGE_WINDOW_SIZE))}
+              disabled={!hasPreviousWindow}
+              className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              이전 10개
+            </button>
+            {pageNumbers.map((pageNumber) => (
+              <button
+                key={pageNumber}
+                type="button"
+                onClick={() => setCurrentPage(pageNumber)}
+                className={`min-w-9 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+                  currentPage === pageNumber
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'border border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {pageNumber + 1}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + PAGE_WINDOW_SIZE))}
+              disabled={!hasNextWindow}
+              className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              다음 10개
+            </button>
+          </div>
+        )}
       </section>
     </div>
   )
@@ -410,6 +487,13 @@ function getDisplayStatus(event: Event) {
     return { label: '예정', statusClass: 'text-[var(--accent)]', isPast: false }
   }
   return { label: '종료', statusClass: 'text-slate-400', isPast: true }
+}
+
+function mapDisplayStatusToApiStatus(status: string) {
+  if (status === '예정') return 'SCHEDULED'
+  if (status === '진행중') return 'IN_PROGRESS'
+  if (status === '종료') return 'COMPLETED'
+  return undefined
 }
 
 function isOngoingEvent(event: Event) {
