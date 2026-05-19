@@ -105,7 +105,7 @@ public class AiModerationService {
                                     m.getTargetUserId(),
                                     m.getTargetType(),
                                     m.getCategory(),
-                                    "AI 적발"
+                                    m.getContent()
                             )
                     );
                 });
