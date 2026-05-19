@@ -2,8 +2,10 @@ package com.ojosama.chatservice.presentation.controller;
 
 import com.ojosama.chatservice.application.dto.command.VerifyEventLocationCommand;
 import com.ojosama.chatservice.application.service.EventLocationVerificationService;
+import com.ojosama.chatservice.domain.exception.ChatException;
 import com.ojosama.chatservice.presentation.dto.request.VerifyEventLocationRequest;
 import com.ojosama.chatservice.presentation.dto.response.EventLocationVerificationResponse;
+import com.ojosama.common.exception.CommonErrorCode;
 import com.ojosama.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,9 +39,16 @@ public class EventLocationVerificationController {
             @Parameter(hidden = true) @AuthenticationPrincipal String userId,
             @Valid @RequestBody VerifyEventLocationRequest request
     ) {
+        UUID parsedUserId;
+        try {
+            parsedUserId = UUID.fromString(userId);
+        } catch (Exception e) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+
         var result = eventLocationVerificationService.verify(new VerifyEventLocationCommand(
                 eventId,
-                UUID.fromString(userId),
+                parsedUserId,
                 request.currentLatitude(),
                 request.currentLongitude()
         ));
