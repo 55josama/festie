@@ -51,7 +51,12 @@ public class ChatRoomRepositoryImpl implements ChatRoomRepository {
 
     @Override
     public Page<ChatRoom> findAllFiltered(ChatRoomStatus status, LocalDateTime scheduledOpenAtFrom, LocalDateTime scheduledOpenAtTo, Pageable pageable) {
-        return ChatRoomJpaRepository.findAllFiltered(status, scheduledOpenAtFrom, scheduledOpenAtTo, pageable);
+        return ChatRoomJpaRepository.findAllFiltered(
+                status == null ? null : status.name(),
+                scheduledOpenAtFrom,
+                scheduledOpenAtTo,
+                pageable
+        );
     }
 
     @Override

@@ -20,22 +20,21 @@ public interface ChatRoomJpaRepository extends JpaRepository<ChatRoom, UUID> {
 
     @Query(
             value = """
-                    SELECT c
-                    FROM ChatRoom c
-                    WHERE (:status IS NULL OR c.status = :status)
-                      AND (:scheduledOpenAtFrom IS NULL OR c.schedule.scheduledOpenAt >= :scheduledOpenAtFrom)
-                      AND (:scheduledOpenAtTo IS NULL OR c.schedule.scheduledOpenAt <= :scheduledOpenAtTo)
+                    SELECT * FROM chat_schema.p_chat_room cr
+                    WHERE (CAST(:status AS TEXT) IS NULL OR cr.status = CAST(:status AS TEXT))
+                      AND (CAST(:scheduledOpenAtFrom AS TIMESTAMP) IS NULL OR cr.scheduled_open_at >= :scheduledOpenAtFrom)
+                      AND (CAST(:scheduledOpenAtTo AS TIMESTAMP) IS NULL OR cr.scheduled_open_at <= :scheduledOpenAtTo)
                     """,
             countQuery = """
-                    SELECT COUNT(c)
-                    FROM ChatRoom c
-                    WHERE (:status IS NULL OR c.status = :status)
-                      AND (:scheduledOpenAtFrom IS NULL OR c.schedule.scheduledOpenAt >= :scheduledOpenAtFrom)
-                      AND (:scheduledOpenAtTo IS NULL OR c.schedule.scheduledOpenAt <= :scheduledOpenAtTo)
-                    """
+                    SELECT COUNT(*) FROM chat_schema.p_chat_room cr
+                    WHERE (CAST(:status AS TEXT) IS NULL OR cr.status = CAST(:status AS TEXT))
+                      AND (CAST(:scheduledOpenAtFrom AS TIMESTAMP) IS NULL OR cr.scheduled_open_at >= :scheduledOpenAtFrom)
+                      AND (CAST(:scheduledOpenAtTo AS TIMESTAMP) IS NULL OR cr.scheduled_open_at <= :scheduledOpenAtTo)
+                    """,
+            nativeQuery = true
     )
     Page<ChatRoom> findAllFiltered(
-            @Param("status") ChatRoomStatus status,
+            @Param("status") String status,
             @Param("scheduledOpenAtFrom") LocalDateTime scheduledOpenAtFrom,
             @Param("scheduledOpenAtTo") LocalDateTime scheduledOpenAtTo,
             Pageable pageable
