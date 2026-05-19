@@ -4,6 +4,7 @@ import com.ojosama.chatservice.application.dto.result.ReportedMessageResult;
 import com.ojosama.chatservice.application.service.MessageService;
 import com.ojosama.chatservice.presentation.dto.response.ReportedMessageResponse;
 import com.ojosama.common.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Hidden;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/internal/v1/chat/messages")
