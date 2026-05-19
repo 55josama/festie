@@ -3,7 +3,6 @@ package com.ojosama.chatservice.config;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,9 +17,6 @@ public class SwaggerConfig {
                         .title("Festie Chat Service API")
                         .description("채팅 & 채팅 메시지 서비스 API 명세")
                         .version("v1"))
-                .addSecurityItem(new SecurityRequirement()
-                        .addList("X-User-Id")
-                        .addList("X-User-Role"))
                 .components(new Components()
                         .addSecuritySchemes("X-User-Id", new SecurityScheme()
                                 .type(SecurityScheme.Type.APIKEY)
