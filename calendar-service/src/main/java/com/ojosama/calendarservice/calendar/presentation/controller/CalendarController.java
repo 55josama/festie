@@ -7,6 +7,8 @@ import com.ojosama.calendarservice.calendar.presentation.dto.request.CreateCalen
 import com.ojosama.calendarservice.calendar.presentation.dto.request.UpdateMemoCalendarRequestDto;
 import com.ojosama.calendarservice.calendar.presentation.dto.response.CalendarResponseDto;
 import com.ojosama.common.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -31,10 +33,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @PreAuthorize("isAuthenticated()")
 @RequestMapping("/v1/calendars")
+@Tag(name = "캘린더", description = "캘린더 관리 API")
 public class CalendarController {
 
     private final CalendarService calendarService;
 
+    @Operation(summary = "캘린더 생성", description = "캘린더에 새로운 행사를 생성합니다.")
     @PostMapping
     public ResponseEntity<ApiResponse<CalendarResponseDto>> createCalendar(
             @Valid @RequestBody CreateCalendarRequestDto requestDto,
@@ -46,6 +50,7 @@ public class CalendarController {
                 .body(ApiResponse.created(dto));
     }
 
+    @Operation(summary = "캘린더 행사 상세 조회", description = "캘린더 상세 정보를 조회합니다.")
     @GetMapping("/{calendarId}")
     public ResponseEntity<ApiResponse<CalendarResponseDto>> getCalendar(@PathVariable UUID calendarId,
                                                                         @AuthenticationPrincipal UUID userId) {
@@ -55,6 +60,7 @@ public class CalendarController {
         return ResponseEntity.ok(ApiResponse.success(dto));
     }
 
+    @Operation(summary = "캘린더 행사 조회", description = "캘린더 년/월을 기준으로 행사를 조회합니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<List<CalendarResponseDto>>> getCalendars(
             @RequestParam("year") @Min(2000) @Max(9999) int year,
@@ -66,6 +72,7 @@ public class CalendarController {
         return ResponseEntity.ok(ApiResponse.success(list));
     }
 
+    @Operation(summary = "캘린더 행사 메모 수정", description = "캘린더에 메모를 수정합니다.")
     @PatchMapping("/{calendarId}")
     public ResponseEntity<ApiResponse<CalendarResponseDto>> updateMemoCalendars(@PathVariable UUID calendarId,
                                                                                 @RequestBody @Valid UpdateMemoCalendarRequestDto dto,
@@ -76,6 +83,7 @@ public class CalendarController {
         return ResponseEntity.ok(ApiResponse.success(responseDto));
     }
 
+    @Operation(summary = "캘린더 행사 삭제", description = "삭제하고 싶은 행사를 캘린더에서 삭제합니다.")
     @DeleteMapping("/{calendarId}")
     public ResponseEntity<ApiResponse<Void>> deleteCalendar(@PathVariable UUID calendarId,
                                                             @AuthenticationPrincipal UUID userId) {
