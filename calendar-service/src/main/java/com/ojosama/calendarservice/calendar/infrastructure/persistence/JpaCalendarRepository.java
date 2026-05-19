@@ -28,4 +28,8 @@ public interface JpaCalendarRepository extends JpaRepository<Calendar, UUID>, Ca
     List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(@Param("start") LocalDateTime start,
                                                                       @Param("end") LocalDateTime end);
 
+    List<Calendar> findAllByEventInfo_EventIdAndEventInfo_EventDateIn(UUID eventId,
+                                                                      List<LocalDateTime> deletedScheduleIds);
+
+    void deleteAllByEventInfo_EventIdAndEventInfo_EventDateIn(UUID eventId, List<LocalDateTime> deletedScheduleIds);
 }

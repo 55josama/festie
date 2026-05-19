@@ -12,7 +12,6 @@ import com.ojosama.eventservice.event.domain.exception.EventException;
 import com.ojosama.eventservice.event.domain.model.Event;
 import com.ojosama.eventservice.event.domain.model.EventAction;
 import com.ojosama.eventservice.event.domain.model.EventCategory;
-import com.ojosama.eventservice.event.domain.model.EventSchedule;
 import com.ojosama.eventservice.event.domain.model.EventScheduleAction;
 import com.ojosama.eventservice.event.domain.model.ScheduleActionStatus;
 import com.ojosama.eventservice.event.domain.model.vo.EventFee;
@@ -183,10 +182,10 @@ public class EventCommandService {
 
         scheduleActionRepository.findPendingByEventIdForUpdate(eventId).forEach(EventScheduleAction::markCancelled);
 
-        List<UUID> deletedScheduleIds = event.getSchedules().stream()
+        List<LocalDateTime> deletedScheduleTimes = event.getSchedules().stream()
                 .filter(schedule -> !schedule.getScheduleTime().isScheduleEnded())
                 .peek(schedule -> schedule.deleted(userId))
-                .map(EventSchedule::getId)
+                .map(schedule -> schedule.getScheduleTime().getStartTime()) // 이 부분을 변경!
                 .toList();
 
         eventRepository.save(event);
@@ -196,7 +195,7 @@ public class EventCommandService {
                 event.getName(),
                 beforeStatus,
                 event.getStatus().name(),
-                deletedScheduleIds
+                deletedScheduleTimes
         ));
 
         return EventResult.from(event);

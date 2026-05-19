@@ -69,6 +69,17 @@ public class CalendarRepositoryImpl implements CalendarRepository {
     }
 
     @Override
+    public List<Calendar> findAllByEventIdAndEventInfo_EventDateIn(UUID eventId,
+                                                                   List<LocalDateTime> deletedScheduleIds) {
+        return jpaCalendarRepository.findAllByEventInfo_EventIdAndEventInfo_EventDateIn(eventId, deletedScheduleIds);
+    }
+
+    @Override
+    public void deleteAllByEventIdAndEventInfo_EventDateIn(UUID eventId, List<LocalDateTime> deletedScheduleIds) {
+        jpaCalendarRepository.deleteAllByEventInfo_EventIdAndEventInfo_EventDateIn(eventId, deletedScheduleIds);
+    }
+
+    @Override
     public List<Calendar> findByEventInfo_EventDateBetweenAndDeletedAtIsNull(LocalDateTime start,
                                                                              LocalDateTime end) {
         return jpaCalendarRepository.findByEventInfo_EventDateBetweenAndDeletedAtIsNull(start, end);

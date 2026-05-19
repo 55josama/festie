@@ -12,6 +12,7 @@ import com.ojosama.calendarservice.calendar.infrastructure.messaging.kafka.consu
 import com.ojosama.calendarservice.calendar.infrastructure.redis.CalendarRedisService;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class EventStatusUpdatedConsumer {
     private final CalendarService calendarService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final CalendarRedisService redisService;
+
 
     @KafkaListener(
             topics = "${spring.kafka.topic.event-status-changed}",
@@ -71,24 +73,39 @@ public class EventStatusUpdatedConsumer {
     }
 
     private void dispatch(EventStatusUpdatedMessage event) {
-        if (event.status() == null || event.eventId() == null) {
+        if (event.afterStatus() == null || event.eventId() == null) {
             throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
 
-        EventStatus status = EventStatus.from(event.status());
+        EventStatus status = EventStatus.from(event.afterStatus());
 
-        List<UUID> userIds = calendarService.bulkUpdateStatusByEventId(
+        if (status != EventStatus.CANCELLED) {
+            calendarService.bulkUpdateStatusByEventId(
+                    new UpdateStatusEventCommand(event.eventId(), status));
+            return;
+        }
+
+        // 삭제 대상 캘린더 삭제
+        List<UUID> deletedUserIds = new ArrayList<>();
+        if (event.deletedScheduleIds() != null && !event.deletedScheduleIds().isEmpty()) {
+            deletedUserIds = calendarService.deleteAllByEventIdAndEventInfo_EventDateIn(
+                    event.eventId(), event.deletedScheduleIds());
+        }
+
+        // 나머지 CANCELLED 상태 업데이트
+        List<UUID> updatedUserIds = calendarService.bulkUpdateStatusByEventId(
                 new UpdateStatusEventCommand(event.eventId(), status));
 
-        // 행사 상태 -> 취소
-        if (status == EventStatus.CANCELLED) {
-            // eventId로 redis 등록되어있는게 있으면 삭제
-            redisService.deleteAlarms(event.eventId());
+        // Redis 알람 삭제
+        redisService.deleteAlarms(event.eventId());
 
-            // 카프카 이벤트 발행
-            applicationEventPublisher.publishEvent(
-                    new CalendarEventStatusUpdatedMessage(event.eventId(), event.eventName(), event.status(), userIds)
-            );
-        }
+        // 카프카 발행
+        List<UUID> notificationTargets = new ArrayList<>(deletedUserIds);
+        notificationTargets.addAll(updatedUserIds);
+
+        applicationEventPublisher.publishEvent(
+                new CalendarEventStatusUpdatedMessage(
+                        event.eventId(), event.eventName(), event.afterStatus(), notificationTargets)
+        );
     }
 }
