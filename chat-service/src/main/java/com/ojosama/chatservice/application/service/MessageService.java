@@ -59,6 +59,7 @@ public class MessageService {
     private final UserClient userClient;
     private final OutboxEventPublisher outboxEventPublisher;
     private final StringRedisTemplate redisTemplate;
+    private final ChatRoomLocationVerificationTracker locationVerificationTracker;
 
     @Value("${spring.kafka.topic.chat-moderation-requested}")
     private String chatModerationRequestedTopic;
@@ -94,7 +95,7 @@ public class MessageService {
                 from(savedMessage) // ai 검증 dto 의 from
         );
 
-        return MessageResult.from(savedMessage, chatRoom.getEventId());
+        return toMessageResult(savedMessage, chatRoom.getEventId());
     }
 
     public MessageResult createSystemNotice(UUID chatRoomId, String content) {
@@ -113,7 +114,7 @@ public class MessageService {
                 .build();
 
         ChatRoom chatRoom = findChatRoom(chatRoomId);
-        return MessageResult.from(messageRepository.save(message), chatRoom.getEventId());
+        return toMessageResult(messageRepository.save(message), chatRoom.getEventId());
     }
 
     @Transactional(readOnly = true)
@@ -125,7 +126,7 @@ public class MessageService {
         if (!message.isVisible()) {
             throw new ChatException(ChatErrorCode.MESSAGE_NOT_FOUND);
         }
-        return MessageResult.from(message, findChatRoom(message.getChatRoomId()).getEventId());
+        return toMessageResult(message, findChatRoom(message.getChatRoomId()).getEventId());
     }
 
     @Transactional(readOnly = true)
@@ -163,7 +164,7 @@ public class MessageService {
                         .distinct()
                         .toList()
         );
-        return messages.map(message -> MessageResult.from(
+        return messages.map(message -> toMessageResult(
                 message,
                 eventIdByChatRoomId.get(message.getChatRoomId())
         ));
@@ -195,7 +196,7 @@ public class MessageService {
         } else {
             throw new ChatException(CommonErrorCode.INVALID_REQUEST);
         }
-        return MessageResult.from(message, findChatRoom(message.getChatRoomId()).getEventId());
+        return toMessageResult(message, findChatRoom(message.getChatRoomId()).getEventId());
     }
 
     public void blindMessageBySystem(UUID messageId) {
@@ -293,9 +294,17 @@ public class MessageService {
 
     private MessageSliceResult getMessageSlice(Slice<Message> messages, UUID eventId) {
         List<MessageResult> results = messages.getContent().stream()
-                .map(message -> MessageResult.from(message, eventId))
+                .map(message -> toMessageResult(message, eventId))
                 .toList();
         return new MessageSliceResult(results, messages.hasNext());
+    }
+
+    private MessageResult toMessageResult(Message message, UUID eventId) {
+        if (message == null) {
+            throw new ChatException(CommonErrorCode.INVALID_REQUEST);
+        }
+        boolean locationVerified = locationVerificationTracker.isVerified(eventId, message.getUserId());
+        return MessageResult.from(message, eventId, locationVerified);
     }
 
     private Map<UUID, UUID> resolveEventIdMap(List<UUID> chatRoomIds) {

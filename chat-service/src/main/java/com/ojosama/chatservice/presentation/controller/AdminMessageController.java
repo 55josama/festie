@@ -13,6 +13,9 @@ import com.ojosama.chatservice.presentation.dto.response.ChangeMessageStatusResp
 import com.ojosama.chatservice.presentation.dto.response.MessageResponse;
 import com.ojosama.common.response.ApiResponse;
 import com.ojosama.common.response.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "메시지 관리 API", description = "관리자/매니저 전용 메시지 관리 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/chat/admin/messages")
@@ -35,6 +39,8 @@ public class AdminMessageController {
 
     private final MessageService messageService;
 
+    @Operation(summary = "관리자/매니저 모든 메시지 조회",
+            description = "상태와 카테고리로 메시지를 필터링해서 모든 메시지를 조회합니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<MessageResponse>>> getMessagesForAdmin(
             @RequestParam(required = false) MessageStatus status,
@@ -49,16 +55,20 @@ public class AdminMessageController {
         )));
     }
 
+    @Operation(summary = "메시지 단건 조회",
+            description = "메시지 단건 상세 조회 할 수 있습니다.")
     @GetMapping("/{messageId}")
     public ResponseEntity<ApiResponse<MessageResponse>> getMessage(@PathVariable UUID messageId) {
         MessageResult result = messageService.getMessage(new FindMessageQuery(messageId));
         return ResponseEntity.ok(ApiResponse.success(MessageResponse.from(result)));
     }
 
+    @Operation(summary = "메시지 상태 변경",
+            description = "메시지 id를 통해 상태(ACTIVE/BLINDED) 처리합니다.")
     @PatchMapping("/{messageId}/status")
     public ResponseEntity<ApiResponse<ChangeMessageStatusResponse>> changeMessageStatus(
             @PathVariable UUID messageId,
-            @AuthenticationPrincipal String adminId,
+            @Parameter(hidden = true) @AuthenticationPrincipal String adminId,
             @Valid @RequestBody ChangeMessageStatusRequest request
     ) {
         MessageStatus status = toMessageStatus(request.status());

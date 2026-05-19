@@ -15,7 +15,8 @@ public record MessageResponse(
         MessageType messageType,
         String content,
         MessageStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean locationVerified
 ) {
     private static final String BLINDED_CONTENT = "블라인드 처리된 메시지입니다.";
 
@@ -36,7 +37,8 @@ public record MessageResponse(
                 result.messageType(),
                 content,
                 result.status(),
-                result.createdAt()
+                result.createdAt(),
+                result.locationVerified()
         );
     }
 }

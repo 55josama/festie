@@ -72,6 +72,7 @@ export interface ChatMessage {
   content: string
   status: string
   createdAt: string
+  locationVerified?: boolean
 }
 
 export interface ChatRoom {

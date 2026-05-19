@@ -8,6 +8,7 @@ import com.ojosama.chatservice.infrastructure.client.EventClient;
 import com.ojosama.chatservice.infrastructure.client.dto.InternalEventLocationResponse;
 import feign.FeignException;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,8 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventLocationVerificationService {
 
     private static final double METERS_PER_LATITUDE_DEGREE = 111_320.0;
+    private static final Duration LOCATION_VERIFICATION_TTL = Duration.ofHours(24);
 
     private final EventClient eventClient;
+    private final ChatRoomLocationVerificationTracker locationVerificationTracker;
 
     // 사용자의 위치 정보를 받아서 거리 검증
     public EventLocationVerificationResult verify(VerifyEventLocationCommand command) {
@@ -36,6 +39,9 @@ public class EventLocationVerificationService {
                 event.longitude(),
                 radiusMeters
         );
+        if (nearEvent) {
+            locationVerificationTracker.markVerified(event.eventId(), command.userId(), LOCATION_VERIFICATION_TTL);
+        }
         return new EventLocationVerificationResult(
                 event.eventId(),
                 nearEvent
@@ -43,7 +49,7 @@ public class EventLocationVerificationService {
     }
 
     private void validate(VerifyEventLocationCommand command) {
-        if (command == null || command.eventId() == null
+        if (command == null || command.eventId() == null || command.userId() == null
                 || command.currentLatitude() == null || command.currentLongitude() == null) {
             throw new ChatException(ChatErrorCode.INVALID_LOCATION_REQUEST);
         }
@@ -85,4 +91,5 @@ public class EventLocationVerificationService {
         double distanceMeters = Math.sqrt(latDiffMeters * latDiffMeters + lngDiffMeters * lngDiffMeters);
         return distanceMeters <= radiusMeters; // true or false
     }
+
 }

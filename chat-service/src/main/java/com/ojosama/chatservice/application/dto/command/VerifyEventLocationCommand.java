@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record VerifyEventLocationCommand(
         UUID eventId,
+        UUID userId,
         BigDecimal currentLatitude,
         BigDecimal currentLongitude
 ) {

@@ -18,6 +18,23 @@ import {
 } from './data'
 
 const wrap = (data: any) => ({ status: 'success', data })
+const verifiedChatRoomUsers = new Map<string, Set<string>>()
+
+function resolveMockProfile(request: Request) {
+  const token = request.headers.get('authorization') ?? ''
+  return mockProfiles.get(token.replace('Bearer ', ''))
+}
+
+function isMockLocationVerified(chatRoomId: string, userId: string) {
+  return verifiedChatRoomUsers.get(chatRoomId)?.has(userId) ?? false
+}
+
+function attachMockLocationVerification(message: any) {
+  return {
+    ...message,
+    locationVerified: isMockLocationVerified(message.chatRoomId, message.userId),
+  }
+}
 
 function sortMockEvents(events: typeof mockEvents, sort: string | null) {
   if (!sort) return [...events]
@@ -840,6 +857,16 @@ export const handlers = [
     if (body.currentLatitude == null || body.currentLongitude == null) {
       return HttpResponse.json({ status: 'error', message: '현재 위치 정보는 필수입니다.' }, { status: 400 })
     }
+    const profile = resolveMockProfile(request as any)
+    const room = mockChatRooms.find((item) => item.eventId === params.eventId)
+    if (room && profile) {
+      let verifiedUsers = verifiedChatRoomUsers.get(room.chatRoomId)
+      if (!verifiedUsers) {
+        verifiedUsers = new Set<string>()
+        verifiedChatRoomUsers.set(room.chatRoomId, verifiedUsers)
+      }
+      verifiedUsers.add(profile.userId)
+    }
     return HttpResponse.json(wrap({
       eventId: params.eventId,
       isNearEvent: true,
@@ -891,7 +918,7 @@ export const handlers = [
         return String(right.messageId).localeCompare(String(left.messageId))
       })
     const start = page * size
-    const sliced = messages.slice(start, start + size)
+    const sliced = messages.slice(start, start + size).map(attachMockLocationVerification)
     return HttpResponse.json(wrap({
       messages: sliced,
       hasNext: start + size < messages.length,
@@ -960,7 +987,7 @@ export const handlers = [
     const totalElements = messages.length
     const totalPages = Math.max(1, Math.ceil(totalElements / Math.max(size, 1)))
     const start = Math.max(page, 0) * Math.max(size, 1)
-    const content = messages.slice(start, start + Math.max(size, 1))
+    const content = messages.slice(start, start + Math.max(size, 1)).map(attachMockLocationVerification)
     return HttpResponse.json(wrap({ content, totalElements, totalPages, size, number: page }))
   }),
 
@@ -987,7 +1014,7 @@ export const handlers = [
       createdAt: new Date().toISOString(),
     }
     mockMessages.push(message as any)
-    return HttpResponse.json(wrap(message), { status: 201 })
+    return HttpResponse.json(wrap(attachMockLocationVerification(message)), { status: 201 })
   }),
 
   http.delete('/chat-service/v1/chat/messages/:messageId', async ({ params, request }) => {
