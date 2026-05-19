@@ -12,6 +12,7 @@ public record ListReportResponse (
         String targetType,
         String category,
         String description,
+        String targetContent,
         String status,
         String operatorMemo
 ){
@@ -25,6 +26,7 @@ public record ListReportResponse (
                 result.targetType(),
                 result.category(),
                 result.description(),
+                result.targetContent(),
                 result.status(),
                 result.operatorMemo()
         );

@@ -12,6 +12,7 @@ public record ReportResult (
         String targetType,
         String category,
         String description,
+        String targetContent,
         String status,
         String operatorMemo
 ){
@@ -25,6 +26,7 @@ public record ReportResult (
                 report.getTargetType().name(),
                 report.getCategory().name(),
                 report.getDescription(),
+                report.getContent(),
                 report.getStatus().name(),
                 report.getOperatorMemo()
         );
