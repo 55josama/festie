@@ -4,6 +4,18 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST:${REDIS_HOST:localhost}}
       port: ${SPRING_DATA_REDIS_PORT:${REDIS_PORT:6379}}
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:${USER_DB_URL:jdbc:postgresql://localhost:5432/festie}}
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:${USER_DB_USERNAME:festie}}}

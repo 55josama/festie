@@ -45,13 +45,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
+    private final EmailVerificationService emailVerificationService;
 
-    //유저 생성
+    //회원가입
     @Transactional
     public CreateUserResult createUser(CreateUserCommand command) {
         if (userRepository.existsByEmailAndDeletedAtIsNull(command.email())) {
             throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
         }
+
+        emailVerificationService.validateVerified(command.email());
 
         if (userRepository.existsByNicknameAndDeletedAtIsNull(command.nickname())) {
             throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
@@ -69,6 +72,7 @@ public class UserService {
 
         try {
             User savedUser = userRepository.save(user);
+            emailVerificationService.deleteVerified(savedUser.getEmail());
 
             return new CreateUserResult(
                     savedUser.getId(),
