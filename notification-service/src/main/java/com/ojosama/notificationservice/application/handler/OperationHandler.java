@@ -65,7 +65,7 @@ public class OperationHandler {
 
     // 블랙리스트 사용자 이메일 전송
     public void handleBlackListRegister(BlackListRegisterCommand command) {
-        String email = userClient.getUserEmail(command.userId())
+        String email = userClient.getUserEmail(command.userId());
 
         String customContent = String.format(
                 "안녕하세요, Festie 운영팀입니다. 회원님의 계정이 '%s' 사유로 인해 블랙리스트에 등록되었음을 안내해 드립니다.",
