@@ -69,7 +69,7 @@ public class AdminChatRoomController {
             @org.springframework.web.bind.annotation.RequestParam(required = false) ChatRoomStatus status,
             @org.springframework.web.bind.annotation.RequestParam(required = false) LocalDate scheduledOpenAtFrom,
             @org.springframework.web.bind.annotation.RequestParam(required = false) LocalDate scheduledOpenAtTo,
-            @PageableDefault(size = 3, sort = "scheduledOpenAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 3, sort = "schedule.scheduledOpenAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(
                 PageResponse.from(chatRoomService.getAllChatRooms(
                                 status,
