@@ -1,4 +1,4 @@
-![[5조] Festie.png](../../../../Downloads/%5B5%EC%A1%B0%5D%20Festie.png)
+![[5조] Festie.png](images/Festie.png)
 
 # 🎪 Festie - 실시간 행사 SNS 플랫폼
 
