@@ -1,5 +1,5 @@
 import client, { publicClient } from './client'
-import { unwrap, unwrapPage } from '../lib/api'
+import { unwrap, unwrapPage, unwrapPageResponse } from '../lib/api'
 import type { Category, Comment, Post } from '../types'
 
 export const getPosts = async (params: {
@@ -15,6 +15,21 @@ export const getPosts = async (params: {
     ? await client.get('/community-service/v1/posts', { params: query })
     : await publicClient.get('/community-service/v1/posts', { params: query })
   return unwrapPage<Post>(res.data)
+}
+
+export const getPostsPage = async (params: {
+  categoryId?: string
+  eventId?: string
+  sort?: string
+  page?: number
+  size?: number
+  mine?: boolean
+}) => {
+  const { mine, ...query } = params
+  const res = mine
+    ? await client.get('/community-service/v1/posts', { params: query })
+    : await publicClient.get('/community-service/v1/posts', { params: query })
+  return unwrapPageResponse<Post>(res.data)
 }
 
 export const getPost = async (postId: string) => {

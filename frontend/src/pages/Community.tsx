@@ -1,13 +1,15 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getCategories, getPosts } from '../api/community'
+import { getCategories, getPostsPage } from '../api/community'
 import { approveEventRequest, rejectEventRequest, updateOperationRequestStatus } from '../api/admin'
 import { deleteEventRequest, deleteOperationRequest, getEventRequests, getMyEventRequests, getMyOperationRequests, getOperationRequests } from '../api/requests'
 import { deleteEventRequest as adminDeleteEventRequest } from '../api/admin'
 import PostCard from '../components/PostCard'
 import RequestCard from '../components/RequestCard'
 import { useAuthStore } from '../store/authStore'
+import type { PageResponse } from '../lib/api'
+import type { Post } from '../types'
 import type { EventRequestItem, OperationRequestItem } from '../types/admin'
 
 type FeedTab = 'posts' | 'requests'
@@ -16,6 +18,8 @@ type RequestStatusFilter = 'all' | 'PENDING' | 'APPROVED' | 'IN_PROGRESS' | 'RES
 type RequestCategoryFilter = 'all' | string
 type PostScope = 'all' | 'mine'
 type PopularRange = 'today' | 'week' | 'month'
+const POST_PAGE_SIZE = 15
+const POST_PAGE_WINDOW = 10
 
 type RequestFeedItem = {
     id: string
@@ -48,6 +52,7 @@ export default function Community() {
     const [sort, setSort] = useState<'latest' | 'popular'>('latest')
     const [popularRange, setPopularRange] = useState<PopularRange>('today')
     const [postScope, setPostScope] = useState<PostScope>(() => searchParams.get('scope') === 'mine' ? 'mine' : 'all')
+    const [postPage, setPostPage] = useState(0)
     const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatusFilter>('all')
     const [requestCategoryFilter, setRequestCategoryFilter] = useState<RequestCategoryFilter>('all')
     const [requestRejectReasons, setRequestRejectReasons] = useState<Record<string, string>>({})
@@ -102,12 +107,13 @@ export default function Community() {
         queryFn: getCategories,
     })
 
-    const {data: rawPosts = []} = useQuery({
-        queryKey: ['posts', categoryId, sort, postScope, user?.userId ?? null],
-        queryFn: () => getPosts({
+    const {data: postPageData = {content: [], page: 0, size: POST_PAGE_SIZE, totalElements: 0, totalPages: 0}} = useQuery<PageResponse<Post>>({
+        queryKey: ['posts', categoryId, sort, postScope, postPage, user?.userId ?? null],
+        queryFn: () => getPostsPage({
             categoryId,
             sort: sort === 'popular' ? 'likeCount,desc' : 'createdAt,desc',
-            size: 100,
+            page: postPage,
+            size: POST_PAGE_SIZE,
             mine: postScope === 'mine' && !!user,
         }),
         enabled: feedTab === 'posts' && (postScope !== 'mine' || !!user),
@@ -170,10 +176,10 @@ export default function Community() {
     }, [categories])
 
     const posts = useMemo(() => {
-        if (sort === 'latest') return rawPosts
+        if (sort === 'latest') return postPageData.content
         const cutoffHours = popularRange === 'today' ? 24 : popularRange === 'week' ? 24 * 7 : 24 * 30
         const cutoff = Date.now() - cutoffHours * 60 * 60 * 1000
-        const rangedPosts = [...rawPosts]
+        const rangedPosts = [...postPageData.content]
             .filter((post: any) => {
                 const createdAt = new Date(post.createdAt)
                 if (Number.isNaN(createdAt.getTime())) return false
@@ -181,7 +187,7 @@ export default function Community() {
             })
             .sort((a: any, b: any) => (b.likeCount + b.commentCount) - (a.likeCount + a.commentCount))
         return rangedPosts
-    }, [rawPosts, popularRange, sort])
+    }, [postPageData.content, popularRange, sort])
 
     const requestItems = useMemo<RequestFeedItem[]>(() => {
         const eventRequestCards = (eventRequests ?? []).map((request: any, index: number) => ({
@@ -255,6 +261,15 @@ export default function Community() {
         })
     }, [requestCategoryFilter, requestItems, requestKind, requestStatusFilter])
 
+    const postTotalPages = Math.max(postPageData.totalPages || 0, 0)
+    const postPageWindowStart = Math.floor(postPage / POST_PAGE_WINDOW) * POST_PAGE_WINDOW
+    const postVisiblePageIndexes = Array.from(
+        { length: Math.min(POST_PAGE_WINDOW, Math.max(postTotalPages - postPageWindowStart, 0)) },
+        (_, index) => postPageWindowStart + index,
+    )
+    const hasPreviousPostWindow = postPageWindowStart > 0
+    const hasNextPostWindow = postPageWindowStart + POST_PAGE_WINDOW < postTotalPages
+
     const requestStatusOptions = useMemo(() => {
         return requestKind === 'event'
             ? [
@@ -276,6 +291,10 @@ export default function Community() {
         setRequestStatusFilter('all')
         setRequestCategoryFilter('all')
     }, [requestKind])
+
+    useEffect(() => {
+        setPostPage(0)
+    }, [categoryId, sort, postScope, popularRange])
 
     useEffect(() => {
         if (postScope !== 'mine' || user) return
@@ -310,6 +329,7 @@ export default function Community() {
                             <FilterChip active={feedTab === 'posts' && !categoryId} tone="violet" onClick={() => {
                                 setFeedTab('posts')
                                 setCategoryId(undefined)
+                                setPostPage(0)
                             }}>
                                 전체
                             </FilterChip>
@@ -324,6 +344,7 @@ export default function Community() {
                                         onClick={() => {
                                             setFeedTab('posts')
                                             setCategoryId(category.id)
+                                            setPostPage(0)
                                         }}
                                     >
                                         {category.name}
@@ -356,6 +377,7 @@ export default function Community() {
                                 <span className="text-[10px] font-semibold text-slate-500">조회</span>
                                 <FilterChip active={postScope === 'all'} tone="violet" onClick={() => {
                                     setPostScope('all')
+                                    setPostPage(0)
                                     const next = new URLSearchParams(searchParams)
                                     next.delete('scope')
                                     setSearchParams(next, { replace: true })
@@ -365,6 +387,7 @@ export default function Community() {
                                 {!!user && (
                                     <FilterChip active={postScope === 'mine'} tone="violet" onClick={() => {
                                         setPostScope('mine')
+                                        setPostPage(0)
                                         const next = new URLSearchParams(searchParams)
                                         next.set('scope', 'mine')
                                         next.set('tab', 'posts')
@@ -374,16 +397,25 @@ export default function Community() {
                                     </FilterChip>
                                 )}
                                 <span className="text-[10px] font-semibold text-slate-500">정렬</span>
-                                <FilterChip active={sort === 'latest'} tone="sky" onClick={() => setSort('latest')}>
+                                <FilterChip active={sort === 'latest'} tone="sky" onClick={() => {
+                                    setSort('latest')
+                                    setPostPage(0)
+                                }}>
                                     최신글
                                 </FilterChip>
-                                <FilterChip active={sort === 'popular'} tone="sky" onClick={() => setSort('popular')}>
+                                <FilterChip active={sort === 'popular'} tone="sky" onClick={() => {
+                                    setSort('popular')
+                                    setPostPage(0)
+                                }}>
                                     인기글
                                 </FilterChip>
                                 {sort === 'popular' && (
                                     <select
                                         value={popularRange}
-                                        onChange={(e) => setPopularRange(e.target.value as PopularRange)}
+                                        onChange={(e) => {
+                                            setPopularRange(e.target.value as PopularRange)
+                                            setPostPage(0)
+                                        }}
                                         className="rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 outline-none"
                                     >
                                         <option value="today">오늘</option>
@@ -431,14 +463,55 @@ export default function Community() {
                         </div>
 
                         <div className="space-y-3">
-                            {posts.map((post: any) => (
-                                <PostCard
-                                    key={post.id}
-                                    post={post}
-                                    categoryLabel={categoryNameById.get(post.categoryId) ?? post.categoryName}
-                                />
-                            ))}
+                            {posts.length === 0 ? (
+                                <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                                    게시글이 없어요.
+                                </div>
+                            ) : (
+                                posts.map((post: any) => (
+                                    <PostCard
+                                        key={post.id}
+                                        post={post}
+                                        categoryLabel={categoryNameById.get(post.categoryId) ?? post.categoryName}
+                                    />
+                                ))
+                            )}
                         </div>
+
+                        {Math.max(postPageData.totalPages || 0, 0) > 1 && (
+                            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setPostPage((prev) => Math.max(0, prev - POST_PAGE_WINDOW))}
+                                    disabled={!hasPreviousPostWindow}
+                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    이전 10개
+                                </button>
+                                {postVisiblePageIndexes.map((pageIndex) => (
+                                    <button
+                                        key={pageIndex}
+                                        type="button"
+                                        onClick={() => setPostPage(pageIndex)}
+                                        className={`min-w-9 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+                                            postPage === pageIndex
+                                                ? 'bg-[var(--accent)] text-white'
+                                                : 'border border-[var(--line)] bg-white text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {pageIndex + 1}
+                                    </button>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setPostPage((prev) => Math.min(postTotalPages - 1, prev + POST_PAGE_WINDOW))}
+                                    disabled={!hasNextPostWindow}
+                                    className="rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    다음 10개
+                                </button>
+                            </div>
+                        )}
                     </section>
                 </>
             ) : (

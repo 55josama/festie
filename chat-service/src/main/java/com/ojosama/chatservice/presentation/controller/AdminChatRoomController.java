@@ -5,6 +5,7 @@ import com.ojosama.chatservice.application.dto.command.ChatRoomStatusAction;
 import com.ojosama.chatservice.application.dto.command.CreateChatRoomCommand;
 import com.ojosama.chatservice.application.dto.result.ChatRoomResult;
 import com.ojosama.chatservice.application.service.ChatRoomService;
+import com.ojosama.chatservice.domain.model.ChatRoomStatus;
 import com.ojosama.chatservice.presentation.dto.request.ChangeChatRoomStatusRequest;
 import com.ojosama.chatservice.presentation.dto.request.ChatRoomStatusActionRequest;
 import com.ojosama.chatservice.presentation.dto.request.CreateChatRoomRequest;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -64,9 +66,16 @@ public class AdminChatRoomController {
             description = "관리자/매니저용 채팅방을 모두 불러옵니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ChatRoomResponse>>> getAllChatRooms(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) ChatRoomStatus status,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) LocalDate scheduledOpenAtFrom,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) LocalDate scheduledOpenAtTo,
             @PageableDefault(size = 3, sort = "schedule.scheduledOpenAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(
-                PageResponse.from(chatRoomService.getAllChatRooms(pageable)
+                PageResponse.from(chatRoomService.getAllChatRooms(
+                                status,
+                                scheduledOpenAtFrom == null ? null : scheduledOpenAtFrom.atStartOfDay(),
+                                scheduledOpenAtTo == null ? null : scheduledOpenAtTo.plusDays(1).atStartOfDay().minusNanos(1),
+                                pageable)
                         .map(ChatRoomResponse::from))
         ));
     }

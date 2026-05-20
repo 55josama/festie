@@ -104,7 +104,7 @@ export default function EventDetail() {
         enabled: !!eventId && isLoggedIn() && user?.role === 'USER',
     })
 
-    const {data: chatMessagesPage} = useQuery({
+    const {data: chatMessagesPage, refetch: refetchChatMessages} = useQuery({
         queryKey: ['chat-messages', chatRoomId],
         queryFn: () => {
             if (!chatRoomId) {
@@ -731,6 +731,18 @@ export default function EventDetail() {
                                 className={`space-y-2 ${isChatEntered ? '' : 'pointer-events-none select-none blur-[1px]'}`}>
                                 <div className="flex items-center justify-between">
                                     <div className="text-sm font-semibold text-slate-500">메시지</div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            void refetchChatMessages()
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-slate-50"
+                                        title="채팅 새로고침"
+                                        aria-label="채팅 새로고침"
+                                    >
+                                        <span aria-hidden="true">🔄</span>
+                                        새로고침
+                                    </button>
                                 </div>
                                 <div
                                     ref={chatMessagesScrollRef}
