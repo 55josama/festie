@@ -14,8 +14,8 @@ public record EventUpdatedMessage(
         String place,
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime ticketingOpenAt,
-        LocalDateTime ticketingCloseAt,
-        String performer
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        LocalDateTime startAt
 ) {
     public record FieldChange(
             String fieldName,

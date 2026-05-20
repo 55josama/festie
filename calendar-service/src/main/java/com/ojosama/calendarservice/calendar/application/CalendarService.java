@@ -43,13 +43,17 @@ public class CalendarService {
 
         EventInfoResponseDto info = eventClient.getEvents(command.eventId());
 
+        if (info.status().equals("CANCELLED")) {
+            throw new CalendarException(CalendarErrorCode.CANCELLED_EVENT);
+        }
+
         Calendar calendar = Calendar.create(command.userId(), command.memo(),
                 new EventInfo(command.eventId(), info.name(), command.eventDate(),
                         info.ticketingOpenAt(), EventStatus.valueOf(info.status())));
 
         calendarRepository.save(calendar);
 
-        log.info("캘린더 저장");
+        log.info("캘린더 저장 성공");
 
         return CalendarResponseDto.from(CalendarResult.from(calendar));
     }
@@ -147,12 +151,9 @@ public class CalendarService {
     }
 
     @Transactional
-    public List<UUID> deleteAllByEventIdAndEventInfo_EventDateIn(UUID eventId, List<LocalDateTime> deletedScheduleIds) {
-        List<Calendar> calendarList = calendarRepository.findAllByEventIdAndEventInfo_EventDateIn(eventId,
-                deletedScheduleIds);
-        List<UUID> userIds = calendarList.stream().map(Calendar::getUserId).distinct().toList();
-        calendarRepository.deleteAllByEventIdAndEventInfo_EventDateIn(eventId, deletedScheduleIds);
-
-        return userIds;
+    public List<UUID> updateAllStatusToCancelByEventIdAndEventDates(UUID eventId,
+                                                                    List<LocalDateTime> deletedScheduleIds) {
+        return calendarRepository.updateAllStatusToCancel(eventId, deletedScheduleIds);
     }
+
 }

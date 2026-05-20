@@ -85,10 +85,10 @@ public class EventStatusUpdatedConsumer {
             return;
         }
 
-        // 삭제 대상 캘린더 삭제
+        // 삭제 대상 캘린더 상태 -> 취소
         List<UUID> deletedUserIds = new ArrayList<>();
         if (event.deletedScheduleIds() != null && !event.deletedScheduleIds().isEmpty()) {
-            deletedUserIds = calendarService.deleteAllByEventIdAndEventInfo_EventDateIn(
+            deletedUserIds = calendarService.updateAllStatusToCancelByEventIdAndEventDates(
                     event.eventId(), event.deletedScheduleIds());
         }
 

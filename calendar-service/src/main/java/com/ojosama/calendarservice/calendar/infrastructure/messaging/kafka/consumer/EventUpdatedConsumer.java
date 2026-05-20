@@ -12,8 +12,8 @@ import com.ojosama.calendarservice.calendar.infrastructure.redis.CalendarRedisSe
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +29,10 @@ public class EventUpdatedConsumer {
 
     private static final String CONSUMER_GROUP = "calendar-service-group";
     private static final String EVENT_TYPE = EventType.EVENT_UPDATED.getValue();
+
+    private static final Set<String> WATCHED_FIELDS = Set.of(
+            "startAt", "ticketingStartAt", "", "location", "eventName"
+    );
 
     private final ObjectMapper objectMapper;
     private final IdempotentEventHandler idempotentEventHandler;
@@ -69,7 +73,9 @@ public class EventUpdatedConsumer {
             throw new CalendarException(CalendarErrorCode.INVALID_MESSAGE_PAYLOAD);
         }
 
+        // WATCHED_FIELDS 필터링 추가 -> 불필요한 메세지에 관한 건 알림 x
         List<FieldChange> changedFields = event.changedFields().stream()
+                .filter(f -> WATCHED_FIELDS.contains(f.fieldName()))
                 .map(f -> new FieldChange(
                         f.fieldName(),
                         f.before() != null ? String.valueOf(f.before()) : null,
@@ -77,30 +83,26 @@ public class EventUpdatedConsumer {
                 ))
                 .toList();
 
+        if (changedFields.isEmpty()) {
+            return;
+        }
+
         List<UUID> userIds = calendarService.updateAllByEventId(event.eventId(), changedFields);
 
-        // 당일 변경이면 redis 삭제
+        // 당일 변경이면 redis 삭제 -> 일정에 관련된 것
         boolean hasTimeFieldChange = event.changedFields().stream()
                 .anyMatch(field -> "ticketingOpenAt".equals(field.fieldName()) || "startAt".equals(field.fieldName()));
         if (hasTimeFieldChange) {
             redisService.deleteAlarms(event.eventId());
         }
 
-        // 당일 취소 -> 당일 행사인 경우 redis 다시 등록
-        event.changedFields().forEach(field -> {
-            if (field.fieldName().equals("ticketingOpenAt") && field.after() != null) {
-                LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
-                if (after.toLocalDate().equals(LocalDate.now())) {
-                    redisService.registerTicketingAlarm(event.eventId(), event.eventName(), after, userIds);
-                }
-            }
-            if (field.fieldName().equals("startAt") && field.after() != null) {
-                LocalDateTime after = LocalDateTime.parse(String.valueOf(field.after()));
-                if (after.toLocalDate().equals(LocalDate.now().plusDays(1))) {
-                    redisService.registerEventAlarm(event.eventId(), event.eventName(), after, userIds);
-                }
-            }
-        });
+        if (event.ticketingOpenAt() != null && event.ticketingOpenAt().toLocalDate().equals(LocalDate.now())) {
+            redisService.registerTicketingAlarm(event.eventId(), event.eventName(), event.ticketingOpenAt(), userIds);
+        }
+
+        if (event.startAt() != null && event.startAt().toLocalDate().equals(LocalDate.now().plusDays(1))) {
+            redisService.registerEventAlarm(event.eventId(), event.eventName(), event.startAt(), userIds);
+        }
 
         // Kafka 발행
         applicationEventPublisher.publishEvent(

@@ -14,6 +14,7 @@ public enum CalendarErrorCode implements ErrorCode {
     EVENT_SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청하신 행사 일정을 찾을 수 없습니다."),
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
     INVALID_EVENT_STATUS(HttpStatus.BAD_REQUEST, "행사 상태는 필수입니다."),
+    CANCELLED_EVENT(HttpStatus.BAD_REQUEST, "취소된 행사는 캘린더에 추가할 수 없습니다."),
 
     INVALID_MESSAGE_PAYLOAD(HttpStatus.BAD_REQUEST, "메시지 응답이 잘못되었습니다."),
 

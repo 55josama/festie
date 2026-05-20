@@ -62,4 +62,29 @@ public class CalendarRepositoryCustomImpl implements CalendarRepositoryCustom {
         entityManager.flush();
         entityManager.clear();
     }
+
+    @Override
+    public List<UUID> updateAllStatusToCancel(UUID eventId, List<LocalDateTime> deletedScheduleIds) {
+        // 먼저 userId 조회
+        List<UUID> userIds = queryFactory
+                .select(qCalendar.userId)
+                .from(qCalendar)
+                .where(qCalendar.eventInfo.eventId.eq(eventId)
+                        .and(qCalendar.eventInfo.eventDate.in(deletedScheduleIds))
+                        .and(qCalendar.deletedAt.isNull()))
+                .fetch();
+
+        // 상태 업데이트
+        queryFactory.update(qCalendar)
+                .set(qCalendar.eventInfo.eventStatus, EventStatus.CANCELLED)
+                .where(qCalendar.eventInfo.eventId.eq(eventId)
+                        .and(qCalendar.eventInfo.eventDate.in(deletedScheduleIds))
+                        .and(qCalendar.deletedAt.isNull()))
+                .execute();
+
+        entityManager.flush();
+        entityManager.clear();
+
+        return userIds;
+    }
 }
