@@ -30,6 +30,8 @@
 
 ### 👤 회원 / 인증인가
 
+![Desktop Screenshot 2026.05.20 - 11.16.31.50.png](../../../../Videos/NVIDIA/Desktop/Desktop%20Screenshot%202026.05.20%20-%2011.16.31.50.png)
+
 - 회원가입, 로그인, 로그아웃, 토큰 재발급
 - JWT Access Token / Refresh Token 발급 및 검증
 - Refresh Token Rotation 적용
@@ -41,6 +43,8 @@
 <br>
 
 ### 🎫 행사
+
+![Desktop Screenshot 2026.05.20 - 11.16.42.05.png](../../../../Videos/NVIDIA/Desktop/Desktop%20Screenshot%202026.05.20%20-%2011.16.42.05.png)
 
 - 행사 등록, 수정, 삭제, 취소
 - 행사 목록 조회 및 카테고리/상태/날짜 기반 필터링
@@ -54,6 +58,8 @@
 
 ### 📅 캘린더
 
+![Desktop Screenshot 2026.05.20 - 11.18.35.38.png](../../../../Videos/NVIDIA/Desktop/Desktop%20Screenshot%202026.05.20%20-%2011.18.35.38.png)
+
 - 관심 행사 개인 캘린더 등록
 - 저장한 행사 메모 작성 / 수정
 - 행사 정보 변경 시 캘린더 데이터 자동 동기화
@@ -64,6 +70,8 @@
 
 ### ⭐ 찜
 
+![Desktop Screenshot 2026.05.20 - 11.21.12.73.png](../../../../Videos/NVIDIA/Desktop/Desktop%20Screenshot%202026.05.20%20-%2011.21.12.73.png)
+
 - 행사 찜 등록 / 취소
 - 찜한 행사 목록 조회
 - 동일 행사 중복 찜 방지
@@ -72,6 +80,8 @@
 <br>
 
 ### 💬 커뮤니티
+
+![Desktop Screenshot 2026.05.20 - 11.22.08.90.png](../../../../Videos/NVIDIA/Desktop/Desktop%20Screenshot%202026.05.20%20-%2011.22.08.90.png)
 
 - 카테고리별 게시글 작성, 수정, 삭제
 - 댓글 및 대댓글 작성
@@ -85,6 +95,8 @@
 
 ### 🗨️ 채팅
 
+![Desktop Screenshot 2026.05.20 - 11.23.10.69.png](../../../../Videos/NVIDIA/Desktop/Desktop%20Screenshot%202026.05.20%20-%2011.23.10.69.png)
+
 - 행사별 채팅방 자동 생성
 - 행사 시간 기준 채팅방 자동 오픈/종료
 - WebSocket + STOMP 기반 실시간 채팅
@@ -97,6 +109,8 @@
 
 ### 🔔 알림
 
+![Desktop Screenshot 2026.05.20 - 11.23.40.34.png](../../../../Videos/NVIDIA/Desktop/Desktop%20Screenshot%202026.05.20%20-%2011.23.40.34.png)
+
 - SSE 기반 실시간 알림
 - 알림 목록 조회, 읽음 처리, 삭제
 - 미접속 사용자 알림 저장
@@ -106,6 +120,8 @@
 <br>
 
 ### 🛡️ 운영 / 신고
+
+![Desktop Screenshot 2026.05.20 - 11.24.21.75.png](../../../../Videos/NVIDIA/Desktop/Desktop%20Screenshot%202026.05.20%20-%2011.24.21.75.png)
 
 - 게시글, 댓글, 채팅 메시지 신고
 - AI 자동 신고
