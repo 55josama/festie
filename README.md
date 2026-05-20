@@ -1,4 +1,4 @@
-![[5조] Festie.png](images/Festie.png)
+![Festie 로고](images/Festie.png)
 
 # 🎪 Festie - 실시간 행사 SNS 플랫폼
 
