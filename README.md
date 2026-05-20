@@ -303,7 +303,7 @@ merge    : 브랜치 병합
 | 이름  | 역할    | 주요 담당                                                    | GitHub                                                             |
 |-----|-------|----------------------------------------------------------|--------------------------------------------------------------------|
 | 김민진 | 개발 리더 | operation-service, ai-service, Config Server             | [https://github.com/gsemily](https://github.com/gsemily)           |
-| 이수빈 | 팀원    | chat-service, WebSocket/STOMP, 배포, 프론트엔드                 |                                                                    |
+| 이수빈 | 팀원    | chat-service, WebSocket/STOMP, 배포, 프론트엔드                 | [https://github.com/LSLight](https://github.com/LSLight)           |
 | 김란미 | 팀원    | notification-service, calendar-service, favorite-service | [https://github.com/KimRanmi](https://github.com/KimRanmi)         |
 | 김현희 | 팀원    | event-service, AWS 인프라 구성, CI/CD, 배포                     | [https://github.com/hyeonhe](https://github.com/hyeonhe)           |
 | 백가은 | 팀원    | community-service, DB 성능 최적화, 모니터링 인프라, Kafka 공통 설정      | [https://github.com/rkdms6767](https://github.com/rkdms6767)       |
