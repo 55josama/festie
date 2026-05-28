@@ -19,7 +19,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 @Entity
 @Getter
-@Table(name = "p_ai_moderation_log", schema = "ai_service")
+@Table(name = "p_ai_moderation_log", schema = "ai_schema")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiModeration {
     @Id

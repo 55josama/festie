@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "p_operation_request", schema = "operation_service")
+@Table(name = "p_operation_request", schema = "operation_schema")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OperationRequest extends BaseEntity {
     @Id

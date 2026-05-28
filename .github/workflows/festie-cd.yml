@@ -195,38 +195,47 @@ jobs:
           - services: user-service
             image_name: user
             cloud_run_service: festie-user
+            schema_name: user_schema
 
           - services: event-service
             image_name: event
             cloud_run_service: festie-event
+            schema_name: event_schema
 
           - services: chat-service
             image_name: chat
             cloud_run_service: festie-chat
+            schema_name: chat_schema
 
           - services: community-service
             image_name: community
             cloud_run_service: festie-community
+            schema_name: community_schema
 
           - services: favorite-service
             image_name: favorite
             cloud_run_service: festie-favorite
+            schema_name: favorite_schema
 
           - services: calendar-service
             image_name: calendar
             cloud_run_service: festie-calendar
+            schema_name: calendar_schema
 
           - services: notification-service
             image_name: notification
             cloud_run_service: festie-notification
+            schema_name: notification_schema
 
           - services: operation-service
             image_name: operation
             cloud_run_service: festie-operation
+            schema_name: operation_schema
 
           - services: ai-service
             image_name: ai
             cloud_run_service: festie-ai
+            schema_name: ai_schema
 
     steps:
       - uses: actions/checkout@v4
@@ -299,6 +308,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CLOUD_SQL_CONNECTION_NAME: ${{ env.CLOUD_SQL_CONNECTION_NAME }}
           CLOUD_SQL_DATABASE: ${{ env.CLOUD_SQL_DATABASE }}
+          SERVICE_SCHEMA: ${{ matrix.schema_name }}
         run: |
           python3 -c "
           import os, yaml
@@ -312,11 +322,16 @@ jobs:
               'CONFIG_SERVER_URL', 'EUREKA_SERVER_URL',
           ]
           env = {k: os.environ[k] for k in keys}
+          current_schema = os.environ['SERVICE_SCHEMA']
+          if current_schema == 'ai_schema':
+              current_schema = current_schema + ',public'
           env['SPRING_DATASOURCE_URL'] = (
               'jdbc:postgresql:///' + os.environ['CLOUD_SQL_DATABASE']
               + '?cloudSqlInstance=' + os.environ['CLOUD_SQL_CONNECTION_NAME']
               + '&socketFactory=com.google.cloud.sql.postgres.SocketFactory'
+              + '&currentSchema=' + current_schema
           )
+          env['SPRING_DATASOURCE_HIKARI_CONNECTION_INIT_SQL'] = 'SET search_path TO ' + current_schema
           for k in ['SPRING_MAIL_HOST', 'SPRING_MAIL_PORT', 'SPRING_MAIL_USERNAME', 'SPRING_MAIL_PASSWORD', 'OPENAI_API_KEY']:
               v = os.environ.get(k, '')
               if v:
@@ -332,15 +347,19 @@ jobs:
               'SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE': '2',
               'SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE': '0',
               'SPRING_JPA_HIBERNATE_DDL_AUTO': 'update',
+              'SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL_CREATE_NAMESPACES': 'true',
               'EUREKA_CLIENT_ENABLED': 'false',
               'EUREKA_CLIENT_REGISTER_WITH_EUREKA': 'false',
               'EUREKA_CLIENT_FETCH_REGISTRY': 'false',
           })
+          if os.environ['SERVICE_SCHEMA'] == 'ai_schema':
+              env['SPRING_AI_VECTORSTORE_PGVECTOR_SCHEMA_NAME'] = os.environ['SERVICE_SCHEMA']
+              env['SPRING_AI_VECTORSTORE_PGVECTOR_INITIALIZE_SCHEMA'] = 'true'
           with open('/tmp/env.yaml', 'w') as f:
               yaml.dump(env, f, allow_unicode=True)
           "
           MEMORY="512Mi"
-          if [ "${{ matrix.services }}" = "notification-service" ]; then
+          if [ "${{ matrix.services }}" = "notification-service" ] || [ "${{ matrix.services }}" = "operation-service" ] || [ "${{ matrix.services }}" = "ai-service" ]; then
             MEMORY="1Gi"
           fi
           gcloud run deploy ${{ matrix.cloud_run_service }} \
