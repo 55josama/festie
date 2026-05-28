@@ -1,6 +1,7 @@
 spring:
   application:
     name: common
+  # GCP Cloud Run deployment v5
 
 server:
   port: 0

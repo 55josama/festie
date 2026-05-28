@@ -1,3 +1,4 @@
+// 2026-05-28: config server YAML fix - trigger full redeploy
 ext {
     set('springCloudVersion', "2025.0.1")
 }

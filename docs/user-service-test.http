@@ -1,4 +1,4 @@
-@userUrl = http://localhost:8080/user-service
+@userUrl = https://festie-gateway-3ofsdptgra-du.a.run.app/user-service
 @password = 12341234
 
 ### Gateway 사용하고 토큰 발급
@@ -13,7 +13,7 @@ Content-Type: application/json
 
 {
   "email": "admin@test.com",
-  "password": "12341234",
+  "password": "test1234!",
   "nickname": "ADMIN_관리자",
   "name": "관리자",
   "phoneNumber": "010-0000-0000"

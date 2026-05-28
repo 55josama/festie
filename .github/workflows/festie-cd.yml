@@ -7,72 +7,233 @@ concurrency:
 on:
   push:
     branches: [ "dev-v1", "dev-v2" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
   id-token: write
 
+env:
+  REGION: asia-northeast3
+  REGISTRY: asia-northeast3-docker.pkg.dev/festie-deploy/festie
+  VPC_CONNECTOR: festie-connector
+  CLOUD_SQL_CONNECTION_NAME: festie-deploy:asia-northeast3:festie-db
+  CLOUD_SQL_DATABASE: festie
+
+# ─────────────────────────────────────────────
+# 1단계: config-server (항상 실행 → URL을 다음 단계에 전달)
+# ─────────────────────────────────────────────
 jobs:
-  deploy:
+  deploy-config:
+    runs-on: ubuntu-latest
+    outputs:
+      config_url: ${{ steps.get-url.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - 'config-server/**'
+              - 'common/**'
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Set up JDK 21
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build & Push
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          chmod +x gradlew
+          ./gradlew :config-server:bootJar -x test
+          docker build -f config-server/Dockerfile -t ${{ env.REGISTRY }}/config:latest .
+          docker push ${{ env.REGISTRY }}/config:latest
+
+      - name: Deploy to Cloud Run
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          CONFIG_USERNAME: ${{ secrets.CONFIG_USERNAME }}
+          CONFIG_PASSWORD: ${{ secrets.CONFIG_PASSWORD }}
+          CONFIG_URL: ${{ secrets.CONFIG_URL }}
+          GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: |
+          python3 -c "
+          import os, yaml
+          env = {
+              'CONFIG_USERNAME': os.environ['CONFIG_USERNAME'],
+              'CONFIG_PASSWORD': os.environ['CONFIG_PASSWORD'],
+              'CONFIG_URL': os.environ['CONFIG_URL'],
+              'GIT_USERNAME': os.environ['GIT_USERNAME'],
+              'GIT_TOKEN': os.environ['GIT_TOKEN'],
+              'SERVER_PORT': '8080',
+              'EUREKA_CLIENT_ENABLED': 'false',
+              'EUREKA_CLIENT_FETCH_REGISTRY': 'false',
+              'EUREKA_CLIENT_REGISTER_WITH_EUREKA': 'false',
+              'MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED': 'false',
+              'TZ': 'Asia/Seoul',
+              'JAVA_TOOL_OPTIONS': '-Duser.home=/tmp',
+              'SPRING_CLOUD_CONFIG_SERVER_GIT_BASEDIR': '/tmp/config-repo',
+          }
+          with open('/tmp/env.yaml', 'w') as f:
+              yaml.dump(env, f, allow_unicode=True)
+          "
+          gcloud run deploy festie-config \
+            --image ${{ env.REGISTRY }}/config:latest \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --ingress=internal \
+            --env-vars-file /tmp/env.yaml \
+            --quiet
+
+      - name: Get config URL
+        id: get-url
+        run: |
+          URL=$(gcloud run services describe festie-config \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)' 2>/dev/null || echo "")
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────────
+  # 2단계: eureka-server
+  # ─────────────────────────────────────────────
+  deploy-eureka:
+    needs: deploy-config
+    runs-on: ubuntu-latest
+    outputs:
+      eureka_url: ${{ steps.get-url.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - 'eureka-server/**'
+              - 'common/**'
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Set up JDK 21
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build & Push
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          chmod +x gradlew
+          ./gradlew :eureka-server:bootJar -x test
+          docker build -f eureka-server/Dockerfile -t ${{ env.REGISTRY }}/eureka:latest .
+          docker push ${{ env.REGISTRY }}/eureka:latest
+
+      - name: Deploy to Cloud Run
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          gcloud run deploy festie-eureka \
+            --image ${{ env.REGISTRY }}/eureka:latest \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --ingress=internal \
+            --set-env-vars="SERVER_PORT=8080,TZ=Asia/Seoul,MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED=false" \
+            --quiet
+
+      - name: Get eureka URL
+        id: get-url
+        run: |
+          URL=$(gcloud run services describe festie-eureka \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)' 2>/dev/null || echo "")
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────────
+  # 3단계: 나머지 서비스 병렬 배포
+  # ─────────────────────────────────────────────
+  deploy-services:
+    needs: [deploy-config, deploy-eureka]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - services: gateway-server
-            ecr_name: ojosama/festie/gateway
-            ecs_service: festie-gateway-service
-
-          - services: eureka-server
-            ecr_name: ojosama/festie/eureka
-            ecs_service: festie-eureka-service
-
-          - services: config-server
-            ecr_name: ojosama/festie/config
-            ecs_service: festie-config-service
-
           - services: user-service
-            ecr_name: ojosama/festie/user
-            ecs_service: festie-user-service
+            image_name: user
+            cloud_run_service: festie-user
 
           - services: event-service
-            ecr_name: ojosama/festie/event
-            ecs_service: festie-event-service
-
-          - services: operation-service
-            ecr_name: ojosama/festie/operation
-            ecs_service: festie-operation-service
-
-          - services: notification-service
-            ecr_name: ojosama/festie/notification
-            ecs_service: festie-notification-service
-
-          - services: community-service
-            ecr_name: ojosama/festie/community
-            ecs_service: festie-community-service
-
-          - services: favorite-service
-            ecr_name: ojosama/festie/favorite
-            ecs_service: festie-favorite-service
-
-          - services: calendar-service
-            ecr_name: ojosama/festie/calendar
-            ecs_service: festie-calendar-service
-
-          - services: ai-service
-            ecr_name: ojosama/festie/ai
-            ecs_service: festie-ai-service
+            image_name: event
+            cloud_run_service: festie-event
 
           - services: chat-service
-            ecr_name: ojosama/festie/chat
-            ecs_service: festie-chat-service
+            image_name: chat
+            cloud_run_service: festie-chat
+
+          - services: community-service
+            image_name: community
+            cloud_run_service: festie-community
+
+          - services: favorite-service
+            image_name: favorite
+            cloud_run_service: festie-favorite
+
+          - services: calendar-service
+            image_name: calendar
+            cloud_run_service: festie-calendar
+
+          - services: notification-service
+            image_name: notification
+            cloud_run_service: festie-notification
+
+          - services: operation-service
+            image_name: operation
+            cloud_run_service: festie-operation
+
+          - services: ai-service
+            image_name: ai
+            cloud_run_service: festie-ai
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check for changed files
+      - name: Check for changes
         id: filter
         uses: dorny/paths-filter@v3
         with:
@@ -80,47 +241,191 @@ jobs:
             changed:
               - '${{ matrix.services }}/**'
               - 'common/**'
+              - 'build.gradle'
+              - 'settings.gradle'
 
-      - name: Configure AWS credentials
-        if: steps.filter.outputs.changed == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Authenticate to Google Cloud
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: google-github-actions/auth@v2
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          role-session-name: festie-cd-${{ github.run_id }}
-          aws-region: ap-northeast-2
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Login to ECR
-        if: steps.filter.outputs.changed == 'true'
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Configure Docker
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
       - name: Set up JDK 21
-        if: steps.filter.outputs.changed == 'true'
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew
-        if: steps.filter.outputs.changed == 'true'
-        run: chmod +x gradlew
-
-      - name: Build
-        if: steps.filter.outputs.changed == 'true'
-        run: ./gradlew :${{ matrix.services }}:bootJar -x test
-
-      - name: Docker build & ECR push
-        if: steps.filter.outputs.changed == 'true'
+      - name: Build & Push
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
+          chmod +x gradlew
+          ./gradlew :${{ matrix.services }}:bootJar -x test
           docker build -f ${{ matrix.services }}/Dockerfile \
-            -t ${{ secrets.ECR_REGISTRY }}/${{ matrix.ecr_name }}:latest .
-          docker push ${{ secrets.ECR_REGISTRY }}/${{ matrix.ecr_name }}:latest
+            -t ${{ env.REGISTRY }}/${{ matrix.image_name }}:latest .
+          docker push ${{ env.REGISTRY }}/${{ matrix.image_name }}:latest
 
-      - name: ECS 배포
-        if: steps.filter.outputs.changed == 'true'
+      - name: Deploy to Cloud Run
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
+          SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+          SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+          SPRING_DATA_REDIS_HOST: ${{ secrets.SPRING_DATA_REDIS_HOST }}
+          SPRING_REDIS_HOST: ${{ secrets.SPRING_REDIS_HOST }}
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: ${{ secrets.SPRING_KAFKA_BOOTSTRAP_SERVERS }}
+          SPRING_KAFKA_PROPERTIES_SECURITY_PROTOCOL: ${{ secrets.SPRING_KAFKA_PROPERTIES_SECURITY_PROTOCOL }}
+          SPRING_KAFKA_PROPERTIES_SASL_MECHANISM: ${{ secrets.SPRING_KAFKA_PROPERTIES_SASL_MECHANISM }}
+          SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG: ${{ secrets.SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_ACCESS_TOKEN_EXPIRATION: ${{ secrets.JWT_ACCESS_TOKEN_EXPIRATION }}
+          JWT_REFRESH_TOKEN_EXPIRATION: ${{ secrets.JWT_REFRESH_TOKEN_EXPIRATION }}
+          INTERNAL_API_TOKEN: ${{ secrets.INTERNAL_API_TOKEN }}
+          CONFIG_USERNAME: ${{ secrets.CONFIG_USERNAME }}
+          CONFIG_PASSWORD: ${{ secrets.CONFIG_PASSWORD }}
+          CONFIG_SERVER_URL: ${{ secrets.CONFIG_SERVER_URL }}
+          EUREKA_SERVER_URL: ${{ secrets.EUREKA_SERVER_URL }}
+          SPRING_MAIL_HOST: ${{ secrets.SPRING_MAIL_HOST }}
+          SPRING_MAIL_PORT: ${{ secrets.SPRING_MAIL_PORT }}
+          SPRING_MAIL_USERNAME: ${{ secrets.SPRING_MAIL_USERNAME }}
+          SPRING_MAIL_PASSWORD: ${{ secrets.SPRING_MAIL_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLOUD_SQL_CONNECTION_NAME: ${{ env.CLOUD_SQL_CONNECTION_NAME }}
+          CLOUD_SQL_DATABASE: ${{ env.CLOUD_SQL_DATABASE }}
         run: |
-          aws ecs update-service \
-            --cluster festie-cluster \
-            --service ${{ matrix.ecs_service }} \
-            --force-new-deployment \
-            --region ap-northeast-2
+          python3 -c "
+          import os, yaml
+          keys = [
+              'SPRING_DATASOURCE_URL', 'SPRING_DATASOURCE_USERNAME', 'SPRING_DATASOURCE_PASSWORD',
+              'SPRING_DATA_REDIS_HOST', 'SPRING_REDIS_HOST',
+              'SPRING_KAFKA_BOOTSTRAP_SERVERS', 'SPRING_KAFKA_PROPERTIES_SECURITY_PROTOCOL',
+              'SPRING_KAFKA_PROPERTIES_SASL_MECHANISM', 'SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG',
+              'JWT_SECRET', 'JWT_ACCESS_TOKEN_EXPIRATION', 'JWT_REFRESH_TOKEN_EXPIRATION',
+              'INTERNAL_API_TOKEN', 'CONFIG_USERNAME', 'CONFIG_PASSWORD',
+              'CONFIG_SERVER_URL', 'EUREKA_SERVER_URL',
+          ]
+          env = {k: os.environ[k] for k in keys}
+          env['SPRING_DATASOURCE_URL'] = (
+              'jdbc:postgresql:///' + os.environ['CLOUD_SQL_DATABASE']
+              + '?cloudSqlInstance=' + os.environ['CLOUD_SQL_CONNECTION_NAME']
+              + '&socketFactory=com.google.cloud.sql.postgres.SocketFactory'
+          )
+          for k in ['SPRING_MAIL_HOST', 'SPRING_MAIL_PORT', 'SPRING_MAIL_USERNAME', 'SPRING_MAIL_PASSWORD', 'OPENAI_API_KEY']:
+              v = os.environ.get(k, '')
+              if v:
+                  env[k] = v
+                  if k == 'OPENAI_API_KEY':
+                      env['SPRING_AI_OPENAI_API_KEY'] = v
+          env.update({
+              'SERVER_PORT': '8080',
+              'TZ': 'Asia/Seoul',
+              'SPRING_PROFILES_ACTIVE': 'prod',
+              'MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED': 'false',
+              'MANAGEMENT_HEALTH_MAIL_ENABLED': 'false',
+              'SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE': '2',
+              'SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE': '0',
+              'SPRING_JPA_HIBERNATE_DDL_AUTO': 'update',
+              'EUREKA_CLIENT_ENABLED': 'false',
+              'EUREKA_CLIENT_REGISTER_WITH_EUREKA': 'false',
+              'EUREKA_CLIENT_FETCH_REGISTRY': 'false',
+          })
+          with open('/tmp/env.yaml', 'w') as f:
+              yaml.dump(env, f, allow_unicode=True)
+          "
+          MEMORY="512Mi"
+          if [ "${{ matrix.services }}" = "notification-service" ]; then
+            MEMORY="1Gi"
+          fi
+          gcloud run deploy ${{ matrix.cloud_run_service }} \
+            --image ${{ env.REGISTRY }}/${{ matrix.image_name }}:latest \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --ingress=internal \
+            --memory "$MEMORY" \
+            --add-cloudsql-instances ${{ env.CLOUD_SQL_CONNECTION_NAME }} \
+            --vpc-connector ${{ env.VPC_CONNECTOR }} \
+            --vpc-egress private-ranges-only \
+            --env-vars-file /tmp/env.yaml \
+            --quiet
+
+  # ─────────────────────────────────────────────
+  # 4단계: gateway (마지막)
+  # ─────────────────────────────────────────────
+  deploy-gateway:
+    needs: [deploy-config, deploy-eureka, deploy-services]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - 'gateway-server/**'
+              - 'common/**'
+
+      - name: Authenticate to Google Cloud
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Set up JDK 21
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build & Push
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          chmod +x gradlew
+          ./gradlew :gateway-server:bootJar -x test
+          docker build -f gateway-server/Dockerfile -t ${{ env.REGISTRY }}/gateway:latest .
+          docker push ${{ env.REGISTRY }}/gateway:latest
+
+      - name: Deploy to Cloud Run
+        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          INTERNAL_API_TOKEN: ${{ secrets.INTERNAL_API_TOKEN }}
+          CONFIG_USERNAME: ${{ secrets.CONFIG_USERNAME }}
+          CONFIG_PASSWORD: ${{ secrets.CONFIG_PASSWORD }}
+          CONFIG_SERVER_URL: ${{ secrets.CONFIG_SERVER_URL }}
+        run: |
+          python3 -c "
+          import os, yaml
+          keys = ['JWT_SECRET', 'INTERNAL_API_TOKEN', 'CONFIG_USERNAME', 'CONFIG_PASSWORD', 'CONFIG_SERVER_URL']
+          env = {k: os.environ[k] for k in keys}
+          env.update({'SERVER_PORT': '8080', 'TZ': 'Asia/Seoul', 'SPRING_PROFILES_ACTIVE': 'prod', 'MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED': 'false'})
+          with open('/tmp/env.yaml', 'w') as f:
+              yaml.dump(env, f, allow_unicode=True)
+          "
+          gcloud run deploy festie-gateway \
+            --image ${{ env.REGISTRY }}/gateway:latest \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --vpc-connector ${{ env.VPC_CONNECTOR }} \
+            --vpc-egress all-traffic \
+            --env-vars-file /tmp/env.yaml \
+            --quiet

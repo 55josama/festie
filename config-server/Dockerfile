@@ -21,6 +21,8 @@ RUN chown appuser:appgroup /app/app.jar
 
 USER appuser
 
+ENV JAVA_TOOL_OPTIONS="-Duser.home=/tmp"
+
 EXPOSE 8888
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

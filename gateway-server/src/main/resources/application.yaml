@@ -5,7 +5,13 @@ spring:
   application:
     name: gateway-server
 
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+
   cloud:
+    config:
+      username: ${CONFIG_USERNAME}
+      password: ${CONFIG_PASSWORD}
     gateway:
       server:
         webflux:
@@ -30,17 +36,16 @@ spring:
                 allowedHeaders:
                   - "*"
                 allowCredentials: true
-
           routes:
             - id: user-service
-              uri: lb://user-service
+              uri: ${USER_SERVICE_URL:https://festie-user-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/user-service/**
               filters:
                 - StripPrefix=1
 
             - id: chat-service
-              uri: lb://chat-service
+              uri: ${CHAT_SERVICE_URL:https://festie-chat-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/chat-service/**
               filters:
@@ -48,133 +53,133 @@ spring:
                 - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
             - id: operation-service
-              uri: lb://operation-service
+              uri: ${OPERATION_SERVICE_URL:https://festie-operation-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/operation-service/**
               filters:
                 - StripPrefix=1
 
             - id: event-service
-              uri: lb://event-service
+              uri: ${EVENT_SERVICE_URL:https://festie-event-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/event-service/**
               filters:
                 - StripPrefix=1
 
             - id: community-service
-              uri: lb://community-service
+              uri: ${COMMUNITY_SERVICE_URL:https://festie-community-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/community-service/**
               filters:
                 - StripPrefix=1
 
             - id: favorite-service
-              uri: lb://favorite-service
+              uri: ${FAVORITE_SERVICE_URL:https://festie-favorite-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/favorite-service/**
               filters:
                 - StripPrefix=1
 
-            - id: notification-service-sse  # 알림 sse 라우팅 설정
-              uri: lb://notification-service
+            - id: notification-service-sse
+              uri: ${NOTIFICATION_SERVICE_URL:https://festie-notification-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/notification-service/v1/notifications/subscribe
               filters:
                 - StripPrefix=1
               metadata:
-                response-timeout: 1800000 # 30분
+                response-timeout: 1800000
                 connect-timeout: 3000
 
             - id: notification-service
-              uri: lb://notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:https://festie-notification-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/notification-service/**
               filters:
                 - StripPrefix=1
 
             - id: calendar-service
-              uri: lb://calendar-service
+              uri: ${CALENDAR_SERVICE_URL:https://festie-calendar-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/calendar-service/**
               filters:
                 - StripPrefix=1
 
             - id: ai-service
-              uri: lb://ai-service
+              uri: ${AI_SERVICE_URL:https://festie-ai-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/ai-service/**
               filters:
                 - StripPrefix=1
 
-            # ==========================================
-            # Swagger API 명세서 전용 라우트
-            # ==========================================
+            # Swagger 전용 라우트
             - id: user-service-docs
-              uri: lb://user-service
+              uri: ${USER_SERVICE_URL:https://festie-user-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/user-service/**
               filters:
                 - RewritePath=/docs/user-service/(?<segment>.*), /$\{segment}
 
             - id: chat-service-docs
-              uri: lb://chat-service
+              uri: ${CHAT_SERVICE_URL:https://festie-chat-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/chat-service/**
               filters:
                 - RewritePath=/docs/chat-service/(?<segment>.*), /$\{segment}
 
             - id: operation-service-docs
-              uri: lb://operation-service
+              uri: ${OPERATION_SERVICE_URL:https://festie-operation-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/operation-service/**
               filters:
                 - RewritePath=/docs/operation-service/(?<segment>.*), /$\{segment}
 
             - id: event-service-docs
-              uri: lb://event-service
+              uri: ${EVENT_SERVICE_URL:https://festie-event-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/event-service/**
               filters:
                 - RewritePath=/docs/event-service/(?<segment>.*), /$\{segment}
 
             - id: community-service-docs
-              uri: lb://community-service
+              uri: ${COMMUNITY_SERVICE_URL:https://festie-community-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/community-service/**
               filters:
                 - RewritePath=/docs/community-service/(?<segment>.*), /$\{segment}
 
             - id: favorite-service-docs
-              uri: lb://favorite-service
+              uri: ${FAVORITE_SERVICE_URL:https://festie-favorite-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/favorite-service/**
               filters:
                 - RewritePath=/docs/favorite-service/(?<segment>.*), /$\{segment}
 
             - id: notification-service-docs
-              uri: lb://notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:https://festie-notification-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/notification-service/**
               filters:
                 - RewritePath=/docs/notification-service/(?<segment>.*), /$\{segment}
 
             - id: calendar-service-docs
-              uri: lb://calendar-service
+              uri: ${CALENDAR_SERVICE_URL:https://festie-calendar-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/calendar-service/**
               filters:
                 - RewritePath=/docs/calendar-service/(?<segment>.*), /$\{segment}
 
             - id: ai-service-docs
-              uri: lb://ai-service
+              uri: ${AI_SERVICE_URL:https://festie-ai-3ofsdptgra-du.a.run.app}
               predicates:
                 - Path=/docs/ai-service/**
               filters:
                 - RewritePath=/docs/ai-service/(?<segment>.*), /$\{segment}
+
 eureka:
   client:
-    service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
 
 jwt:
   secret: ${JWT_SECRET}

@@ -9,3 +9,19 @@ spring:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
+
+  kafka:
+    consumer:
+      group-id: notification-service-group
+    topic:
+      event-request-created: event.request.created.v1
+      event-request-processed: event.request.processed.v1
+      operation-blacklist-requested: operation.blacklist.requested.v1
+      operation-blacklist-registered: operation.blacklist.registered.v1
+      operation-report-blinded: operation.report.blinded.v1
+      operation-request-created: operation.request.created.v1
+      calendar-updated: calendar.info.updated.v1
+      calendar-deleted: calendar.info.deleted.v1
+      calendar-schedule-imminent: calendar.schedule.imminent.v1
+      calendar-ticketing-imminent: calendar.ticketing.imminent.v1
+      calendar-status-changed: calendar.status.changed.v1

@@ -3,10 +3,20 @@ spring:
     name: community-service
 
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://festie-config:8888}"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
-      uri: ${CONFIG_SERVER_URL:http://festie-config:8888}
+      uri: ${CONFIG_SERVER_URL:http://localhost:8888}
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
+
+  kafka:
+    consumer:
+      group-id: community-service-group
+    topic:
+      blacklist-updated: operation.blacklist.updated.v1
+      community-moderation-requested: community.moderation.requested.v1
+      post-deleted: community.post.deleted.v1
+      report-blinded: operation.report.blinded.v1
+      report-unblinded: operation.report.unblinded.v1

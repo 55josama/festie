@@ -31,6 +31,7 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
             new PublicEndpoint(HttpMethod.POST, "/user-service/v1/auth/login"),
             new PublicEndpoint(HttpMethod.POST, "/user-service/v1/auth/reissue"),
             new PublicEndpoint(HttpMethod.POST, "/user-service/v1/users"),
+            new PublicEndpoint(HttpMethod.POST, "/user-service/v1/dev/users/admin"),
             new PublicEndpoint(HttpMethod.GET, "/chat-service/ws-test.html"),
             new PublicEndpoint(HttpMethod.GET, "/event-service/v1/events"),
             new PublicEndpoint(HttpMethod.GET, "/event-service/v1/events/**"),
