@@ -330,8 +330,8 @@ jobs:
               + '?cloudSqlInstance=' + os.environ['CLOUD_SQL_CONNECTION_NAME']
               + '&socketFactory=com.google.cloud.sql.postgres.SocketFactory'
               + '&currentSchema=' + current_schema
+              + '&options=-c%20search_path%3D' + current_schema
           )
-          env['SPRING_DATASOURCE_HIKARI_CONNECTION_INIT_SQL'] = 'SET search_path TO ' + current_schema
           for k in ['SPRING_MAIL_HOST', 'SPRING_MAIL_PORT', 'SPRING_MAIL_USERNAME', 'SPRING_MAIL_PASSWORD', 'OPENAI_API_KEY']:
               v = os.environ.get(k, '')
               if v:
