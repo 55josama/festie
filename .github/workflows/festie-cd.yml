@@ -374,7 +374,7 @@ jobs:
             --memory "$MEMORY" \
             --add-cloudsql-instances ${{ env.CLOUD_SQL_CONNECTION_NAME }} \
             --vpc-connector ${{ env.VPC_CONNECTOR }} \
-            --vpc-egress private-ranges-only \
+            --vpc-egress all-traffic \
             --env-vars-file /tmp/env.yaml \
             --quiet
 
