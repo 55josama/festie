@@ -327,11 +327,10 @@ jobs:
           if current_schema == 'ai_schema':
               current_schema = current_schema + ',public'
           env['SPRING_DATASOURCE_URL'] = (
-              'jdbc:postgresql:///' + os.environ['CLOUD_SQL_DATABASE']
-              + '?cloudSqlInstance=' + os.environ['CLOUD_SQL_CONNECTION_NAME']
-              + '&socketFactory=com.google.cloud.sql.postgres.SocketFactory'
-              + '&currentSchema=' + current_schema
+              'jdbc:postgresql://10.78.0.3:5432/' + os.environ['CLOUD_SQL_DATABASE']
+              + '?currentSchema=' + current_schema
               + '&options=-c%20search_path%3D' + current_schema
+              + '&sslmode=disable'
           )
           for k in ['SPRING_MAIL_HOST', 'SPRING_MAIL_PORT', 'SPRING_MAIL_USERNAME', 'SPRING_MAIL_PASSWORD', 'OPENAI_API_KEY']:
               v = os.environ.get(k, '')
@@ -372,7 +371,6 @@ jobs:
             --allow-unauthenticated \
             --ingress=internal \
             --memory "$MEMORY" \
-            --add-cloudsql-instances ${{ env.CLOUD_SQL_CONNECTION_NAME }} \
             --vpc-connector ${{ env.VPC_CONNECTOR }} \
             --vpc-egress all-traffic \
             --env-vars-file /tmp/env.yaml \
