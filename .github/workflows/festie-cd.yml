@@ -351,6 +351,10 @@ jobs:
               'EUREKA_CLIENT_ENABLED': 'false',
               'EUREKA_CLIENT_REGISTER_WITH_EUREKA': 'false',
               'EUREKA_CLIENT_FETCH_REGISTRY': 'false',
+              'SPRING_KAFKA_PROPERTIES_DEFAULT_API_TIMEOUT_MS': '120000',
+              'SPRING_KAFKA_PROPERTIES_REQUEST_TIMEOUT_MS': '120000',
+              'SPRING_KAFKA_PROPERTIES_SOCKET_CONNECTION_SETUP_TIMEOUT_MS': '30000',
+              'SPRING_KAFKA_PROPERTIES_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS': '120000',
           })
           if os.environ['SERVICE_SCHEMA'] == 'ai_schema':
               env['SPRING_AI_VECTORSTORE_PGVECTOR_SCHEMA_NAME'] = os.environ['SERVICE_SCHEMA']
@@ -358,10 +362,8 @@ jobs:
           with open('/tmp/env.yaml', 'w') as f:
               yaml.dump(env, f, allow_unicode=True)
           "
-          MEMORY="512Mi"
-          if [ "${{ matrix.services }}" = "notification-service" ] || [ "${{ matrix.services }}" = "operation-service" ] || [ "${{ matrix.services }}" = "chat-service" ]; then
-            MEMORY="1Gi"
-          elif [ "${{ matrix.services }}" = "ai-service" ]; then
+          MEMORY="1Gi"
+          if [ "${{ matrix.services }}" = "ai-service" ]; then
             MEMORY="2Gi"
           fi
           gcloud run deploy ${{ matrix.cloud_run_service }} \
