@@ -103,6 +103,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --ingress=internal \
+            --min-instances 1 \
             --env-vars-file /tmp/env.yaml \
             --quiet
 
@@ -359,8 +360,10 @@ jobs:
               yaml.dump(env, f, allow_unicode=True)
           "
           MEMORY="512Mi"
-          if [ "${{ matrix.services }}" = "notification-service" ] || [ "${{ matrix.services }}" = "operation-service" ] || [ "${{ matrix.services }}" = "ai-service" ]; then
+          if [ "${{ matrix.services }}" = "notification-service" ] || [ "${{ matrix.services }}" = "operation-service" ] || [ "${{ matrix.services }}" = "chat-service" ]; then
             MEMORY="1Gi"
+          elif [ "${{ matrix.services }}" = "ai-service" ]; then
+            MEMORY="2Gi"
           fi
           gcloud run deploy ${{ matrix.cloud_run_service }} \
             --image ${{ env.REGISTRY }}/${{ matrix.image_name }}:latest \
