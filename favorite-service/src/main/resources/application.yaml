@@ -3,17 +3,9 @@ spring:
     name: favorite-service
 
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+    import: "configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
-
-  kafka:
-    consumer:
-      group-id: favorite-service-group
-    topic:
-      event-deleted: event.info.deleted.v1
-      event-changed: event.schedule.changed.v1
-      event-status-changed: event.status.changed.v1

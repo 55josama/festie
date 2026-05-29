@@ -3,21 +3,9 @@ spring:
     name: operation-service
 
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+    import: "configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
-
-  kafka:
-    consumer:
-      group-id: operation-service-group
-    topic:
-      report-blinded: operation.report.blinded.v1
-      report-unblinded: operation.report.unblinded.v1
-      blacklist-registered: operation.blacklist.registered.v1
-      blacklist-updated: operation.blacklist.updated.v1
-      blacklist-requested: operation.blacklist.requested.v1
-      ai-moderation-reported: ai.moderation.evaluated.v1
-      operation-request-created: operation.request.created.v1

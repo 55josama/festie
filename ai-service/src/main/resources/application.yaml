@@ -3,20 +3,9 @@ spring:
     name: ai-service
 
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+    import: "configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
-
-  kafka:
-    consumer:
-      group-id: ai-service-group
-    topic:
-      ai-evaluated: ai.moderation.evaluated.v1
-      community-moderation-requested: community.moderation.requested.v1
-      chat-moderation-requested: chat.moderation.requested.v1
-      event-created: event.info.created.v1
-      event-deleted: event.info.deleted.v1
-      event-schedule-changed: event.schedule.changed.v1

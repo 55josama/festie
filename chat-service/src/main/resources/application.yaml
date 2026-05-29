@@ -3,20 +3,9 @@ spring:
     name: chat-service
 
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+    import: "configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
-
-  kafka:
-    consumer:
-      group-id: chat-service-group
-    topic:
-      event-created: event.info.created.v1
-      event-changed: event.schedule.changed.v1
-      event-status-changed: event.status.changed.v1
-      report-blinded: operation.report.blinded.v1
-      report-unblinded: operation.report.unblinded.v1
-      chat-moderation-requested: chat.moderation.requested.v1

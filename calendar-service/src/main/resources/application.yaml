@@ -3,22 +3,9 @@ spring:
     name: calendar-service
 
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+    import: "configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
 
   cloud:
     config:
       username: ${CONFIG_USERNAME}
       password: ${CONFIG_PASSWORD}
-
-  kafka:
-    consumer:
-      group-id: calendar-service-group
-    topic:
-      event-deleted: event.info.deleted.v1
-      event-changed: event.schedule.changed.v1
-      event-status-changed: event.status.changed.v1
-      event-imminent: calendar.schedule.imminent.v1
-      ticketing-event-imminent: calendar.ticketing.imminent.v1
-      calendar-event-deleted: calendar.info.deleted.v1
-      calendar-event-updated: calendar.info.updated.v1
-      calendar-event-status-changed: calendar.status.changed.v1
