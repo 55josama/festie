@@ -6,11 +6,9 @@ import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -18,7 +16,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-@AutoConfiguration(after = RedisAutoConfiguration.class)
+@Configuration
 @EnableCaching
 @Slf4j
 public class RedisCacheConfig {
@@ -31,8 +29,6 @@ public class RedisCacheConfig {
     // (SPRING_DATA_REDIS_HOST 환경변수 적용됨)
 
     @Bean
-    @org.springframework.context.annotation.Primary
-    @ConditionalOnBean(RedisConnectionFactory.class)
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         log.info("RedisCacheManager 생성 시작 - RedisConnectionFactory: {}",
                  connectionFactory.getClass().getSimpleName());
