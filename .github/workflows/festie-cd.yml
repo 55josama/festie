@@ -373,7 +373,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --ingress=internal \
-            --min-instances 1 \
+            --min-instances 0 \
             --memory "$MEMORY" \
             --vpc-connector ${{ env.VPC_CONNECTOR }} \
             --vpc-egress all-traffic \
@@ -450,6 +450,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --min-instances 1 \
+            --memory 512Mi \
             --vpc-connector ${{ env.VPC_CONNECTOR }} \
             --vpc-egress all-traffic \
             --env-vars-file /tmp/env.yaml \
