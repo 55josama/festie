@@ -367,13 +367,17 @@ jobs:
           if [ "${{ matrix.services }}" = "ai-service" ]; then
             MEMORY="2Gi"
           fi
+          MIN_INSTANCES=1
+          if [ "${{ matrix.services }}" = "event-service" ]; then
+            MIN_INSTANCES=0
+          fi
           gcloud run deploy ${{ matrix.cloud_run_service }} \
             --image ${{ env.REGISTRY }}/${{ matrix.image_name }}:latest \
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
             --ingress=internal \
-            --min-instances 0 \
+            --min-instances "$MIN_INSTANCES" \
             --memory "$MEMORY" \
             --vpc-connector ${{ env.VPC_CONNECTOR }} \
             --vpc-egress all-traffic \
