@@ -22,7 +22,6 @@ import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -74,8 +73,15 @@ public class EventController {
             @PageableDefault(size = 10, sort = "eventTime.startAt", direction = Sort.Direction.ASC) Pageable pageable) {
 
         EventListCommand command = new EventListCommand(category, status, startAt, endAt, year, month);
-        Page<EventListResult> result = eventQueryService.getEvents(command, pageable);
-        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(result.map(EventListResponse::from))));
+        PageResponse<EventListResult> result = eventQueryService.getEvents(command, pageable);
+        PageResponse<EventListResponse> response = new PageResponse<>(
+                result.content().stream().map(EventListResponse::from).toList(),
+                result.page(),
+                result.size(),
+                result.totalElements(),
+                result.totalPages()
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{eventId}")
