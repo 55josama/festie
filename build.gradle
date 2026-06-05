@@ -42,6 +42,7 @@ subprojects {
         implementation 'io.micrometer:micrometer-tracing-bridge-brave'
         implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
         runtimeOnly 'com.google.cloud.sql:postgres-socket-factory:1.28.3'
+        runtimeOnly 'io.micrometer:micrometer-registry-stackdriver'
     }
 
     tasks.named('test') {
