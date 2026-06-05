@@ -11,6 +11,7 @@ import com.ojosama.chatservice.domain.model.EventCategory;
 import com.ojosama.chatservice.infrastructure.messaging.kafka.dto.EventCreatedEvent;
 import com.ojosama.common.kafka.domain.EventType;
 import com.ojosama.common.kafka.domain.IdempotentEventHandler;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -95,9 +96,20 @@ public class EventCreatedConsumer {
         }
     }
 
+    private static final Map<String, EventCategory> KOR_CATEGORY_MAP = Map.of(
+            "콘서트", EventCategory.CONCERT,
+            "페스티벌", EventCategory.FESTIVAL,
+            "팬미팅", EventCategory.FANMEETING,
+            "팝업스토어", EventCategory.POPUPSTORE
+    );
+
     private EventCategory parseCategory(String categoryName) {
         if (categoryName == null || categoryName.isBlank()) {
             throw new IllegalArgumentException("카테고리 이름은 비어 있을 수 없습니다.");
+        }
+        EventCategory mapped = KOR_CATEGORY_MAP.get(categoryName.trim());
+        if (mapped != null) {
+            return mapped;
         }
         try {
             return EventCategory.valueOf(categoryName.trim().toUpperCase());
