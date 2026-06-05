@@ -90,8 +90,9 @@ jobs:
               'EUREKA_CLIENT_FETCH_REGISTRY': 'false',
               'EUREKA_CLIENT_REGISTER_WITH_EUREKA': 'false',
               'MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED': 'false',
+              'MANAGEMENT_STACKDRIVER_METRICS_EXPORT_ENABLED': 'false',
               'TZ': 'Asia/Seoul',
-              'JAVA_TOOL_OPTIONS': '-Duser.home=/tmp',
+              'JAVA_TOOL_OPTIONS': '-Duser.home=/tmp -Djava.net.preferIPv4Stack=true',
               'SPRING_CLOUD_CONFIG_SERVER_GIT_BASEDIR': '/tmp/config-repo',
           }
           with open('/tmp/env.yaml', 'w') as f:
@@ -173,7 +174,7 @@ jobs:
             --allow-unauthenticated \
             --ingress=internal \
             --min-instances 1 \
-            --set-env-vars="SERVER_PORT=8080,TZ=Asia/Seoul,MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED=false" \
+            --set-env-vars="SERVER_PORT=8080,TZ=Asia/Seoul,MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED=false,MANAGEMENT_STACKDRIVER_METRICS_EXPORT_ENABLED=false,JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true" \
             --quiet
 
       - name: Get eureka URL
@@ -192,6 +193,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         include:
           - services: user-service
@@ -356,6 +358,7 @@ jobs:
               'SPRING_KAFKA_PROPERTIES_REQUEST_TIMEOUT_MS': '120000',
               'SPRING_KAFKA_PROPERTIES_SOCKET_CONNECTION_SETUP_TIMEOUT_MS': '30000',
               'SPRING_KAFKA_PROPERTIES_SOCKET_CONNECTION_SETUP_TIMEOUT_MAX_MS': '120000',
+              'JAVA_TOOL_OPTIONS': '-Djava.net.preferIPv4Stack=true',
           })
           if os.environ['SERVICE_SCHEMA'] == 'ai_schema':
               env['SPRING_AI_VECTORSTORE_PGVECTOR_SCHEMA_NAME'] = os.environ['SERVICE_SCHEMA']
