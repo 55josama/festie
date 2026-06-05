@@ -1,5 +1,6 @@
 package com.ojosama.eventservice.event.application.service;
 
+import com.ojosama.common.response.PageResponse;
 import com.ojosama.eventservice.event.application.dto.command.EventListCommand;
 import com.ojosama.eventservice.event.application.dto.result.EventListResult;
 import com.ojosama.eventservice.event.application.dto.result.EventResult;
@@ -14,7 +15,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +32,7 @@ public class EventQueryService {
             key = "(#command.category ?: 'all') + ':' + (#command.status?.name() ?: 'all') + ':' + (#command.year ?: 0) + ':' + (#command.month ?: 0) + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort.toString()",
             condition = "#command.startAt == null && #command.endAt == null"
     )
-    public Page<EventListResult> getEvents(EventListCommand command, Pageable pageable) {
+    public PageResponse<EventListResult> getEvents(EventListCommand command, Pageable pageable) {
         EventFilter filter = new EventFilter(
                 command.category(),
                 command.status(),
@@ -41,7 +41,7 @@ public class EventQueryService {
                 command.year(),
                 command.month()
         );
-        return eventRepository.findAll(filter, pageable).map(EventListResult::from);
+        return PageResponse.from(eventRepository.findAll(filter, pageable).map(EventListResult::from));
     }
 
     @Transactional(readOnly = true)
