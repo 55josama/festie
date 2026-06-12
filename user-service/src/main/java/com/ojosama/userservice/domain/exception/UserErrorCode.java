@@ -22,7 +22,12 @@ public enum UserErrorCode implements ErrorCode {
 
     INVALID_BLACKLIST_STATUS(HttpStatus.BAD_REQUEST, "알 수 없는 블랙리스트 상태입니다."),
     BLOCKED_USER(HttpStatus.FORBIDDEN, "차단된 사용자는 로그인할 수 없습니다."),
-    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "존재하지 않는 카테고리입니다.");
+    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "존재하지 않는 카테고리입니다."),
+
+    EMAIL_VERIFICATION_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, "이메일 인증번호가 만료되었거나 존재하지 않습니다."),
+    INVALID_EMAIL_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "이메일 인증번호가 일치하지 않습니다."),
+    EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "이메일 인증이 완료되지 않았습니다."),
+    EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "이메일 인증번호 발송에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;

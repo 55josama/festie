@@ -36,6 +36,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/v1/users").permitAll()
                         .requestMatchers(HttpMethod.POST, "/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/v1/auth/reissue").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/auth/email/send-code").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/auth/email/verify-code").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/dev/users/admin").permitAll()
                         .requestMatchers(HttpMethod.POST, "/v1/dev/users/admin").permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",

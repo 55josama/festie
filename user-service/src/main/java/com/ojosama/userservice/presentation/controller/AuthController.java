@@ -4,8 +4,12 @@ import com.ojosama.common.response.ApiResponse;
 import com.ojosama.userservice.application.dto.result.LoginResult;
 import com.ojosama.userservice.application.dto.result.LogoutResult;
 import com.ojosama.userservice.application.service.AuthService;
+import com.ojosama.userservice.application.service.EmailVerificationService;
 import com.ojosama.userservice.presentation.dto.request.LoginRequestDto;
 import com.ojosama.userservice.presentation.dto.request.ReissueTokenRequestDto;
+import com.ojosama.userservice.presentation.dto.request.SendEmailVerificationCodeRequestDto;
+import com.ojosama.userservice.presentation.dto.request.VerifyEmailCodeRequestDto;
+import com.ojosama.userservice.presentation.dto.response.EmailVerificationResponseDto;
 import com.ojosama.userservice.presentation.dto.response.LoginResponseDto;
 import com.ojosama.userservice.presentation.dto.response.LogoutResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/login")
     @Operation(
@@ -68,6 +73,42 @@ public class AuthController {
 
         LogoutResult result = authService.logout(userId);
         LogoutResponseDto response = LogoutResponseDto.from(result);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/email/send-code")
+    @Operation(
+            summary = "이메일 인증번호 발송",
+            description = "회원가입에 사용할 이메일로 6자리 인증번호를 발송합니다."
+    )
+    public ResponseEntity<ApiResponse<EmailVerificationResponseDto>> sendEmailVerificationCode(
+            @Valid @RequestBody SendEmailVerificationCodeRequestDto requestDto
+    ) {
+        emailVerificationService.sendCode(requestDto.email());
+
+        EmailVerificationResponseDto response = new EmailVerificationResponseDto(
+                requestDto.email(),
+                "이메일 인증번호를 발송했습니다."
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/email/verify-code")
+    @Operation(
+            summary = "이메일 인증번호 검증",
+            description = "이메일로 발송된 6자리 인증번호를 검증합니다."
+    )
+    public ResponseEntity<ApiResponse<EmailVerificationResponseDto>> verifyEmailCode(
+            @Valid @RequestBody VerifyEmailCodeRequestDto requestDto
+    ) {
+        emailVerificationService.verifyCode(requestDto.email(), requestDto.code());
+
+        EmailVerificationResponseDto response = new EmailVerificationResponseDto(
+                requestDto.email(),
+                "이메일 인증이 완료되었습니다."
+        );
 
         return ResponseEntity.ok(ApiResponse.success(response));
     }
