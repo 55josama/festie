@@ -41,6 +41,7 @@ public enum EventErrorCode implements ErrorCode {
     // 위치 관련 에러
     INVALID_LATITUDE(HttpStatus.BAD_REQUEST, "위도는 -90 ~ 90 범위여야 합니다."),
     INVALID_LONGITUDE(HttpStatus.BAD_REQUEST, "경도는 -180 ~ 180 범위여야 합니다."),
+    INVALID_RADIUS(HttpStatus.BAD_REQUEST, "반경은 0보다 큰 값이어야 합니다."),
 
     // 권한 관련 에러
     EVENT_UNAUTHORIZED(HttpStatus.FORBIDDEN, "이 행사에 대한 권한이 없습니다."),

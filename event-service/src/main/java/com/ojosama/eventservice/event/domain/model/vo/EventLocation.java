@@ -18,7 +18,7 @@ public class EventLocation {
     private static final BigDecimal LATITUDE_MAX = new BigDecimal("90");
     private static final BigDecimal LONGITUDE_MIN = new BigDecimal("-180");
     private static final BigDecimal LONGITUDE_MAX = new BigDecimal("180");
-    private static final int RADIUS_MIN = 0;
+    private static final int RADIUS_MIN = 1;
 
     @Column(length = 500, nullable = false)
     private String place;
@@ -73,7 +73,7 @@ public class EventLocation {
 
     private void validateRadius(Integer radius) {
         if (radius != null && radius < RADIUS_MIN) {
-            throw new EventException(EventErrorCode.EVENT_INVALID_LOCATION);
+            throw new EventException(EventErrorCode.INVALID_RADIUS);
         }
     }
 }
