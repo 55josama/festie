@@ -83,7 +83,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\",status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[5m]))",
+          "expr": "(sum(rate(http_server_requests_seconds_count{job=\"event-service\",status=~\"5..\"}[5m])) or vector(0)) / clamp_min(sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[5m])), 1e-9)",
           "legendFormat": "5xx Rate",
           "refId": "A"
         }
@@ -193,7 +193,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rate(process_cpu_seconds_total{job=\"event-service\"}[5m])",
+          "expr": "rate(process_cpu_time_ns_total{job=\"event-service\"}[5m]) / 1e9",
           "legendFormat": "CPU",
           "refId": "A"
         }
@@ -738,7 +738,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rate(process_cpu_seconds_total{job=\"event-service\"}[5m])",
+          "expr": "rate(process_cpu_time_ns_total{job=\"event-service\"}[5m]) / 1e9",
           "legendFormat": "Process CPU",
           "refId": "A"
         },
