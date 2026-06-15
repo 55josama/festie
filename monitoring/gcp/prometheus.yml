@@ -1,0 +1,65 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: "gateway-server"
+    scheme: https
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "chat-service"
+    scheme: https
+    metrics_path: "/chat-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "user-service"
+    scheme: https
+    metrics_path: "/user-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "event-service"
+    scheme: https
+    scrape_interval: 60s
+    metrics_path: "/event-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "operation-service"
+    scheme: https
+    metrics_path: "/operation-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "ai-service"
+    scheme: https
+    metrics_path: "/ai-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "calendar-service"
+    scheme: https
+    metrics_path: "/calendar-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "notification-service"
+    scheme: https
+    metrics_path: "/notification-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "favorite-service"
+    scheme: https
+    metrics_path: "/favorite-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
+
+  - job_name: "community-service"
+    scheme: https
+    metrics_path: "/community-service/actuator/prometheus"
+    static_configs:
+      - targets: [ "festie-gateway-3ofsdptgra-du.a.run.app" ]
