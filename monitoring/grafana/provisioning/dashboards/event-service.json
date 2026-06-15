@@ -44,7 +44,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[1m]))",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[5m]))",
           "legendFormat": "RPS",
           "refId": "A"
         }
@@ -83,7 +83,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\",status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[1m]))",
+          "expr": "(sum(rate(http_server_requests_seconds_count{job=\"event-service\",status=~\"5..\"}[5m])) or vector(0)) / clamp_min(sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[5m])), 1e-9)",
           "legendFormat": "5xx Rate",
           "refId": "A"
         }
@@ -193,7 +193,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "process_cpu_usage{job=\"event-service\"}",
+          "expr": "rate(process_cpu_time_ns_total{job=\"event-service\"}[5m]) / 1e9",
           "legendFormat": "CPU",
           "refId": "A"
         }
@@ -275,7 +275,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[1m])) by (uri, method)",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[5m])) by (uri, method)",
           "legendFormat": "{{method}} {{uri}}",
           "refId": "A"
         }
@@ -370,7 +370,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[1m])) by (status)",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\"}[5m])) by (status)",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -405,7 +405,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\",status=~\"[45]..\"}[1m])) by (uri, status)",
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"event-service\",status=~\"[45]..\"}[5m])) by (uri, status)",
           "legendFormat": "{{status}} {{uri}}",
           "refId": "A"
         }
@@ -544,7 +544,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rate(jvm_gc_pause_seconds_sum{job=\"event-service\"}[1m])",
+          "expr": "rate(jvm_gc_pause_seconds_sum{job=\"event-service\"}[5m])",
           "legendFormat": "{{action}} {{cause}}",
           "refId": "A"
         }
@@ -687,7 +687,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rate(hikaricp_connections_acquire_seconds_sum{job=\"event-service\"}[1m]) / rate(hikaricp_connections_acquire_seconds_count{job=\"event-service\"}[1m])",
+          "expr": "rate(hikaricp_connections_acquire_seconds_sum{job=\"event-service\"}[5m]) / rate(hikaricp_connections_acquire_seconds_count{job=\"event-service\"}[5m])",
           "legendFormat": "Avg Acquire Time",
           "refId": "A"
         },
@@ -738,7 +738,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "process_cpu_usage{job=\"event-service\"}",
+          "expr": "rate(process_cpu_time_ns_total{job=\"event-service\"}[5m]) / 1e9",
           "legendFormat": "Process CPU",
           "refId": "A"
         },
@@ -829,7 +829,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "rate(logback_events_total{job=\"event-service\"}[1m])",
+          "expr": "rate(logback_events_total{job=\"event-service\"}[5m])",
           "legendFormat": "{{level}}",
           "refId": "A"
         }

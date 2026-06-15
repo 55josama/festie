@@ -105,6 +105,7 @@ jobs:
             --allow-unauthenticated \
             --ingress=internal \
             --min-instances 1 \
+            --startup-probe="httpGet.path=/actuator/health,httpGet.port=8080,initialDelaySeconds=10,timeoutSeconds=5,periodSeconds=10,failureThreshold=12" \
             --env-vars-file /tmp/env.yaml \
             --quiet
 
@@ -117,79 +118,10 @@ jobs:
           echo "url=$URL" >> $GITHUB_OUTPUT
 
   # ─────────────────────────────────────────────
-  # 2단계: eureka-server
-  # ─────────────────────────────────────────────
-  deploy-eureka:
-    needs: deploy-config
-    runs-on: ubuntu-latest
-    outputs:
-      eureka_url: ${{ steps.get-url.outputs.url }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check for changes
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            changed:
-              - 'eureka-server/**'
-              - 'common/**'
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Configure Docker
-        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
-        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
-
-      - name: Set up JDK 21
-        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: gradle
-
-      - name: Build & Push
-        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-          chmod +x gradlew
-          ./gradlew :eureka-server:bootJar -x test
-          docker build -f eureka-server/Dockerfile -t ${{ env.REGISTRY }}/eureka:latest .
-          docker push ${{ env.REGISTRY }}/eureka:latest
-
-      - name: Deploy to Cloud Run
-        if: steps.filter.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-          gcloud run deploy festie-eureka \
-            --image ${{ env.REGISTRY }}/eureka:latest \
-            --region ${{ env.REGION }} \
-            --platform managed \
-            --allow-unauthenticated \
-            --ingress=internal \
-            --min-instances 1 \
-            --set-env-vars="SERVER_PORT=8080,TZ=Asia/Seoul,MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED=false,MANAGEMENT_STACKDRIVER_METRICS_EXPORT_ENABLED=false,JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true" \
-            --quiet
-
-      - name: Get eureka URL
-        id: get-url
-        run: |
-          URL=$(gcloud run services describe festie-eureka \
-            --region ${{ env.REGION }} \
-            --format 'value(status.url)' 2>/dev/null || echo "")
-          echo "url=$URL" >> $GITHUB_OUTPUT
-
-  # ─────────────────────────────────────────────
-  # 3단계: 나머지 서비스 병렬 배포
+  # 2단계: 나머지 서비스 병렬 배포
   # ─────────────────────────────────────────────
   deploy-services:
-    needs: [deploy-config, deploy-eureka]
+    needs: deploy-config
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -304,7 +236,6 @@ jobs:
           CONFIG_USERNAME: ${{ secrets.CONFIG_USERNAME }}
           CONFIG_PASSWORD: ${{ secrets.CONFIG_PASSWORD }}
           CONFIG_SERVER_URL: ${{ secrets.CONFIG_SERVER_URL }}
-          EUREKA_SERVER_URL: ${{ secrets.EUREKA_SERVER_URL }}
           SPRING_MAIL_HOST: ${{ secrets.SPRING_MAIL_HOST }}
           SPRING_MAIL_PORT: ${{ secrets.SPRING_MAIL_PORT }}
           SPRING_MAIL_USERNAME: ${{ secrets.SPRING_MAIL_USERNAME }}
@@ -323,7 +254,7 @@ jobs:
               'SPRING_KAFKA_PROPERTIES_SASL_MECHANISM', 'SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG',
               'JWT_SECRET', 'JWT_ACCESS_TOKEN_EXPIRATION', 'JWT_REFRESH_TOKEN_EXPIRATION',
               'INTERNAL_API_TOKEN', 'CONFIG_USERNAME', 'CONFIG_PASSWORD',
-              'CONFIG_SERVER_URL', 'EUREKA_SERVER_URL',
+              'CONFIG_SERVER_URL',
           ]
           env = {k: os.environ[k] for k in keys}
           current_schema = os.environ['SERVICE_SCHEMA']
@@ -346,6 +277,8 @@ jobs:
               'TZ': 'Asia/Seoul',
               'SPRING_PROFILES_ACTIVE': 'prod',
               'MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED': 'false',
+              'MANAGEMENT_STACKDRIVER_METRICS_EXPORT_ENABLED': 'false',
+              'SPRING_APPLICATION_JSON': '{"management":{"metrics":{"distribution":{"percentiles-histogram":{"http.server.requests":true}}}}}',
               'MANAGEMENT_HEALTH_MAIL_ENABLED': 'false',
               'SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE': '2',
               'SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE': '0',
@@ -388,10 +321,10 @@ jobs:
             --quiet
 
   # ─────────────────────────────────────────────
-  # 4단계: gateway (마지막)
+  # 3단계: gateway (마지막)
   # ─────────────────────────────────────────────
   deploy-gateway:
-    needs: [deploy-config, deploy-eureka, deploy-services]
+    needs: [deploy-config, deploy-services]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -447,7 +380,13 @@ jobs:
           import os, yaml
           keys = ['JWT_SECRET', 'INTERNAL_API_TOKEN', 'CONFIG_USERNAME', 'CONFIG_PASSWORD', 'CONFIG_SERVER_URL']
           env = {k: os.environ[k] for k in keys}
-          env.update({'SERVER_PORT': '8080', 'TZ': 'Asia/Seoul', 'SPRING_PROFILES_ACTIVE': 'prod', 'MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED': 'false'})
+          env.update({
+              'SERVER_PORT': '8080',
+              'TZ': 'Asia/Seoul',
+              'SPRING_PROFILES_ACTIVE': 'prod',
+              'MANAGEMENT_ZIPKIN_TRACING_EXPORT_ENABLED': 'false',
+              'MANAGEMENT_STACKDRIVER_METRICS_EXPORT_ENABLED': 'false',
+          })
           with open('/tmp/env.yaml', 'w') as f:
               yaml.dump(env, f, allow_unicode=True)
           "
